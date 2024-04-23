@@ -260,14 +260,15 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626 {
 
         if (currentAllocation > targetAllocation) {
             // Withdraw
+            // TODO handle maxWithdraw
             uint256 toWithdraw = currentAllocation - targetAllocation;
             IERC4626(strategy).withdraw(toWithdraw, address(this), address(this));
             strategies[strategy].allocated = uint128(targetAllocation); //TODO casting
-            // TOOD modify totalAllocated
-            // TODO potential reported losses
+            totalAllocated -= toWithdraw;
         }
         else if (currentAllocation < targetAllocation) {
             // Deposit
+            // TODO handle maxDeposit
             uint256 targetCash = totalAssetsAllocatableCache * strategies[address(0)].allocationPoints / totalAllocationPointsCache;
             uint256 currentCash = totalAssetsAllocatableCache - totalAllocated;
 
@@ -287,6 +288,8 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626 {
             // Do required approval (safely) and deposit
             IERC20(asset()).safeApprove(strategy, toDeposit);
             IERC4626(strategy).deposit(toDeposit, address(this));
+            strategies[strategy].allocated = uint128(currentAllocation + toDeposit);
+            totalAllocated += toDeposit;
         }
     }
 
