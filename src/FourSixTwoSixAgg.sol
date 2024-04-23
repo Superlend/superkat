@@ -177,7 +177,40 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626 {
     {
         totalAssetsDeposited -= assets;
 
-        // TODO move assets from strategies to this address if needed
+        uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
+        for(uint256 i = 0; i < withdrawalQueue.length; i ++) {
+            if(assetsRetrieved >= assets) {
+                break;
+            }
+
+            // TODO Should harvest from strategy here
+            harvest(strategy);
+
+            Strategy memory strategyData = strategies[withdrawalQueue[i]];
+            IERC4626 strategy = IERC4626(withdrawalQueue[i]);
+            uint256 sharesBalance = strategy.balanceOf(address(this));
+            uint256 underlyingBalance = strategy.convertToAssets(sharesBalance);
+
+            uint256 desiredAssets = assets - assetsRetrieved;
+            uint256 withdrawAmount;
+            // We can take all we need 🎉
+            if(underlyingBalance > desiredAssets) {
+                withdrawAmount = desiredAssets;
+            } else { // not enough but take all we can
+                withdrawAmount = underlyingBalance;
+            }
+
+            // Update allocated assets
+            strategies[withdrawalQueue[i]].allocated = strategyData.allocated - withdrawAmount;
+            totalAllocated -= withdrawAmount;
+
+            // Do actual withdraw from strategy
+            strategy.withdraw(withdrawAmount, address(this), address(this));
+        }
+
+        if(assetsRetrieved < assets) {
+            revert("Not enough assets to withdraw");
+        }
 
         super._withdraw(caller, receiver, owner, assets, shares);
     }
@@ -257,6 +290,7 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626 {
         }
     }
 
+    // Todo allow batch harvest
     function harvest(address strategy) public nonReentrant() {
         Strategy memory strategyData = strategies[strategy];
         uint256 sharesBalance = IERC4626(strategy).balanceOf(address(this));
