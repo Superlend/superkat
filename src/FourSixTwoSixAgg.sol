@@ -1,10 +1,12 @@
-/ SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
 import {Context} from "openzeppelin-contracts/utils/Context.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import {ERC20} from "openzeppelin-contracts/token/ERC20/ERC20.sol";
+import {SafeERC20} from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC4626} from "openzeppelin-contracts/token/ERC20/extensions/ERC4626.sol";
+import {IERC4626} from "openzeppelin-contracts/interfaces/IERC4626.sol";
 import {IEVC} from "ethereum-vault-connector/interfaces/IEthereumVaultConnector.sol";
 import {EVCUtil} from "ethereum-vault-connector/utils/EVCUtil.sol";
 
@@ -12,6 +14,8 @@ import {EVCUtil} from "ethereum-vault-connector/utils/EVCUtil.sol";
 // @note Do NOT use with rebasing tokens
 // @note Based on https://github.com/euler-xyz/euler-vault-kit/blob/master/src/Synths/EulerSavingsRate.sol
 contract FourSixTwoSixAgg is EVCUtil, ERC4626 {
+    using SafeERC20 for IERC20;
+
     uint8 internal constant REENTRANCYLOCK__UNLOCKED = 1;
     uint8 internal constant REENTRANCYLOCK__LOCKED = 2;
 
@@ -60,21 +64,26 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626 {
         esrSlot.locked = REENTRANCYLOCK__UNLOCKED;
     }
 
-    constructor(IEVC _evc, address _asset, string memory _name, string memory _symbol, address[] memory _initialStrategies, uint256[] memory _initialAllocationPoints)
+    constructor(IEVC _evc, address _asset, string memory _name, string memory _symbol, address[] memory _initialStrategies, uint256[] memory _initialAllocationPoints, uint256 _initialCashAllocationPoints)
         EVCUtil(address(_evc))
         ERC4626(IERC20(_asset))
         ERC20(_name, _symbol)
     {
         esrSlot.locked = REENTRANCYLOCK__UNLOCKED;
 
-        if(_initialStrategies.length != _initialAllocatoinPoints.length) revert ArrayLengthMismatch();
+        if(_initialStrategies.length != _initialAllocationPoints.length) revert ArrayLengthMismatch();
+
+        strategies[address(0)] = Strategy({
+            allocated: 0,
+            allocationPoints: uint128(_initialCashAllocationPoints)
+        });
 
         for (uint256 i = 1; i < _initialStrategies.length; i++) {
             // Prevent duplicates
-            if(strategies[initialStrategies[i]].allocationPoints != 0) revert DuplicateInitialStrategy();
+            if(strategies[_initialStrategies[i]].allocationPoints != 0) revert DuplicateInitialStrategy();
 
             // Add it to the mapping
-            strategies[intialStrategies[i]] = Strategy({
+            strategies[_initialStrategies[i]] = Strategy({
                 allocated: 0,
                 allocationPoints: uint128(_initialAllocationPoints[i])
             });
@@ -89,6 +98,11 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626 {
 
     function totalAssets() public view override returns (uint256) {
         return totalAssetsDeposited + interestAccrued();
+    }
+
+    function totalAssetsAllocatable() public view returns (uint256) {
+        // Whatever balance of asset this vault holds + whatever is allocated to strategies
+        return IERC20(asset()).balanceOf(address(this)) + totalAllocated;
     }
 
     /// @notice Transfers a certain amount of tokens to a recipient.
@@ -162,6 +176,9 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626 {
         override
     {
         totalAssetsDeposited -= assets;
+
+        // TODO move assets from strategies to this address if needed
+
         super._withdraw(caller, receiver, owner, assets, shares);
     }
 
@@ -194,6 +211,71 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626 {
         totalAssetsDeposited += accruedInterest;
 
         return esrSlotCache;
+    }
+
+    function rebalance(address strategy) public nonReentrant() {
+        if(strategy == address(0)) {
+            return; //nothing to rebalance as this is the cash reserve
+        }
+
+        // Harvest profits, also gulps and updates interest
+        harvest(strategy);        
+
+        Strategy memory strategyData = strategies[strategy];
+        uint256 totalAllocationPointsCache = totalAllocationPoints;
+        uint256 totalAssetsAllocatableCache = totalAssetsAllocatable();
+        uint256 targetAllocation = totalAssetsAllocatableCache * strategyData.allocationPoints / totalAllocationPointsCache;
+        uint256 currentAllocation = strategyData.allocated;
+
+        if (currentAllocation > targetAllocation) {
+            // Withdraw
+            uint256 toWithdraw = currentAllocation - targetAllocation;
+            IERC4626(strategy).withdraw(toWithdraw, address(this), address(this));
+            strategies[strategy].allocated = uint128(targetAllocation); //TODO casting
+            // TOOD modify totalAllocated
+            // TODO potential reported losses
+        }
+        else if (currentAllocation < targetAllocation) {
+            // Deposit
+            uint256 targetCash = totalAssetsAllocatableCache * strategies[address(0)].allocationPoints / totalAllocationPointsCache;
+            uint256 currentCash = totalAssetsAllocatableCache - totalAllocated;
+
+            // Calculate available cash to put in strategies
+            uint256 cashAvailable;
+            if (targetCash > currentCash) {
+                cashAvailable = targetCash - currentCash;
+            } else {
+                cashAvailable = 0;
+            }
+
+            uint256 toDeposit = targetAllocation - currentAllocation;
+            if (toDeposit > cashAvailable) {
+                toDeposit = cashAvailable;
+            }
+
+            // Do required approval (safely) and deposit
+            IERC20(asset()).safeApprove(strategy, toDeposit);
+            IERC4626(strategy).deposit(toDeposit, address(this));
+        }
+    }
+
+    function harvest(address strategy) public nonReentrant() {
+        Strategy memory strategyData = strategies[strategy];
+        uint256 sharesBalance = IERC4626(strategy).balanceOf(address(this));
+        uint256 underlyingBalance = IERC4626(strategy).convertToAssets(sharesBalance);
+        
+        // There's yield!
+        if(underlyingBalance > strategyData.allocated) {
+            uint256 yield = underlyingBalance - strategyData.allocated;
+            // Withdraw yield
+            IERC4626(strategy).withdraw(yield, address(this), address(this));
+        } else {
+            // TODO handle losses
+            revert("For now we panic on negative yiedld");
+        }
+
+        // TODO gulp yield without withdraws
+        gulp();
     }
 
     function interestAccrued() public view returns (uint256) {
