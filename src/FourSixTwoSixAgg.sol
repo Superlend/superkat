@@ -184,9 +184,7 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626 {
 
     function gulp() public nonReentrant {
         ESRSlot memory esrSlotCache = updateInterestAndReturnESRSlotCache();
-
-        uint256 assetBalance = IERC20(asset()).balanceOf(address(this));
-        uint256 toGulp = assetBalance - totalAssetsDeposited - esrSlotCache.interestLeft;
+        uint256 toGulp = totalAssetsAllocatable() - totalAssetsDeposited - esrSlotCache.interestLeft;
 
         uint256 maxGulp = type(uint168).max - esrSlotCache.interestLeft;
         if (toGulp > maxGulp) toGulp = maxGulp; // cap interest, allowing the vault to function
