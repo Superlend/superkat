@@ -265,14 +265,13 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626 {
         // There's yield!
         if(underlyingBalance > strategyData.allocated) {
             uint256 yield = underlyingBalance - strategyData.allocated;
-            // Withdraw yield
-            IERC4626(strategy).withdraw(yield, address(this), address(this));
+            strategies[strategy].allocated = uint128(underlyingBalance);
+            totalAllocated += yield;
         } else {
             // TODO handle losses
-            revert("For now we panic on negative yiedld");
+            revert("For now we panic on negative yield");
         }
 
-        // TODO gulp yield without withdraws
         gulp();
     }
 
