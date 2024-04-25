@@ -16,6 +16,7 @@ import {AccessControlEnumerable} from "openzeppelin-contracts/access/AccessContr
 // @note Based on https://github.com/euler-xyz/euler-vault-kit/blob/master/src/Synths/EulerSavingsRate.sol
 // @note expired by Yearn v3 ❤️
 // TODO addons for reward stream support
+// TODO custom withdraw queue support
 contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
     using SafeERC20 for IERC20;
 
@@ -399,6 +400,8 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         strategies[strategy].active = false;
         totalAllocationPoints -= strategies[strategy].allocationPoints;
         strategies[strategy].allocationPoints = 0;
+
+        // TODO remove from withdrawalQueue
     }
 
     function interestAccrued() public view returns (uint256) {
