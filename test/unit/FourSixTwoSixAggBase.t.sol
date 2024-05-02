@@ -1,26 +1,24 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {EVaultTestBase} from "../../evault/EVaultTestBase.t.sol";
-import {IEVault, IERC20} from "src/EVault/IEVault.sol";
-import {IRMTestDefault} from "../../../mocks/IRMTestDefault.sol";
-import {ESynth} from "src/Synths/ESynth.sol";
-import {TestERC20} from "../../../mocks/TestERC20.sol";
+import {EVaultTestBase, TestERC20} from "evk/test/unit/evault/EVaultTestBase.t.sol";
+import {FourSixTwoSixAgg} from "../../src/FourSixTwoSixAgg.sol";
 
-contract ESynthTest is EVaultTestBase {
-    ESynth esynth;
+contract FourSixTwoSixAggBase is EVaultTestBase {
+    address deployer;
     address user1;
     address user2;
 
+    FourSixTwoSixAgg fourSixTwoSixAgg;
+
     function setUp() public virtual override {
         super.setUp();
+        
+        deployer = makeAddr("Deployer");
+        user1 = makeAddr("User_1");
+        user2 = makeAddr("User_2");
 
-        user1 = vm.addr(1001);
-        user2 = vm.addr(1002);
-
-        esynth = ESynth(address(new ESynth(evc, "Test Synth", "TST")));
-        assetTST = TestERC20(address(esynth));
-
-        eTST = createSynthEVault(address(assetTST));
+        vm.prank(deployer);
+        fourSixTwoSixAgg = new FourSixTwoSixAgg(evc, address(assetTST), "assetTST_Agg", "assetTST_Agg", type(uint120).max, new address[](0), new uint256[](0));
     }
 }
