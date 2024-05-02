@@ -25,6 +25,14 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
     error AddressesOutOfOrder();
     error DuplicateInitialStrategy();
     error InitialAllocationPointsZero();
+    error NotEnoughAssets();
+    error NegativeYield();
+    error InactiveStrategy();
+    error OutOfBounds();
+    error SameIndexes();
+    error InvalidStrategyAsset();
+    error StrategyAlreadyExist();
+    error AlreadyRemoved();
 
     uint8 internal constant REENTRANCYLOCK__UNLOCKED = 1;
     uint8 internal constant REENTRANCYLOCK__LOCKED = 2;
@@ -224,7 +232,7 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         }
 
         if (assetsRetrieved < assets) {
-            revert("Not enough assets to withdraw");
+            revert NotEnoughAssets();
         }
 
         super._withdraw(caller, receiver, owner, assets, shares);
@@ -337,7 +345,7 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
             // TODO possible performance fee
         } else {
             // TODO handle losses
-            revert("For now we panic on negative yield");
+            revert NegativeYield();
         }
 
         gulp();
@@ -352,7 +360,7 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         uint256 totalAllocationPointsCache = totalAllocationPoints;
 
         if (strategyData.active = false) {
-            revert("Strategy is inactive");
+            revert InactiveStrategy();
         }
 
         strategies[strategy].allocationPoints = uint120(newPoints);
@@ -371,11 +379,11 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         onlyRole(WITHDRAW_QUEUE_REORDERER_ROLE)
     {
         if (index1 >= withdrawalQueue.length || index2 >= withdrawalQueue.length) {
-            revert("Index out of bounds");
+            revert OutOfBounds();
         }
 
         if (index1 == index2) {
-            revert("Indexes are the same");
+            revert SameIndexes();
         }
 
         address temp = withdrawalQueue[index1];
@@ -389,11 +397,11 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         onlyRole(STRATEGY_ADDER_ROLE)
     {
         if (IERC4626(strategy).asset() != asset()) {
-            revert("Strategy asset does not match vault asset");
+            revert InvalidStrategyAsset();
         }
 
         if (strategies[strategy].active) {
-            revert("Strategy already exists");
+            revert StrategyAlreadyExist();
         }
 
         strategies[strategy] = Strategy({allocated: 0, allocationPoints: uint120(allocationPoints), active: true});
@@ -405,7 +413,7 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
     // remove strategy, sets its allocation points to zero. Does not pull funds, `harvest` needs to be called to withdraw
     function removeStrategy(address strategy) public nonReentrant onlyRole(STRATEGY_REMOVER_ROLE) {
         if (!strategies[strategy].active) {
-            revert("Strategy is already inactive");
+            revert AlreadyRemoved();
         }
 
         strategies[strategy].active = false;
