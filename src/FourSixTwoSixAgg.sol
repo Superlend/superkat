@@ -20,6 +20,15 @@ import {AccessControlEnumerable} from "openzeppelin-contracts/access/AccessContr
 contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
     using SafeERC20 for IERC20;
 
+    error Reentrancy();
+    error ArrayLengthMismatch();
+    error AddressesOutOfOrder();
+    error DuplicateInitialStrategy();
+    error InitialAllocationPointsZero();
+
+    uint8 internal constant REENTRANCYLOCK__UNLOCKED = 1;
+    uint8 internal constant REENTRANCYLOCK__LOCKED = 2;
+
     // ROLES
     bytes32 public constant ALLOCATION_ADJUSTER_ROLE = keccak256("ALLOCATION_ADJUSTER_ROLE");
     bytes32 public constant ALLOCATION_ADJUSTER_ROLE_ADMIN_ROLE = keccak256("ALLOCATION_ADJUSTER_ROLE_ADMIN_ROLE");
@@ -30,9 +39,16 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
     bytes32 public constant STRATEGY_REMOVER_ROLE = keccak256("STRATEGY_REMOVER_ROLE");
     bytes32 public constant STRATEGY_REMOVER_ROLE_ADMIN_ROLE = keccak256("STRATEGY_REMOVER_ROLE_ADMIN_ROLE");
 
-    uint8 internal constant REENTRANCYLOCK__UNLOCKED = 1;
-    uint8 internal constant REENTRANCYLOCK__LOCKED = 2;
     uint256 public constant INTEREST_SMEAR = 2 weeks;
+
+    ESRSlot internal esrSlot;
+    uint256 internal totalAssetsDeposited;
+
+    uint256 totalAllocated;
+    uint256 totalAllocationPoints;
+
+    mapping(address => Strategy) internal strategies;
+    address[] withdrawalQueue;
 
     struct ESRSlot {
         uint40 lastInterestUpdate;
@@ -46,21 +62,6 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         uint120 allocationPoints;
         bool active;
     }
-
-    mapping(address => Strategy) internal strategies;
-    address[] withdrawalQueue;
-    uint256 totalAllocated;
-    uint256 totalAllocationPoints;
-
-    ESRSlot internal esrSlot;
-
-    uint256 internal totalAssetsDeposited;
-
-    error Reentrancy();
-    error ArrayLengthMismatch();
-    error AddressesOutOfOrder();
-    error DuplicateInitialStrategy();
-    error InitialAllocationPointsZero();
 
     /// @notice Modifier to require an account status check on the EVC.
     /// @dev Calls `requireAccountStatusCheck` function from EVC for the specified account after the function body.
@@ -84,7 +85,8 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         string memory _name,
         string memory _symbol,
         uint256 _initialCashAllocationPoints,
-
+        address[] memory _initialStrategies,
+        uint256[] memory _initialStrategiesAllocationPoints
     )
         EVCUtil(address(_evc))
         ERC4626(IERC20(_asset))
@@ -92,14 +94,22 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
     {
         esrSlot.locked = REENTRANCYLOCK__UNLOCKED;
 
-        if(_initialStrategies.length != _initialAllocationPoints.length) revert ArrayLengthMismatch();
-
+        if(_initialStrategies.length != _initialStrategiesAllocationPoints.length) revert ArrayLengthMismatch();
         if(_initialCashAllocationPoints == 0) revert InitialAllocationPointsZero();
+
         strategies[address(0)] = Strategy({
             allocated: 0,
             allocationPoints: uint120(_initialCashAllocationPoints),
             active: true
         });
+
+        for(uint256 i; i < _initialStrategies.length; ++i) {
+            strategies[_initialStrategies[i]] = Strategy({
+                allocated: 0,
+                allocationPoints: uint120(_initialStrategiesAllocationPoints[i]),
+                active: true
+            });
+        }
 
         // Setup DEFAULT_ADMIN
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
