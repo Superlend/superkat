@@ -33,7 +33,8 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
     bytes32 public constant ALLOCATION_ADJUSTER_ROLE = keccak256("ALLOCATION_ADJUSTER_ROLE");
     bytes32 public constant ALLOCATION_ADJUSTER_ROLE_ADMIN_ROLE = keccak256("ALLOCATION_ADJUSTER_ROLE_ADMIN_ROLE");
     bytes32 public constant WITHDRAW_QUEUE_REORDERER_ROLE = keccak256("WITHDRAW_QUEUE_REORDERER_ROLE");
-    bytes32 public constant WITHDRAW_QUEUE_REORDERER_ROLE_ADMIN_ROLE = keccak256("WITHDRAW_QUEUE_REORDERER_ROLE_ADMIN_ROLE");
+    bytes32 public constant WITHDRAW_QUEUE_REORDERER_ROLE_ADMIN_ROLE =
+        keccak256("WITHDRAW_QUEUE_REORDERER_ROLE_ADMIN_ROLE");
     bytes32 public constant STRATEGY_ADDER_ROLE = keccak256("STRATEGY_ADDER_ROLE");
     bytes32 public constant STRATEGY_ADDER_ROLE_ADMIN_ROLE = keccak256("STRATEGY_ADDER_ROLE_ADMIN_ROLE");
     bytes32 public constant STRATEGY_REMOVER_ROLE = keccak256("STRATEGY_REMOVER_ROLE");
@@ -87,28 +88,18 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         uint256 _initialCashAllocationPoints,
         address[] memory _initialStrategies,
         uint256[] memory _initialStrategiesAllocationPoints
-    )
-        EVCUtil(address(_evc))
-        ERC4626(IERC20(_asset))
-        ERC20(_name, _symbol)
-    {
+    ) EVCUtil(address(_evc)) ERC4626(IERC20(_asset)) ERC20(_name, _symbol) {
         esrSlot.locked = REENTRANCYLOCK__UNLOCKED;
 
-        if(_initialStrategies.length != _initialStrategiesAllocationPoints.length) revert ArrayLengthMismatch();
-        if(_initialCashAllocationPoints == 0) revert InitialAllocationPointsZero();
+        if (_initialStrategies.length != _initialStrategiesAllocationPoints.length) revert ArrayLengthMismatch();
+        if (_initialCashAllocationPoints == 0) revert InitialAllocationPointsZero();
 
-        strategies[address(0)] = Strategy({
-            allocated: 0,
-            allocationPoints: uint120(_initialCashAllocationPoints),
-            active: true
-        });
+        strategies[address(0)] =
+            Strategy({allocated: 0, allocationPoints: uint120(_initialCashAllocationPoints), active: true});
 
-        for(uint256 i; i < _initialStrategies.length; ++i) {
-            strategies[_initialStrategies[i]] = Strategy({
-                allocated: 0,
-                allocationPoints: uint120(_initialStrategiesAllocationPoints[i]),
-                active: true
-            });
+        for (uint256 i; i < _initialStrategies.length; ++i) {
+            strategies[_initialStrategies[i]] =
+                Strategy({allocated: 0, allocationPoints: uint120(_initialStrategiesAllocationPoints[i]), active: true});
         }
 
         // Setup DEFAULT_ADMIN
@@ -203,8 +194,8 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         totalAssetsDeposited -= assets;
 
         uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
-        for(uint256 i = 0; i < withdrawalQueue.length; i ++) {
-            if(assetsRetrieved >= assets) {
+        for (uint256 i = 0; i < withdrawalQueue.length; i++) {
+            if (assetsRetrieved >= assets) {
                 break;
             }
 
@@ -217,9 +208,10 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
             uint256 desiredAssets = assets - assetsRetrieved;
             uint256 withdrawAmount;
             // We can take all we need 🎉
-            if(underlyingBalance > desiredAssets) {
+            if (underlyingBalance > desiredAssets) {
                 withdrawAmount = desiredAssets;
-            } else { // not enough but take all we can
+            } else {
+                // not enough but take all we can
                 withdrawAmount = underlyingBalance;
             }
 
@@ -231,7 +223,7 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
             strategy.withdraw(withdrawAmount, address(this), address(this));
         }
 
-        if(assetsRetrieved < assets) {
+        if (assetsRetrieved < assets) {
             revert("Not enough assets to withdraw");
         }
 
@@ -267,18 +259,19 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         return esrSlotCache;
     }
 
-    function rebalance(address strategy) public nonReentrant() {
-        if(strategy == address(0)) {
+    function rebalance(address strategy) public nonReentrant {
+        if (strategy == address(0)) {
             return; //nothing to rebalance as this is the cash reserve
         }
 
         // Harvest profits, also gulps and updates interest
-        harvest(strategy);        
+        harvest(strategy);
 
         Strategy memory strategyData = strategies[strategy];
         uint256 totalAllocationPointsCache = totalAllocationPoints;
         uint256 totalAssetsAllocatableCache = totalAssetsAllocatable();
-        uint256 targetAllocation = totalAssetsAllocatableCache * strategyData.allocationPoints / totalAllocationPointsCache;
+        uint256 targetAllocation =
+            totalAssetsAllocatableCache * strategyData.allocationPoints / totalAllocationPointsCache;
         uint256 currentAllocation = strategyData.allocated;
 
         if (currentAllocation > targetAllocation) {
@@ -287,17 +280,17 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
             uint256 toWithdraw = currentAllocation - targetAllocation;
 
             uint256 maxWithdraw = IERC4626(strategy).maxWithdraw(address(this));
-            if(toWithdraw > maxWithdraw) {
+            if (toWithdraw > maxWithdraw) {
                 toWithdraw = maxWithdraw;
             }
 
             IERC4626(strategy).withdraw(toWithdraw, address(this), address(this));
             strategies[strategy].allocated = uint120(targetAllocation); //TODO casting
             totalAllocated -= toWithdraw;
-        }
-        else if (currentAllocation < targetAllocation) {
+        } else if (currentAllocation < targetAllocation) {
             // Deposit
-            uint256 targetCash = totalAssetsAllocatableCache * strategies[address(0)].allocationPoints / totalAllocationPointsCache;
+            uint256 targetCash =
+                totalAssetsAllocatableCache * strategies[address(0)].allocationPoints / totalAllocationPointsCache;
             uint256 currentCash = totalAssetsAllocatableCache - totalAllocated;
 
             // Calculate available cash to put in strategies
@@ -314,11 +307,11 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
             }
 
             uint256 maxDeposit = IERC4626(strategy).maxDeposit(address(this));
-            if(toDeposit > maxDeposit) {
+            if (toDeposit > maxDeposit) {
                 toDeposit = maxDeposit;
             }
 
-            if(toDeposit == 0) {
+            if (toDeposit == 0) {
                 return; // No cash to deposit
             }
 
@@ -331,13 +324,13 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
     }
 
     // Todo possibly allow batch harvest
-    function harvest(address strategy) public nonReentrant() {
+    function harvest(address strategy) public nonReentrant {
         Strategy memory strategyData = strategies[strategy];
         uint256 sharesBalance = IERC4626(strategy).balanceOf(address(this));
         uint256 underlyingBalance = IERC4626(strategy).convertToAssets(sharesBalance);
-        
+
         // There's yield!
-        if(underlyingBalance > strategyData.allocated) {
+        if (underlyingBalance > strategyData.allocated) {
             uint256 yield = underlyingBalance - strategyData.allocated;
             strategies[strategy].allocated = uint120(underlyingBalance);
             totalAllocated += yield;
@@ -350,30 +343,38 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         gulp();
     }
 
-    function adjustAllocationPoints(address strategy, uint256 newPoints) public nonReentrant() onlyRole(ALLOCATION_ADJUSTER_ROLE) {
+    function adjustAllocationPoints(address strategy, uint256 newPoints)
+        public
+        nonReentrant
+        onlyRole(ALLOCATION_ADJUSTER_ROLE)
+    {
         Strategy memory strategyData = strategies[strategy];
         uint256 totalAllocationPointsCache = totalAllocationPoints;
 
-        if(strategyData.active = false) {
+        if (strategyData.active = false) {
             revert("Strategy is inactive");
         }
 
         strategies[strategy].allocationPoints = uint120(newPoints);
-        if(newPoints > strategyData.allocationPoints) {
+        if (newPoints > strategyData.allocationPoints) {
             uint256 diff = newPoints - strategyData.allocationPoints;
             totalAllocationPoints + totalAllocationPointsCache + diff;
-        } else if(newPoints < strategyData.allocationPoints) {
+        } else if (newPoints < strategyData.allocationPoints) {
             uint256 diff = strategyData.allocationPoints - newPoints;
             totalAllocationPoints = totalAllocationPointsCache - diff;
         }
     }
 
-    function reorderWithdrawalQueue(uint8 index1, uint8 index2) public nonReentrant() onlyRole(WITHDRAW_QUEUE_REORDERER_ROLE) {
-        if(index1 >= withdrawalQueue.length || index2 >= withdrawalQueue.length) {
+    function reorderWithdrawalQueue(uint8 index1, uint8 index2)
+        public
+        nonReentrant
+        onlyRole(WITHDRAW_QUEUE_REORDERER_ROLE)
+    {
+        if (index1 >= withdrawalQueue.length || index2 >= withdrawalQueue.length) {
             revert("Index out of bounds");
         }
 
-        if(index1 == index2) {
+        if (index1 == index2) {
             revert("Indexes are the same");
         }
 
@@ -382,28 +383,28 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         withdrawalQueue[index2] = temp;
     }
 
-    function addStrategy(address strategy, uint256 allocationPoints) public nonReentrant() onlyRole(STRATEGY_ADDER_ROLE) {
-        if(IERC4626(strategy).asset() != asset()) {
-            revert ("Strategy asset does not match vault asset");
+    function addStrategy(address strategy, uint256 allocationPoints)
+        public
+        nonReentrant
+        onlyRole(STRATEGY_ADDER_ROLE)
+    {
+        if (IERC4626(strategy).asset() != asset()) {
+            revert("Strategy asset does not match vault asset");
         }
 
-        if(strategies[strategy].active) {
+        if (strategies[strategy].active) {
             revert("Strategy already exists");
         }
 
-        strategies[strategy] = Strategy({
-            allocated: 0,
-            allocationPoints: uint120(allocationPoints),
-            active: true
-        });
+        strategies[strategy] = Strategy({allocated: 0, allocationPoints: uint120(allocationPoints), active: true});
 
         totalAllocationPoints += allocationPoints;
         withdrawalQueue.push(strategy);
     }
-    
+
     // remove strategy, sets its allocation points to zero. Does not pull funds, `harvest` needs to be called to withdraw
-    function removeStrategy(address strategy) public nonReentrant() onlyRole(STRATEGY_REMOVER_ROLE) {
-        if(!strategies[strategy].active) {
+    function removeStrategy(address strategy) public nonReentrant onlyRole(STRATEGY_REMOVER_ROLE) {
+        if (!strategies[strategy].active) {
             revert("Strategy is already inactive");
         }
 

@@ -13,12 +13,20 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
 
     function setUp() public virtual override {
         super.setUp();
-        
+
         deployer = makeAddr("Deployer");
         user1 = makeAddr("User_1");
         user2 = makeAddr("User_2");
 
         vm.prank(deployer);
-        fourSixTwoSixAgg = new FourSixTwoSixAgg(evc, address(assetTST), "assetTST_Agg", "assetTST_Agg", type(uint120).max, new address[](0), new uint256[](0));
+        fourSixTwoSixAgg = new FourSixTwoSixAgg(
+            evc,
+            address(assetTST),
+            "assetTST_Agg",
+            "assetTST_Agg",
+            type(uint120).max,
+            new address[](0),
+            new uint256[](0)
+        );
     }
 }
