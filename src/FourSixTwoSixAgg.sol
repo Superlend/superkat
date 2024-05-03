@@ -209,23 +209,21 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
 
             Strategy memory strategyData = strategies[withdrawalQueue[i]];
             IERC4626 strategy = IERC4626(withdrawalQueue[i]);
+
             harvest(address(strategy));
+
             uint256 sharesBalance = strategy.balanceOf(address(this));
             uint256 underlyingBalance = strategy.convertToAssets(sharesBalance);
 
             uint256 desiredAssets = assets - assetsRetrieved;
-            uint256 withdrawAmount;
-            // We can take all we need 🎉
-            if (underlyingBalance > desiredAssets) {
-                withdrawAmount = desiredAssets;
-            } else {
-                // not enough but take all we can
-                withdrawAmount = underlyingBalance;
-            }
+            uint256 withdrawAmount = (underlyingBalance >= desiredAssets) ? desiredAssets : underlyingBalance;
 
             // Update allocated assets
             strategies[withdrawalQueue[i]].allocated = strategyData.allocated - uint120(withdrawAmount);
             totalAllocated -= withdrawAmount;
+
+            // update assetsRetrieved
+            assetsRetrieved += withdrawAmount;
 
             // Do actual withdraw from strategy
             strategy.withdraw(withdrawAmount, address(this), address(this));
