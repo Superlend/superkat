@@ -224,7 +224,7 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
 
             // update assetsRetrieved
             assetsRetrieved += withdrawAmount;
-            
+
             // Do actual withdraw from strategy
             strategy.withdraw(withdrawAmount, address(this), address(this));
         }
