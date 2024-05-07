@@ -53,11 +53,12 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
     ESRSlot internal esrSlot;
     uint256 internal totalAssetsDeposited;
 
-    uint256 totalAllocated;
-    uint256 totalAllocationPoints;
+    uint256 public totalAllocated;
+    uint256 public totalAllocationPoints;
+
+    address[] public withdrawalQueue;
 
     mapping(address => Strategy) internal strategies;
-    address[] withdrawalQueue;
 
     struct ESRSlot {
         uint40 lastInterestUpdate;
@@ -118,6 +119,19 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         _setRoleAdmin(WITHDRAW_QUEUE_REORDERER_ROLE, WITHDRAW_QUEUE_REORDERER_ROLE_ADMIN_ROLE);
         _setRoleAdmin(STRATEGY_ADDER_ROLE, STRATEGY_ADDER_ROLE_ADMIN_ROLE);
         _setRoleAdmin(STRATEGY_REMOVER_ROLE, STRATEGY_REMOVER_ROLE_ADMIN_ROLE);
+    }
+
+    /**
+     * @notice get strategy params
+     * @param _strategy strategy's address
+     * @return Strategy struct
+     */
+    function getStrategy(address _strategy) external view returns (Strategy memory) {
+        return strategies[_strategy];
+    }
+
+    function withdrawalQueueLength() external view returns (uint256) {
+        return withdrawalQueue.length;
     }
 
     function totalAssets() public view override returns (uint256) {
@@ -418,7 +432,16 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         totalAllocationPoints -= strategies[strategy].allocationPoints;
         strategies[strategy].allocationPoints = 0;
 
-        // TODO remove from withdrawalQueue
+        // remove from withdrawalQueue
+        uint256 lastStrategyIndex = withdrawalQueue.length - 1;
+        for (uint256 i; i <= lastStrategyIndex; ++i) {
+            if ((withdrawalQueue[i] == strategy) && (i != lastStrategyIndex)) {
+                (withdrawalQueue[i], withdrawalQueue[lastStrategyIndex]) =
+                    (withdrawalQueue[lastStrategyIndex], withdrawalQueue[i]);
+            }
+
+            withdrawalQueue.pop();
+        }
     }
 
     function interestAccrued() public view returns (uint256) {
