@@ -79,4 +79,9 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_ADDER_ROLE(), manager));
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE(), manager));
     }
+
+    function _addStrategy(address from, address strategy, uint256 allocationPoints) internal {
+        vm.prank(from);
+        fourSixTwoSixAgg.addStrategy(strategy, allocationPoints);
+    }
 }

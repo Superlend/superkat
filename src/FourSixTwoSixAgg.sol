@@ -432,7 +432,16 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         totalAllocationPoints -= strategies[strategy].allocationPoints;
         strategies[strategy].allocationPoints = 0;
 
-        // TODO remove from withdrawalQueue
+        // remove from withdrawalQueue
+        uint256 lastStrategyIndex = withdrawalQueue.length - 1;
+        for (uint256 i; i <= lastStrategyIndex; ++i) {
+            if ((withdrawalQueue[i] == strategy) && (i != lastStrategyIndex)) {
+                (withdrawalQueue[i], withdrawalQueue[lastStrategyIndex]) =
+                    (withdrawalQueue[lastStrategyIndex], withdrawalQueue[i]);
+            }
+
+            withdrawalQueue.pop();
+        }
     }
 
     function interestAccrued() public view returns (uint256) {

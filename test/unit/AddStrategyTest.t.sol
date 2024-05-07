@@ -13,8 +13,7 @@ contract AddStrategyTest is FourSixTwoSixAggBase {
 
         assertEq(fourSixTwoSixAgg.withdrawalQueueLength(), 0);
 
-        vm.prank(manager);
-        fourSixTwoSixAgg.addStrategy(address(eTST), allocationPoints);
+        _addStrategy(manager, address(eTST), allocationPoints);
 
         assertEq(fourSixTwoSixAgg.totalAllocationPoints(), allocationPoints);
         assertEq(fourSixTwoSixAgg.withdrawalQueueLength(), 1);
@@ -25,9 +24,8 @@ contract AddStrategyTest is FourSixTwoSixAggBase {
 
         assertEq(fourSixTwoSixAgg.withdrawalQueueLength(), 0);
 
-        vm.prank(deployer);
         vm.expectRevert();
-        fourSixTwoSixAgg.addStrategy(address(eTST), allocationPoints);
+        _addStrategy(deployer, address(eTST), allocationPoints);
     }
 
     function testAddStrategy_WithInvalidAsset() public {
@@ -35,9 +33,8 @@ contract AddStrategyTest is FourSixTwoSixAggBase {
 
         assertEq(fourSixTwoSixAgg.withdrawalQueueLength(), 0);
 
-        vm.prank(deployer);
         vm.expectRevert();
-        fourSixTwoSixAgg.addStrategy(address(eTST2), allocationPoints);
+        _addStrategy(manager, address(eTST2), allocationPoints);
     }
 
     function testAddStrategy_AlreadyAddedStrategy() public {
@@ -45,14 +42,12 @@ contract AddStrategyTest is FourSixTwoSixAggBase {
 
         assertEq(fourSixTwoSixAgg.withdrawalQueueLength(), 0);
 
-        vm.prank(manager);
-        fourSixTwoSixAgg.addStrategy(address(eTST), allocationPoints);
+        _addStrategy(manager, address(eTST), allocationPoints);
 
         assertEq(fourSixTwoSixAgg.totalAllocationPoints(), allocationPoints);
         assertEq(fourSixTwoSixAgg.withdrawalQueueLength(), 1);
 
-        vm.prank(deployer);
         vm.expectRevert();
-        fourSixTwoSixAgg.addStrategy(address(eTST), allocationPoints);
+        _addStrategy(manager, address(eTST), allocationPoints);
     }
 }
