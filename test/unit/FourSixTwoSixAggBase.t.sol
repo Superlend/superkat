@@ -5,6 +5,8 @@ import {EVaultTestBase, TestERC20} from "evk/test/unit/evault/EVaultTestBase.t.s
 import {FourSixTwoSixAgg} from "../../src/FourSixTwoSixAgg.sol";
 
 contract FourSixTwoSixAggBase is EVaultTestBase {
+    uint256 public constant CASH_RESERVE_ALLOCATION_POINTS = 1000e18;
+
     address deployer;
     address user1;
     address user2;
@@ -25,7 +27,7 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
             address(assetTST),
             "assetTST_Agg",
             "assetTST_Agg",
-            type(uint120).max,
+            CASH_RESERVE_ALLOCATION_POINTS,
             new address[](0),
             new uint256[](0)
         );
@@ -49,7 +51,7 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
         FourSixTwoSixAgg.Strategy memory cashReserve = fourSixTwoSixAgg.getStrategy(address(0));
 
         assertEq(cashReserve.allocated, 0);
-        assertEq(cashReserve.allocationPoints, type(uint120).max);
+        assertEq(cashReserve.allocationPoints, CASH_RESERVE_ALLOCATION_POINTS);
         assertEq(cashReserve.active, true);
 
         assertEq(

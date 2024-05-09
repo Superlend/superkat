@@ -9,18 +9,19 @@ contract AddStrategyTest is FourSixTwoSixAggBase {
     }
 
     function testAddStrategy() public {
-        uint256 allocationPoints = type(uint120).max;
+        uint256 allocationPoints = 500e18;
+        uint256 totalAllocationPointsBefore = fourSixTwoSixAgg.totalAllocationPoints();
 
         assertEq(fourSixTwoSixAgg.withdrawalQueueLength(), 0);
 
         _addStrategy(manager, address(eTST), allocationPoints);
 
-        assertEq(fourSixTwoSixAgg.totalAllocationPoints(), allocationPoints);
+        assertEq(fourSixTwoSixAgg.totalAllocationPoints(), allocationPoints + totalAllocationPointsBefore);
         assertEq(fourSixTwoSixAgg.withdrawalQueueLength(), 1);
     }
 
     function testAddStrategy_FromUnauthorizedAddress() public {
-        uint256 allocationPoints = type(uint120).max;
+        uint256 allocationPoints = 500e18;
 
         assertEq(fourSixTwoSixAgg.withdrawalQueueLength(), 0);
 
@@ -29,7 +30,7 @@ contract AddStrategyTest is FourSixTwoSixAggBase {
     }
 
     function testAddStrategy_WithInvalidAsset() public {
-        uint256 allocationPoints = type(uint120).max;
+        uint256 allocationPoints = 500e18;
 
         assertEq(fourSixTwoSixAgg.withdrawalQueueLength(), 0);
 
@@ -38,13 +39,14 @@ contract AddStrategyTest is FourSixTwoSixAggBase {
     }
 
     function testAddStrategy_AlreadyAddedStrategy() public {
-        uint256 allocationPoints = type(uint120).max;
+        uint256 allocationPoints = 500e18;
+        uint256 totalAllocationPointsBefore = fourSixTwoSixAgg.totalAllocationPoints();
 
         assertEq(fourSixTwoSixAgg.withdrawalQueueLength(), 0);
 
         _addStrategy(manager, address(eTST), allocationPoints);
 
-        assertEq(fourSixTwoSixAgg.totalAllocationPoints(), allocationPoints);
+        assertEq(fourSixTwoSixAgg.totalAllocationPoints(), allocationPoints + totalAllocationPointsBefore);
         assertEq(fourSixTwoSixAgg.withdrawalQueueLength(), 1);
 
         vm.expectRevert();

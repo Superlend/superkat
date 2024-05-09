@@ -51,9 +51,12 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
     uint256 public constant INTEREST_SMEAR = 2 weeks;
 
     ESRSlot internal esrSlot;
+    /// @dev total amount of _asset deposited into FourSixTwoSixAgg contract
     uint256 internal totalAssetsDeposited;
 
+    /// @dev total amount of _asset deposited across all strategies.
     uint256 public totalAllocated;
+    /// @dev total amount of allocation points across all strategies including the cash reserve.
     uint256 public totalAllocationPoints;
 
     address[] public withdrawalQueue;
@@ -109,6 +112,8 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         for (uint256 i; i < _initialStrategies.length; ++i) {
             strategies[_initialStrategies[i]] =
                 Strategy({allocated: 0, allocationPoints: uint120(_initialStrategiesAllocationPoints[i]), active: true});
+
+            totalAllocationPoints += _initialStrategiesAllocationPoints[i];
         }
 
         // Setup DEFAULT_ADMIN
@@ -119,6 +124,8 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         _setRoleAdmin(WITHDRAW_QUEUE_REORDERER_ROLE, WITHDRAW_QUEUE_REORDERER_ROLE_ADMIN_ROLE);
         _setRoleAdmin(STRATEGY_ADDER_ROLE, STRATEGY_ADDER_ROLE_ADMIN_ROLE);
         _setRoleAdmin(STRATEGY_REMOVER_ROLE, STRATEGY_REMOVER_ROLE_ADMIN_ROLE);
+
+        totalAllocationPoints += _initialCashAllocationPoints;
     }
 
     /**
@@ -138,8 +145,10 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         return totalAssetsDeposited + interestAccrued();
     }
 
+    /// @notice get the total assets allocatable
+    /// @dev the total assets allocatable is the amount of assets deposited into the aggregator + assets already deposited into strategies
+    /// @return uint256 total assets
     function totalAssetsAllocatable() public view returns (uint256) {
-        // Whatever balance of asset this vault holds + whatever is allocated to strategies
         return IERC20(asset()).balanceOf(address(this)) + totalAllocated;
     }
 
@@ -296,7 +305,6 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
 
         if (currentAllocation > targetAllocation) {
             // Withdraw
-            // TODO handle maxWithdraw
             uint256 toWithdraw = currentAllocation - targetAllocation;
 
             uint256 maxWithdraw = IERC4626(strategy).maxWithdraw(address(this));
@@ -305,7 +313,7 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
             }
 
             IERC4626(strategy).withdraw(toWithdraw, address(this), address(this));
-            strategies[strategy].allocated = uint120(targetAllocation); //TODO casting
+            strategies[strategy].allocated = uint120(currentAllocation - toWithdraw);
             totalAllocated -= toWithdraw;
         } else if (currentAllocation < targetAllocation) {
             // Deposit
@@ -314,12 +322,7 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
             uint256 currentCash = totalAssetsAllocatableCache - totalAllocated;
 
             // Calculate available cash to put in strategies
-            uint256 cashAvailable;
-            if (targetCash > currentCash) {
-                cashAvailable = targetCash - currentCash;
-            } else {
-                cashAvailable = 0;
-            }
+            uint256 cashAvailable = (currentCash > targetCash) ? currentCash - targetCash : 0;
 
             uint256 toDeposit = targetAllocation - currentAllocation;
             if (toDeposit > cashAvailable) {
