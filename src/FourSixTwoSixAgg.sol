@@ -311,7 +311,7 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
             }
 
             IERC4626(strategy).withdraw(toWithdraw, address(this), address(this));
-            strategies[strategy].allocated = uint120(targetAllocation);
+            strategies[strategy].allocated = uint120(currentAllocation - toWithdraw);
             totalAllocated -= toWithdraw;
         } else if (currentAllocation < targetAllocation) {
             // Deposit
