@@ -51,9 +51,12 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
     uint256 public constant INTEREST_SMEAR = 2 weeks;
 
     ESRSlot internal esrSlot;
+    /// @dev total amount of _asset deposited into FourSixTwoSixAgg contract
     uint256 internal totalAssetsDeposited;
 
+    /// @dev total amount of _asset deposited across all strategies.
     uint256 public totalAllocated;
+    /// @dev total amount of allocation points across all strategies including the cash reserve.
     uint256 public totalAllocationPoints;
 
     address[] public withdrawalQueue;
@@ -140,8 +143,10 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         return totalAssetsDeposited + interestAccrued();
     }
 
+    /// @notice get the total assets allocatable
+    /// @dev the total assets allocatable is the amount of assets deposited into the aggregator + assets already deposited into strategies
+    /// @return uint256 total assets
     function totalAssetsAllocatable() public view returns (uint256) {
-        // Whatever balance of asset this vault holds + whatever is allocated to strategies
         return IERC20(asset()).balanceOf(address(this)) + totalAllocated;
     }
 
@@ -298,7 +303,6 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
 
         if (currentAllocation > targetAllocation) {
             // Withdraw
-            // TODO handle maxWithdraw
             uint256 toWithdraw = currentAllocation - targetAllocation;
 
             uint256 maxWithdraw = IERC4626(strategy).maxWithdraw(address(this));
@@ -307,7 +311,7 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
             }
 
             IERC4626(strategy).withdraw(toWithdraw, address(this), address(this));
-            strategies[strategy].allocated = uint120(targetAllocation); //TODO casting
+            strategies[strategy].allocated = uint120(targetAllocation);
             totalAllocated -= toWithdraw;
         } else if (currentAllocation < targetAllocation) {
             // Deposit
