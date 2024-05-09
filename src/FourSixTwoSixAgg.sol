@@ -316,13 +316,7 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
             uint256 currentCash = totalAssetsAllocatableCache - totalAllocated;
 
             // Calculate available cash to put in strategies
-            // Fix: cash available calc
-            uint256 cashAvailable;
-            if (targetCash > currentCash) {
-                cashAvailable = targetCash - currentCash;
-            } else {
-                cashAvailable = 0;
-            }
+            uint256 cashAvailable = (currentCash > targetCash) ? currentCash - targetCash : 0;
 
             uint256 toDeposit = targetAllocation - currentAllocation;
             if (toDeposit > cashAvailable) {
