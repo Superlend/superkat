@@ -112,6 +112,8 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         for (uint256 i; i < _initialStrategies.length; ++i) {
             strategies[_initialStrategies[i]] =
                 Strategy({allocated: 0, allocationPoints: uint120(_initialStrategiesAllocationPoints[i]), active: true});
+
+            totalAllocationPoints += _initialStrategiesAllocationPoints[i];
         }
 
         // Setup DEFAULT_ADMIN
