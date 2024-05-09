@@ -120,7 +120,7 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         _setRoleAdmin(STRATEGY_ADDER_ROLE, STRATEGY_ADDER_ROLE_ADMIN_ROLE);
         _setRoleAdmin(STRATEGY_REMOVER_ROLE, STRATEGY_REMOVER_ROLE_ADMIN_ROLE);
 
-        // Fix: increase totalAllocationPoints
+        totalAllocationPoints += _initialCashAllocationPoints;
     }
 
     /**
@@ -342,7 +342,6 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
 
     // Todo possibly allow batch harvest
     function harvest(address strategy) public nonReentrant {
-        // Fix: return if strategyData.allocated == 0
         Strategy memory strategyData = strategies[strategy];
         uint256 sharesBalance = IERC4626(strategy).balanceOf(address(this));
         uint256 underlyingBalance = IERC4626(strategy).convertToAssets(sharesBalance);
