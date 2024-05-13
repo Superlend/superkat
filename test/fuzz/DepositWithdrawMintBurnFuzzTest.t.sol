@@ -27,14 +27,19 @@ contract DepositWithdrawMintBurnFuzzTest is FourSixTwoSixAggBase {
         assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - _assets);
     }
 
-    function testFuzzWithdraw(address _receiver, uint256 _assetsToDeposit, uint256 _assetsToWithdraw, uint256 _timestampAfterDeposit) public {
+    function testFuzzWithdraw(
+        address _receiver,
+        uint256 _assetsToDeposit,
+        uint256 _assetsToWithdraw,
+        uint256 _timestampAfterDeposit
+    ) public {
         vm.assume(_receiver != address(0));
 
-        _assetsToDeposit = bound(_assetsToDeposit, 1, type(uint256).max-1);
+        _assetsToDeposit = bound(_assetsToDeposit, 1, type(uint256).max - 1);
         _assetsToWithdraw = bound(_assetsToWithdraw, 0, _assetsToDeposit);
         _timestampAfterDeposit = bound(_timestampAfterDeposit, 0, 86400);
 
-       // deposit
+        // deposit
         assetTST.mint(user1, _assetsToDeposit);
         _deposit(user1, _assetsToDeposit);
         vm.warp(block.timestamp + _timestampAfterDeposit);
