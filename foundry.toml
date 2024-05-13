@@ -26,8 +26,8 @@ seed = '0x3e8'
 dictionary_weight = 100
 include_storage = true
 include_push_bytes = true
-match_test = "Fuzzing"
-match_contract = "Fuzzing"
+match_test = "Fuzz"
+match_contract = "Fuzz"
 
 [profile.ci_fuzz]
 runs = 50000
@@ -37,8 +37,8 @@ seed = '0x3e8'
 dictionary_weight = 100
 include_storage = true
 include_push_bytes = true
-match_test = "Fuzzing"
-match_contract = "Fuzzing"
+match_test = "Fuzz"
+match_contract = "Fuzz"
 
 [profile.invariant]
 runs = 256
@@ -51,7 +51,6 @@ include_push_bytes = true
 
 [profile.coverage]
 via_ir = true
-no_match_test = "Fuzzing"
 no_match_contract = "Script"
 
 [profile.coverage.optimizer_details]

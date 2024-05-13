@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {FourSixTwoSixAggBase, FourSixTwoSixAgg} from "./FourSixTwoSixAggBase.t.sol";
+import {FourSixTwoSixAggBase, FourSixTwoSixAgg} from "../common/FourSixTwoSixAggBase.t.sol";
 
 contract AddStrategyTest is FourSixTwoSixAggBase {
     function setUp() public virtual override {
