@@ -185,8 +185,8 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         return super.deposit(assets, receiver);
     }
 
-    function mint(uint256 assets, address receiver) public override nonReentrant returns (uint256) {
-        return super.mint(assets, receiver);
+    function mint(uint256 shares, address receiver) public override nonReentrant returns (uint256) {
+        return super.mint(shares, receiver);
     }
 
     function withdraw(uint256 assets, address receiver, address owner)
