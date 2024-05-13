@@ -51,9 +51,9 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
     uint256 public constant INTEREST_SMEAR = 2 weeks;
 
     ESRSlot internal esrSlot;
-    /// @dev total amount of _asset deposited into FourSixTwoSixAgg contract
-    uint256 internal totalAssetsDeposited;
 
+    /// @dev total amount of _asset deposited into FourSixTwoSixAgg contract
+    uint256 public totalAssetsDeposited;
     /// @dev total amount of _asset deposited across all strategies.
     uint256 public totalAllocated;
     /// @dev total amount of allocation points across all strategies including the cash reserve.
