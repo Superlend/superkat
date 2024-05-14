@@ -8,7 +8,6 @@ import {ERC4626, IERC4626} from "openzeppelin-contracts/token/ERC20/extensions/E
 import {EVCUtil, IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {AccessControlEnumerable} from "openzeppelin-contracts/access/AccessControlEnumerable.sol";
 
-
 import {console2} from "forge-std/Test.sol";
 
 // @note Do NOT use with fee on transfer tokens
@@ -249,7 +248,7 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
     function _withdraw(address caller, address receiver, address owner, uint256 assets, uint256 shares)
         internal
         override
-    {        
+    {
         totalAssetsDeposited -= assets;
 
         uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
