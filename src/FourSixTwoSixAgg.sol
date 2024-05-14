@@ -416,7 +416,7 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         }
 
         strategies[strategy].allocationPoints = uint120(newPoints);
-    
+
         totalAllocationPoints = (newPoints > strategyDataCache.allocationPoints)
             ? totalAllocationPointsCache + (newPoints - strategyDataCache.allocationPoints)
             : totalAllocationPointsCache - (strategyDataCache.allocationPoints - newPoints);
