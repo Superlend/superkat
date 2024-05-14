@@ -30,7 +30,7 @@ jobs:
               run: forge fmt --check    
 
             - name: Run foundry tests
-              run: forge test -vv --gas-report --ast 
+              run: FOUNDRY_PROFILE=test forge test -vv --gas-report --ast 
 
             - name: Run foundry fuzzing
               run: FOUNDRY_PROFILE=ci_fuzz forge test -vv

@@ -18,6 +18,11 @@ quote_style = "double"
 number_underscore = "preserve"
 override_spacing = true
 
+[profile.test]
+no_match_test = "Fuzz"
+no_match_contract = "Fuzz"
+gas_reports = ["*"]
+
 [profile.fuzz]
 runs = 1000
 max_local_rejects = 1024
