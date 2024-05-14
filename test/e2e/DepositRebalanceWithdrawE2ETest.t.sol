@@ -158,7 +158,10 @@ contract DepositRebalanceWithdrawE2ETest is FourSixTwoSixAggBase {
             assertEq(eTST.balanceOf(address(fourSixTwoSixAgg)), 0);
             assertEq(fourSixTwoSixAgg.totalAssetsDeposited(), totalAssetsDepositedBefore - amountToWithdraw);
             assertEq(fourSixTwoSixAgg.totalSupply(), aggregatorTotalSupplyBefore - amountToWithdraw);
-            assertEq(assetTST.balanceOf(user1), user1AssetTSTBalanceBefore + fourSixTwoSixAgg.convertToAssets(amountToWithdraw));
+            assertEq(
+                assetTST.balanceOf(user1),
+                user1AssetTSTBalanceBefore + fourSixTwoSixAgg.convertToAssets(amountToWithdraw)
+            );
         }
     }
 }
