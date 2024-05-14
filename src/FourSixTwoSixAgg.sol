@@ -8,6 +8,9 @@ import {ERC4626, IERC4626} from "openzeppelin-contracts/token/ERC20/extensions/E
 import {EVCUtil, IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {AccessControlEnumerable} from "openzeppelin-contracts/access/AccessControlEnumerable.sol";
 
+
+import {console2} from "forge-std/Test.sol";
+
 // @note Do NOT use with fee on transfer tokens
 // @note Do NOT use with rebasing tokens
 // @note Based on https://github.com/euler-xyz/euler-vault-kit/blob/master/src/Synths/EulerSavingsRate.sol
@@ -246,7 +249,7 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
     function _withdraw(address caller, address receiver, address owner, uint256 assets, uint256 shares)
         internal
         override
-    {
+    {        
         totalAssetsDeposited -= assets;
 
         uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
@@ -258,7 +261,8 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
             Strategy memory strategyData = strategies[withdrawalQueue[i]];
             IERC4626 strategy = IERC4626(withdrawalQueue[i]);
 
-            harvest(address(strategy));
+            _harvest(address(strategy));
+            _gulp();
 
             uint256 sharesBalance = strategy.balanceOf(address(this));
             uint256 underlyingBalance = strategy.convertToAssets(sharesBalance);
@@ -285,6 +289,10 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
     }
 
     function gulp() public nonReentrant {
+        _gulp();
+    }
+
+    function _gulp() internal {
         ESRSlot memory esrSlotCache = updateInterestAndReturnESRSlotCache();
         uint256 toGulp = totalAssetsAllocatable() - totalAssetsDeposited - esrSlotCache.interestLeft;
 
@@ -324,10 +332,12 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
             return; //nothing to rebalance as this is the cash reserve
         }
 
-        // Harvest profits, also gulps and updates interest
-        harvest(strategy);
-
         Strategy memory strategyData = strategies[strategy];
+
+        // Harvest profits, also gulps and updates interest
+        _harvest(strategy);
+        _gulp();
+
         uint256 totalAllocationPointsCache = totalAllocationPoints;
         uint256 totalAssetsAllocatableCache = totalAssetsAllocatable();
         uint256 targetAllocation =
@@ -381,12 +391,23 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
     /// @notice Harvest positive yield.
     /// @param strategy address of strategy
     function harvest(address strategy) public nonReentrant {
+        _harvest(strategy);
+
+        _gulp();
+    }
+
+    function _harvest(address strategy) internal {
         Strategy memory strategyData = strategies[strategy];
+
+        if (strategyData.allocated == 0) return;
+
         uint256 sharesBalance = IERC4626(strategy).balanceOf(address(this));
         uint256 underlyingBalance = IERC4626(strategy).convertToAssets(sharesBalance);
 
-        // There's yield!
-        if (underlyingBalance > strategyData.allocated) {
+        if (underlyingBalance == strategyData.allocated) {
+            return;
+        } else if (underlyingBalance > strategyData.allocated) {
+            // There's yield!
             uint256 yield = underlyingBalance - strategyData.allocated;
             strategies[strategy].allocated = uint120(underlyingBalance);
             totalAllocated += yield;
@@ -395,8 +416,6 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
             // TODO handle losses
             revert NegativeYield();
         }
-
-        gulp();
     }
 
     /// @notice Adjust a certain strategy's allocation points.
