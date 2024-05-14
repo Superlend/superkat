@@ -47,28 +47,4 @@ contract AdjustAllocationsPointsTest is FourSixTwoSixAggBase {
         fourSixTwoSixAgg.adjustAllocationPoints(address(eTST2), newAllocationPoints);
         vm.stopPrank();
     }
-
-    // function testAddStrategy_WithInvalidAsset() public {
-    //     uint256 allocationPoints = 500e18;
-
-    //     assertEq(fourSixTwoSixAgg.withdrawalQueueLength(), 0);
-
-    //     vm.expectRevert();
-    //     _addStrategy(manager, address(eTST2), allocationPoints);
-    // }
-
-    // function testAddStrategy_AlreadyAddedStrategy() public {
-    //     uint256 allocationPoints = 500e18;
-    //     uint256 totalAllocationPointsBefore = fourSixTwoSixAgg.totalAllocationPoints();
-
-    //     assertEq(fourSixTwoSixAgg.withdrawalQueueLength(), 0);
-
-    //     _addStrategy(manager, address(eTST), allocationPoints);
-
-    //     assertEq(fourSixTwoSixAgg.totalAllocationPoints(), allocationPoints + totalAllocationPointsBefore);
-    //     assertEq(fourSixTwoSixAgg.withdrawalQueueLength(), 1);
-
-    //     vm.expectRevert();
-    //     _addStrategy(manager, address(eTST), allocationPoints);
-    // }
 }
