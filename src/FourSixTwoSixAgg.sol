@@ -408,21 +408,18 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         nonReentrant
         onlyRole(ALLOCATION_ADJUSTER_ROLE)
     {
-        Strategy memory strategyData = strategies[strategy];
+        Strategy memory strategyDataCache = strategies[strategy];
         uint256 totalAllocationPointsCache = totalAllocationPoints;
 
-        if (strategyData.active = false) {
+        if (!strategyDataCache.active) {
             revert InactiveStrategy();
         }
 
         strategies[strategy].allocationPoints = uint120(newPoints);
-        if (newPoints > strategyData.allocationPoints) {
-            uint256 diff = newPoints - strategyData.allocationPoints;
-            totalAllocationPoints + totalAllocationPointsCache + diff;
-        } else if (newPoints < strategyData.allocationPoints) {
-            uint256 diff = strategyData.allocationPoints - newPoints;
-            totalAllocationPoints = totalAllocationPointsCache - diff;
-        }
+
+        totalAllocationPoints = (newPoints > strategyDataCache.allocationPoints)
+            ? totalAllocationPointsCache + (newPoints - strategyDataCache.allocationPoints)
+            : totalAllocationPointsCache - (strategyDataCache.allocationPoints - newPoints);
     }
 
     /// @notice Swap two strategies indexes in the withdrawal queue.
