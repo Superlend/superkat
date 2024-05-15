@@ -8,6 +8,8 @@ import {ERC4626, IERC4626} from "openzeppelin-contracts/token/ERC20/extensions/E
 import {EVCUtil, IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {AccessControlEnumerable} from "openzeppelin-contracts/access/AccessControlEnumerable.sol";
 
+import {console2} from "forge-std/Test.sol";
+
 // @note Do NOT use with fee on transfer tokens
 // @note Do NOT use with rebasing tokens
 // @note Based on https://github.com/euler-xyz/euler-vault-kit/blob/master/src/Synths/EulerSavingsRate.sol
@@ -250,22 +252,30 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         totalAssetsDeposited -= assets;
 
         uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
-        for (uint256 i = 0; i < withdrawalQueue.length; i++) {
+        for (uint256 i; i < withdrawalQueue.length; i++) {
             if (assetsRetrieved >= assets) {
                 break;
             }
 
-            Strategy memory strategyData = strategies[withdrawalQueue[i]];
             IERC4626 strategy = IERC4626(withdrawalQueue[i]);
 
             _harvest(address(strategy));
             _gulp();
 
+            Strategy memory strategyData = strategies[withdrawalQueue[i]];
+
             uint256 sharesBalance = strategy.balanceOf(address(this));
             uint256 underlyingBalance = strategy.convertToAssets(sharesBalance);
 
+            console2.log("assets", assets);
+            console2.log("assetsRetrieved", assetsRetrieved);
+
             uint256 desiredAssets = assets - assetsRetrieved;
             uint256 withdrawAmount = (underlyingBalance >= desiredAssets) ? desiredAssets : underlyingBalance;
+
+            console2.log("strategyData.allocated", strategyData.allocated);
+            console2.log("withdrawAmount", withdrawAmount);
+            console2.log("totalAllocated", totalAllocated);
 
             // Update allocated assets
             strategies[withdrawalQueue[i]].allocated = strategyData.allocated - uint120(withdrawAmount);
@@ -318,6 +328,12 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         return esrSlotCache;
     }
 
+    function rebalanceMultipleStrategies(address[] calldata _strategies) external nonReentrant {
+        for (uint256 i; i < _strategies.length; ++i) {
+            _rebalance(_strategies[i]);
+        }
+    }
+
     /// @notice Rebalance strategy allocation.
     /// @dev This function will first harvest yield, gulps and update interest.
     /// @dev If current allocation is greater than target allocation, the aggregator will withdraw the excess assets.
@@ -325,15 +341,19 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
     ///         - Try to deposit the delta, if the cash is not sufficient, deposit all the available cash
     ///         - If all the available cash is greater than the max deposit, deposit the max deposit
     function rebalance(address strategy) public nonReentrant {
-        if (strategy == address(0)) {
+        _rebalance(strategy);
+    }
+
+    function _rebalance(address _strategy) internal {
+        if (_strategy == address(0)) {
             return; //nothing to rebalance as this is the cash reserve
         }
 
-        Strategy memory strategyData = strategies[strategy];
-
         // Harvest profits, also gulps and updates interest
-        _harvest(strategy);
+        _harvest(_strategy);
         _gulp();
+
+        Strategy memory strategyData = strategies[_strategy];
 
         uint256 totalAllocationPointsCache = totalAllocationPoints;
         uint256 totalAssetsAllocatableCache = totalAssetsAllocatable();
@@ -345,13 +365,13 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
             // Withdraw
             uint256 toWithdraw = currentAllocation - targetAllocation;
 
-            uint256 maxWithdraw = IERC4626(strategy).maxWithdraw(address(this));
+            uint256 maxWithdraw = IERC4626(_strategy).maxWithdraw(address(this));
             if (toWithdraw > maxWithdraw) {
                 toWithdraw = maxWithdraw;
             }
 
-            IERC4626(strategy).withdraw(toWithdraw, address(this), address(this));
-            strategies[strategy].allocated = uint120(currentAllocation - toWithdraw);
+            IERC4626(_strategy).withdraw(toWithdraw, address(this), address(this));
+            strategies[_strategy].allocated = uint120(currentAllocation - toWithdraw);
             totalAllocated -= toWithdraw;
         } else if (currentAllocation < targetAllocation) {
             // Deposit
@@ -367,7 +387,7 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
                 toDeposit = cashAvailable;
             }
 
-            uint256 maxDeposit = IERC4626(strategy).maxDeposit(address(this));
+            uint256 maxDeposit = IERC4626(_strategy).maxDeposit(address(this));
             if (toDeposit > maxDeposit) {
                 toDeposit = maxDeposit;
             }
@@ -377,9 +397,9 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
             }
 
             // Do required approval (safely) and deposit
-            IERC20(asset()).safeApprove(strategy, toDeposit);
-            IERC4626(strategy).deposit(toDeposit, address(this));
-            strategies[strategy].allocated = uint120(currentAllocation + toDeposit);
+            IERC20(asset()).safeApprove(_strategy, toDeposit);
+            IERC4626(_strategy).deposit(toDeposit, address(this));
+            strategies[_strategy].allocated = uint120(currentAllocation + toDeposit);
             totalAllocated += toDeposit;
         }
     }
