@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {EVaultTestBase, TestERC20, console2, EVault} from "evk/test/unit/evault/EVaultTestBase.t.sol";
+import "evk/test/unit/evault/EVaultTestBase.t.sol";
 import {FourSixTwoSixAgg} from "../../src/FourSixTwoSixAgg.sol";
 
 contract FourSixTwoSixAggBase is EVaultTestBase {

@@ -8,8 +8,6 @@ import {ERC4626, IERC4626} from "openzeppelin-contracts/token/ERC20/extensions/E
 import {EVCUtil, IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {AccessControlEnumerable} from "openzeppelin-contracts/access/AccessControlEnumerable.sol";
 
-import {console2} from "forge-std/Test.sol";
-
 // @note Do NOT use with fee on transfer tokens
 // @note Do NOT use with rebasing tokens
 // @note Based on https://github.com/euler-xyz/euler-vault-kit/blob/master/src/Synths/EulerSavingsRate.sol
@@ -267,15 +265,8 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
             uint256 sharesBalance = strategy.balanceOf(address(this));
             uint256 underlyingBalance = strategy.convertToAssets(sharesBalance);
 
-            console2.log("assets", assets);
-            console2.log("assetsRetrieved", assetsRetrieved);
-
             uint256 desiredAssets = assets - assetsRetrieved;
             uint256 withdrawAmount = (underlyingBalance >= desiredAssets) ? desiredAssets : underlyingBalance;
-
-            console2.log("strategyData.allocated", strategyData.allocated);
-            console2.log("withdrawAmount", withdrawAmount);
-            console2.log("totalAllocated", totalAllocated);
 
             // Update allocated assets
             strategies[withdrawalQueue[i]].allocated = strategyData.allocated - uint120(withdrawAmount);
