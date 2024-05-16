@@ -87,7 +87,6 @@ contract DepositRebalanceWithdrawE2ETest is FourSixTwoSixAggBase {
         // full withdraw, will have to withdraw from strategy as cash reserve is not enough
         {
             amountToWithdraw = amountToDeposit - amountToWithdraw;
-            FourSixTwoSixAgg.Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
             uint256 totalAssetsDepositedBefore = fourSixTwoSixAgg.totalAssetsDeposited();
             uint256 aggregatorTotalSupplyBefore = fourSixTwoSixAgg.totalSupply();
             uint256 user1AssetTSTBalanceBefore = assetTST.balanceOf(user1);
@@ -146,7 +145,6 @@ contract DepositRebalanceWithdrawE2ETest is FourSixTwoSixAggBase {
         // mock an increase of strategy balance by 10%
         uint256 aggrCurrentStrategyShareBalance = eTST.balanceOf(address(fourSixTwoSixAgg));
         uint256 aggrCurrentStrategyUnderlyingBalance = eTST.convertToAssets(aggrCurrentStrategyShareBalance);
-        uint256 aggrNewStrategyShareBalance = aggrCurrentStrategyShareBalance * 11e17 / 1e18;
         uint256 aggrNewStrategyUnderlyingBalance = aggrCurrentStrategyUnderlyingBalance * 11e17 / 1e18;
         uint256 yield = aggrNewStrategyUnderlyingBalance - aggrCurrentStrategyUnderlyingBalance;
         assetTST.mint(address(eTST), yield);
@@ -155,7 +153,6 @@ contract DepositRebalanceWithdrawE2ETest is FourSixTwoSixAggBase {
         // full withdraw, will have to withdraw from strategy as cash reserve is not enough
         {
             uint256 amountToWithdraw = fourSixTwoSixAgg.balanceOf(user1);
-            FourSixTwoSixAgg.Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
             uint256 totalAssetsDepositedBefore = fourSixTwoSixAgg.totalAssetsDeposited();
             uint256 aggregatorTotalSupplyBefore = fourSixTwoSixAgg.totalSupply();
             uint256 user1AssetTSTBalanceBefore = assetTST.balanceOf(user1);
@@ -267,7 +264,6 @@ contract DepositRebalanceWithdrawE2ETest is FourSixTwoSixAggBase {
         // full withdraw, will have to withdraw from strategy as cash reserve is not enough
         {
             uint256 amountToWithdraw = fourSixTwoSixAgg.balanceOf(user1);
-            FourSixTwoSixAgg.Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
             uint256 totalAssetsDepositedBefore = fourSixTwoSixAgg.totalAssetsDeposited();
             uint256 aggregatorTotalSupplyBefore = fourSixTwoSixAgg.totalSupply();
             uint256 user1AssetTSTBalanceBefore = assetTST.balanceOf(user1);
@@ -282,6 +278,77 @@ contract DepositRebalanceWithdrawE2ETest is FourSixTwoSixAggBase {
                 assetTST.balanceOf(user1),
                 user1AssetTSTBalanceBefore + fourSixTwoSixAgg.convertToAssets(amountToWithdraw)
             );
+        }
+    }
+
+    function testSingleStrategy_WithYield_WithInterest() public {
+        uint256 amountToDeposit = 10000e18;
+
+        // deposit into aggregator
+        {
+            uint256 balanceBefore = fourSixTwoSixAgg.balanceOf(user1);
+            uint256 totalSupplyBefore = fourSixTwoSixAgg.totalSupply();
+            uint256 totalAssetsDepositedBefore = fourSixTwoSixAgg.totalAssetsDeposited();
+            uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
+
+            vm.startPrank(user1);
+            assetTST.approve(address(fourSixTwoSixAgg), amountToDeposit);
+            fourSixTwoSixAgg.deposit(amountToDeposit, user1);
+            vm.stopPrank();
+
+            assertEq(fourSixTwoSixAgg.balanceOf(user1), balanceBefore + amountToDeposit);
+            assertEq(fourSixTwoSixAgg.totalSupply(), totalSupplyBefore + amountToDeposit);
+            assertEq(fourSixTwoSixAgg.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
+            assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - amountToDeposit);
+        }
+
+        // rebalance into strategy
+        vm.warp(block.timestamp + 86400);
+        {
+            FourSixTwoSixAgg.Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
+
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), strategyBefore.allocated);
+
+            uint256 expectedStrategyCash = fourSixTwoSixAgg.totalAssetsAllocatable() * strategyBefore.allocationPoints
+                / fourSixTwoSixAgg.totalAllocationPoints();
+
+            vm.prank(user1);
+            fourSixTwoSixAgg.rebalance(address(eTST));
+
+            assertEq(fourSixTwoSixAgg.totalAllocated(), expectedStrategyCash);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), expectedStrategyCash);
+            assertEq((fourSixTwoSixAgg.getStrategy(address(eTST))).allocated, expectedStrategyCash);
+        }
+
+        vm.warp(block.timestamp + 86400);
+        // mock an increase of strategy balance by 10%
+        uint256 aggrCurrentStrategyShareBalance = eTST.balanceOf(address(fourSixTwoSixAgg));
+        uint256 aggrCurrentStrategyUnderlyingBalance = eTST.convertToAssets(aggrCurrentStrategyShareBalance);
+        uint256 aggrNewStrategyUnderlyingBalance = aggrCurrentStrategyUnderlyingBalance * 11e17 / 1e18;
+        uint256 yield = aggrNewStrategyUnderlyingBalance - aggrCurrentStrategyUnderlyingBalance;
+        assetTST.mint(address(eTST), yield);
+        eTST.skim(type(uint256).max, address(fourSixTwoSixAgg));
+
+        // harvest
+        vm.prank(user1);
+        fourSixTwoSixAgg.harvest(address(eTST));
+        vm.warp(block.timestamp + 2 weeks);
+
+        // full withdraw, will have to withdraw from strategy as cash reserve is not enough
+        {
+            uint256 amountToWithdraw = fourSixTwoSixAgg.balanceOf(user1);
+            uint256 totalAssetsDepositedBefore = fourSixTwoSixAgg.totalAssetsDeposited();
+            uint256 aggregatorTotalSupplyBefore = fourSixTwoSixAgg.totalSupply();
+            uint256 user1AssetTSTBalanceBefore = assetTST.balanceOf(user1);
+
+            vm.prank(user1);
+            fourSixTwoSixAgg.redeem(amountToWithdraw, user1, user1);
+
+            // all yield is distributed
+            assertApproxEqAbs(eTST.balanceOf(address(fourSixTwoSixAgg)), 0, 1);
+            assertApproxEqAbs(fourSixTwoSixAgg.totalAssetsDeposited(), totalAssetsDepositedBefore - amountToWithdraw, 1);
+            assertEq(fourSixTwoSixAgg.totalSupply(), aggregatorTotalSupplyBefore - amountToWithdraw);
+            assertApproxEqAbs(assetTST.balanceOf(user1), user1AssetTSTBalanceBefore + amountToDeposit + yield, 1);
         }
     }
 }
