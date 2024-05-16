@@ -250,15 +250,17 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         totalAssetsDeposited -= assets;
 
         uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
-        for (uint256 i = 0; i < withdrawalQueue.length; i++) {
+        for (uint256 i; i < withdrawalQueue.length; i++) {
             if (assetsRetrieved >= assets) {
                 break;
             }
 
-            Strategy memory strategyData = strategies[withdrawalQueue[i]];
             IERC4626 strategy = IERC4626(withdrawalQueue[i]);
 
-            harvest(address(strategy));
+            _harvest(address(strategy));
+            _gulp();
+
+            Strategy memory strategyData = strategies[withdrawalQueue[i]];
 
             uint256 sharesBalance = strategy.balanceOf(address(this));
             uint256 underlyingBalance = strategy.convertToAssets(sharesBalance);
@@ -285,6 +287,10 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
     }
 
     function gulp() public nonReentrant {
+        _gulp();
+    }
+
+    function _gulp() internal {
         ESRSlot memory esrSlotCache = updateInterestAndReturnESRSlotCache();
         uint256 toGulp = totalAssetsAllocatable() - totalAssetsDeposited - esrSlotCache.interestLeft;
 
@@ -313,6 +319,12 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         return esrSlotCache;
     }
 
+    function rebalanceMultipleStrategies(address[] calldata _strategies) external nonReentrant {
+        for (uint256 i; i < _strategies.length; ++i) {
+            _rebalance(_strategies[i]);
+        }
+    }
+
     /// @notice Rebalance strategy allocation.
     /// @dev This function will first harvest yield, gulps and update interest.
     /// @dev If current allocation is greater than target allocation, the aggregator will withdraw the excess assets.
@@ -320,14 +332,20 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
     ///         - Try to deposit the delta, if the cash is not sufficient, deposit all the available cash
     ///         - If all the available cash is greater than the max deposit, deposit the max deposit
     function rebalance(address strategy) public nonReentrant {
-        if (strategy == address(0)) {
+        _rebalance(strategy);
+    }
+
+    function _rebalance(address _strategy) internal {
+        if (_strategy == address(0)) {
             return; //nothing to rebalance as this is the cash reserve
         }
 
         // Harvest profits, also gulps and updates interest
-        harvest(strategy);
+        _harvest(_strategy);
+        _gulp();
 
-        Strategy memory strategyData = strategies[strategy];
+        Strategy memory strategyData = strategies[_strategy];
+
         uint256 totalAllocationPointsCache = totalAllocationPoints;
         uint256 totalAssetsAllocatableCache = totalAssetsAllocatable();
         uint256 targetAllocation =
@@ -338,13 +356,13 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
             // Withdraw
             uint256 toWithdraw = currentAllocation - targetAllocation;
 
-            uint256 maxWithdraw = IERC4626(strategy).maxWithdraw(address(this));
+            uint256 maxWithdraw = IERC4626(_strategy).maxWithdraw(address(this));
             if (toWithdraw > maxWithdraw) {
                 toWithdraw = maxWithdraw;
             }
 
-            IERC4626(strategy).withdraw(toWithdraw, address(this), address(this));
-            strategies[strategy].allocated = uint120(currentAllocation - toWithdraw);
+            IERC4626(_strategy).withdraw(toWithdraw, address(this), address(this));
+            strategies[_strategy].allocated = uint120(currentAllocation - toWithdraw);
             totalAllocated -= toWithdraw;
         } else if (currentAllocation < targetAllocation) {
             // Deposit
@@ -360,7 +378,7 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
                 toDeposit = cashAvailable;
             }
 
-            uint256 maxDeposit = IERC4626(strategy).maxDeposit(address(this));
+            uint256 maxDeposit = IERC4626(_strategy).maxDeposit(address(this));
             if (toDeposit > maxDeposit) {
                 toDeposit = maxDeposit;
             }
@@ -370,23 +388,41 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
             }
 
             // Do required approval (safely) and deposit
-            IERC20(asset()).safeApprove(strategy, toDeposit);
-            IERC4626(strategy).deposit(toDeposit, address(this));
-            strategies[strategy].allocated = uint120(currentAllocation + toDeposit);
+            IERC20(asset()).safeApprove(_strategy, toDeposit);
+            IERC4626(_strategy).deposit(toDeposit, address(this));
+            strategies[_strategy].allocated = uint120(currentAllocation + toDeposit);
             totalAllocated += toDeposit;
         }
     }
 
-    /// ToDo: possibly allow batch harvest
     /// @notice Harvest positive yield.
     /// @param strategy address of strategy
     function harvest(address strategy) public nonReentrant {
+        _harvest(strategy);
+
+        _gulp();
+    }
+
+    function harvestMultipleStrategies(address[] calldata _strategies) external nonReentrant {
+        for (uint256 i; i < _strategies.length; ++i) {
+            _harvest(_strategies[i]);
+
+            _gulp();
+        }
+    }
+
+    function _harvest(address strategy) internal {
         Strategy memory strategyData = strategies[strategy];
+
+        if (strategyData.allocated == 0) return;
+
         uint256 sharesBalance = IERC4626(strategy).balanceOf(address(this));
         uint256 underlyingBalance = IERC4626(strategy).convertToAssets(sharesBalance);
 
-        // There's yield!
-        if (underlyingBalance > strategyData.allocated) {
+        if (underlyingBalance == strategyData.allocated) {
+            return;
+        } else if (underlyingBalance > strategyData.allocated) {
+            // There's yield!
             uint256 yield = underlyingBalance - strategyData.allocated;
             strategies[strategy].allocated = uint120(underlyingBalance);
             totalAllocated += yield;
@@ -395,8 +431,6 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
             // TODO handle losses
             revert NegativeYield();
         }
-
-        gulp();
     }
 
     /// @notice Adjust a certain strategy's allocation points.
