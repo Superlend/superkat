@@ -395,13 +395,20 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         }
     }
 
-    /// ToDo: possibly allow batch harvest
     /// @notice Harvest positive yield.
     /// @param strategy address of strategy
     function harvest(address strategy) public nonReentrant {
         _harvest(strategy);
 
         _gulp();
+    }
+
+    function harvestMultipleStrategies(address[] calldata _strategies) external nonReentrant {
+        for (uint256 i; i < _strategies.length; ++i) {
+            _harvest(_strategies[i]);
+
+            _gulp();
+        }
     }
 
     function _harvest(address strategy) internal {
