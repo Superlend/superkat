@@ -8,6 +8,8 @@ import {ERC4626, IERC4626} from "openzeppelin-contracts/token/ERC20/extensions/E
 import {EVCUtil, IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {AccessControlEnumerable} from "openzeppelin-contracts/access/AccessControlEnumerable.sol";
 
+import {console2} from "forge-std/Test.sol";
+
 // @note Do NOT use with fee on transfer tokens
 // @note Do NOT use with rebasing tokens
 // @note Based on https://github.com/euler-xyz/euler-vault-kit/blob/master/src/Synths/EulerSavingsRate.sol
@@ -516,14 +518,17 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
 
         // remove from withdrawalQueue
         uint256 lastStrategyIndex = withdrawalQueue.length - 1;
-        for (uint256 i; i <= lastStrategyIndex; ++i) {
+
+        console2.log("lastStrategyIndex", lastStrategyIndex);
+
+        for (uint256 i = 0; i <= lastStrategyIndex; i++) {
             if ((withdrawalQueue[i] == strategy) && (i != lastStrategyIndex)) {
                 (withdrawalQueue[i], withdrawalQueue[lastStrategyIndex]) =
                     (withdrawalQueue[lastStrategyIndex], withdrawalQueue[i]);
             }
-
-            withdrawalQueue.pop();
         }
+
+        withdrawalQueue.pop();
     }
 
     /// @notice Return the accrued interest
