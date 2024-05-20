@@ -473,9 +473,7 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
             revert SameIndexes();
         }
 
-        address temp = withdrawalQueue[index1];
-        withdrawalQueue[index1] = withdrawalQueue[index2];
-        withdrawalQueue[index2] = temp;
+        (withdrawalQueue[index1], withdrawalQueue[index2]) = (withdrawalQueue[index2], withdrawalQueue[index1]);
     }
 
     /// @notice Add new strategy with it's allocation points.

@@ -1,19 +1,41 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {FourSixTwoSixAggBase, FourSixTwoSixAgg} from "../common/FourSixTwoSixAggBase.t.sol";
+import {FourSixTwoSixAggBase, FourSixTwoSixAgg, IEVault} from "../common/FourSixTwoSixAggBase.t.sol";
 
 contract RemoveStrategyTest is FourSixTwoSixAggBase {
     uint256 strategyAllocationPoints;
 
+    IEVault anotherStrategy;
+
     function setUp() public virtual override {
         super.setUp();
 
-        strategyAllocationPoints = type(uint120).max;
+        strategyAllocationPoints = 1000e18;
         _addStrategy(manager, address(eTST), strategyAllocationPoints);
     }
 
     function testRemoveStrategy() public {
+        uint256 totalAllocationPointsBefore = fourSixTwoSixAgg.totalAllocationPoints();
+        uint256 withdrawalQueueLengthBefore = fourSixTwoSixAgg.withdrawalQueueLength();
+
+        vm.prank(manager);
+        fourSixTwoSixAgg.removeStrategy(address(eTST));
+
+        FourSixTwoSixAgg.Strategy memory strategyAfter = fourSixTwoSixAgg.getStrategy(address(eTST));
+
+        assertEq(strategyAfter.active, false);
+        assertEq(strategyAfter.allocationPoints, 0);
+        assertEq(fourSixTwoSixAgg.totalAllocationPoints(), totalAllocationPointsBefore - strategyAllocationPoints);
+        assertEq(fourSixTwoSixAgg.withdrawalQueueLength(), withdrawalQueueLengthBefore - 1);
+    }
+
+    function testRemoveStrategyWithMultipleStrategies() public {
+        anotherStrategy = IEVault(
+            factory.createProxy(address(0), true, abi.encodePacked(address(assetTST), address(oracle), unitOfAccount))
+        );
+        _addStrategy(manager, address(anotherStrategy), strategyAllocationPoints);
+
         uint256 totalAllocationPointsBefore = fourSixTwoSixAgg.totalAllocationPoints();
         uint256 withdrawalQueueLengthBefore = fourSixTwoSixAgg.withdrawalQueueLength();
 
