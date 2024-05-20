@@ -145,7 +145,7 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
     ///      If current allocation is less than target allocation, the aggregator will:
     ///         - Try to deposit the delta, if the cash is not sufficient, deposit all the available cash
     ///         - If all the available cash is greater than the max deposit, deposit the max deposit
-    function rebalance(address strategy) public nonReentrant {
+    function rebalance(address strategy) external nonReentrant {
         _rebalance(strategy);
     }
 
@@ -263,6 +263,10 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         withdrawalQueue.pop();
     }
 
+    function gulp() external nonReentrant {
+        _gulp();
+    }
+
     /// @notice Get strategy params.
     /// @param _strategy strategy's address
     /// @return Strategy struct
@@ -274,6 +278,18 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
     /// @return uint256 length
     function withdrawalQueueLength() external view returns (uint256) {
         return withdrawalQueue.length;
+    }
+
+    /// @notice Return the ESRSlot struct
+    /// @return ESRSlot struct
+    function getESRSlot() external view returns (ESRSlot memory) {
+        return esrSlot;
+    }
+
+    /// @notice Return the accrued interest
+    /// @return uint256 accrued interest
+    function interestAccrued() external view returns (uint256) {
+        return interestAccruedFromCache(esrSlot);
     }
 
     /// @notice Transfers a certain amount of tokens to a recipient.
@@ -343,10 +359,6 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         return super.redeem(shares, receiver, owner);
     }
 
-    function gulp() public nonReentrant {
-        _gulp();
-    }
-
     function updateInterestAndReturnESRSlotCache() public returns (ESRSlot memory) {
         ESRSlot memory esrSlotCache = esrSlot;
         uint256 accruedInterest = interestAccruedFromCache(esrSlotCache);
@@ -365,7 +377,7 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
     /// @notice Return the total amount of assets deposited, plus the accrued interest.
     /// @return uint256 total amount
     function totalAssets() public view override returns (uint256) {
-        return totalAssetsDeposited + interestAccrued();
+        return totalAssetsDeposited + interestAccruedFromCache(esrSlot);
     }
 
     /// @notice get the total assets allocatable
@@ -373,18 +385,6 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
     /// @return uint256 total assets
     function totalAssetsAllocatable() public view returns (uint256) {
         return IERC20(asset()).balanceOf(address(this)) + totalAllocated;
-    }
-
-    /// @notice Return the accrued interest
-    /// @return uint256 accrued interest
-    function interestAccrued() public view returns (uint256) {
-        return interestAccruedFromCache(esrSlot);
-    }
-
-    /// @notice Return the ESRSlot struct
-    /// @return ESRSlot struct
-    function getESRSlot() public view returns (ESRSlot memory) {
-        return esrSlot;
     }
 
     /// @dev Increate the total assets deposited, and call IERC4626._deposit()
