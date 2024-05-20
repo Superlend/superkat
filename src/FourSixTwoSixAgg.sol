@@ -139,6 +139,134 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         _setRoleAdmin(STRATEGY_REMOVER_ROLE, STRATEGY_REMOVER_ROLE_ADMIN_ROLE);
     }
 
+    /// @notice Rebalance strategy allocation.
+    /// @dev This function will first harvest yield, gulps and update interest.
+    /// @dev If current allocation is greater than target allocation, the aggregator will withdraw the excess assets.
+    ///      If current allocation is less than target allocation, the aggregator will:
+    ///         - Try to deposit the delta, if the cash is not sufficient, deposit all the available cash
+    ///         - If all the available cash is greater than the max deposit, deposit the max deposit
+    function rebalance(address strategy) external nonReentrant {
+        _rebalance(strategy);
+    }
+
+    function rebalanceMultipleStrategies(address[] calldata _strategies) external nonReentrant {
+        for (uint256 i; i < _strategies.length; ++i) {
+            _rebalance(_strategies[i]);
+        }
+    }
+
+    /// @notice Harvest positive yield.
+    /// @param strategy address of strategy
+    function harvest(address strategy) external nonReentrant {
+        _harvest(strategy);
+
+        _gulp();
+    }
+
+    function harvestMultipleStrategies(address[] calldata _strategies) external nonReentrant {
+        for (uint256 i; i < _strategies.length; ++i) {
+            _harvest(_strategies[i]);
+
+            _gulp();
+        }
+    }
+
+    /// @notice Adjust a certain strategy's allocation points.
+    /// @dev Can only be called by an address that have the ALLOCATION_ADJUSTER_ROLE
+    /// @param strategy address of strategy
+    /// @param newPoints new strategy's points
+    function adjustAllocationPoints(address strategy, uint256 newPoints)
+        external
+        nonReentrant
+        onlyRole(ALLOCATION_ADJUSTER_ROLE)
+    {
+        Strategy memory strategyDataCache = strategies[strategy];
+        uint256 totalAllocationPointsCache = totalAllocationPoints;
+
+        if (!strategyDataCache.active) {
+            revert InactiveStrategy();
+        }
+
+        strategies[strategy].allocationPoints = uint120(newPoints);
+
+        totalAllocationPoints = (newPoints > strategyDataCache.allocationPoints)
+            ? totalAllocationPointsCache + (newPoints - strategyDataCache.allocationPoints)
+            : totalAllocationPointsCache - (strategyDataCache.allocationPoints - newPoints);
+    }
+
+    /// @notice Swap two strategies indexes in the withdrawal queue.
+    /// @dev Can only be called by an address that have the WITHDRAW_QUEUE_REORDERER_ROLE.
+    /// @param index1 index of first strategy
+    /// @param index2 index of second strategy
+    function reorderWithdrawalQueue(uint8 index1, uint8 index2)
+        external
+        nonReentrant
+        onlyRole(WITHDRAW_QUEUE_REORDERER_ROLE)
+    {
+        if (index1 >= withdrawalQueue.length || index2 >= withdrawalQueue.length) {
+            revert OutOfBounds();
+        }
+
+        if (index1 == index2) {
+            revert SameIndexes();
+        }
+
+        (withdrawalQueue[index1], withdrawalQueue[index2]) = (withdrawalQueue[index2], withdrawalQueue[index1]);
+    }
+
+    /// @notice Add new strategy with it's allocation points.
+    /// @dev Can only be called by an address that have STRATEGY_ADDER_ROLE.
+    /// @param strategy Address of the strategy
+    /// @param allocationPoints Strategy's allocation points
+    function addStrategy(address strategy, uint256 allocationPoints)
+        external
+        nonReentrant
+        onlyRole(STRATEGY_ADDER_ROLE)
+    {
+        if (IERC4626(strategy).asset() != asset()) {
+            revert InvalidStrategyAsset();
+        }
+
+        if (strategies[strategy].active) {
+            revert StrategyAlreadyExist();
+        }
+
+        strategies[strategy] = Strategy({allocated: 0, allocationPoints: uint120(allocationPoints), active: true});
+
+        totalAllocationPoints += allocationPoints;
+        withdrawalQueue.push(strategy);
+    }
+
+    /// @notice Remove strategy and set its allocation points to zero.
+    /// @dev This function does not pull funds, `harvest()` needs to be called to withdraw
+    /// @dev Can only be called by an address that have the STRATEGY_REMOVER_ROLE
+    /// @param strategy Address of the strategy
+    function removeStrategy(address strategy) external nonReentrant onlyRole(STRATEGY_REMOVER_ROLE) {
+        if (!strategies[strategy].active) {
+            revert AlreadyRemoved();
+        }
+
+        strategies[strategy].active = false;
+        totalAllocationPoints -= strategies[strategy].allocationPoints;
+        strategies[strategy].allocationPoints = 0;
+
+        // remove from withdrawalQueue
+        uint256 lastStrategyIndex = withdrawalQueue.length - 1;
+
+        for (uint256 i = 0; i <= lastStrategyIndex; i++) {
+            if ((withdrawalQueue[i] == strategy) && (i != lastStrategyIndex)) {
+                (withdrawalQueue[i], withdrawalQueue[lastStrategyIndex]) =
+                    (withdrawalQueue[lastStrategyIndex], withdrawalQueue[i]);
+            }
+        }
+
+        withdrawalQueue.pop();
+    }
+
+    function gulp() external nonReentrant {
+        _gulp();
+    }
+
     /// @notice Get strategy params.
     /// @param _strategy strategy's address
     /// @return Strategy struct
@@ -152,17 +280,16 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         return withdrawalQueue.length;
     }
 
-    /// @notice Return the total amount of assets deposited, plus the accrued interest.
-    /// @return uint256 total amount
-    function totalAssets() public view override returns (uint256) {
-        return totalAssetsDeposited + interestAccrued();
+    /// @notice Return the ESRSlot struct
+    /// @return ESRSlot struct
+    function getESRSlot() external view returns (ESRSlot memory) {
+        return esrSlot;
     }
 
-    /// @notice get the total assets allocatable
-    /// @dev the total assets allocatable is the amount of assets deposited into the aggregator + assets already deposited into strategies
-    /// @return uint256 total assets
-    function totalAssetsAllocatable() public view returns (uint256) {
-        return IERC20(asset()).balanceOf(address(this)) + totalAllocated;
+    /// @notice Return the accrued interest
+    /// @return uint256 accrued interest
+    function interestAccrued() external view returns (uint256) {
+        return interestAccruedFromCache(esrSlot);
     }
 
     /// @notice Transfers a certain amount of tokens to a recipient.
@@ -232,6 +359,34 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         return super.redeem(shares, receiver, owner);
     }
 
+    function updateInterestAndReturnESRSlotCache() public returns (ESRSlot memory) {
+        ESRSlot memory esrSlotCache = esrSlot;
+        uint256 accruedInterest = interestAccruedFromCache(esrSlotCache);
+
+        // it's safe to down-cast because the accrued interest is a fraction of interest left
+        esrSlotCache.interestLeft -= uint168(accruedInterest);
+        esrSlotCache.lastInterestUpdate = uint40(block.timestamp);
+        // write esrSlotCache back to storage in a single SSTORE
+        esrSlot = esrSlotCache;
+        // Move interest accrued to totalAssetsDeposited
+        totalAssetsDeposited += accruedInterest;
+
+        return esrSlotCache;
+    }
+
+    /// @notice Return the total amount of assets deposited, plus the accrued interest.
+    /// @return uint256 total amount
+    function totalAssets() public view override returns (uint256) {
+        return totalAssetsDeposited + interestAccruedFromCache(esrSlot);
+    }
+
+    /// @notice get the total assets allocatable
+    /// @dev the total assets allocatable is the amount of assets deposited into the aggregator + assets already deposited into strategies
+    /// @return uint256 total assets
+    function totalAssetsAllocatable() public view returns (uint256) {
+        return IERC20(asset()).balanceOf(address(this)) + totalAllocated;
+    }
+
     /// @dev Increate the total assets deposited, and call IERC4626._deposit()
     /// @dev See {IERC4626-_deposit}.
     function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal override {
@@ -286,10 +441,6 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         super._withdraw(caller, receiver, owner, assets, shares);
     }
 
-    function gulp() public nonReentrant {
-        _gulp();
-    }
-
     function _gulp() internal {
         ESRSlot memory esrSlotCache = updateInterestAndReturnESRSlotCache();
         uint256 toGulp = totalAssetsAllocatable() - totalAssetsDeposited - esrSlotCache.interestLeft;
@@ -302,37 +453,6 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
 
         // write esrSlotCache back to storage in a single SSTORE
         esrSlot = esrSlotCache;
-    }
-
-    function updateInterestAndReturnESRSlotCache() public returns (ESRSlot memory) {
-        ESRSlot memory esrSlotCache = esrSlot;
-        uint256 accruedInterest = interestAccruedFromCache(esrSlotCache);
-
-        // it's safe to down-cast because the accrued interest is a fraction of interest left
-        esrSlotCache.interestLeft -= uint168(accruedInterest);
-        esrSlotCache.lastInterestUpdate = uint40(block.timestamp);
-        // write esrSlotCache back to storage in a single SSTORE
-        esrSlot = esrSlotCache;
-        // Move interest accrued to totalAssetsDeposited
-        totalAssetsDeposited += accruedInterest;
-
-        return esrSlotCache;
-    }
-
-    function rebalanceMultipleStrategies(address[] calldata _strategies) external nonReentrant {
-        for (uint256 i; i < _strategies.length; ++i) {
-            _rebalance(_strategies[i]);
-        }
-    }
-
-    /// @notice Rebalance strategy allocation.
-    /// @dev This function will first harvest yield, gulps and update interest.
-    /// @dev If current allocation is greater than target allocation, the aggregator will withdraw the excess assets.
-    ///      If current allocation is less than target allocation, the aggregator will:
-    ///         - Try to deposit the delta, if the cash is not sufficient, deposit all the available cash
-    ///         - If all the available cash is greater than the max deposit, deposit the max deposit
-    function rebalance(address strategy) public nonReentrant {
-        _rebalance(strategy);
     }
 
     function _rebalance(address _strategy) internal {
@@ -395,22 +515,6 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         }
     }
 
-    /// @notice Harvest positive yield.
-    /// @param strategy address of strategy
-    function harvest(address strategy) public nonReentrant {
-        _harvest(strategy);
-
-        _gulp();
-    }
-
-    function harvestMultipleStrategies(address[] calldata _strategies) external nonReentrant {
-        for (uint256 i; i < _strategies.length; ++i) {
-            _harvest(_strategies[i]);
-
-            _gulp();
-        }
-    }
-
     function _harvest(address strategy) internal {
         Strategy memory strategyData = strategies[strategy];
 
@@ -433,105 +537,6 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         }
     }
 
-    /// @notice Adjust a certain strategy's allocation points.
-    /// @dev Can only be called by an address that have the ALLOCATION_ADJUSTER_ROLE
-    /// @param strategy address of strategy
-    /// @param newPoints new strategy's points
-    function adjustAllocationPoints(address strategy, uint256 newPoints)
-        public
-        nonReentrant
-        onlyRole(ALLOCATION_ADJUSTER_ROLE)
-    {
-        Strategy memory strategyDataCache = strategies[strategy];
-        uint256 totalAllocationPointsCache = totalAllocationPoints;
-
-        if (!strategyDataCache.active) {
-            revert InactiveStrategy();
-        }
-
-        strategies[strategy].allocationPoints = uint120(newPoints);
-
-        totalAllocationPoints = (newPoints > strategyDataCache.allocationPoints)
-            ? totalAllocationPointsCache + (newPoints - strategyDataCache.allocationPoints)
-            : totalAllocationPointsCache - (strategyDataCache.allocationPoints - newPoints);
-    }
-
-    /// @notice Swap two strategies indexes in the withdrawal queue.
-    /// @dev Can only be called by an address that have the WITHDRAW_QUEUE_REORDERER_ROLE.
-    /// @param index1 index of first strategy
-    /// @param index2 index of second strategy
-    function reorderWithdrawalQueue(uint8 index1, uint8 index2)
-        public
-        nonReentrant
-        onlyRole(WITHDRAW_QUEUE_REORDERER_ROLE)
-    {
-        if (index1 >= withdrawalQueue.length || index2 >= withdrawalQueue.length) {
-            revert OutOfBounds();
-        }
-
-        if (index1 == index2) {
-            revert SameIndexes();
-        }
-
-        address temp = withdrawalQueue[index1];
-        withdrawalQueue[index1] = withdrawalQueue[index2];
-        withdrawalQueue[index2] = temp;
-    }
-
-    /// @notice Add new strategy with it's allocation points.
-    /// @dev Can only be called by an address that have STRATEGY_ADDER_ROLE.
-    /// @param strategy Address of the strategy
-    /// @param allocationPoints Strategy's allocation points
-    function addStrategy(address strategy, uint256 allocationPoints)
-        public
-        nonReentrant
-        onlyRole(STRATEGY_ADDER_ROLE)
-    {
-        if (IERC4626(strategy).asset() != asset()) {
-            revert InvalidStrategyAsset();
-        }
-
-        if (strategies[strategy].active) {
-            revert StrategyAlreadyExist();
-        }
-
-        strategies[strategy] = Strategy({allocated: 0, allocationPoints: uint120(allocationPoints), active: true});
-
-        totalAllocationPoints += allocationPoints;
-        withdrawalQueue.push(strategy);
-    }
-
-    /// @notice Remove strategy and set its allocation points to zero.
-    /// @dev This function does not pull funds, `harvest()` needs to be called to withdraw
-    /// @dev Can only be called by an address that have the STRATEGY_REMOVER_ROLE
-    /// @param strategy Address of the strategy
-    function removeStrategy(address strategy) public nonReentrant onlyRole(STRATEGY_REMOVER_ROLE) {
-        if (!strategies[strategy].active) {
-            revert AlreadyRemoved();
-        }
-
-        strategies[strategy].active = false;
-        totalAllocationPoints -= strategies[strategy].allocationPoints;
-        strategies[strategy].allocationPoints = 0;
-
-        // remove from withdrawalQueue
-        uint256 lastStrategyIndex = withdrawalQueue.length - 1;
-        for (uint256 i; i <= lastStrategyIndex; ++i) {
-            if ((withdrawalQueue[i] == strategy) && (i != lastStrategyIndex)) {
-                (withdrawalQueue[i], withdrawalQueue[lastStrategyIndex]) =
-                    (withdrawalQueue[lastStrategyIndex], withdrawalQueue[i]);
-            }
-
-            withdrawalQueue.pop();
-        }
-    }
-
-    /// @notice Return the accrued interest
-    /// @return uint256 accrued interest
-    function interestAccrued() public view returns (uint256) {
-        return interestAccruedFromCache(esrSlot);
-    }
-
     /// @dev Get accrued interest without updating it.
     /// @param esrSlotCache Cached esrSlot
     /// @return uint256 accrued interest
@@ -551,12 +556,6 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         uint256 timePassed = block.timestamp - esrSlotCache.lastInterestUpdate;
 
         return esrSlotCache.interestLeft * timePassed / totalDuration;
-    }
-
-    /// @notice Return the ESRSlot struct
-    /// @return ESRSlot struct
-    function getESRSlot() public view returns (ESRSlot memory) {
-        return esrSlot;
     }
 
     /// @notice Retrieves the message sender in the context of the EVC.

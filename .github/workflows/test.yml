@@ -35,5 +35,5 @@ jobs:
             - name: Run foundry fuzzing
               run: FOUNDRY_PROFILE=ci_fuzz forge test -vv
 
-            # - name: Run foundry coverage
-            #   run: FOUNDRY_PROFILE=coverage forge coverage --report summary
+            - name: Run foundry coverage
+              run: FOUNDRY_PROFILE=coverage forge coverage --report summary
