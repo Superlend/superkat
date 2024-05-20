@@ -173,8 +173,14 @@ contract DepositRebalanceHarvestWithdrawE2ETest is FourSixTwoSixAggBase {
     function testMultipleStrategy_WithYield() public {
         IEVault eTSTsecondary;
         {
-            eTSTsecondary = IEVault(coreProductLine.createVault(address(assetTST), address(oracle), unitOfAccount));
+            eTSTsecondary = IEVault(
+                factory.createProxy(
+                    address(0), true, abi.encodePacked(address(assetTST), address(oracle), unitOfAccount)
+                )
+            );
             eTSTsecondary.setInterestRateModel(address(new IRMTestDefault()));
+            eTSTsecondary.setMaxLiquidationDiscount(0.2e4);
+            eTSTsecondary.setFeeReceiver(feeReceiver);
 
             uint256 initialStrategyAllocationPoints = 1000e18;
             _addStrategy(manager, address(eTSTsecondary), initialStrategyAllocationPoints);
@@ -355,8 +361,14 @@ contract DepositRebalanceHarvestWithdrawE2ETest is FourSixTwoSixAggBase {
     function testMultipleStrategy_WithYield_WithInterest() public {
         IEVault eTSTsecondary;
         {
-            eTSTsecondary = IEVault(coreProductLine.createVault(address(assetTST), address(oracle), unitOfAccount));
+            eTSTsecondary = IEVault(
+                factory.createProxy(
+                    address(0), true, abi.encodePacked(address(assetTST), address(oracle), unitOfAccount)
+                )
+            );
             eTSTsecondary.setInterestRateModel(address(new IRMTestDefault()));
+            eTSTsecondary.setMaxLiquidationDiscount(0.2e4);
+            eTSTsecondary.setFeeReceiver(feeReceiver);
 
             uint256 initialStrategyAllocationPoints = 1000e18;
             _addStrategy(manager, address(eTSTsecondary), initialStrategyAllocationPoints);
@@ -480,8 +492,14 @@ contract DepositRebalanceHarvestWithdrawE2ETest is FourSixTwoSixAggBase {
     function testWithdraw_NotEnoughAssets() public {
         IEVault eTSTsecondary;
         {
-            eTSTsecondary = IEVault(coreProductLine.createVault(address(assetTST), address(oracle), unitOfAccount));
+            eTSTsecondary = IEVault(
+                factory.createProxy(
+                    address(0), true, abi.encodePacked(address(assetTST), address(oracle), unitOfAccount)
+                )
+            );
             eTSTsecondary.setInterestRateModel(address(new IRMTestDefault()));
+            eTSTsecondary.setMaxLiquidationDiscount(0.2e4);
+            eTSTsecondary.setFeeReceiver(feeReceiver);
 
             uint256 initialStrategyAllocationPoints = 1000e18;
             _addStrategy(manager, address(eTSTsecondary), initialStrategyAllocationPoints);
