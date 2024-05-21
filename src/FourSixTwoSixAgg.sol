@@ -7,6 +7,7 @@ import {SafeERC20} from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol"
 import {ERC4626, IERC4626} from "openzeppelin-contracts/token/ERC20/extensions/ERC4626.sol";
 import {EVCUtil, IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {AccessControlEnumerable} from "openzeppelin-contracts/access/AccessControlEnumerable.sol";
+import {BalanceForwarder} from "./BalanceForwarder.sol";
 
 // @note Do NOT use with fee on transfer tokens
 // @note Do NOT use with rebasing tokens
@@ -14,7 +15,7 @@ import {AccessControlEnumerable} from "openzeppelin-contracts/access/AccessContr
 // @note expired by Yearn v3 ❤️
 // TODO addons for reward stream support
 // TODO custom withdraw queue support
-contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
+contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEnumerable {
     using SafeERC20 for IERC20;
 
     error Reentrancy();
@@ -106,13 +107,14 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
     /// @param _initialStrategiesAllocationPoints An array of initial strategies allocation points
     constructor(
         IEVC _evc,
+        address _balanceTracker,
         address _asset,
         string memory _name,
         string memory _symbol,
         uint256 _initialCashAllocationPoints,
         address[] memory _initialStrategies,
         uint256[] memory _initialStrategiesAllocationPoints
-    ) EVCUtil(address(_evc)) ERC4626(IERC20(_asset)) ERC20(_name, _symbol) {
+    ) BalanceForwarder(_balanceTracker) EVCUtil(address(_evc)) ERC4626(IERC20(_asset)) ERC20(_name, _symbol) {
         esrSlot.locked = REENTRANCYLOCK__UNLOCKED;
 
         if (_initialStrategies.length != _initialStrategiesAllocationPoints.length) revert ArrayLengthMismatch();
