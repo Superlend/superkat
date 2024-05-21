@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {IBalanceForwarder} from "./interface/IBalanceForwarder.sol";
+import {IBalanceTracker} from "./interface/IBalanceTracker.sol";
 
 /// @title BalanceForwarderModule
 /// @custom:security-contact security@euler.xyz
@@ -14,9 +15,22 @@ abstract contract BalanceForwarder is IBalanceForwarder {
 
     mapping(address => bool) internal isBalanceForwarderEnabled;
 
+    event EnableBalanceForwarder(address indexed _user);
+    event DisableBalanceForwarder(address indexed _user);
+
     constructor(address _balanceTracker) {
         balanceTracker = _balanceTracker;
     }
+
+    /// @notice Enables balance forwarding for the authenticated account
+    /// @dev Only the authenticated account can enable balance forwarding for itself
+    /// @dev Should call the IBalanceTracker hook with the current account's balance
+    function enableBalanceForwarder() external virtual;
+
+    /// @notice Disables balance forwarding for the authenticated account
+    /// @dev Only the authenticated account can disable balance forwarding for itself
+    /// @dev Should call the IBalanceTracker hook with the account's balance of 0
+    function disableBalanceForwarder() external virtual;
 
     /// @notice Retrieve the address of rewards contract, tracking changes in account's balances
     /// @return The balance tracker address
@@ -31,32 +45,13 @@ abstract contract BalanceForwarder is IBalanceForwarder {
         return isBalanceForwarderEnabled[_account];
     }
 
-    /// @notice Enables balance forwarding for the authenticated account
-    /// @dev Only the authenticated account can enable balance forwarding for itself
-    /// @dev Should call the IBalanceTracker hook with the current account's balance
-    function enableBalanceForwarder() external virtual {
-        _enableBalanceForwarder(msg.sender);
-    }
-
-    /// @notice Disables balance forwarding for the authenticated account
-    /// @dev Only the authenticated account can disable balance forwarding for itself
-    /// @dev Should call the IBalanceTracker hook with the account's balance of 0
-    function disableBalanceForwarder() external virtual {
-        _disableBalanceForwarder(msg.sender);
-    }
-
-    function _enableBalanceForwarder(address _sender) internal {
+    function _enableBalanceForwarder(address _sender, uint256 _senderBalance) internal {
         if (balanceTracker == address(0)) revert NotSupported();
 
-        // address account = EVCAuthenticate();
-        // UserStorage storage user = vaultStorage.users[account];
+        isBalanceForwarderEnabled[_sender] = true;
+        IBalanceTracker(balanceTracker).balanceTrackerHook(_sender, _senderBalance, false);
 
-        // bool wasBalanceForwarderEnabled = user.isBalanceForwarderEnabled();
-
-        // user.setBalanceForwarder(true);
-        // balanceTracker.balanceTrackerHook(account, user.getBalance().toUint(), false);
-
-        // if (!wasBalanceForwarderEnabled) emit BalanceForwarderStatus(account, true);
+        emit EnableBalanceForwarder(_sender);
     }
 
     /// @notice Disables balance forwarding for the authenticated account
@@ -65,14 +60,9 @@ abstract contract BalanceForwarder is IBalanceForwarder {
     function _disableBalanceForwarder(address _sender) internal {
         if (balanceTracker == address(0)) revert NotSupported();
 
-        // address account = EVCAuthenticate();
-        // UserStorage storage user = vaultStorage.users[account];
+        isBalanceForwarderEnabled[_sender] = false;
+        IBalanceTracker(balanceTracker).balanceTrackerHook(_sender, 0, false);
 
-        // bool wasBalanceForwarderEnabled = user.isBalanceForwarderEnabled();
-
-        // user.setBalanceForwarder(false);
-        // balanceTracker.balanceTrackerHook(account, 0, false);
-
-        // if (wasBalanceForwarderEnabled) emit BalanceForwarderStatus(account, false);
+        emit DisableBalanceForwarder(_sender);
     }
 }

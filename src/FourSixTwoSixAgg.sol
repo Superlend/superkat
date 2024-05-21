@@ -141,6 +141,21 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         _setRoleAdmin(STRATEGY_REMOVER_ROLE, STRATEGY_REMOVER_ROLE_ADMIN_ROLE);
     }
 
+    /// @notice Enables balance forwarding for sender
+    /// @dev Should call the IBalanceTracker hook with the current user's balance
+    function enableBalanceForwarder() external override nonReentrant {
+        address user = _msgSender();
+        uint256 userBalance = this.balanceOf(user);
+
+        _enableBalanceForwarder(user, userBalance);
+    }
+
+    /// @notice Disables balance forwarding for the sender
+    /// @dev Should call the IBalanceTracker hook with the account's balance of 0
+    function disableBalanceForwarder() external override nonReentrant {
+        _disableBalanceForwarder(_msgSender());
+    }
+
     /// @notice Rebalance strategy allocation.
     /// @dev This function will first harvest yield, gulps and update interest.
     /// @dev If current allocation is greater than target allocation, the aggregator will withdraw the excess assets.
