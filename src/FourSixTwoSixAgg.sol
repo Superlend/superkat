@@ -408,6 +408,11 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     /// @dev See {IERC4626-_deposit}.
     function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal override {
         totalAssetsDeposited += assets;
+
+        // if (isBalanceForwarderEnabled[receiver]) {
+        //     balanceTracker.balanceTrackerHook(receiver, shares, false);
+        // }
+
         super._deposit(caller, receiver, assets, shares);
     }
 
@@ -454,6 +459,10 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         if (assetsRetrieved < assets) {
             revert NotEnoughAssets();
         }
+
+        // if (isBalanceForwarderEnabled[owner]) {
+        //     balanceTracker.balanceTrackerHook(owner, shares, false);
+        // }
 
         super._withdraw(caller, receiver, owner, assets, shares);
     }
@@ -551,6 +560,20 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         } else {
             // TODO handle losses
             revert NegativeYield();
+        }
+    }
+
+    /// @dev Override _afterTokenTransfer hook to call IBalanceTracker.balanceTrackerHook()
+    /// @dev Calling .balanceTrackerHook() passing the address total balance
+    /// @param from Address sending the amount
+    /// @param to Address receiving the amount
+    function _afterTokenTransfer(address from, address to, uint256 /*amount*/ ) internal override {
+        if ((from != address(0)) && (isBalanceForwarderEnabled[from])) {
+            balanceTracker.balanceTrackerHook(from, super.balanceOf(from), false);
+        }
+
+        if ((to != address(0)) && (isBalanceForwarderEnabled[to])) {
+            balanceTracker.balanceTrackerHook(to, super.balanceOf(to), false);
         }
     }
 

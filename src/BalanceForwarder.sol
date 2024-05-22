@@ -7,11 +7,11 @@ import {IBalanceTracker} from "./interface/IBalanceTracker.sol";
 /// @title BalanceForwarderModule
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
-/// @notice An EVault module handling communication with a balance tracker contract.
+/// @notice A generic contract to integrate with https://github.com/euler-xyz/reward-streams
 abstract contract BalanceForwarder is IBalanceForwarder {
     error NotSupported();
 
-    address public immutable balanceTracker;
+    IBalanceTracker public immutable balanceTracker;
 
     mapping(address => bool) internal isBalanceForwarderEnabled;
 
@@ -19,7 +19,7 @@ abstract contract BalanceForwarder is IBalanceForwarder {
     event DisableBalanceForwarder(address indexed _user);
 
     constructor(address _balanceTracker) {
-        balanceTracker = _balanceTracker;
+        balanceTracker = IBalanceTracker(_balanceTracker);
     }
 
     /// @notice Enables balance forwarding for the authenticated account
@@ -35,7 +35,7 @@ abstract contract BalanceForwarder is IBalanceForwarder {
     /// @notice Retrieve the address of rewards contract, tracking changes in account's balances
     /// @return The balance tracker address
     function balanceTrackerAddress() external view returns (address) {
-        return balanceTracker;
+        return address(balanceTracker);
     }
 
     /// @notice Retrieves boolean indicating if the account opted in to forward balance changes to the rewards contract
@@ -46,7 +46,7 @@ abstract contract BalanceForwarder is IBalanceForwarder {
     }
 
     function _enableBalanceForwarder(address _sender, uint256 _senderBalance) internal {
-        if (balanceTracker == address(0)) revert NotSupported();
+        if (address(balanceTracker) == address(0)) revert NotSupported();
 
         isBalanceForwarderEnabled[_sender] = true;
         IBalanceTracker(balanceTracker).balanceTrackerHook(_sender, _senderBalance, false);
@@ -58,7 +58,7 @@ abstract contract BalanceForwarder is IBalanceForwarder {
     /// @dev Only the authenticated account can disable balance forwarding for itself
     /// @dev Should call the IBalanceTracker hook with the account's balance of 0
     function _disableBalanceForwarder(address _sender) internal {
-        if (balanceTracker == address(0)) revert NotSupported();
+        if (address(balanceTracker) == address(0)) revert NotSupported();
 
         isBalanceForwarderEnabled[_sender] = false;
         IBalanceTracker(balanceTracker).balanceTrackerHook(_sender, 0, false);
