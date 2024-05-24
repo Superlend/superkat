@@ -53,6 +53,6 @@ contract BalanceForwarderE2ETest is FourSixTwoSixAggBase {
     }
 
     function testBalanceForwarderrAddress_Integrity() public view {
-        assertEq(fourSixTwoSixAgg.balanceTracker(), trackingReward);
+        assertEq(address(fourSixTwoSixAgg.balanceTracker()), trackingReward);
     }
 }
