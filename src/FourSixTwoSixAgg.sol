@@ -409,10 +409,6 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal override {
         totalAssetsDeposited += assets;
 
-        // if (isBalanceForwarderEnabled[receiver]) {
-        //     balanceTracker.balanceTrackerHook(receiver, shares, false);
-        // }
-
         super._deposit(caller, receiver, assets, shares);
     }
 
@@ -459,10 +455,6 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         if (assetsRetrieved < assets) {
             revert NotEnoughAssets();
         }
-
-        // if (isBalanceForwarderEnabled[owner]) {
-        //     balanceTracker.balanceTrackerHook(owner, shares, false);
-        // }
 
         super._withdraw(caller, receiver, owner, assets, shares);
     }
