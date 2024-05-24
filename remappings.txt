@@ -2,6 +2,5 @@ ds-test/=lib/ethereum-vault-connector/lib/forge-std/lib/ds-test/src/
 erc4626-tests/=lib/ethereum-vault-connector/lib/openzeppelin-contracts/lib/erc4626-tests/
 ethereum-vault-connector/=lib/ethereum-vault-connector/src/
 forge-std/=lib/forge-std/src/
-openzeppelin-contracts/=lib/ethereum-vault-connector/lib/openzeppelin-contracts/contracts/
-openzeppelin/=lib/ethereum-vault-connector/lib/openzeppelin-contracts/contracts/
 evk/=lib/euler-vault-kit/
+reward-streams=lib/reward-streams/src
