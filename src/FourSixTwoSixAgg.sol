@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {Context} from "openzeppelin-contracts/utils/Context.sol";
-import {ERC20, IERC20} from "openzeppelin-contracts/token/ERC20/ERC20.sol";
-import {SafeERC20} from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
-import {ERC4626, IERC4626} from "openzeppelin-contracts/token/ERC20/extensions/ERC4626.sol";
+import {Context} from "@openzeppelin/utils/Context.sol";
+import {ERC20, IERC20} from "@openzeppelin/token/ERC20/ERC20.sol";
+import {SafeERC20} from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import {ERC4626, IERC4626} from "@openzeppelin/token/ERC20/extensions/ERC4626.sol";
+import {AccessControlEnumerable} from "@openzeppelin/access/extensions/AccessControlEnumerable.sol";
 import {EVCUtil, IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
-import {AccessControlEnumerable} from "openzeppelin-contracts/access/AccessControlEnumerable.sol";
 import {BalanceForwarder} from "./BalanceForwarder.sol";
 
 // @note Do NOT use with fee on transfer tokens

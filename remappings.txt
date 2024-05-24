@@ -4,3 +4,4 @@ ethereum-vault-connector/=lib/ethereum-vault-connector/src/
 forge-std/=lib/forge-std/src/
 evk/=lib/euler-vault-kit/
 reward-streams=lib/reward-streams/src
+@openzeppelin=lib/openzeppelin-contracts/contracts/
