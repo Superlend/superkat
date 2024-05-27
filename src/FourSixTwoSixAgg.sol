@@ -9,12 +9,10 @@ import {AccessControlEnumerable} from "@openzeppelin/access/AccessControlEnumera
 import {EVCUtil, IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {BalanceForwarder} from "./BalanceForwarder.sol";
 
-// @note Do NOT use with fee on transfer tokens
-// @note Do NOT use with rebasing tokens
-// @note Based on https://github.com/euler-xyz/euler-vault-kit/blob/master/src/Synths/EulerSavingsRate.sol
-// @note expired by Yearn v3 ❤️
-// TODO addons for reward stream support
-// TODO custom withdraw queue support
+/// @dev Do NOT use with fee on transfer tokens
+/// @dev Do NOT use with rebasing tokens
+/// @dev Based on https://github.com/euler-xyz/euler-vault-kit/blob/master/src/Synths/EulerSavingsRate.sol
+/// @dev inspired by Yearn v3 ❤️
 contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEnumerable {
     using SafeERC20 for IERC20;
 
@@ -72,7 +70,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
 
     /// @dev A struct that hold a strategy allocation's config
     /// allocated: amount of asset deposited into strategy
-    /// allocationPoints number of points allocated to this strategy
+    /// allocationPoints: number of points allocated to this strategy
     /// active: a boolean to indice if this strategy is active or not
     struct Strategy {
         uint120 allocated;
@@ -156,16 +154,14 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         _disableBalanceForwarder(_msgSender());
     }
 
-    /// @notice Rebalance strategy allocation.
-    /// @dev This function will first harvest yield, gulps and update interest.
-    /// @dev If current allocation is greater than target allocation, the aggregator will withdraw the excess assets.
-    ///      If current allocation is less than target allocation, the aggregator will:
-    ///         - Try to deposit the delta, if the cash is not sufficient, deposit all the available cash
-    ///         - If all the available cash is greater than the max deposit, deposit the max deposit
-    function rebalance(address strategy) external nonReentrant {
-        _rebalance(strategy);
+    /// @notice Rebalance strategy's allocation.
+    /// @param _strategy Address of strategy to rebalance.
+    function rebalance(address _strategy) external nonReentrant {
+        _rebalance(_strategy);
     }
 
+    /// @notice Rebalance multiple strategies.
+    /// @param _strategies An array of strategy addresses to rebalance.
     function rebalanceMultipleStrategies(address[] calldata _strategies) external nonReentrant {
         for (uint256 i; i < _strategies.length; ++i) {
             _rebalance(_strategies[i]);
@@ -473,6 +469,13 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         esrSlot = esrSlotCache;
     }
 
+    /// @notice Rebalance strategy allocation.
+    /// @dev This function will first harvest yield, gulps and update interest.
+    /// @dev If current allocation is greater than target allocation, the aggregator will withdraw the excess assets.
+    ///      If current allocation is less than target allocation, the aggregator will:
+    ///         - Try to deposit the delta, if the cash is not sufficient, deposit all the available cash
+    ///         - If all the available cash is greater than the max deposit, deposit the max deposit
+    /// @param _strategy Address of strategy to rebalance.
     function _rebalance(address _strategy) internal {
         if (_strategy == address(0)) {
             return; //nothing to rebalance as this is the cash reserve
