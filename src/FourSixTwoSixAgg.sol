@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {Context} from "openzeppelin-contracts/utils/Context.sol";
-import {ERC20, IERC20} from "openzeppelin-contracts/token/ERC20/ERC20.sol";
-import {SafeERC20} from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
-import {ERC4626, IERC4626} from "openzeppelin-contracts/token/ERC20/extensions/ERC4626.sol";
+import {Context} from "@openzeppelin/utils/Context.sol";
+import {ERC20, IERC20} from "@openzeppelin/token/ERC20/ERC20.sol";
+import {SafeERC20} from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import {ERC4626, IERC4626} from "@openzeppelin/token/ERC20/extensions/ERC4626.sol";
+import {AccessControlEnumerable} from "@openzeppelin/access/AccessControlEnumerable.sol";
 import {EVCUtil, IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
-import {AccessControlEnumerable} from "openzeppelin-contracts/access/AccessControlEnumerable.sol";
+import {BalanceForwarder} from "./BalanceForwarder.sol";
 
 // @note Do NOT use with fee on transfer tokens
 // @note Do NOT use with rebasing tokens
@@ -14,7 +15,7 @@ import {AccessControlEnumerable} from "openzeppelin-contracts/access/AccessContr
 // @note expired by Yearn v3 ❤️
 // TODO addons for reward stream support
 // TODO custom withdraw queue support
-contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
+contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEnumerable {
     using SafeERC20 for IERC20;
 
     error Reentrancy();
@@ -106,13 +107,14 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
     /// @param _initialStrategiesAllocationPoints An array of initial strategies allocation points
     constructor(
         IEVC _evc,
+        address _balanceTracker,
         address _asset,
         string memory _name,
         string memory _symbol,
         uint256 _initialCashAllocationPoints,
         address[] memory _initialStrategies,
         uint256[] memory _initialStrategiesAllocationPoints
-    ) EVCUtil(address(_evc)) ERC4626(IERC20(_asset)) ERC20(_name, _symbol) {
+    ) BalanceForwarder(_balanceTracker) EVCUtil(address(_evc)) ERC4626(IERC20(_asset)) ERC20(_name, _symbol) {
         esrSlot.locked = REENTRANCYLOCK__UNLOCKED;
 
         if (_initialStrategies.length != _initialStrategiesAllocationPoints.length) revert ArrayLengthMismatch();
@@ -137,6 +139,21 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         _setRoleAdmin(WITHDRAW_QUEUE_REORDERER_ROLE, WITHDRAW_QUEUE_REORDERER_ROLE_ADMIN_ROLE);
         _setRoleAdmin(STRATEGY_ADDER_ROLE, STRATEGY_ADDER_ROLE_ADMIN_ROLE);
         _setRoleAdmin(STRATEGY_REMOVER_ROLE, STRATEGY_REMOVER_ROLE_ADMIN_ROLE);
+    }
+
+    /// @notice Enables balance forwarding for sender
+    /// @dev Should call the IBalanceTracker hook with the current user's balance
+    function enableBalanceForwarder() external override nonReentrant {
+        address user = _msgSender();
+        uint256 userBalance = this.balanceOf(user);
+
+        _enableBalanceForwarder(user, userBalance);
+    }
+
+    /// @notice Disables balance forwarding for the sender
+    /// @dev Should call the IBalanceTracker hook with the account's balance of 0
+    function disableBalanceForwarder() external override nonReentrant {
+        _disableBalanceForwarder(_msgSender());
     }
 
     /// @notice Rebalance strategy allocation.
@@ -391,6 +408,7 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
     /// @dev See {IERC4626-_deposit}.
     function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal override {
         totalAssetsDeposited += assets;
+
         super._deposit(caller, receiver, assets, shares);
     }
 
@@ -534,6 +552,20 @@ contract FourSixTwoSixAgg is EVCUtil, ERC4626, AccessControlEnumerable {
         } else {
             // TODO handle losses
             revert NegativeYield();
+        }
+    }
+
+    /// @dev Override _afterTokenTransfer hook to call IBalanceTracker.balanceTrackerHook()
+    /// @dev Calling .balanceTrackerHook() passing the address total balance
+    /// @param from Address sending the amount
+    /// @param to Address receiving the amount
+    function _afterTokenTransfer(address from, address to, uint256 /*amount*/ ) internal override {
+        if ((from != address(0)) && (isBalanceForwarderEnabled[from])) {
+            balanceTracker.balanceTrackerHook(from, super.balanceOf(from), false);
+        }
+
+        if ((to != address(0)) && (isBalanceForwarderEnabled[to])) {
+            balanceTracker.balanceTrackerHook(to, super.balanceOf(to), false);
         }
     }
 

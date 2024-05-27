@@ -8,3 +8,6 @@
 	path = lib/euler-vault-kit
 	url = https://github.com/euler-xyz/euler-vault-kit
 
+[submodule "lib/reward-streams"]
+	path = lib/reward-streams
+	url = https://github.com/euler-xyz/reward-streams
