@@ -255,21 +255,23 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     /// @dev Can only be called by an address that have the STRATEGY_REMOVER_ROLE
     /// @param strategy Address of the strategy
     function removeStrategy(address strategy) external nonReentrant onlyRole(STRATEGY_REMOVER_ROLE) {
-        if (!strategies[strategy].active) {
+        Strategy storage strategyStorage = strategies[strategy];
+
+        if (!strategyStorage.active) {
             revert AlreadyRemoved();
         }
 
-        strategies[strategy].active = false;
-        totalAllocationPoints -= strategies[strategy].allocationPoints;
-        strategies[strategy].allocationPoints = 0;
+        totalAllocationPoints -= strategyStorage.allocationPoints;
+        strategyStorage.active = false;
+        strategyStorage.allocationPoints = 0;
 
         // remove from withdrawalQueue
         uint256 lastStrategyIndex = withdrawalQueue.length - 1;
 
-        for (uint256 i = 0; i <= lastStrategyIndex; i++) {
-            if ((withdrawalQueue[i] == strategy) && (i != lastStrategyIndex)) {
-                (withdrawalQueue[i], withdrawalQueue[lastStrategyIndex]) =
-                    (withdrawalQueue[lastStrategyIndex], withdrawalQueue[i]);
+        for (uint256 i = 0; i < lastStrategyIndex; ++i) {
+            if (withdrawalQueue[i] == strategy) {
+                withdrawalQueue[i] = withdrawalQueue[lastStrategyIndex];
+                withdrawalQueue[lastStrategyIndex] = strategy;
             }
         }
 

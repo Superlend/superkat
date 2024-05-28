@@ -16,3 +16,6 @@ docs/
 # coverage
 lcov.info
 coverage
+
+# gas
+.gas-snapshot
