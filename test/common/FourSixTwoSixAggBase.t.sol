@@ -87,4 +87,14 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
         vm.prank(from);
         fourSixTwoSixAgg.addStrategy(strategy, allocationPoints);
     }
+
+    function _getWithdrawalQueue() internal view returns (address[] memory) {
+        uint256 length = fourSixTwoSixAgg.withdrawalQueueLength();
+
+        address[] memory queue = new address[](length);
+        for (uint256 i = 0; i < length; ++i) {
+            queue[i] = fourSixTwoSixAgg.withdrawalQueue(i);
+        }
+        return queue;
+    }
 }

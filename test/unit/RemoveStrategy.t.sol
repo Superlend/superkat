@@ -50,6 +50,56 @@ contract RemoveStrategyTest is FourSixTwoSixAggBase {
         assertEq(fourSixTwoSixAgg.withdrawalQueueLength(), withdrawalQueueLengthBefore - 1);
     }
 
+    function testRemoveStrategy_WithdrawalQueueOrdering() public {
+        address strategy1 =
+            factory.createProxy(address(0), true, abi.encodePacked(address(assetTST), address(oracle), unitOfAccount));
+        address strategy2 =
+            factory.createProxy(address(0), true, abi.encodePacked(address(assetTST), address(oracle), unitOfAccount));
+        address strategy3 =
+            factory.createProxy(address(0), true, abi.encodePacked(address(assetTST), address(oracle), unitOfAccount));
+
+        _addStrategy(manager, strategy1, strategyAllocationPoints);
+        _addStrategy(manager, strategy2, strategyAllocationPoints);
+        _addStrategy(manager, strategy3, strategyAllocationPoints);
+
+        address[] memory withdrawalQueue = _getWithdrawalQueue();
+        assertEq(withdrawalQueue.length, 4);
+        assertEq(withdrawalQueue[0], address(eTST));
+        assertEq(withdrawalQueue[1], strategy1);
+        assertEq(withdrawalQueue[2], strategy2);
+        assertEq(withdrawalQueue[3], strategy3);
+
+        vm.prank(manager);
+        fourSixTwoSixAgg.removeStrategy(strategy2);
+
+        withdrawalQueue = _getWithdrawalQueue();
+        assertEq(withdrawalQueue.length, 3);
+        assertEq(withdrawalQueue[0], address(eTST));
+        assertEq(withdrawalQueue[1], strategy1);
+        assertEq(withdrawalQueue[2], strategy3);
+
+        vm.prank(manager);
+        fourSixTwoSixAgg.removeStrategy(strategy3);
+
+        withdrawalQueue = _getWithdrawalQueue();
+        assertEq(withdrawalQueue.length, 2);
+        assertEq(withdrawalQueue[0], address(eTST));
+        assertEq(withdrawalQueue[1], strategy1);
+
+        vm.prank(manager);
+        fourSixTwoSixAgg.removeStrategy(address(eTST));
+
+        withdrawalQueue = _getWithdrawalQueue();
+        assertEq(withdrawalQueue.length, 1);
+        assertEq(withdrawalQueue[0], strategy1);
+
+        vm.prank(manager);
+        fourSixTwoSixAgg.removeStrategy(strategy1);
+
+        withdrawalQueue = _getWithdrawalQueue();
+        assertEq(withdrawalQueue.length, 0);
+    }
+
     function testRemoveStrategy_fromUnauthorized() public {
         vm.prank(deployer);
         vm.expectRevert();

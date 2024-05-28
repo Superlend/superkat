@@ -18,8 +18,6 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
 
     error Reentrancy();
     error ArrayLengthMismatch();
-    error AddressesOutOfOrder();
-    error DuplicateInitialStrategy();
     error InitialAllocationPointsZero();
     error NotEnoughAssets();
     error NegativeYield();
@@ -120,14 +118,16 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
 
         strategies[address(0)] =
             Strategy({allocated: 0, allocationPoints: uint120(_initialCashAllocationPoints), active: true});
-        totalAllocationPoints += _initialCashAllocationPoints;
+
+        uint256 _totalAllocationPoints = _initialCashAllocationPoints;
 
         for (uint256 i; i < _initialStrategies.length; ++i) {
             strategies[_initialStrategies[i]] =
                 Strategy({allocated: 0, allocationPoints: uint120(_initialStrategiesAllocationPoints[i]), active: true});
 
-            totalAllocationPoints += _initialStrategiesAllocationPoints[i];
+            _totalAllocationPoints += _initialStrategiesAllocationPoints[i];
         }
+        totalAllocationPoints = _totalAllocationPoints;
 
         // Setup DEFAULT_ADMIN
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
@@ -179,9 +179,8 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     function harvestMultipleStrategies(address[] calldata _strategies) external nonReentrant {
         for (uint256 i; i < _strategies.length; ++i) {
             _harvest(_strategies[i]);
-
-            _gulp();
         }
+        _gulp();
     }
 
     /// @notice Adjust a certain strategy's allocation points.
@@ -194,17 +193,13 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         onlyRole(ALLOCATION_ADJUSTER_ROLE)
     {
         Strategy memory strategyDataCache = strategies[strategy];
-        uint256 totalAllocationPointsCache = totalAllocationPoints;
 
         if (!strategyDataCache.active) {
             revert InactiveStrategy();
         }
 
         strategies[strategy].allocationPoints = uint120(newPoints);
-
-        totalAllocationPoints = (newPoints > strategyDataCache.allocationPoints)
-            ? totalAllocationPointsCache + (newPoints - strategyDataCache.allocationPoints)
-            : totalAllocationPointsCache - (strategyDataCache.allocationPoints - newPoints);
+        totalAllocationPoints = totalAllocationPoints + newPoints - strategyDataCache.allocationPoints;
     }
 
     /// @notice Swap two strategies indexes in the withdrawal queue.
@@ -216,7 +211,8 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         nonReentrant
         onlyRole(WITHDRAW_QUEUE_REORDERER_ROLE)
     {
-        if (index1 >= withdrawalQueue.length || index2 >= withdrawalQueue.length) {
+        uint256 length = withdrawalQueue.length;
+        if (index1 >= length || index2 >= length) {
             revert OutOfBounds();
         }
 
@@ -255,21 +251,23 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     /// @dev Can only be called by an address that have the STRATEGY_REMOVER_ROLE
     /// @param strategy Address of the strategy
     function removeStrategy(address strategy) external nonReentrant onlyRole(STRATEGY_REMOVER_ROLE) {
-        if (!strategies[strategy].active) {
+        Strategy storage strategyStorage = strategies[strategy];
+
+        if (!strategyStorage.active) {
             revert AlreadyRemoved();
         }
 
-        strategies[strategy].active = false;
-        totalAllocationPoints -= strategies[strategy].allocationPoints;
-        strategies[strategy].allocationPoints = 0;
+        totalAllocationPoints -= strategyStorage.allocationPoints;
+        strategyStorage.active = false;
+        strategyStorage.allocationPoints = 0;
 
         // remove from withdrawalQueue
         uint256 lastStrategyIndex = withdrawalQueue.length - 1;
 
-        for (uint256 i = 0; i <= lastStrategyIndex; i++) {
-            if ((withdrawalQueue[i] == strategy) && (i != lastStrategyIndex)) {
-                (withdrawalQueue[i], withdrawalQueue[lastStrategyIndex]) =
-                    (withdrawalQueue[lastStrategyIndex], withdrawalQueue[i]);
+        for (uint256 i = 0; i < lastStrategyIndex; ++i) {
+            if (withdrawalQueue[i] == strategy) {
+                withdrawalQueue[i] = withdrawalQueue[lastStrategyIndex];
+                withdrawalQueue[lastStrategyIndex] = strategy;
             }
         }
 
@@ -419,7 +417,8 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         totalAssetsDeposited -= assets;
 
         uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
-        for (uint256 i; i < withdrawalQueue.length; i++) {
+        uint256 numStrategies = withdrawalQueue.length;
+        for (uint256 i; i < numStrategies; ++i) {
             if (assetsRetrieved >= assets) {
                 break;
             }
@@ -429,16 +428,16 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
             _harvest(address(strategy));
             _gulp();
 
-            Strategy memory strategyData = strategies[withdrawalQueue[i]];
+            Strategy storage strategyStorage = strategies[address(strategy)];
 
             uint256 sharesBalance = strategy.balanceOf(address(this));
             uint256 underlyingBalance = strategy.convertToAssets(sharesBalance);
 
             uint256 desiredAssets = assets - assetsRetrieved;
-            uint256 withdrawAmount = (underlyingBalance >= desiredAssets) ? desiredAssets : underlyingBalance;
+            uint256 withdrawAmount = (underlyingBalance > desiredAssets) ? desiredAssets : underlyingBalance;
 
             // Update allocated assets
-            strategies[withdrawalQueue[i]].allocated = strategyData.allocated - uint120(withdrawAmount);
+            strategyStorage.allocated -= uint120(withdrawAmount);
             totalAllocated -= withdrawAmount;
 
             // update assetsRetrieved
