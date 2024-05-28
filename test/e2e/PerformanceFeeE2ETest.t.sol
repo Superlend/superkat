@@ -128,17 +128,11 @@ contract PerformanceFeeE2ETest is FourSixTwoSixAggBase {
 
         // full withdraw of recipient fees
         {
-            // uint256 amountToWithdraw = fourSixTwoSixAgg.balanceOf(user1);
             uint256 totalAssetsDepositedBefore = fourSixTwoSixAgg.totalAssetsDeposited();
-            // uint256 aggregatorTotalSupplyBefore = fourSixTwoSixAgg.totalSupply();
             uint256 assetTSTBalanceBefore = assetTST.balanceOf(feeRecipient);
 
             uint256 feeShares = fourSixTwoSixAgg.balanceOf(feeRecipient);
             uint256 expectedAssets = fourSixTwoSixAgg.convertToAssets(feeShares);
-            console2.log("feeShares", feeShares);
-            console2.log("expectedAssets", expectedAssets);
-            console2.log("totalSuppy", fourSixTwoSixAgg.totalSupply());
-
             vm.prank(feeRecipient);
             fourSixTwoSixAgg.redeem(feeShares, feeRecipient, feeRecipient);
 
