@@ -18,8 +18,6 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
 
     error Reentrancy();
     error ArrayLengthMismatch();
-    error AddressesOutOfOrder();
-    error DuplicateInitialStrategy();
     error InitialAllocationPointsZero();
     error NotEnoughAssets();
     error NegativeYield();
@@ -181,9 +179,8 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     function harvestMultipleStrategies(address[] calldata _strategies) external nonReentrant {
         for (uint256 i; i < _strategies.length; ++i) {
             _harvest(_strategies[i]);
-
-            _gulp();
         }
+        _gulp();
     }
 
     /// @notice Adjust a certain strategy's allocation points.
@@ -420,7 +417,8 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         totalAssetsDeposited -= assets;
 
         uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
-        for (uint256 i; i < withdrawalQueue.length; ++i) {
+        uint256 numStrategies = withdrawalQueue.length;
+        for (uint256 i; i < numStrategies; ++i) {
             if (assetsRetrieved >= assets) {
                 break;
             }
@@ -430,16 +428,16 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
             _harvest(address(strategy));
             _gulp();
 
-            Strategy memory strategyData = strategies[withdrawalQueue[i]];
+            Strategy storage strategyStorage = strategies[address(strategy)];
 
             uint256 sharesBalance = strategy.balanceOf(address(this));
             uint256 underlyingBalance = strategy.convertToAssets(sharesBalance);
 
             uint256 desiredAssets = assets - assetsRetrieved;
-            uint256 withdrawAmount = (underlyingBalance >= desiredAssets) ? desiredAssets : underlyingBalance;
+            uint256 withdrawAmount = (underlyingBalance > desiredAssets) ? desiredAssets : underlyingBalance;
 
             // Update allocated assets
-            strategies[withdrawalQueue[i]].allocated = strategyData.allocated - uint120(withdrawAmount);
+            strategyStorage.allocated -= uint120(withdrawAmount);
             totalAllocated -= withdrawAmount;
 
             // update assetsRetrieved
