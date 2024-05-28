@@ -120,14 +120,16 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
 
         strategies[address(0)] =
             Strategy({allocated: 0, allocationPoints: uint120(_initialCashAllocationPoints), active: true});
-        totalAllocationPoints += _initialCashAllocationPoints;
+
+        uint256 _totalAllocationPoints = _initialCashAllocationPoints;
 
         for (uint256 i; i < _initialStrategies.length; ++i) {
             strategies[_initialStrategies[i]] =
                 Strategy({allocated: 0, allocationPoints: uint120(_initialStrategiesAllocationPoints[i]), active: true});
 
-            totalAllocationPoints += _initialStrategiesAllocationPoints[i];
+            _totalAllocationPoints += _initialStrategiesAllocationPoints[i];
         }
+        totalAllocationPoints = _totalAllocationPoints;
 
         // Setup DEFAULT_ADMIN
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
@@ -194,17 +196,13 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         onlyRole(ALLOCATION_ADJUSTER_ROLE)
     {
         Strategy memory strategyDataCache = strategies[strategy];
-        uint256 totalAllocationPointsCache = totalAllocationPoints;
 
         if (!strategyDataCache.active) {
             revert InactiveStrategy();
         }
 
         strategies[strategy].allocationPoints = uint120(newPoints);
-
-        totalAllocationPoints = (newPoints > strategyDataCache.allocationPoints)
-            ? totalAllocationPointsCache + (newPoints - strategyDataCache.allocationPoints)
-            : totalAllocationPointsCache - (strategyDataCache.allocationPoints - newPoints);
+        totalAllocationPoints = totalAllocationPoints + newPoints - strategyDataCache.allocationPoints;
     }
 
     /// @notice Swap two strategies indexes in the withdrawal queue.
@@ -216,7 +214,8 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         nonReentrant
         onlyRole(WITHDRAW_QUEUE_REORDERER_ROLE)
     {
-        if (index1 >= withdrawalQueue.length || index2 >= withdrawalQueue.length) {
+        uint256 length = withdrawalQueue.length;
+        if (index1 >= length || index2 >= length) {
             revert OutOfBounds();
         }
 
@@ -421,7 +420,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         totalAssetsDeposited -= assets;
 
         uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
-        for (uint256 i; i < withdrawalQueue.length; i++) {
+        for (uint256 i; i < withdrawalQueue.length; ++i) {
             if (assetsRetrieved >= assets) {
                 break;
             }
