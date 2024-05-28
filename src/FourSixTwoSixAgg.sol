@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {Context} from "@openzeppelin/utils/Context.sol";
 import {ERC20, IERC20} from "@openzeppelin/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import {ERC4626, IERC4626} from "@openzeppelin/token/ERC20/extensions/ERC4626.sol";
+import {ERC4626, IERC4626, Math} from "@openzeppelin/token/ERC20/extensions/ERC4626.sol";
 import {AccessControlEnumerable} from "@openzeppelin/access/AccessControlEnumerable.sol";
 import {EVCUtil, IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {BalanceForwarder} from "./BalanceForwarder.sol";
@@ -42,6 +42,8 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     bytes32 public constant STRATEGY_REMOVER_ROLE = keccak256("STRATEGY_REMOVER_ROLE");
     bytes32 public constant STRATEGY_REMOVER_ROLE_ADMIN_ROLE = keccak256("STRATEGY_REMOVER_ROLE_ADMIN_ROLE");
 
+    /// @dev The maximum fee the vault can have is 50%
+    uint256 internal constant MAX_FEE = 0.5e18;
     uint256 public constant INTEREST_SMEAR = 2 weeks;
 
     ESRSlot internal esrSlot;
@@ -52,6 +54,10 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     uint256 public totalAllocated;
     /// @dev Total amount of allocation points across all strategies including the cash reserve.
     uint256 public totalAllocationPoints;
+    /// @dev fee rate
+    uint256 public fee;
+    /// @dev fee recipient address
+    address public feeRecipient;
 
     /// @dev An array of strategy addresses to withdraw from
     address[] public withdrawalQueue;
@@ -137,6 +143,17 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         _setRoleAdmin(WITHDRAW_QUEUE_REORDERER_ROLE, WITHDRAW_QUEUE_REORDERER_ROLE_ADMIN_ROLE);
         _setRoleAdmin(STRATEGY_ADDER_ROLE, STRATEGY_ADDER_ROLE_ADMIN_ROLE);
         _setRoleAdmin(STRATEGY_REMOVER_ROLE, STRATEGY_REMOVER_ROLE_ADMIN_ROLE);
+    }
+
+    function setFee(uint256 _newFee) external {
+        if (_newFee > MAX_FEE) revert();
+        if (_newFee != 0 && feeRecipient == address(0)) revert();
+        if (_newFee == fee) revert();
+
+        // // Accrue fee using the previous fee set before changing it.
+        // _updateLastTotalAssets(_accrueFee());
+
+        fee = _newFee;
     }
 
     /// @notice Enables balance forwarding for sender
@@ -550,11 +567,22 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
             uint256 yield = underlyingBalance - strategyData.allocated;
             strategies[strategy].allocated = uint120(underlyingBalance);
             totalAllocated += yield;
-            // TODO possible performance fee
+
+            _accruePerformanceFee(yield);
         } else {
             // TODO handle losses
             revert NegativeYield();
         }
+    }
+
+    function _accruePerformanceFee(uint256 _yield) internal {
+        if (fee == 0) return;
+
+        // `feeAssets` will be rounded down to 0 if `yield * fee < 1e18`.
+        uint256 feeAssets = _yield * fee / 1e18;
+        uint256 feeShares = _convertToShares(feeAssets, Math.Rounding.Down);
+
+        if (feeShares != 0) _mint(feeRecipient, feeShares);
     }
 
     /// @dev Override _afterTokenTransfer hook to call IBalanceTracker.balanceTrackerHook()
