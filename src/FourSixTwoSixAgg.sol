@@ -153,12 +153,16 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         _setRoleAdmin(PERFORMANCE_FEE_MANAGER_ROLE, PERFORMANCE_FEE_MANAGER_ROLE_ADMIN_ROLE);
     }
 
-    function setFeeRecipient(address newFeeRecipient) external onlyRole(PERFORMANCE_FEE_MANAGER_ROLE) {
-        if (newFeeRecipient == feeRecipient) revert FeeRecipientAlreadySet();
+    /// @notice Set performance fee recipient address
+    /// @notice @param _newFeeRecipient Recipient address
+    function setFeeRecipient(address _newFeeRecipient) external onlyRole(PERFORMANCE_FEE_MANAGER_ROLE) {
+        if (_newFeeRecipient == feeRecipient) revert FeeRecipientAlreadySet();
 
-        feeRecipient = newFeeRecipient;
+        feeRecipient = _newFeeRecipient;
     }
 
+    /// @notice Set performance fee (1e18 == 100%)
+    /// @notice @param _newFee Fee rate
     function setPerformanceFee(uint256 _newFee) external onlyRole(PERFORMANCE_FEE_MANAGER_ROLE) {
         if (_newFee > MAX_PERFORMANCE_FEE) revert MaxPerformanceFeeExceeded();
         if (feeRecipient == address(0)) revert FeeRecipientNotSet();
