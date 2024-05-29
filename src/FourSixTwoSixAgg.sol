@@ -7,7 +7,7 @@ import {SafeERC20} from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import {ERC4626, IERC4626, Math} from "@openzeppelin/token/ERC20/extensions/ERC4626.sol";
 import {AccessControlEnumerable} from "@openzeppelin/access/AccessControlEnumerable.sol";
 import {EVCUtil, IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
-import {BalanceForwarder} from "./BalanceForwarder.sol";
+import {BalanceForwarder, IBalanceForwarder} from "./BalanceForwarder.sol";
 
 /// @dev Do NOT use with fee on transfer tokens
 /// @dev Do NOT use with rebasing tokens
@@ -45,9 +45,9 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     bytes32 public constant STRATEGY_ADDER_ROLE_ADMIN_ROLE = keccak256("STRATEGY_ADDER_ROLE_ADMIN_ROLE");
     bytes32 public constant STRATEGY_REMOVER_ROLE = keccak256("STRATEGY_REMOVER_ROLE");
     bytes32 public constant STRATEGY_REMOVER_ROLE_ADMIN_ROLE = keccak256("STRATEGY_REMOVER_ROLE_ADMIN_ROLE");
-    bytes32 public constant PERFORMANCE_FEE_MANAGER_ROLE = keccak256("PERFORMANCE_FEE_MANAGER_ROLE");
-    bytes32 public constant PERFORMANCE_FEE_MANAGER_ROLE_ADMIN_ROLE =
-        keccak256("PERFORMANCE_FEE_MANAGER_ROLE_ADMIN_ROLE");
+    bytes32 public constant TREASURY_MANAGER_ROLE = keccak256("TREASURY_MANAGER_ROLE");
+    bytes32 public constant TREASURY_MANAGER_ROLE_ADMIN_ROLE =
+        keccak256("TREASURY_MANAGER_ROLE_ADMIN_ROLE");
 
     /// @dev The maximum performanceFee the vault can have is 50%
     uint256 internal constant MAX_PERFORMANCE_FEE = 0.5e18;
@@ -150,12 +150,12 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         _setRoleAdmin(WITHDRAW_QUEUE_REORDERER_ROLE, WITHDRAW_QUEUE_REORDERER_ROLE_ADMIN_ROLE);
         _setRoleAdmin(STRATEGY_ADDER_ROLE, STRATEGY_ADDER_ROLE_ADMIN_ROLE);
         _setRoleAdmin(STRATEGY_REMOVER_ROLE, STRATEGY_REMOVER_ROLE_ADMIN_ROLE);
-        _setRoleAdmin(PERFORMANCE_FEE_MANAGER_ROLE, PERFORMANCE_FEE_MANAGER_ROLE_ADMIN_ROLE);
+        _setRoleAdmin(TREASURY_MANAGER_ROLE, TREASURY_MANAGER_ROLE_ADMIN_ROLE);
     }
 
     /// @notice Set performance fee recipient address
     /// @notice @param _newFeeRecipient Recipient address
-    function setFeeRecipient(address _newFeeRecipient) external onlyRole(PERFORMANCE_FEE_MANAGER_ROLE) {
+    function setFeeRecipient(address _newFeeRecipient) external onlyRole(TREASURY_MANAGER_ROLE) {
         if (_newFeeRecipient == feeRecipient) revert FeeRecipientAlreadySet();
 
         feeRecipient = _newFeeRecipient;
@@ -163,12 +163,24 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
 
     /// @notice Set performance fee (1e18 == 100%)
     /// @notice @param _newFee Fee rate
-    function setPerformanceFee(uint256 _newFee) external onlyRole(PERFORMANCE_FEE_MANAGER_ROLE) {
+    function setPerformanceFee(uint256 _newFee) external onlyRole(TREASURY_MANAGER_ROLE) {
         if (_newFee > MAX_PERFORMANCE_FEE) revert MaxPerformanceFeeExceeded();
         if (feeRecipient == address(0)) revert FeeRecipientNotSet();
         if (_newFee == performanceFee) revert PerformanceFeeAlreadySet();
 
         performanceFee = _newFee;
+    }
+
+    function optInStrategyRewards(address _strategy) external onlyRole(TREASURY_MANAGER_ROLE) {
+        if(!strategies[_strategy].active) revert InactiveStrategy();
+
+        IBalanceForwarder(_strategy).enableBalanceForwarder();
+    }
+
+    function optOutStrategyRewards(address _strategy) external onlyRole(TREASURY_MANAGER_ROLE) {
+        if(!strategies[_strategy].active) revert InactiveStrategy();
+
+        IBalanceForwarder(_strategy).disableBalanceForwarder();
     }
 
     /// @notice Enables balance forwarding for sender
