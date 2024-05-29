@@ -8,6 +8,7 @@ import {ERC4626, IERC4626, Math} from "@openzeppelin/token/ERC20/extensions/ERC4
 import {AccessControlEnumerable} from "@openzeppelin/access/AccessControlEnumerable.sol";
 import {EVCUtil, IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {BalanceForwarder, IBalanceForwarder} from "./BalanceForwarder.sol";
+import {IRewardStreams} from "reward-streams/interfaces/IRewardStreams.sol";
 
 /// @dev Do NOT use with fee on transfer tokens
 /// @dev Do NOT use with rebasing tokens
@@ -180,6 +181,18 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         if (!strategies[_strategy].active) revert InactiveStrategy();
 
         IBalanceForwarder(_strategy).disableBalanceForwarder();
+    }
+
+    function claimStrategyReward(
+        address _strategy,
+        address _rewarded,
+        address _reward,
+        address _recipient,
+        bool _forfeitRecentReward
+    ) external onlyRole(TREASURY_MANAGER_ROLE) {
+        address rewardStreams = IBalanceForwarder(_strategy).balanceTrackerAddress();
+
+        IRewardStreams(rewardStreams).claimReward(_rewarded, _reward, _recipient, _forfeitRecentReward);
     }
 
     /// @notice Enables balance forwarding for sender
