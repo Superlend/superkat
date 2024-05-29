@@ -119,8 +119,6 @@ contract PerformanceFeeE2ETest is FourSixTwoSixAggBase {
             vm.prank(user1);
             fourSixTwoSixAgg.redeem(amountToWithdraw, user1, user1);
 
-            // all yield is distributed
-            // assertApproxEqAbs(eTST.balanceOf(address(fourSixTwoSixAgg)), expectePerformanceFeeAssets, 1);
             assertApproxEqAbs(fourSixTwoSixAgg.totalAssetsDeposited(), totalAssetsDepositedBefore - expectedAssetTST, 1);
             assertEq(fourSixTwoSixAgg.totalSupply(), aggregatorTotalSupplyBefore - amountToWithdraw);
             assertApproxEqAbs(assetTST.balanceOf(user1), user1AssetTSTBalanceBefore + expectedAssetTST, 1);
@@ -136,8 +134,6 @@ contract PerformanceFeeE2ETest is FourSixTwoSixAggBase {
             vm.prank(feeRecipient);
             fourSixTwoSixAgg.redeem(feeShares, feeRecipient, feeRecipient);
 
-            // all yield is distributed
-            // assertApproxEqAbs(eTST.balanceOf(address(fourSixTwoSixAgg)), 0, 1);
             assertApproxEqAbs(fourSixTwoSixAgg.totalAssetsDeposited(), totalAssetsDepositedBefore - expectedAssets, 1);
             assertEq(fourSixTwoSixAgg.totalSupply(), 0);
             assertApproxEqAbs(assetTST.balanceOf(feeRecipient), assetTSTBalanceBefore + expectedAssets, 1);

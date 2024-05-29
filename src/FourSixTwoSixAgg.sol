@@ -9,8 +9,6 @@ import {AccessControlEnumerable} from "@openzeppelin/access/AccessControlEnumera
 import {EVCUtil, IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {BalanceForwarder} from "./BalanceForwarder.sol";
 
-import {Test, console2, stdError} from "forge-std/Test.sol";
-
 /// @dev Do NOT use with fee on transfer tokens
 /// @dev Do NOT use with rebasing tokens
 /// @dev Based on https://github.com/euler-xyz/euler-vault-kit/blob/master/src/Synths/EulerSavingsRate.sol
@@ -425,8 +423,6 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     /// @dev the total assets allocatable is the amount of assets deposited into the aggregator + assets already deposited into strategies
     /// @return uint256 total assets
     function totalAssetsAllocatable() public view returns (uint256) {
-        console2.log("this balanceOf", IERC20(asset()).balanceOf(address(this)));
-        console2.log("totalAllocated", totalAllocated);
         return IERC20(asset()).balanceOf(address(this)) + totalAllocated;
     }
 
@@ -449,7 +445,6 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         totalAssetsDeposited -= assets;
 
         uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
-        console2.log("assetsRetrieved", assetsRetrieved);
         uint256 numStrategies = withdrawalQueue.length;
         for (uint256 i; i < numStrategies; ++i) {
             if (assetsRetrieved >= assets) {
@@ -478,23 +473,18 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
             // Do actual withdraw from strategy
             strategy.withdraw(withdrawAmount, address(this), address(this));
         }
-        console2.log("assetsRetrieved done", assetsRetrieved);
 
         _gulp();
 
-        console2.log("here");
         if (assetsRetrieved < assets) {
             revert NotEnoughAssets();
         }
-        console2.log("shares", shares);
+
         super._withdraw(caller, receiver, owner, assets, shares);
     }
 
     function _gulp() internal {
         ESRSlot memory esrSlotCache = updateInterestAndReturnESRSlotCache();
-        console2.log("totalAssetsAllocatable()", totalAssetsAllocatable());
-        console2.log("totalAssetsDeposited", totalAssetsDeposited);
-        console2.log("esrSlotCache.interestLeft", esrSlotCache.interestLeft);
 
         if (totalAssetsDeposited == 0) return;
         uint256 toGulp = totalAssetsAllocatable() - totalAssetsDeposited - esrSlotCache.interestLeft;
@@ -591,8 +581,6 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
             uint256 yield = underlyingBalance - strategyData.allocated;
             strategies[strategy].allocated = uint120(underlyingBalance);
             totalAllocated += yield;
-
-            console2.log("yield", yield);
 
             _accruePerformanceFee(yield);
         } else {
