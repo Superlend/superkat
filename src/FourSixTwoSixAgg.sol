@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {Context} from "@openzeppelin/utils/Context.sol";
 import {ERC20, IERC20} from "@openzeppelin/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import {ERC4626, IERC4626} from "@openzeppelin/token/ERC20/extensions/ERC4626.sol";
+import {ERC4626, IERC4626, Math} from "@openzeppelin/token/ERC20/extensions/ERC4626.sol";
 import {AccessControlEnumerable} from "@openzeppelin/access/AccessControlEnumerable.sol";
 import {EVCUtil, IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {BalanceForwarder} from "./BalanceForwarder.sol";
@@ -27,6 +27,10 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     error InvalidStrategyAsset();
     error StrategyAlreadyExist();
     error AlreadyRemoved();
+    error PerformanceFeeAlreadySet();
+    error MaxPerformanceFeeExceeded();
+    error FeeRecipientNotSet();
+    error FeeRecipientAlreadySet();
 
     uint8 internal constant REENTRANCYLOCK__UNLOCKED = 1;
     uint8 internal constant REENTRANCYLOCK__LOCKED = 2;
@@ -41,7 +45,12 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     bytes32 public constant STRATEGY_ADDER_ROLE_ADMIN_ROLE = keccak256("STRATEGY_ADDER_ROLE_ADMIN_ROLE");
     bytes32 public constant STRATEGY_REMOVER_ROLE = keccak256("STRATEGY_REMOVER_ROLE");
     bytes32 public constant STRATEGY_REMOVER_ROLE_ADMIN_ROLE = keccak256("STRATEGY_REMOVER_ROLE_ADMIN_ROLE");
+    bytes32 public constant PERFORMANCE_FEE_MANAGER_ROLE = keccak256("PERFORMANCE_FEE_MANAGER_ROLE");
+    bytes32 public constant PERFORMANCE_FEE_MANAGER_ROLE_ADMIN_ROLE =
+        keccak256("PERFORMANCE_FEE_MANAGER_ROLE_ADMIN_ROLE");
 
+    /// @dev The maximum performanceFee the vault can have is 50%
+    uint256 internal constant MAX_PERFORMANCE_FEE = 0.5e18;
     uint256 public constant INTEREST_SMEAR = 2 weeks;
 
     ESRSlot internal esrSlot;
@@ -52,6 +61,10 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     uint256 public totalAllocated;
     /// @dev Total amount of allocation points across all strategies including the cash reserve.
     uint256 public totalAllocationPoints;
+    /// @dev fee rate
+    uint256 public performanceFee;
+    /// @dev fee recipient address
+    address public feeRecipient;
 
     /// @dev An array of strategy addresses to withdraw from
     address[] public withdrawalQueue;
@@ -137,6 +150,25 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         _setRoleAdmin(WITHDRAW_QUEUE_REORDERER_ROLE, WITHDRAW_QUEUE_REORDERER_ROLE_ADMIN_ROLE);
         _setRoleAdmin(STRATEGY_ADDER_ROLE, STRATEGY_ADDER_ROLE_ADMIN_ROLE);
         _setRoleAdmin(STRATEGY_REMOVER_ROLE, STRATEGY_REMOVER_ROLE_ADMIN_ROLE);
+        _setRoleAdmin(PERFORMANCE_FEE_MANAGER_ROLE, PERFORMANCE_FEE_MANAGER_ROLE_ADMIN_ROLE);
+    }
+
+    /// @notice Set performance fee recipient address
+    /// @notice @param _newFeeRecipient Recipient address
+    function setFeeRecipient(address _newFeeRecipient) external onlyRole(PERFORMANCE_FEE_MANAGER_ROLE) {
+        if (_newFeeRecipient == feeRecipient) revert FeeRecipientAlreadySet();
+
+        feeRecipient = _newFeeRecipient;
+    }
+
+    /// @notice Set performance fee (1e18 == 100%)
+    /// @notice @param _newFee Fee rate
+    function setPerformanceFee(uint256 _newFee) external onlyRole(PERFORMANCE_FEE_MANAGER_ROLE) {
+        if (_newFee > MAX_PERFORMANCE_FEE) revert MaxPerformanceFeeExceeded();
+        if (feeRecipient == address(0)) revert FeeRecipientNotSet();
+        if (_newFee == performanceFee) revert PerformanceFeeAlreadySet();
+
+        performanceFee = _newFee;
     }
 
     /// @notice Enables balance forwarding for sender
@@ -426,7 +458,6 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
             IERC4626 strategy = IERC4626(withdrawalQueue[i]);
 
             _harvest(address(strategy));
-            _gulp();
 
             Strategy storage strategyStorage = strategies[address(strategy)];
 
@@ -447,6 +478,8 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
             strategy.withdraw(withdrawAmount, address(this), address(this));
         }
 
+        _gulp();
+
         if (assetsRetrieved < assets) {
             revert NotEnoughAssets();
         }
@@ -456,6 +489,8 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
 
     function _gulp() internal {
         ESRSlot memory esrSlotCache = updateInterestAndReturnESRSlotCache();
+
+        if (totalAssetsDeposited == 0) return;
         uint256 toGulp = totalAssetsAllocatable() - totalAssetsDeposited - esrSlotCache.interestLeft;
 
         uint256 maxGulp = type(uint168).max - esrSlotCache.interestLeft;
@@ -550,11 +585,22 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
             uint256 yield = underlyingBalance - strategyData.allocated;
             strategies[strategy].allocated = uint120(underlyingBalance);
             totalAllocated += yield;
-            // TODO possible performance fee
+
+            _accruePerformanceFee(yield);
         } else {
             // TODO handle losses
             revert NegativeYield();
         }
+    }
+
+    function _accruePerformanceFee(uint256 _yield) internal {
+        if (feeRecipient == address(0) || performanceFee == 0) return;
+
+        // `feeAssets` will be rounded down to 0 if `yield * performanceFee < 1e18`.
+        uint256 feeAssets = Math.mulDiv(_yield, performanceFee, 1e18, Math.Rounding.Down);
+        uint256 feeShares = _convertToShares(feeAssets, Math.Rounding.Down);
+
+        if (feeShares != 0) _mint(feeRecipient, feeShares);
     }
 
     /// @dev Override _afterTokenTransfer hook to call IBalanceTracker.balanceTrackerHook()

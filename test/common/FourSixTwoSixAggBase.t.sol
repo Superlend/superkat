@@ -38,12 +38,14 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_REORDERER_ROLE_ADMIN_ROLE(), deployer);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_ADDER_ROLE_ADMIN_ROLE(), deployer);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE_ADMIN_ROLE(), deployer);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.PERFORMANCE_FEE_MANAGER_ROLE_ADMIN_ROLE(), deployer);
 
         // grant roles to manager
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.ALLOCATION_ADJUSTER_ROLE(), manager);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_REORDERER_ROLE(), manager);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_ADDER_ROLE(), manager);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE(), manager);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.PERFORMANCE_FEE_MANAGER_ROLE(), manager);
 
         vm.stopPrank();
     }
@@ -71,16 +73,22 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
             fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE()),
             fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE_ADMIN_ROLE()
         );
+        assertEq(
+            fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.PERFORMANCE_FEE_MANAGER_ROLE()),
+            fourSixTwoSixAgg.PERFORMANCE_FEE_MANAGER_ROLE_ADMIN_ROLE()
+        );
 
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.ALLOCATION_ADJUSTER_ROLE_ADMIN_ROLE(), deployer));
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_REORDERER_ROLE_ADMIN_ROLE(), deployer));
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_ADDER_ROLE_ADMIN_ROLE(), deployer));
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE_ADMIN_ROLE(), deployer));
+        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.PERFORMANCE_FEE_MANAGER_ROLE_ADMIN_ROLE(), deployer));
 
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.ALLOCATION_ADJUSTER_ROLE(), manager));
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_REORDERER_ROLE(), manager));
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_ADDER_ROLE(), manager));
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE(), manager));
+        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.PERFORMANCE_FEE_MANAGER_ROLE(), manager));
     }
 
     function _addStrategy(address from, address strategy, uint256 allocationPoints) internal {
