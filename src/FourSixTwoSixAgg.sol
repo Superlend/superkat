@@ -618,7 +618,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     }
 
     function _accruePerformanceFee(uint256 _yield) internal {
-        if (performanceFee == 0) return;
+        if (feeRecipient == address(0) || performanceFee == 0) return;
 
         // `feeAssets` will be rounded down to 0 if `yield * performanceFee < 1e18`.
         uint256 feeAssets = Math.mulDiv(_yield, performanceFee, 1e18, Math.Rounding.Down);
