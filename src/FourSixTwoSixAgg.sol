@@ -46,8 +46,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     bytes32 public constant STRATEGY_REMOVER_ROLE = keccak256("STRATEGY_REMOVER_ROLE");
     bytes32 public constant STRATEGY_REMOVER_ROLE_ADMIN_ROLE = keccak256("STRATEGY_REMOVER_ROLE_ADMIN_ROLE");
     bytes32 public constant TREASURY_MANAGER_ROLE = keccak256("TREASURY_MANAGER_ROLE");
-    bytes32 public constant TREASURY_MANAGER_ROLE_ADMIN_ROLE =
-        keccak256("TREASURY_MANAGER_ROLE_ADMIN_ROLE");
+    bytes32 public constant TREASURY_MANAGER_ROLE_ADMIN_ROLE = keccak256("TREASURY_MANAGER_ROLE_ADMIN_ROLE");
 
     /// @dev The maximum performanceFee the vault can have is 50%
     uint256 internal constant MAX_PERFORMANCE_FEE = 0.5e18;
@@ -172,13 +171,13 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     }
 
     function optInStrategyRewards(address _strategy) external onlyRole(TREASURY_MANAGER_ROLE) {
-        if(!strategies[_strategy].active) revert InactiveStrategy();
+        if (!strategies[_strategy].active) revert InactiveStrategy();
 
         IBalanceForwarder(_strategy).enableBalanceForwarder();
     }
 
     function optOutStrategyRewards(address _strategy) external onlyRole(TREASURY_MANAGER_ROLE) {
-        if(!strategies[_strategy].active) revert InactiveStrategy();
+        if (!strategies[_strategy].active) revert InactiveStrategy();
 
         IBalanceForwarder(_strategy).disableBalanceForwarder();
     }
