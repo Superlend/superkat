@@ -2,9 +2,9 @@
 pragma solidity ^0.8.0;
 
 import {IBalanceForwarder} from "./interface/IBalanceForwarder.sol";
-import {IBalanceTracker} from "./interface/IBalanceTracker.sol";
+import {IBalanceTracker} from "reward-streams/interfaces/IBalanceTracker.sol";
 
-/// @title BalanceForwarderModule
+/// @title BalanceForwarder contract
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
 /// @notice A generic contract to integrate with https://github.com/euler-xyz/reward-streams
