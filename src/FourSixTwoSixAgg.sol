@@ -171,18 +171,26 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         performanceFee = _newFee;
     }
 
+    /// @notice Opt in to strategy rewards
+    /// @param _strategy Strategy address
     function optInStrategyRewards(address _strategy) external onlyRole(TREASURY_MANAGER_ROLE) {
         if (!strategies[_strategy].active) revert InactiveStrategy();
 
         IBalanceForwarder(_strategy).enableBalanceForwarder();
     }
 
+    /// @notice Opt out of strategy rewards
+    /// @param _strategy Strategy address
     function optOutStrategyRewards(address _strategy) external onlyRole(TREASURY_MANAGER_ROLE) {
-        if (!strategies[_strategy].active) revert InactiveStrategy();
-
         IBalanceForwarder(_strategy).disableBalanceForwarder();
     }
 
+    /// @notice Claim a specific strategy rewards
+    /// @param _strategy Strategy address.
+    /// @param _rewarded The address of the rewarded token.
+    /// @param _reward The address of the reward token.
+    /// @param _recipient The address to receive the claimed reward tokens.
+    /// @param _forfeitRecentReward Whether to forfeit the recent rewards and not update the accumulator.
     function claimStrategyReward(
         address _strategy,
         address _rewarded,
