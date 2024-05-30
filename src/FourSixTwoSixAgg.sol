@@ -620,8 +620,8 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
 
             _accruePerformanceFee(yield);
         } else {
-            // TODO handle losses
-            revert NegativeYield();
+            uint256 socializedLoss = strategyData.allocated - underlyingBalance;
+            totalAssetsDeposited -= socializedLoss;
         }
     }
 
