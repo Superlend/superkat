@@ -27,7 +27,7 @@ contract StrategyRewardsE2ETest is FourSixTwoSixAggBase {
     function testOptInStrategyRewards() public {
         vm.prank(manager);
         fourSixTwoSixAgg.optInStrategyRewards(address(eTST));
-        
+
         assertTrue(eTST.balanceForwarderEnabled(address(fourSixTwoSixAgg)));
     }
 
@@ -38,7 +38,7 @@ contract StrategyRewardsE2ETest is FourSixTwoSixAggBase {
 
         vm.prank(manager);
         fourSixTwoSixAgg.optOutStrategyRewards(address(eTST));
-        
+
         assertFalse(eTST.balanceForwarderEnabled(address(fourSixTwoSixAgg)));
     }
 }
