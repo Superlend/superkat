@@ -10,6 +10,8 @@ import {EVCUtil, IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {BalanceForwarder, IBalanceForwarder} from "./BalanceForwarder.sol";
 import {IRewardStreams} from "reward-streams/interfaces/IRewardStreams.sol";
 
+import {Test, console2, stdError} from "forge-std/Test.sol";
+
 /// @dev Do NOT use with fee on transfer tokens
 /// @dev Do NOT use with rebasing tokens
 /// @dev Based on https://github.com/euler-xyz/euler-vault-kit/blob/master/src/Synths/EulerSavingsRate.sol
@@ -437,7 +439,6 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     function updateInterestAndReturnESRSlotCache() public returns (ESRSlot memory) {
         ESRSlot memory esrSlotCache = esrSlot;
         uint256 accruedInterest = interestAccruedFromCache(esrSlotCache);
-
         // it's safe to down-cast because the accrued interest is a fraction of interest left
         esrSlotCache.interestLeft -= uint168(accruedInterest);
         esrSlotCache.lastInterestUpdate = uint40(block.timestamp);
@@ -524,7 +525,6 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
 
         if (totalAssetsDeposited == 0) return;
         uint256 toGulp = totalAssetsAllocatable() - totalAssetsDeposited - esrSlotCache.interestLeft;
-
         uint256 maxGulp = type(uint168).max - esrSlotCache.interestLeft;
         if (toGulp > maxGulp) toGulp = maxGulp; // cap interest, allowing the vault to function
 
@@ -606,7 +606,6 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         Strategy memory strategyData = strategies[strategy];
 
         if (strategyData.allocated == 0) return;
-
         uint256 sharesBalance = IERC4626(strategy).balanceOf(address(this));
         uint256 underlyingBalance = IERC4626(strategy).convertToAssets(sharesBalance);
 
@@ -621,6 +620,8 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
             _accruePerformanceFee(yield);
         } else {
             uint256 socializedLoss = strategyData.allocated - underlyingBalance;
+            strategies[strategy].allocated = uint120(underlyingBalance);
+            // totalAllocated -= socializedLoss;
             totalAssetsDeposited -= socializedLoss;
         }
     }
