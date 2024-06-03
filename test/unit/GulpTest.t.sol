@@ -52,59 +52,7 @@ contract GulpTest is FourSixTwoSixAggBase {
         }
     }
 
-    // function testGulp() public {
-    //     console2.log("#testGulp");
-    //     fourSixTwoSixAgg.gulp();
-    //     FourSixTwoSixAgg.ESRSlot memory ers = fourSixTwoSixAgg.getESRSlot();
-    //     assertEq(fourSixTwoSixAgg.interestAccrued(), 0);
-    //     assertEq(ers.interestLeft, 0);
-
-    //     vm.warp(block.timestamp + 2 days);
-    //     fourSixTwoSixAgg.gulp();
-    //     assertEq(fourSixTwoSixAgg.interestAccrued(), 0);
-
-    //     vm.warp(block.timestamp + 1 days);
-    //     assertEq(fourSixTwoSixAgg.interestAccrued(), 0);
-    //     uint256 yield;
-    //     {
-    //         uint256 aggrCurrentStrategyShareBalance = eTST.balanceOf(address(fourSixTwoSixAgg));
-    //         uint256 aggrCurrentStrategyUnderlyingBalance = eTST.convertToAssets(aggrCurrentStrategyShareBalance);
-    //         uint256 aggrNewStrategyUnderlyingBalance = aggrCurrentStrategyUnderlyingBalance * 11e17 / 1e18;
-    //         yield = aggrNewStrategyUnderlyingBalance - aggrCurrentStrategyUnderlyingBalance;
-    //         assetTST.mint(address(eTST), yield);
-    //         eTST.skim(type(uint256).max, address(fourSixTwoSixAgg));
-    //     }
-    //     vm.prank(user1);
-    //     fourSixTwoSixAgg.harvest(address(eTST));
-
-    //     assertEq(fourSixTwoSixAgg.interestAccrued(), 0);
-
-    //     vm.warp(block.timestamp + 1 days);
-    //     // interest per day 23.809523809523
-    //     assertEq(fourSixTwoSixAgg.interestAccrued(), 23809523809523809523);
-    //     fourSixTwoSixAgg.gulp();
-    //     ers = fourSixTwoSixAgg.getESRSlot();
-    //     assertEq(ers.interestLeft, yield - 23809523809523809523);
-
-    //     // move close to end of smearing
-    //     vm.warp(block.timestamp + 11 days);
-    //     fourSixTwoSixAgg.gulp();
-    //     ers = fourSixTwoSixAgg.getESRSlot();
-    //     // assertEq(ers.interestLeft, yield - 23809523809523809523*11);
-
-    //     // mock a decrease of strategy balance by ers.interestLeft
-    //     uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(fourSixTwoSixAgg));
-    //     uint256 aggrCurrentStrategyBalanceAfterNegYield = aggrCurrentStrategyBalance - ers.interestLeft;
-    //     vm.mockCall(
-    //         address(eTST),
-    //         abi.encodeWithSelector(EVault.balanceOf.selector, address(fourSixTwoSixAgg)),
-    //         abi.encode(aggrCurrentStrategyBalanceAfterNegYield)
-    //     );
-    //     vm.prank(user1);
-    //     fourSixTwoSixAgg.harvest(address(eTST));
-    // }
-
-    function testGulp() public {
+    function testGulpAfterNegativeYieldEqualToInterestLeft() public {
         fourSixTwoSixAgg.gulp();
         FourSixTwoSixAgg.ESRSlot memory ers = fourSixTwoSixAgg.getESRSlot();
         assertEq(fourSixTwoSixAgg.interestAccrued(), 0);
@@ -141,7 +89,56 @@ contract GulpTest is FourSixTwoSixAggBase {
         vm.warp(block.timestamp + 11 days);
         fourSixTwoSixAgg.gulp();
         ers = fourSixTwoSixAgg.getESRSlot();
-        // assertEq(ers.interestLeft, yield - 23809523809523809523*11);
+
+        // mock a decrease of strategy balance by ers.interestLeft
+        uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(fourSixTwoSixAgg));
+        uint256 aggrCurrentStrategyBalanceAfterNegYield = aggrCurrentStrategyBalance - ers.interestLeft;
+        vm.mockCall(
+            address(eTST),
+            abi.encodeWithSelector(EVault.balanceOf.selector, address(fourSixTwoSixAgg)),
+            abi.encode(aggrCurrentStrategyBalanceAfterNegYield)
+        );
+        vm.prank(user1);
+        fourSixTwoSixAgg.harvest(address(eTST));
+    }
+
+    function testGulpAfterNegativeYieldBiggerThanInterestLeft() public {
+        fourSixTwoSixAgg.gulp();
+        FourSixTwoSixAgg.ESRSlot memory ers = fourSixTwoSixAgg.getESRSlot();
+        assertEq(fourSixTwoSixAgg.interestAccrued(), 0);
+        assertEq(ers.interestLeft, 0);
+
+        vm.warp(block.timestamp + 2 days);
+        fourSixTwoSixAgg.gulp();
+        assertEq(fourSixTwoSixAgg.interestAccrued(), 0);
+
+        vm.warp(block.timestamp + 1 days);
+        assertEq(fourSixTwoSixAgg.interestAccrued(), 0);
+        uint256 yield;
+        {
+            uint256 aggrCurrentStrategyShareBalance = eTST.balanceOf(address(fourSixTwoSixAgg));
+            uint256 aggrCurrentStrategyUnderlyingBalance = eTST.convertToAssets(aggrCurrentStrategyShareBalance);
+            uint256 aggrNewStrategyUnderlyingBalance = aggrCurrentStrategyUnderlyingBalance * 11e17 / 1e18;
+            yield = aggrNewStrategyUnderlyingBalance - aggrCurrentStrategyUnderlyingBalance;
+            assetTST.mint(address(eTST), yield);
+            eTST.skim(type(uint256).max, address(fourSixTwoSixAgg));
+        }
+        vm.prank(user1);
+        fourSixTwoSixAgg.harvest(address(eTST));
+
+        assertEq(fourSixTwoSixAgg.interestAccrued(), 0);
+
+        vm.warp(block.timestamp + 1 days);
+        // interest per day 23.809523809523
+        assertEq(fourSixTwoSixAgg.interestAccrued(), 23809523809523809523);
+        fourSixTwoSixAgg.gulp();
+        ers = fourSixTwoSixAgg.getESRSlot();
+        assertEq(ers.interestLeft, yield - 23809523809523809523);
+
+        // move close to end of smearing
+        vm.warp(block.timestamp + 11 days);
+        fourSixTwoSixAgg.gulp();
+        ers = fourSixTwoSixAgg.getESRSlot();
 
         // mock a decrease of strategy balance by ers.interestLeft
         uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(fourSixTwoSixAgg));
