@@ -10,8 +10,6 @@ import {EVCUtil, IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {BalanceForwarder, IBalanceForwarder} from "./BalanceForwarder.sol";
 import {IRewardStreams} from "reward-streams/interfaces/IRewardStreams.sol";
 
-import {Test, console2, stdError} from "forge-std/Test.sol";
-
 /// @dev Do NOT use with fee on transfer tokens
 /// @dev Do NOT use with rebasing tokens
 /// @dev Based on https://github.com/euler-xyz/euler-vault-kit/blob/master/src/Synths/EulerSavingsRate.sol
@@ -246,7 +244,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         _gulp();
     }
 
-    /// @notice Harvest multiple strategie.
+    /// @notice Harvest multiple strategies.
     /// @param _strategies an array of strategy addresses.
     function harvestMultipleStrategies(address[] calldata _strategies) external nonReentrant {
         for (uint256 i; i < _strategies.length; ++i) {
