@@ -224,6 +224,8 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     /// @param _strategy Address of strategy to rebalance.
     function rebalance(address _strategy) external nonReentrant {
         _rebalance(_strategy);
+
+        _gulp();
     }
 
     /// @notice Rebalance multiple strategies.
@@ -232,9 +234,11 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         for (uint256 i; i < _strategies.length; ++i) {
             _rebalance(_strategies[i]);
         }
+
+        _gulp();
     }
 
-    /// @notice Harvest positive yield.
+    /// @notice Harvest strategy.
     /// @param strategy address of strategy
     function harvest(address strategy) external nonReentrant {
         _harvest(strategy);
@@ -242,6 +246,8 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         _gulp();
     }
 
+    /// @notice Harvest multiple strategie.
+    /// @param _strategies an array of strategy addresses.
     function harvestMultipleStrategies(address[] calldata _strategies) external nonReentrant {
         for (uint256 i; i < _strategies.length; ++i) {
             _harvest(_strategies[i]);
@@ -340,6 +346,10 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         withdrawalQueue.pop();
     }
 
+    function updateInterestAccrued() external returns (ESRSlot memory) {
+        return _updateInterestAccrued();
+    }
+
     function gulp() external nonReentrant {
         _gulp();
     }
@@ -366,7 +376,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     /// @notice Return the accrued interest
     /// @return uint256 accrued interest
     function interestAccrued() external view returns (uint256) {
-        return interestAccruedFromCache(esrSlot);
+        return _interestAccruedFromCache(esrSlot);
     }
 
     /// @notice Transfers a certain amount of tokens to a recipient.
@@ -418,7 +428,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         returns (uint256 shares)
     {
         // Move interest to totalAssetsDeposited
-        updateInterestAndReturnESRSlotCache();
+        _updateInterestAccrued();
         return super.withdraw(assets, receiver, owner);
     }
 
@@ -432,13 +442,13 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         returns (uint256 assets)
     {
         // Move interest to totalAssetsDeposited
-        updateInterestAndReturnESRSlotCache();
+        _updateInterestAccrued();
         return super.redeem(shares, receiver, owner);
     }
 
-    function updateInterestAndReturnESRSlotCache() public returns (ESRSlot memory) {
+    function _updateInterestAccrued() internal returns (ESRSlot memory) {
         ESRSlot memory esrSlotCache = esrSlot;
-        uint256 accruedInterest = interestAccruedFromCache(esrSlotCache);
+        uint256 accruedInterest = _interestAccruedFromCache(esrSlotCache);
         // it's safe to down-cast because the accrued interest is a fraction of interest left
         esrSlotCache.interestLeft -= uint168(accruedInterest);
         esrSlotCache.lastInterestUpdate = uint40(block.timestamp);
@@ -453,7 +463,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     /// @notice Return the total amount of assets deposited, plus the accrued interest.
     /// @return uint256 total amount
     function totalAssets() public view override returns (uint256) {
-        return totalAssetsDeposited + interestAccruedFromCache(esrSlot);
+        return totalAssetsDeposited + _interestAccruedFromCache(esrSlot);
     }
 
     /// @notice get the total assets allocatable
@@ -520,12 +530,15 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         super._withdraw(caller, receiver, owner, assets, shares);
     }
 
+    /// @dev gulp positive yield and increment the left interest
     function _gulp() internal {
-        ESRSlot memory esrSlotCache = updateInterestAndReturnESRSlotCache();
+        ESRSlot memory esrSlotCache = _updateInterestAccrued();
 
         if (totalAssetsDeposited == 0) return;
         uint256 toGulp = totalAssetsAllocatable() - totalAssetsDeposited - esrSlotCache.interestLeft;
-        /// TODO return if toGulp == 0
+
+        if (toGulp == 0) return;
+
         uint256 maxGulp = type(uint168).max - esrSlotCache.interestLeft;
         if (toGulp > maxGulp) toGulp = maxGulp; // cap interest, allowing the vault to function
 
@@ -550,7 +563,6 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
 
         // Harvest profits, also gulps and updates interest
         _harvest(_strategy);
-        _gulp();
 
         Strategy memory strategyData = strategies[_strategy];
 
@@ -663,7 +675,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     /// @dev Get accrued interest without updating it.
     /// @param esrSlotCache Cached esrSlot
     /// @return uint256 accrued interest
-    function interestAccruedFromCache(ESRSlot memory esrSlotCache) internal view returns (uint256) {
+    function _interestAccruedFromCache(ESRSlot memory esrSlotCache) internal view returns (uint256) {
         // If distribution ended, full amount is accrued
         if (block.timestamp > esrSlotCache.interestSmearEnd) {
             return esrSlotCache.interestLeft;
