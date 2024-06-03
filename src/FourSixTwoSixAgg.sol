@@ -525,6 +525,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
 
         if (totalAssetsDeposited == 0) return;
         uint256 toGulp = totalAssetsAllocatable() - totalAssetsDeposited - esrSlotCache.interestLeft;
+        /// TODO return if toGulp == 0
         uint256 maxGulp = type(uint168).max - esrSlotCache.interestLeft;
         if (toGulp > maxGulp) toGulp = maxGulp; // cap interest, allowing the vault to function
 
@@ -619,10 +620,19 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
 
             _accruePerformanceFee(yield);
         } else {
-            uint256 socializedLoss = strategyData.allocated - underlyingBalance;
+            uint256 loss = strategyData.allocated - underlyingBalance;
+
             strategies[strategy].allocated = uint120(underlyingBalance);
-            totalAllocated -= socializedLoss;
-            totalAssetsDeposited -= socializedLoss;
+            totalAllocated -= loss;
+
+            ESRSlot memory esrSlotCache = esrSlot;
+            if (esrSlotCache.interestLeft >= loss) {
+                esrSlotCache.interestLeft -= uint168(loss);
+            } else {
+                totalAssetsDeposited -= loss - esrSlotCache.interestLeft;
+                esrSlotCache.interestLeft = 0;
+            }
+            esrSlot = esrSlotCache;
         }
     }
 
