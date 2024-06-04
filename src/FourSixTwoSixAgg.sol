@@ -685,7 +685,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     /// @param to Address receiving the amount
     function _afterTokenTransfer(address from, address to, uint256 /*amount*/ ) internal override {
         if (from == to) return;
-        
+
         if ((from != address(0)) && (isBalanceForwarderEnabled[from])) {
             balanceTracker.balanceTrackerHook(from, super.balanceOf(from), false);
         }
@@ -700,7 +700,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     /// @return uint256 accrued interest
     function _interestAccruedFromCache(ESRSlot memory esrSlotCache) internal view returns (uint256) {
         // If distribution ended, full amount is accrued
-        if (block.timestamp > esrSlotCache.interestSmearEnd) {
+        if (block.timestamp >= esrSlotCache.interestSmearEnd) {
             return esrSlotCache.interestLeft;
         }
 
