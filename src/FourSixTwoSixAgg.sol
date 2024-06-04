@@ -139,6 +139,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
                 Strategy({allocated: 0, allocationPoints: uint120(_initialStrategiesAllocationPoints[i]), active: true});
 
             _totalAllocationPoints += _initialStrategiesAllocationPoints[i];
+            withdrawalQueue.push(_initialStrategies[i]);
         }
         totalAllocationPoints = _totalAllocationPoints;
 
