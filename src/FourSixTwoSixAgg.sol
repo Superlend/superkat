@@ -528,8 +528,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
 
             Strategy storage strategyStorage = strategies[address(strategy)];
 
-            uint256 sharesBalance = strategy.balanceOf(address(this));
-            uint256 underlyingBalance = strategy.convertToAssets(sharesBalance);
+            uint256 underlyingBalance = strategy.maxWithdraw(address(this));
 
             uint256 desiredAssets = _targetBalance - _currentBalance;
             uint256 withdrawAmount = (underlyingBalance > desiredAssets) ? desiredAssets : underlyingBalance;
@@ -641,8 +640,8 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         Strategy memory strategyData = strategies[strategy];
 
         if (strategyData.allocated == 0) return;
-        uint256 sharesBalance = IERC4626(strategy).balanceOf(address(this));
-        uint256 underlyingBalance = IERC4626(strategy).convertToAssets(sharesBalance);
+
+        uint256 underlyingBalance = IERC4626(strategy).maxWithdraw(address(this));
 
         if (underlyingBalance == strategyData.allocated) {
             return;
@@ -685,6 +684,8 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     /// @param from Address sending the amount
     /// @param to Address receiving the amount
     function _afterTokenTransfer(address from, address to, uint256 /*amount*/ ) internal override {
+        if (from == to) return;
+        
         if ((from != address(0)) && (isBalanceForwarderEnabled[from])) {
             balanceTracker.balanceTrackerHook(from, super.balanceOf(from), false);
         }
