@@ -142,8 +142,11 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
                 revert InvalidStrategyAsset();
             }
 
-            strategies[_initialStrategies[i]] =
-                Strategy({allocated: 0, allocationPoints: _initialStrategiesAllocationPoints[i].toUint120(), active: true});
+            strategies[_initialStrategies[i]] = Strategy({
+                allocated: 0,
+                allocationPoints: _initialStrategiesAllocationPoints[i].toUint120(),
+                active: true
+            });
 
             cachedTotalAllocationPoints += _initialStrategiesAllocationPoints[i];
             withdrawalQueue.push(_initialStrategies[i]);
@@ -500,14 +503,25 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         override
     {
         totalAssetsDeposited -= assets;
-
         uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
+
+        if (assetsRetrieved < assets) assetsRetrieved = _withdrawFromStrategies(assetsRetrieved, assets);
+        if (assetsRetrieved < assets) {
+            revert NotEnoughAssets();
+        }
+
+        _gulp();
+
+        super._withdraw(caller, receiver, owner, assets, shares);
+    }
+
+    /// @dev Withdraw needed asset amount from strategies.
+    /// @param _currentBalance Aggregator asset balance.
+    /// @param _targetBalance target balance.
+    /// @return uint256 current balance after withdraw.
+    function _withdrawFromStrategies(uint256 _currentBalance, uint256 _targetBalance) internal returns (uint256) {
         uint256 numStrategies = withdrawalQueue.length;
         for (uint256 i; i < numStrategies; ++i) {
-            if (assetsRetrieved >= assets) {
-                break;
-            }
-
             IERC4626 strategy = IERC4626(withdrawalQueue[i]);
 
             _harvest(address(strategy));
@@ -517,7 +531,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
             uint256 sharesBalance = strategy.balanceOf(address(this));
             uint256 underlyingBalance = strategy.convertToAssets(sharesBalance);
 
-            uint256 desiredAssets = assets - assetsRetrieved;
+            uint256 desiredAssets = _targetBalance - _currentBalance;
             uint256 withdrawAmount = (underlyingBalance > desiredAssets) ? desiredAssets : underlyingBalance;
 
             // Update allocated assets
@@ -525,19 +539,17 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
             totalAllocated -= withdrawAmount;
 
             // update assetsRetrieved
-            assetsRetrieved += withdrawAmount;
+            _currentBalance += withdrawAmount;
 
             // Do actual withdraw from strategy
             strategy.withdraw(withdrawAmount, address(this), address(this));
+
+            if (_currentBalance >= _targetBalance) {
+                break;
+            }
         }
 
-        _gulp();
-
-        if (assetsRetrieved < assets) {
-            revert NotEnoughAssets();
-        }
-
-        super._withdraw(caller, receiver, owner, assets, shares);
+        return _currentBalance;
     }
 
     /// @dev gulp positive yield and increment the left interest
