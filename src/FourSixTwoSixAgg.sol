@@ -578,8 +578,6 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     ///         - If all the available cash is greater than the max deposit, deposit the max deposit
     /// @param _strategy Address of strategy to rebalance.
     function _rebalance(address _strategy) internal {
-        console2.log("rebalanciiiing");
-
         if (_strategy == address(0)) {
             return; //nothing to rebalance as this is the cash reserve
         }
