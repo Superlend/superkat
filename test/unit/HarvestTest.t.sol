@@ -77,18 +77,14 @@ contract HarvestTest is FourSixTwoSixAggBase {
         );
 
         assertTrue(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))) > strategyBefore.allocated);
+        uint256 expectedAllocated = eTST.maxWithdraw(address(fourSixTwoSixAgg));
 
         vm.prank(user1);
         fourSixTwoSixAgg.harvest(address(eTST));
 
+        assertEq((fourSixTwoSixAgg.getStrategy(address(eTST))).allocated, expectedAllocated);
         assertEq(
-            (fourSixTwoSixAgg.getStrategy(address(eTST))).allocated,
-            eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg)))
-        );
-        assertEq(
-            fourSixTwoSixAgg.totalAllocated(),
-            totalAllocatedBefore
-                + (eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))) - strategyBefore.allocated)
+            fourSixTwoSixAgg.totalAllocated(), totalAllocatedBefore + (expectedAllocated - strategyBefore.allocated)
         );
     }
 
@@ -125,8 +121,7 @@ contract HarvestTest is FourSixTwoSixAggBase {
 
         FourSixTwoSixAgg.Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
         assertTrue(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))) < strategyBefore.allocated);
-        uint256 negativeYield =
-            strategyBefore.allocated - eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg)));
+        uint256 negativeYield = strategyBefore.allocated - eTST.maxWithdraw(address(fourSixTwoSixAgg));
 
         uint256 user1SharesBefore = fourSixTwoSixAgg.balanceOf(user1);
         uint256 user1SocializedLoss = user1SharesBefore * negativeYield / fourSixTwoSixAgg.totalSupply();
@@ -169,8 +164,7 @@ contract HarvestTest is FourSixTwoSixAggBase {
 
         FourSixTwoSixAgg.Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
         assertTrue(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))) < strategyBefore.allocated);
-        uint256 negativeYield =
-            strategyBefore.allocated - eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg)));
+        uint256 negativeYield = strategyBefore.allocated - eTST.maxWithdraw(address(fourSixTwoSixAgg));
         uint256 user1SharesBefore = fourSixTwoSixAgg.balanceOf(user1);
         uint256 user1SocializedLoss = user1SharesBefore * negativeYield / fourSixTwoSixAgg.totalSupply();
         uint256 user2SharesBefore = fourSixTwoSixAgg.balanceOf(user2);
