@@ -100,6 +100,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         address indexed strategy, uint256 currentAllocation, uint256 targetAllocation, uint256 amountToRebalance
     );
     event Gulp(uint256 interestLeft, uint256 interestSmearEnd);
+    event Harvest(address indexed strategy, uint256 strategyBalanceAmount, uint256 strategyAllocatedAmount);
 
     /// @notice Modifier to require an account status check on the EVC.
     /// @dev Calls `requireAccountStatusCheck` function from EVC for the specified account after the function body.
@@ -657,10 +658,6 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         emit Rebalance(_strategy, currentAllocation, targetAllocation, amountToRebalance);
     }
 
-    event Harvest(
-        address indexed strategy, uint256 strategyBalanceAmount, uint256 strategyAllocatedAmount, uint168 interestLeft
-    );
-
     function _harvest(address _strategy) internal {
         Strategy memory strategyData = strategies[_strategy];
 
@@ -693,7 +690,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
             esrSlot = esrSlotCache;
         }
 
-        emit Harvest(_strategy, underlyingBalance, strategyData.allocated, esrSlotCache.interestLeft);
+        emit Harvest(_strategy, underlyingBalance, strategyData.allocated);
     }
 
     function _accruePerformanceFee(uint256 _yield) internal {
