@@ -92,6 +92,15 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         bool active;
     }
 
+    event SetFeeRecipient(address indexed oldRecipient, address indexed newRecipient);
+    event SetPerformanceFee(uint256 oldFee, uint256 newFee);
+    event OptInStrategyRewards(address indexed strategy);
+    event OptOutStrategyRewards(address indexed strategy);
+    event Rebalance(
+        address indexed strategy, uint256 currentAllocation, uint256 targetAllocation, uint256 amountToRebalance
+    );
+    event Gulp(uint256 interestLeft, uint256 interestSmearEnd);
+
     /// @notice Modifier to require an account status check on the EVC.
     /// @dev Calls `requireAccountStatusCheck` function from EVC for the specified account after the function body.
     /// @param account The address of the account to check.
@@ -169,6 +178,8 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     function setFeeRecipient(address _newFeeRecipient) external onlyRole(TREASURY_MANAGER_ROLE) {
         if (_newFeeRecipient == feeRecipient) revert FeeRecipientAlreadySet();
 
+        emit SetFeeRecipient(feeRecipient, _newFeeRecipient);
+
         feeRecipient = _newFeeRecipient;
     }
 
@@ -179,6 +190,8 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         if (feeRecipient == address(0)) revert FeeRecipientNotSet();
         if (_newFee == performanceFee) revert PerformanceFeeAlreadySet();
 
+        emit SetPerformanceFee(performanceFee, _newFee);
+
         performanceFee = _newFee;
     }
 
@@ -188,12 +201,16 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         if (!strategies[_strategy].active) revert InactiveStrategy();
 
         IBalanceForwarder(_strategy).enableBalanceForwarder();
+
+        emit OptInStrategyRewards(_strategy);
     }
 
     /// @notice Opt out of strategy rewards
     /// @param _strategy Strategy address
     function optOutStrategyRewards(address _strategy) external onlyRole(TREASURY_MANAGER_ROLE) {
         IBalanceForwarder(_strategy).disableBalanceForwarder();
+
+        emit OptOutStrategyRewards(_strategy);
     }
 
     /// @notice Claim a specific strategy rewards
@@ -568,6 +585,8 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
 
         // write esrSlotCache back to storage in a single SSTORE
         esrSlot = esrSlotCache;
+
+        emit Gulp(esrSlotCache.interestLeft, esrSlotCache.interestSmearEnd);
     }
 
     /// @notice Rebalance strategy allocation.
@@ -592,18 +611,19 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
             totalAssetsAllocatableCache * strategyData.allocationPoints / totalAllocationPointsCache;
         uint256 currentAllocation = strategyData.allocated;
 
+        uint256 amountToRebalance;
         if (currentAllocation > targetAllocation) {
             // Withdraw
-            uint256 toWithdraw = currentAllocation - targetAllocation;
+            amountToRebalance = currentAllocation - targetAllocation;
 
             uint256 maxWithdraw = IERC4626(_strategy).maxWithdraw(address(this));
-            if (toWithdraw > maxWithdraw) {
-                toWithdraw = maxWithdraw;
+            if (amountToRebalance > maxWithdraw) {
+                amountToRebalance = maxWithdraw;
             }
 
-            IERC4626(_strategy).withdraw(toWithdraw, address(this), address(this));
-            strategies[_strategy].allocated = (currentAllocation - toWithdraw).toUint120();
-            totalAllocated -= toWithdraw;
+            IERC4626(_strategy).withdraw(amountToRebalance, address(this), address(this));
+            strategies[_strategy].allocated = (currentAllocation - amountToRebalance).toUint120();
+            totalAllocated -= amountToRebalance;
         } else if (currentAllocation < targetAllocation) {
             // Deposit
             uint256 targetCash =
@@ -613,48 +633,54 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
             // Calculate available cash to put in strategies
             uint256 cashAvailable = (currentCash > targetCash) ? currentCash - targetCash : 0;
 
-            uint256 toDeposit = targetAllocation - currentAllocation;
-            if (toDeposit > cashAvailable) {
-                toDeposit = cashAvailable;
+            amountToRebalance = targetAllocation - currentAllocation;
+            if (amountToRebalance > cashAvailable) {
+                amountToRebalance = cashAvailable;
             }
 
             uint256 maxDeposit = IERC4626(_strategy).maxDeposit(address(this));
-            if (toDeposit > maxDeposit) {
-                toDeposit = maxDeposit;
+            if (amountToRebalance > maxDeposit) {
+                amountToRebalance = maxDeposit;
             }
 
-            if (toDeposit == 0) {
+            if (amountToRebalance == 0) {
                 return; // No cash to deposit
             }
 
             // Do required approval (safely) and deposit
-            IERC20(asset()).safeApprove(_strategy, toDeposit);
-            IERC4626(_strategy).deposit(toDeposit, address(this));
-            strategies[_strategy].allocated = uint120(currentAllocation + toDeposit);
-            totalAllocated += toDeposit;
+            IERC20(asset()).safeApprove(_strategy, amountToRebalance);
+            IERC4626(_strategy).deposit(amountToRebalance, address(this));
+            strategies[_strategy].allocated = uint120(currentAllocation + amountToRebalance);
+            totalAllocated += amountToRebalance;
         }
+
+        emit Rebalance(_strategy, currentAllocation, targetAllocation, amountToRebalance);
     }
 
-    function _harvest(address strategy) internal {
-        Strategy memory strategyData = strategies[strategy];
+    event Harvest(
+        address indexed strategy, uint256 strategyBalanceAmount, uint256 strategyAllocatedAmount, uint168 interestLeft
+    );
+
+    function _harvest(address _strategy) internal {
+        Strategy memory strategyData = strategies[_strategy];
 
         if (strategyData.allocated == 0) return;
 
-        uint256 underlyingBalance = IERC4626(strategy).maxWithdraw(address(this));
+        uint256 underlyingBalance = IERC4626(_strategy).maxWithdraw(address(this));
 
         if (underlyingBalance == strategyData.allocated) {
             return;
         } else if (underlyingBalance > strategyData.allocated) {
             // There's yield!
             uint256 yield = underlyingBalance - strategyData.allocated;
-            strategies[strategy].allocated = uint120(underlyingBalance);
+            strategies[_strategy].allocated = uint120(underlyingBalance);
             totalAllocated += yield;
 
             _accruePerformanceFee(yield);
         } else {
             uint256 loss = strategyData.allocated - underlyingBalance;
 
-            strategies[strategy].allocated = uint120(underlyingBalance);
+            strategies[_strategy].allocated = uint120(underlyingBalance);
             totalAllocated -= loss;
 
             ESRSlot memory esrSlotCache = esrSlot;
@@ -666,6 +692,8 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
             }
             esrSlot = esrSlotCache;
         }
+
+        emit Harvest(_strategy, underlyingBalance, strategyData.allocated, esrSlotCache.interestLeft);
     }
 
     function _accruePerformanceFee(uint256 _yield) internal {
