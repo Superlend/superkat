@@ -311,6 +311,10 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         emit AdjustAllocationPoints(_strategy, strategyDataCache.allocationPoints, _newPoints);
     }
 
+    /// @notice Set cap on strategy allocated amount.
+    /// @dev By default, cap is set to 0, not activated.
+    /// @param _strategy Strategy address.
+    /// @param _cap Cap amount
     function setStrategyCap(address _strategy, uint256 _cap) external nonReentrant onlyRole(STRATEGY_MANAGER_ROLE) {
         Strategy memory strategyDataCache = strategies[_strategy];
 
