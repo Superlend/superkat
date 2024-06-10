@@ -10,12 +10,13 @@ import {EVCUtil, IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {BalanceForwarder, IBalanceForwarder} from "./BalanceForwarder.sol";
 import {IRewardStreams} from "reward-streams/interfaces/IRewardStreams.sol";
 import {SafeCast} from "@openzeppelin/utils/math/SafeCast.sol";
+import {Hooks} from "./Hooks.sol";
 
 /// @dev Do NOT use with fee on transfer tokens
 /// @dev Do NOT use with rebasing tokens
 /// @dev Based on https://github.com/euler-xyz/euler-vault-kit/blob/master/src/Synths/EulerSavingsRate.sol
 /// @dev inspired by Yearn v3 ❤️
-contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEnumerable {
+contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEnumerable, Hooks {
     using SafeERC20 for IERC20;
     using SafeCast for uint256;
 
@@ -48,8 +49,8 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     bytes32 public constant STRATEGY_ADDER_ROLE_ADMINROLE = keccak256("STRATEGY_ADDER_ROLE_ADMINROLE");
     bytes32 public constant STRATEGY_REMOVER_ROLE = keccak256("STRATEGY_REMOVER_ROLE");
     bytes32 public constant STRATEGY_REMOVER_ROLE_ADMINROLE = keccak256("STRATEGY_REMOVER_ROLE_ADMINROLE");
-    bytes32 public constant TREASURY_MANAGER_ROLE = keccak256("TREASURY_MANAGER_ROLE");
-    bytes32 public constant TREASURY_MANAGER_ROLE_ADMINROLE = keccak256("TREASURY_MANAGER_ROLE_ADMINROLE");
+    bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
+    bytes32 public constant MANAGER_ROLE_ADMINROLE = keccak256("MANAGER_ROLE_ADMINROLE");
 
     /// @dev The maximum performanceFee the vault can have is 50%
     uint256 internal constant MAX_PERFORMANCE_FEE = 0.5e18;
@@ -179,12 +180,12 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         _setRoleAdmin(WITHDRAW_QUEUE_MANAGER_ROLE, WITHDRAW_QUEUE_MANAGER_ROLE_ADMINROLE);
         _setRoleAdmin(STRATEGY_ADDER_ROLE, STRATEGY_ADDER_ROLE_ADMINROLE);
         _setRoleAdmin(STRATEGY_REMOVER_ROLE, STRATEGY_REMOVER_ROLE_ADMINROLE);
-        _setRoleAdmin(TREASURY_MANAGER_ROLE, TREASURY_MANAGER_ROLE_ADMINROLE);
+        _setRoleAdmin(MANAGER_ROLE, MANAGER_ROLE_ADMINROLE);
     }
 
     /// @notice Set performance fee recipient address
     /// @notice @param _newFeeRecipient Recipient address
-    function setFeeRecipient(address _newFeeRecipient) external onlyRole(TREASURY_MANAGER_ROLE) {
+    function setFeeRecipient(address _newFeeRecipient) external onlyRole(MANAGER_ROLE) {
         if (_newFeeRecipient == feeRecipient) revert FeeRecipientAlreadySet();
 
         emit SetFeeRecipient(feeRecipient, _newFeeRecipient);
@@ -194,7 +195,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
 
     /// @notice Set performance fee (1e18 == 100%)
     /// @notice @param _newFee Fee rate
-    function setPerformanceFee(uint256 _newFee) external onlyRole(TREASURY_MANAGER_ROLE) {
+    function setPerformanceFee(uint256 _newFee) external onlyRole(MANAGER_ROLE) {
         if (_newFee > MAX_PERFORMANCE_FEE) revert MaxPerformanceFeeExceeded();
         if (feeRecipient == address(0)) revert FeeRecipientNotSet();
         if (_newFee == performanceFee) revert PerformanceFeeAlreadySet();
@@ -206,7 +207,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
 
     /// @notice Opt in to strategy rewards
     /// @param _strategy Strategy address
-    function optInStrategyRewards(address _strategy) external onlyRole(TREASURY_MANAGER_ROLE) {
+    function optInStrategyRewards(address _strategy) external onlyRole(MANAGER_ROLE) {
         if (!strategies[_strategy].active) revert InactiveStrategy();
 
         IBalanceForwarder(_strategy).enableBalanceForwarder();
@@ -216,7 +217,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
 
     /// @notice Opt out of strategy rewards
     /// @param _strategy Strategy address
-    function optOutStrategyRewards(address _strategy) external onlyRole(TREASURY_MANAGER_ROLE) {
+    function optOutStrategyRewards(address _strategy) external onlyRole(MANAGER_ROLE) {
         IBalanceForwarder(_strategy).disableBalanceForwarder();
 
         emit OptOutStrategyRewards(_strategy);
@@ -234,7 +235,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         address _reward,
         address _recipient,
         bool _forfeitRecentReward
-    ) external onlyRole(TREASURY_MANAGER_ROLE) {
+    ) external onlyRole(MANAGER_ROLE) {
         address rewardStreams = IBalanceForwarder(_strategy).balanceTrackerAddress();
 
         IRewardStreams(rewardStreams).claimReward(_rewarded, _reward, _recipient, _forfeitRecentReward);
@@ -367,6 +368,8 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
             revert StrategyAlreadyExist();
         }
 
+        _callHook(ADD_STRATEGY, _msgSender());
+
         strategies[_strategy] =
             Strategy({allocated: 0, allocationPoints: _allocationPoints.toUint120(), active: true, cap: 0});
 
@@ -388,6 +391,8 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         if (!strategyStorage.active) {
             revert AlreadyRemoved();
         }
+
+        _callHook(REMOVE_STRATEGY, _msgSender());
 
         totalAllocationPoints -= strategyStorage.allocationPoints;
         strategyStorage.active = false;
@@ -513,6 +518,10 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         return super.redeem(shares, receiver, owner);
     }
 
+    function setHooksConfig(address _hooksTarget, uint32 _hookedFns) public override onlyRole(MANAGER_ROLE) {
+        super.setHooksConfig(_hooksTarget, _hookedFns);
+    }
+
     /// @notice update accrued interest.
     /// @return struct ESRSlot struct.
     function _updateInterestAccrued() internal returns (ESRSlot memory) {
@@ -545,6 +554,8 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     /// @dev Increate the total assets deposited, and call IERC4626._deposit()
     /// @dev See {IERC4626-_deposit}.
     function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal override {
+        _callHook(DEPOSIT, caller);
+
         totalAssetsDeposited += assets;
 
         super._deposit(caller, receiver, assets, shares);
@@ -558,6 +569,8 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         internal
         override
     {
+        _callHook(WITHDRAW, caller);
+
         totalAssetsDeposited -= assets;
         uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
 
@@ -639,6 +652,8 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         if (_strategy == address(0)) {
             return; //nothing to rebalance as this is the cash reserve
         }
+
+        _callHook(REBALANCE, _msgSender());
 
         _harvest(_strategy);
 

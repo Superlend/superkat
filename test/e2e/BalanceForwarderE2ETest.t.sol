@@ -39,14 +39,14 @@ contract BalanceForwarderE2ETest is FourSixTwoSixAggBase {
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER_ROLE_ADMINROLE(), deployer);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_ADDER_ROLE_ADMINROLE(), deployer);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE_ADMINROLE(), deployer);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.TREASURY_MANAGER_ROLE_ADMINROLE(), deployer);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.MANAGER_ROLE_ADMINROLE(), deployer);
 
         // grant roles to manager
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_MANAGER_ROLE(), manager);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER_ROLE(), manager);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_ADDER_ROLE(), manager);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE(), manager);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.TREASURY_MANAGER_ROLE(), manager);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.MANAGER_ROLE(), manager);
         vm.stopPrank();
 
         uint256 initialStrategyAllocationPoints = 500e18;
