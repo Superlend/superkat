@@ -3,6 +3,8 @@ pragma solidity ^0.8.0;
 
 import "evk/test/unit/evault/EVaultTestBase.t.sol";
 import {FourSixTwoSixAgg} from "../../src/FourSixTwoSixAgg.sol";
+import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
+import {Hooks} from "../../src/Hooks.sol";
 
 contract FourSixTwoSixAggBase is EVaultTestBase {
     uint256 public constant CASH_RESERVE_ALLOCATION_POINTS = 1000e18;

@@ -2,11 +2,12 @@
 pragma solidity ^0.8.0;
 
 import {HooksLib, HooksType} from "./lib/HooksLib.sol";
-import {IHookTarget} from "./interface/IHookTarget.sol";
+import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
 
 abstract contract Hooks {
     using HooksLib for HooksType;
 
+    error InvalidHooksTarget();
     error NotHooksContract();
     error InvalidHookedFns();
     error EmptyError();
@@ -19,27 +20,32 @@ abstract contract Hooks {
 
     uint32 constant ACTIONS_COUNTER = 1 << 5;
 
-    address public hooksTarget;
-    HooksType public hookedFn;
+    address public hookTarget;
+    HooksType public hookedFns;
 
-    function setHooksConfig(address _hooksTarget, uint32 _hookedFns) public virtual {
-        if (_hooksTarget != address(0) && IHookTarget(_hooksTarget).isHookTarget() != IHookTarget.isHookTarget.selector)
-        {
+    function getHooksConfig() external view returns (address, uint32) {
+        return (hookTarget, hookedFns.toUint32());
+    }
+
+    function setHooksConfig(address _hookTarget, uint32 _hookedFns) public virtual {
+        if (_hookTarget != address(0) && IHookTarget(_hookTarget).isHookTarget() != IHookTarget.isHookTarget.selector) {
             revert NotHooksContract();
         }
-
+        if (_hookedFns != 0 && _hookTarget == address(0)) {
+            revert InvalidHooksTarget();
+        }
         if (_hookedFns >= ACTIONS_COUNTER) revert InvalidHookedFns();
 
-        hooksTarget = _hooksTarget;
-        hookedFn = HooksType.wrap(_hookedFns);
+        hookTarget = _hookTarget;
+        hookedFns = HooksType.wrap(_hookedFns);
     }
 
     // Checks whether a hook has been installed for the _operation and if so, invokes the hook target.
     // If the hook target is zero address, this will revert.
-    function _callHook(uint32 _operation, address _caller) internal {
-        if (hookedFn.isNotSet(_operation)) return;
+    function _callHookTarget(uint32 _operation, address _caller) internal {
+        if (hookedFns.isNotSet(_operation)) return;
 
-        address target = hooksTarget;
+        address target = hookTarget;
 
         // if (hookTarget == address(0)) revert E_OperationDisabled();
 

@@ -368,7 +368,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
             revert StrategyAlreadyExist();
         }
 
-        _callHook(ADD_STRATEGY, _msgSender());
+        _callHookTarget(ADD_STRATEGY, _msgSender());
 
         strategies[_strategy] =
             Strategy({allocated: 0, allocationPoints: _allocationPoints.toUint120(), active: true, cap: 0});
@@ -392,7 +392,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
             revert AlreadyRemoved();
         }
 
-        _callHook(REMOVE_STRATEGY, _msgSender());
+        _callHookTarget(REMOVE_STRATEGY, _msgSender());
 
         totalAllocationPoints -= strategyStorage.allocationPoints;
         strategyStorage.active = false;
@@ -518,8 +518,8 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         return super.redeem(shares, receiver, owner);
     }
 
-    function setHooksConfig(address _hooksTarget, uint32 _hookedFns) public override onlyRole(MANAGER_ROLE) {
-        super.setHooksConfig(_hooksTarget, _hookedFns);
+    function setHooksConfig(address _hookTarget, uint32 _hookedFns) public override onlyRole(MANAGER_ROLE) {
+        super.setHooksConfig(_hookTarget, _hookedFns);
     }
 
     /// @notice update accrued interest.
@@ -554,7 +554,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     /// @dev Increate the total assets deposited, and call IERC4626._deposit()
     /// @dev See {IERC4626-_deposit}.
     function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal override {
-        _callHook(DEPOSIT, caller);
+        _callHookTarget(DEPOSIT, caller);
 
         totalAssetsDeposited += assets;
 
@@ -569,7 +569,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         internal
         override
     {
-        _callHook(WITHDRAW, caller);
+        _callHookTarget(WITHDRAW, caller);
 
         totalAssetsDeposited -= assets;
         uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
@@ -653,7 +653,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
             return; //nothing to rebalance as this is the cash reserve
         }
 
-        _callHook(REBALANCE, _msgSender());
+        _callHookTarget(REBALANCE, _msgSender());
 
         _harvest(_strategy);
 
