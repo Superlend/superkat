@@ -43,8 +43,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     bytes32 public constant STRATEGY_MANAGER_ROLE = keccak256("STRATEGY_MANAGER_ROLE");
     bytes32 public constant STRATEGY_MANAGER_ROLE_ADMINROLE = keccak256("STRATEGY_MANAGER_ROLE_ADMINROLE");
     bytes32 public constant WITHDRAW_QUEUE_MANAGER_ROLE = keccak256("WITHDRAW_QUEUE_MANAGER_ROLE");
-    bytes32 public constant WITHDRAW_QUEUE_MANAGER_ROLE_ADMINROLE =
-        keccak256("WITHDRAW_QUEUE_MANAGER_ROLE_ADMINROLE");
+    bytes32 public constant WITHDRAW_QUEUE_MANAGER_ROLE_ADMINROLE = keccak256("WITHDRAW_QUEUE_MANAGER_ROLE_ADMINROLE");
     bytes32 public constant STRATEGY_ADDER_ROLE = keccak256("STRATEGY_ADDER_ROLE");
     bytes32 public constant STRATEGY_ADDER_ROLE_ADMINROLE = keccak256("STRATEGY_ADDER_ROLE_ADMINROLE");
     bytes32 public constant STRATEGY_REMOVER_ROLE = keccak256("STRATEGY_REMOVER_ROLE");
@@ -313,11 +312,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
 
     event SetStrategyCap(address indexed strategy, uint256 cap);
 
-    function setStrategyCap(address _strategy, uint256 _cap)
-        external
-        nonReentrant
-        onlyRole(STRATEGY_MANAGER_ROLE)
-    {
+    function setStrategyCap(address _strategy, uint256 _cap) external nonReentrant onlyRole(STRATEGY_MANAGER_ROLE) {
         Strategy memory strategyDataCache = strategies[_strategy];
 
         if (!strategyDataCache.active) {
@@ -369,7 +364,8 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
             revert StrategyAlreadyExist();
         }
 
-        strategies[_strategy] = Strategy({allocated: 0, allocationPoints: _allocationPoints.toUint120(), active: true, cap: 0});
+        strategies[_strategy] =
+            Strategy({allocated: 0, allocationPoints: _allocationPoints.toUint120(), active: true, cap: 0});
 
         totalAllocationPoints += _allocationPoints;
         withdrawalQueue.push(_strategy);
@@ -645,16 +641,20 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
 
         Strategy memory strategyData = strategies[_strategy];
 
+        // no rebalance if strategy have an allocated amount greater than cap
+        if ((strategyData.cap > 0) && (strategyData.allocated > strategyData.cap)) return;
+
         uint256 totalAllocationPointsCache = totalAllocationPoints;
         uint256 totalAssetsAllocatableCache = totalAssetsAllocatable();
         uint256 targetAllocation =
             totalAssetsAllocatableCache * strategyData.allocationPoints / totalAllocationPointsCache;
-        uint256 currentAllocation = strategyData.allocated;
+
+        if ((strategyData.cap > 0) && (targetAllocation > strategyData.cap)) targetAllocation = strategyData.cap;
 
         uint256 amountToRebalance;
-        if (currentAllocation > targetAllocation) {
+        if (strategyData.allocated > targetAllocation) {
             // Withdraw
-            amountToRebalance = currentAllocation - targetAllocation;
+            amountToRebalance = strategyData.allocated - targetAllocation;
 
             uint256 maxWithdraw = IERC4626(_strategy).maxWithdraw(address(this));
             if (amountToRebalance > maxWithdraw) {
@@ -662,9 +662,9 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
             }
 
             IERC4626(_strategy).withdraw(amountToRebalance, address(this), address(this));
-            strategies[_strategy].allocated = (currentAllocation - amountToRebalance).toUint120();
+            strategies[_strategy].allocated = (strategyData.allocated - amountToRebalance).toUint120();
             totalAllocated -= amountToRebalance;
-        } else if (currentAllocation < targetAllocation) {
+        } else if (strategyData.allocated < targetAllocation) {
             // Deposit
             uint256 targetCash =
                 totalAssetsAllocatableCache * strategies[address(0)].allocationPoints / totalAllocationPointsCache;
@@ -673,7 +673,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
             // Calculate available cash to put in strategies
             uint256 cashAvailable = (currentCash > targetCash) ? currentCash - targetCash : 0;
 
-            amountToRebalance = targetAllocation - currentAllocation;
+            amountToRebalance = targetAllocation - strategyData.allocated;
             if (amountToRebalance > cashAvailable) {
                 amountToRebalance = cashAvailable;
             }
@@ -690,11 +690,11 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
             // Do required approval (safely) and deposit
             IERC20(asset()).safeApprove(_strategy, amountToRebalance);
             IERC4626(_strategy).deposit(amountToRebalance, address(this));
-            strategies[_strategy].allocated = uint120(currentAllocation + amountToRebalance);
+            strategies[_strategy].allocated = uint120(strategyData.allocated + amountToRebalance);
             totalAllocated += amountToRebalance;
         }
 
-        emit Rebalance(_strategy, currentAllocation, targetAllocation, amountToRebalance);
+        emit Rebalance(_strategy, strategyData.allocated, targetAllocation, amountToRebalance);
     }
 
     function _harvest(address _strategy) internal {
