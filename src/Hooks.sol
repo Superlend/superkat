@@ -10,16 +10,16 @@ contract Hooks {
     error NotHooksContract();
     error InvalidHookedFns();
 
-    uint32 constant public DEPOSIT = 1 << 0;
-    uint32 constant public MINT = 1 << 1;
-    uint32 constant public WITHDRAW = 1 << 2;
-    uint32 constant public REDEEM = 1 << 3;
-    uint32 constant public REBALANCE = 1 << 4;
-    uint32 constant public HARVEST = 1 << 5;
-    uint32 constant public GULP = 1 << 6;
-    uint32 constant public REORDER_WITHDRAWAL_QUEUE = 1 << 7;
-    uint32 constant public ADD_STRATEGY = 1 << 8;
-    uint32 constant public REMOVE_STRATEGY = 1 << 9;
+    uint32 public constant DEPOSIT = 1 << 0;
+    uint32 public constant MINT = 1 << 1;
+    uint32 public constant WITHDRAW = 1 << 2;
+    uint32 public constant REDEEM = 1 << 3;
+    uint32 public constant REBALANCE = 1 << 4;
+    uint32 public constant HARVEST = 1 << 5;
+    uint32 public constant GULP = 1 << 6;
+    uint32 public constant REORDER_WITHDRAWAL_QUEUE = 1 << 7;
+    uint32 public constant ADD_STRATEGY = 1 << 8;
+    uint32 public constant REMOVE_STRATEGY = 1 << 9;
 
     uint32 constant ACTIONS_COUNTER = 1 << 10;
 
