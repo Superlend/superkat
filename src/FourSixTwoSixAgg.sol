@@ -107,6 +107,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     event AddStrategy(address indexed strategy, uint256 allocationPoints);
     event RemoveStrategy(address indexed _strategy);
     event AccruePerformanceFee(address indexed feeRecipient, uint256 performanceFee, uint256 yield, uint256 feeShares);
+    event SetStrategyCap(address indexed strategy, uint256 cap);
 
     /// @notice Modifier to require an account status check on the EVC.
     /// @dev Calls `requireAccountStatusCheck` function from EVC for the specified account after the function body.
@@ -309,8 +310,6 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
 
         emit AdjustAllocationPoints(_strategy, strategyDataCache.allocationPoints, _newPoints);
     }
-
-    event SetStrategyCap(address indexed strategy, uint256 cap);
 
     function setStrategyCap(address _strategy, uint256 _cap) external nonReentrant onlyRole(STRATEGY_MANAGER_ROLE) {
         Strategy memory strategyDataCache = strategies[_strategy];
@@ -642,7 +641,7 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         Strategy memory strategyData = strategies[_strategy];
 
         // no rebalance if strategy have an allocated amount greater than cap
-        if ((strategyData.cap > 0) && (strategyData.allocated > strategyData.cap)) return;
+        if ((strategyData.cap > 0) && (strategyData.allocated >= strategyData.cap)) return;
 
         uint256 totalAllocationPointsCache = totalAllocationPoints;
         uint256 totalAssetsAllocatableCache = totalAssetsAllocatable();

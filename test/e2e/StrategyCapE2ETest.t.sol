@@ -43,4 +43,109 @@ contract StrategyCapE2ETest is FourSixTwoSixAggBase {
         vm.expectRevert(FourSixTwoSixAgg.InactiveStrategy.selector);
         fourSixTwoSixAgg.setStrategyCap(address(0x2), cap);
     }
+
+    function testRebalanceAfterHittingCap() public {
+        uint256 cap = 3333333333333333333333;
+        vm.prank(manager);
+        fourSixTwoSixAgg.setStrategyCap(address(eTST), cap);
+
+        uint256 amountToDeposit = 10000e18;
+
+        // deposit into aggregator
+        {
+            uint256 balanceBefore = fourSixTwoSixAgg.balanceOf(user1);
+            uint256 totalSupplyBefore = fourSixTwoSixAgg.totalSupply();
+            uint256 totalAssetsDepositedBefore = fourSixTwoSixAgg.totalAssetsDeposited();
+            uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
+
+            vm.startPrank(user1);
+            assetTST.approve(address(fourSixTwoSixAgg), amountToDeposit);
+            fourSixTwoSixAgg.deposit(amountToDeposit, user1);
+            vm.stopPrank();
+
+            assertEq(fourSixTwoSixAgg.balanceOf(user1), balanceBefore + amountToDeposit);
+            assertEq(fourSixTwoSixAgg.totalSupply(), totalSupplyBefore + amountToDeposit);
+            assertEq(fourSixTwoSixAgg.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
+            assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - amountToDeposit);
+        }
+
+        // rebalance into strategy
+        vm.warp(block.timestamp + 86400);
+        {
+            FourSixTwoSixAgg.Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
+
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), strategyBefore.allocated);
+
+            uint256 expectedStrategyCash = fourSixTwoSixAgg.totalAssetsAllocatable() * strategyBefore.allocationPoints
+                / fourSixTwoSixAgg.totalAllocationPoints();
+
+            vm.prank(user1);
+            fourSixTwoSixAgg.rebalance(address(eTST));
+
+            assertEq(fourSixTwoSixAgg.totalAllocated(), expectedStrategyCash);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), expectedStrategyCash);
+            assertEq(
+                (fourSixTwoSixAgg.getStrategy(address(eTST))).allocated, strategyBefore.allocated + expectedStrategyCash
+            );
+        }
+
+        // deposit and rebalance again, no rebalance should happen as strategy reached max cap
+        vm.warp(block.timestamp + 86400);
+        vm.startPrank(user1);
+
+        assetTST.approve(address(fourSixTwoSixAgg), amountToDeposit);
+        fourSixTwoSixAgg.deposit(amountToDeposit, user1);
+
+        uint256 strategyAllocatedBefore = (fourSixTwoSixAgg.getStrategy(address(eTST))).allocated;
+
+        fourSixTwoSixAgg.rebalance(address(eTST));
+        vm.stopPrank();
+
+        assertEq(strategyAllocatedBefore, (fourSixTwoSixAgg.getStrategy(address(eTST))).allocated);
+    }
+
+    function testRebalanceWhentargetAllocationGreaterThanCap() public {
+        uint256 amountToDeposit = 10000e18;
+
+        // deposit into aggregator
+        {
+            uint256 balanceBefore = fourSixTwoSixAgg.balanceOf(user1);
+            uint256 totalSupplyBefore = fourSixTwoSixAgg.totalSupply();
+            uint256 totalAssetsDepositedBefore = fourSixTwoSixAgg.totalAssetsDeposited();
+            uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
+
+            vm.startPrank(user1);
+            assetTST.approve(address(fourSixTwoSixAgg), amountToDeposit);
+            fourSixTwoSixAgg.deposit(amountToDeposit, user1);
+            vm.stopPrank();
+
+            assertEq(fourSixTwoSixAgg.balanceOf(user1), balanceBefore + amountToDeposit);
+            assertEq(fourSixTwoSixAgg.totalSupply(), totalSupplyBefore + amountToDeposit);
+            assertEq(fourSixTwoSixAgg.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
+            assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - amountToDeposit);
+        }
+
+        // rebalance into strategy
+        vm.warp(block.timestamp + 86400);
+        {
+            FourSixTwoSixAgg.Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
+
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), strategyBefore.allocated);
+
+            uint256 expectedStrategyCash = fourSixTwoSixAgg.totalAssetsAllocatable() * strategyBefore.allocationPoints
+                / fourSixTwoSixAgg.totalAllocationPoints();
+
+            // set cap 10% less than target allocation
+            uint256 cap = expectedStrategyCash * 9e17 / 1e18;
+            vm.prank(manager);
+            fourSixTwoSixAgg.setStrategyCap(address(eTST), cap);
+
+            vm.prank(user1);
+            fourSixTwoSixAgg.rebalance(address(eTST));
+
+            assertEq(fourSixTwoSixAgg.totalAllocated(), cap);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), cap);
+            assertEq((fourSixTwoSixAgg.getStrategy(address(eTST))).allocated, strategyBefore.allocated + cap);
+        }
+    }
 }
