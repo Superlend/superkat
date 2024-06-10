@@ -34,15 +34,15 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
         );
 
         // grant admin roles to deployer
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.ALLOCATION_ADJUSTER_ROLE_ADMIN_ROLE(), deployer);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_REORDERER_ROLE_ADMIN_ROLE(), deployer);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_ADDER_ROLE_ADMIN_ROLE(), deployer);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE_ADMIN_ROLE(), deployer);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.TREASURY_MANAGER_ROLE_ADMIN_ROLE(), deployer);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_MANAGER_ROLE_ADMINROLE(), deployer);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER_ROLE_ADMINROLE(), deployer);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_ADDER_ROLE_ADMINROLE(), deployer);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE_ADMINROLE(), deployer);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.TREASURY_MANAGER_ROLE_ADMINROLE(), deployer);
 
         // grant roles to manager
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.ALLOCATION_ADJUSTER_ROLE(), manager);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_REORDERER_ROLE(), manager);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_MANAGER_ROLE(), manager);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER_ROLE(), manager);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_ADDER_ROLE(), manager);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE(), manager);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.TREASURY_MANAGER_ROLE(), manager);
@@ -58,34 +58,34 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
         assertEq(cashReserve.active, true);
 
         assertEq(
-            fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.ALLOCATION_ADJUSTER_ROLE()),
-            fourSixTwoSixAgg.ALLOCATION_ADJUSTER_ROLE_ADMIN_ROLE()
+            fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.STRATEGY_MANAGER_ROLE()),
+            fourSixTwoSixAgg.STRATEGY_MANAGER_ROLE_ADMINROLE()
         );
         assertEq(
-            fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.WITHDRAW_QUEUE_REORDERER_ROLE()),
-            fourSixTwoSixAgg.WITHDRAW_QUEUE_REORDERER_ROLE_ADMIN_ROLE()
+            fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER_ROLE()),
+            fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER_ROLE_ADMINROLE()
         );
         assertEq(
             fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.STRATEGY_ADDER_ROLE()),
-            fourSixTwoSixAgg.STRATEGY_ADDER_ROLE_ADMIN_ROLE()
+            fourSixTwoSixAgg.STRATEGY_ADDER_ROLE_ADMINROLE()
         );
         assertEq(
             fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE()),
-            fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE_ADMIN_ROLE()
+            fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE_ADMINROLE()
         );
         assertEq(
             fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.TREASURY_MANAGER_ROLE()),
-            fourSixTwoSixAgg.TREASURY_MANAGER_ROLE_ADMIN_ROLE()
+            fourSixTwoSixAgg.TREASURY_MANAGER_ROLE_ADMINROLE()
         );
 
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.ALLOCATION_ADJUSTER_ROLE_ADMIN_ROLE(), deployer));
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_REORDERER_ROLE_ADMIN_ROLE(), deployer));
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_ADDER_ROLE_ADMIN_ROLE(), deployer));
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE_ADMIN_ROLE(), deployer));
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.TREASURY_MANAGER_ROLE_ADMIN_ROLE(), deployer));
+        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_MANAGER_ROLE_ADMINROLE(), deployer));
+        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER_ROLE_ADMINROLE(), deployer));
+        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_ADDER_ROLE_ADMINROLE(), deployer));
+        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE_ADMINROLE(), deployer));
+        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.TREASURY_MANAGER_ROLE_ADMINROLE(), deployer));
 
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.ALLOCATION_ADJUSTER_ROLE(), manager));
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_REORDERER_ROLE(), manager));
+        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_MANAGER_ROLE(), manager));
+        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER_ROLE(), manager));
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_ADDER_ROLE(), manager));
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE(), manager));
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.TREASURY_MANAGER_ROLE(), manager));
