@@ -91,9 +91,6 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     event SetPerformanceFee(uint256 oldFee, uint256 newFee);
     event OptInStrategyRewards(address indexed strategy);
     event OptOutStrategyRewards(address indexed strategy);
-    event Rebalance(
-        address indexed strategy, uint256 currentAllocation, uint256 targetAllocation, uint256 amountToRebalance
-    );
     event Gulp(uint256 interestLeft, uint256 interestSmearEnd);
     event Harvest(address indexed strategy, uint256 strategyBalanceAmount, uint256 strategyAllocatedAmount);
     event AdjustAllocationPoints(address indexed strategy, uint256 oldPoints, uint256 newPoints);
@@ -263,8 +260,6 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
         nonReentrant
         onlyRole(REBALANCER)
     {
-        // _harvest(_strategy);
-
         Strategy memory strategyData = strategies[_strategy];
 
         if (_isDeposit) {
