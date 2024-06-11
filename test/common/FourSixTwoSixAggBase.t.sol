@@ -3,6 +3,8 @@ pragma solidity ^0.8.0;
 
 import "evk/test/unit/evault/EVaultTestBase.t.sol";
 import {FourSixTwoSixAgg} from "../../src/FourSixTwoSixAgg.sol";
+import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
+import {Hooks} from "../../src/Hooks.sol";
 
 contract FourSixTwoSixAggBase is EVaultTestBase {
     uint256 public constant CASH_RESERVE_ALLOCATION_POINTS = 1000e18;
@@ -38,14 +40,14 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER_ROLE_ADMINROLE(), deployer);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_ADDER_ROLE_ADMINROLE(), deployer);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE_ADMINROLE(), deployer);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.TREASURY_MANAGER_ROLE_ADMINROLE(), deployer);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.MANAGER_ROLE_ADMINROLE(), deployer);
 
         // grant roles to manager
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_MANAGER_ROLE(), manager);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER_ROLE(), manager);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_ADDER_ROLE(), manager);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE(), manager);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.TREASURY_MANAGER_ROLE(), manager);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.MANAGER_ROLE(), manager);
 
         vm.stopPrank();
     }
@@ -74,21 +76,20 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
             fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE_ADMINROLE()
         );
         assertEq(
-            fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.TREASURY_MANAGER_ROLE()),
-            fourSixTwoSixAgg.TREASURY_MANAGER_ROLE_ADMINROLE()
+            fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.MANAGER_ROLE()), fourSixTwoSixAgg.MANAGER_ROLE_ADMINROLE()
         );
 
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_MANAGER_ROLE_ADMINROLE(), deployer));
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER_ROLE_ADMINROLE(), deployer));
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_ADDER_ROLE_ADMINROLE(), deployer));
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE_ADMINROLE(), deployer));
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.TREASURY_MANAGER_ROLE_ADMINROLE(), deployer));
+        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.MANAGER_ROLE_ADMINROLE(), deployer));
 
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_MANAGER_ROLE(), manager));
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER_ROLE(), manager));
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_ADDER_ROLE(), manager));
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE(), manager));
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.TREASURY_MANAGER_ROLE(), manager));
+        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.MANAGER_ROLE(), manager));
     }
 
     function _addStrategy(address from, address strategy, uint256 allocationPoints) internal {
