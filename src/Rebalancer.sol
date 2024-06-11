@@ -28,6 +28,8 @@ contract Rebalancer {
 
         // _callHookTarget(REBALANCE, _msgSender());
 
+        IFourSixTwoSixAgg(_curatedVault).harvest(_strategy);
+
         IFourSixTwoSixAgg.Strategy memory strategyData = IFourSixTwoSixAgg(_curatedVault).getStrategy(_strategy);
 
         // no rebalance if strategy have an allocated amount greater than cap
@@ -41,16 +43,17 @@ contract Rebalancer {
         if ((strategyData.cap > 0) && (targetAllocation > strategyData.cap)) targetAllocation = strategyData.cap;
 
         uint256 amountToRebalance;
+        bool isDeposit;
         if (strategyData.allocated > targetAllocation) {
             // Withdraw
             amountToRebalance = strategyData.allocated - targetAllocation;
 
-            uint256 maxWithdraw = IERC4626(_strategy).maxWithdraw(address(this));
+            uint256 maxWithdraw = IERC4626(_strategy).maxWithdraw(_curatedVault);
             if (amountToRebalance > maxWithdraw) {
                 amountToRebalance = maxWithdraw;
             }
 
-            IFourSixTwoSixAgg(_curatedVault).rebalance(_strategy, amountToRebalance, false);
+            isDeposit = false;
         } else if (strategyData.allocated < targetAllocation) {
             // Deposit
             uint256 targetCash = totalAssetsAllocatableCache
@@ -65,7 +68,7 @@ contract Rebalancer {
                 amountToRebalance = cashAvailable;
             }
 
-            uint256 maxDeposit = IERC4626(_strategy).maxDeposit(address(this));
+            uint256 maxDeposit = IERC4626(_strategy).maxDeposit(_curatedVault);
             if (amountToRebalance > maxDeposit) {
                 amountToRebalance = maxDeposit;
             }
@@ -74,8 +77,10 @@ contract Rebalancer {
                 return; // No cash to deposit
             }
 
-            IFourSixTwoSixAgg(_curatedVault).rebalance(_strategy, amountToRebalance, true);
+            isDeposit = true;
         }
+
+        IFourSixTwoSixAgg(_curatedVault).rebalance(_strategy, amountToRebalance, isDeposit);
 
         // emit Rebalance(_strategy, strategyData.allocated, targetAllocation, amountToRebalance)
     }

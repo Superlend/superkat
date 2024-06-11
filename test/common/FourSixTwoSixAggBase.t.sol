@@ -39,22 +39,22 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
         );
 
         // grant admin roles to deployer
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_MANAGER_ROLE_ADMINROLE(), deployer);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER_ROLE_ADMINROLE(), deployer);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_ADDER_ROLE_ADMINROLE(), deployer);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE_ADMINROLE(), deployer);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.MANAGER_ROLE_ADMINROLE(), deployer);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.REBALANCER_ROLE_ADMINROLE(), deployer);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_MANAGER_ADMIN(), deployer);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER_ADMIN(), deployer);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_ADDER_ADMIN(), deployer);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ADMIN(), deployer);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.MANAGER_ADMIN(), deployer);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.REBALANCER_ADMIN(), deployer);
 
         // grant roles to manager
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_MANAGER_ROLE(), manager);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER_ROLE(), manager);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_ADDER_ROLE(), manager);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE(), manager);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.MANAGER_ROLE(), manager);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_MANAGER(), manager);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER(), manager);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_ADDER(), manager);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_REMOVER(), manager);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.MANAGER(), manager);
 
         // grant rebalancing role
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.REBALANCER_ROLE(), address(rebalancer));
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.REBALANCER(), address(rebalancer));
 
         vm.stopPrank();
     }
@@ -67,36 +67,33 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
         assertEq(cashReserve.active, true);
 
         assertEq(
-            fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.STRATEGY_MANAGER_ROLE()),
-            fourSixTwoSixAgg.STRATEGY_MANAGER_ROLE_ADMINROLE()
+            fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.STRATEGY_MANAGER()),
+            fourSixTwoSixAgg.STRATEGY_MANAGER_ADMIN()
         );
         assertEq(
-            fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER_ROLE()),
-            fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER_ROLE_ADMINROLE()
+            fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER()),
+            fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER_ADMIN()
         );
         assertEq(
-            fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.STRATEGY_ADDER_ROLE()),
-            fourSixTwoSixAgg.STRATEGY_ADDER_ROLE_ADMINROLE()
+            fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.STRATEGY_ADDER()), fourSixTwoSixAgg.STRATEGY_ADDER_ADMIN()
         );
         assertEq(
-            fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE()),
-            fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE_ADMINROLE()
+            fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.STRATEGY_REMOVER()),
+            fourSixTwoSixAgg.STRATEGY_REMOVER_ADMIN()
         );
-        assertEq(
-            fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.MANAGER_ROLE()), fourSixTwoSixAgg.MANAGER_ROLE_ADMINROLE()
-        );
+        assertEq(fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.MANAGER()), fourSixTwoSixAgg.MANAGER_ADMIN());
 
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_MANAGER_ROLE_ADMINROLE(), deployer));
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER_ROLE_ADMINROLE(), deployer));
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_ADDER_ROLE_ADMINROLE(), deployer));
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE_ADMINROLE(), deployer));
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.MANAGER_ROLE_ADMINROLE(), deployer));
+        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_MANAGER_ADMIN(), deployer));
+        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER_ADMIN(), deployer));
+        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_ADDER_ADMIN(), deployer));
+        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ADMIN(), deployer));
+        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.MANAGER_ADMIN(), deployer));
 
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_MANAGER_ROLE(), manager));
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER_ROLE(), manager));
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_ADDER_ROLE(), manager));
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE(), manager));
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.MANAGER_ROLE(), manager));
+        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_MANAGER(), manager));
+        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER(), manager));
+        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_ADDER(), manager));
+        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_REMOVER(), manager));
+        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.MANAGER(), manager));
     }
 
     function _addStrategy(address from, address strategy, uint256 allocationPoints) internal {

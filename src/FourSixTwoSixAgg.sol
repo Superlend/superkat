@@ -44,18 +44,18 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     uint8 internal constant REENTRANCYLOCK__LOCKED = 2;
 
     // Roles
-    bytes32 public constant STRATEGY_MANAGER_ROLE = keccak256("STRATEGY_MANAGER_ROLE");
-    bytes32 public constant STRATEGY_MANAGER_ROLE_ADMINROLE = keccak256("STRATEGY_MANAGER_ROLE_ADMINROLE");
-    bytes32 public constant WITHDRAW_QUEUE_MANAGER_ROLE = keccak256("WITHDRAW_QUEUE_MANAGER_ROLE");
-    bytes32 public constant WITHDRAW_QUEUE_MANAGER_ROLE_ADMINROLE = keccak256("WITHDRAW_QUEUE_MANAGER_ROLE_ADMINROLE");
-    bytes32 public constant STRATEGY_ADDER_ROLE = keccak256("STRATEGY_ADDER_ROLE");
-    bytes32 public constant STRATEGY_ADDER_ROLE_ADMINROLE = keccak256("STRATEGY_ADDER_ROLE_ADMINROLE");
-    bytes32 public constant STRATEGY_REMOVER_ROLE = keccak256("STRATEGY_REMOVER_ROLE");
-    bytes32 public constant STRATEGY_REMOVER_ROLE_ADMINROLE = keccak256("STRATEGY_REMOVER_ROLE_ADMINROLE");
-    bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
-    bytes32 public constant MANAGER_ROLE_ADMINROLE = keccak256("MANAGER_ROLE_ADMINROLE");
-    bytes32 public constant REBALANCER_ROLE = keccak256("REBALANCER_ROLE");
-    bytes32 public constant REBALANCER_ROLE_ADMINROLE = keccak256("REBALANCER_ROLE_ADMINROLE");
+    bytes32 public constant STRATEGY_MANAGER = keccak256("STRATEGY_MANAGER");
+    bytes32 public constant STRATEGY_MANAGER_ADMIN = keccak256("STRATEGY_MANAGER_ADMIN");
+    bytes32 public constant WITHDRAW_QUEUE_MANAGER = keccak256("WITHDRAW_QUEUE_MANAGER");
+    bytes32 public constant WITHDRAW_QUEUE_MANAGER_ADMIN = keccak256("WITHDRAW_QUEUE_MANAGER_ADMIN");
+    bytes32 public constant STRATEGY_ADDER = keccak256("STRATEGY_ADDER");
+    bytes32 public constant STRATEGY_ADDER_ADMIN = keccak256("STRATEGY_ADDER_ADMIN");
+    bytes32 public constant STRATEGY_REMOVER = keccak256("STRATEGY_REMOVER");
+    bytes32 public constant STRATEGY_REMOVER_ADMIN = keccak256("STRATEGY_REMOVER_ADMIN");
+    bytes32 public constant MANAGER = keccak256("MANAGER");
+    bytes32 public constant MANAGER_ADMIN = keccak256("MANAGER_ADMIN");
+    bytes32 public constant REBALANCER = keccak256("REBALANCER");
+    bytes32 public constant REBALANCER_ADMIN = keccak256("REBALANCER_ADMIN");
 
     /// @dev The maximum performanceFee the vault can have is 50%
     uint256 internal constant MAX_PERFORMANCE_FEE = 0.5e18;
@@ -161,16 +161,16 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
 
         // Setup role admins
-        _setRoleAdmin(STRATEGY_MANAGER_ROLE, STRATEGY_MANAGER_ROLE_ADMINROLE);
-        _setRoleAdmin(WITHDRAW_QUEUE_MANAGER_ROLE, WITHDRAW_QUEUE_MANAGER_ROLE_ADMINROLE);
-        _setRoleAdmin(STRATEGY_ADDER_ROLE, STRATEGY_ADDER_ROLE_ADMINROLE);
-        _setRoleAdmin(STRATEGY_REMOVER_ROLE, STRATEGY_REMOVER_ROLE_ADMINROLE);
-        _setRoleAdmin(MANAGER_ROLE, MANAGER_ROLE_ADMINROLE);
+        _setRoleAdmin(STRATEGY_MANAGER, STRATEGY_MANAGER_ADMIN);
+        _setRoleAdmin(WITHDRAW_QUEUE_MANAGER, WITHDRAW_QUEUE_MANAGER_ADMIN);
+        _setRoleAdmin(STRATEGY_ADDER, STRATEGY_ADDER_ADMIN);
+        _setRoleAdmin(STRATEGY_REMOVER, STRATEGY_REMOVER_ADMIN);
+        _setRoleAdmin(MANAGER, MANAGER_ADMIN);
     }
 
     /// @notice Set performance fee recipient address
     /// @notice @param _newFeeRecipient Recipient address
-    function setFeeRecipient(address _newFeeRecipient) external onlyRole(MANAGER_ROLE) {
+    function setFeeRecipient(address _newFeeRecipient) external onlyRole(MANAGER) {
         if (_newFeeRecipient == feeRecipient) revert FeeRecipientAlreadySet();
 
         emit SetFeeRecipient(feeRecipient, _newFeeRecipient);
@@ -180,7 +180,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
 
     /// @notice Set performance fee (1e18 == 100%)
     /// @notice @param _newFee Fee rate
-    function setPerformanceFee(uint256 _newFee) external onlyRole(MANAGER_ROLE) {
+    function setPerformanceFee(uint256 _newFee) external onlyRole(MANAGER) {
         if (_newFee > MAX_PERFORMANCE_FEE) revert MaxPerformanceFeeExceeded();
         if (feeRecipient == address(0)) revert FeeRecipientNotSet();
         if (_newFee == performanceFee) revert PerformanceFeeAlreadySet();
@@ -192,7 +192,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
 
     /// @notice Opt in to strategy rewards
     /// @param _strategy Strategy address
-    function optInStrategyRewards(address _strategy) external onlyRole(MANAGER_ROLE) {
+    function optInStrategyRewards(address _strategy) external onlyRole(MANAGER) {
         if (!strategies[_strategy].active) revert InactiveStrategy();
 
         IBalanceForwarder(_strategy).enableBalanceForwarder();
@@ -202,7 +202,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
 
     /// @notice Opt out of strategy rewards
     /// @param _strategy Strategy address
-    function optOutStrategyRewards(address _strategy) external onlyRole(MANAGER_ROLE) {
+    function optOutStrategyRewards(address _strategy) external onlyRole(MANAGER) {
         IBalanceForwarder(_strategy).disableBalanceForwarder();
 
         emit OptOutStrategyRewards(_strategy);
@@ -220,7 +220,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
         address _reward,
         address _recipient,
         bool _forfeitRecentReward
-    ) external onlyRole(MANAGER_ROLE) {
+    ) external onlyRole(MANAGER) {
         address rewardStreams = IBalanceForwarder(_strategy).balanceTrackerAddress();
 
         IRewardStreams(rewardStreams).claimReward(_rewarded, _reward, _recipient, _forfeitRecentReward);
@@ -261,9 +261,9 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     function rebalance(address _strategy, uint256 _amountToRebalance, bool _isDeposit)
         external
         nonReentrant
-        onlyRole(REBALANCER_ROLE)
+        onlyRole(REBALANCER)
     {
-        _harvest(_strategy);
+        // _harvest(_strategy);
 
         Strategy memory strategyData = strategies[_strategy];
 
@@ -281,13 +281,13 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     }
 
     /// @notice Adjust a certain strategy's allocation points.
-    /// @dev Can only be called by an address that have the STRATEGY_MANAGER_ROLE
+    /// @dev Can only be called by an address that have the STRATEGY_MANAGER
     /// @param _strategy address of strategy
     /// @param _newPoints new strategy's points
     function adjustAllocationPoints(address _strategy, uint256 _newPoints)
         external
         nonReentrant
-        onlyRole(STRATEGY_MANAGER_ROLE)
+        onlyRole(STRATEGY_MANAGER)
     {
         Strategy memory strategyDataCache = strategies[_strategy];
 
@@ -305,7 +305,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     /// @dev By default, cap is set to 0, not activated.
     /// @param _strategy Strategy address.
     /// @param _cap Cap amount
-    function setStrategyCap(address _strategy, uint256 _cap) external nonReentrant onlyRole(STRATEGY_MANAGER_ROLE) {
+    function setStrategyCap(address _strategy, uint256 _cap) external nonReentrant onlyRole(STRATEGY_MANAGER) {
         Strategy memory strategyDataCache = strategies[_strategy];
 
         if (!strategyDataCache.active) {
@@ -318,13 +318,13 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     }
 
     /// @notice Swap two strategies indexes in the withdrawal queue.
-    /// @dev Can only be called by an address that have the WITHDRAW_QUEUE_MANAGER_ROLE.
+    /// @dev Can only be called by an address that have the WITHDRAW_QUEUE_MANAGER.
     /// @param _index1 index of first strategy
     /// @param _index2 index of second strategy
     function reorderWithdrawalQueue(uint8 _index1, uint8 _index2)
         external
         nonReentrant
-        onlyRole(WITHDRAW_QUEUE_MANAGER_ROLE)
+        onlyRole(WITHDRAW_QUEUE_MANAGER)
     {
         uint256 length = withdrawalQueue.length;
         if (_index1 >= length || _index2 >= length) {
@@ -341,14 +341,10 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     }
 
     /// @notice Add new strategy with it's allocation points.
-    /// @dev Can only be called by an address that have STRATEGY_ADDER_ROLE.
+    /// @dev Can only be called by an address that have STRATEGY_ADDER.
     /// @param _strategy Address of the strategy
     /// @param _allocationPoints Strategy's allocation points
-    function addStrategy(address _strategy, uint256 _allocationPoints)
-        external
-        nonReentrant
-        onlyRole(STRATEGY_ADDER_ROLE)
-    {
+    function addStrategy(address _strategy, uint256 _allocationPoints) external nonReentrant onlyRole(STRATEGY_ADDER) {
         if (IERC4626(_strategy).asset() != asset()) {
             revert InvalidStrategyAsset();
         }
@@ -370,9 +366,9 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
 
     /// @notice Remove strategy and set its allocation points to zero.
     /// @dev This function does not pull funds, `harvest()` needs to be called to withdraw
-    /// @dev Can only be called by an address that have the STRATEGY_REMOVER_ROLE
+    /// @dev Can only be called by an address that have the STRATEGY_REMOVER
     /// @param _strategy Address of the strategy
-    function removeStrategy(address _strategy) external nonReentrant onlyRole(STRATEGY_REMOVER_ROLE) {
+    function removeStrategy(address _strategy) external nonReentrant onlyRole(STRATEGY_REMOVER) {
         if (_strategy == address(0)) revert CanNotRemoveCashReserve();
 
         Strategy storage strategyStorage = strategies[_strategy];
@@ -444,14 +440,9 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     /// @param to The recipient of the transfer.
     /// @param amount The amount shares to transfer.
     /// @return A boolean indicating whether the transfer was successful.
-    function transfer(address to, uint256 amount)
-        public
-        override (ERC20, IERC20)
-        nonReentrant
-        returns (bool)
-    {
+    function transfer(address to, uint256 amount) public override (ERC20, IERC20) nonReentrant returns (bool) {
         super.transfer(to, amount);
-        
+
         _requireAccountStatusCheck(_msgSender());
 
         return true;
@@ -519,7 +510,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     /// @dev This funtion should be overriden to implement access control.
     /// @param _hookTarget Hooks contract.
     /// @param _hookedFns Hooked functions.
-    function setHooksConfig(address _hookTarget, uint32 _hookedFns) public override onlyRole(MANAGER_ROLE) {
+    function setHooksConfig(address _hookTarget, uint32 _hookedFns) public override onlyRole(MANAGER) {
         super.setHooksConfig(_hookTarget, _hookedFns);
     }
 

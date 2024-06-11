@@ -15,6 +15,8 @@ interface IFourSixTwoSixAgg {
     }
 
     function rebalance(address _strategy, uint256 _amountToRebalance, bool _isDeposit) external;
+    function gulp() external;
+    function harvest(address strategy) external;
 
     function getStrategy(address _strategy) external view returns (Strategy memory);
     function totalAllocationPoints() external view returns (uint256);
