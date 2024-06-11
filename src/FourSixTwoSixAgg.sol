@@ -2,18 +2,18 @@
 pragma solidity ^0.8.0;
 
 // external dep
-// internal dep
-import {IFourSixTwoSixAgg} from "./interface/IFourSixTwoSixAgg.sol";
 import {Context} from "@openzeppelin/utils/Context.sol";
 import {ERC20, IERC20} from "@openzeppelin/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import {ERC4626, IERC4626, Math} from "@openzeppelin/token/ERC20/extensions/ERC4626.sol";
 import {AccessControlEnumerable} from "@openzeppelin/access/AccessControlEnumerable.sol";
-import {EVCUtil, IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
-import {BalanceForwarder, IBalanceForwarder} from "./BalanceForwarder.sol";
-import {IRewardStreams} from "reward-streams/interfaces/IRewardStreams.sol";
 import {SafeCast} from "@openzeppelin/utils/math/SafeCast.sol";
+import {EVCUtil, IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
+import {IRewardStreams} from "reward-streams/interfaces/IRewardStreams.sol";
+// internal dep
 import {Hooks} from "./Hooks.sol";
+import {IFourSixTwoSixAgg} from "./interface/IFourSixTwoSixAgg.sol";
+import {BalanceForwarder, IBalanceForwarder} from "./BalanceForwarder.sol";
 
 /// @dev Do NOT use with fee on transfer tokens
 /// @dev Do NOT use with rebasing tokens
