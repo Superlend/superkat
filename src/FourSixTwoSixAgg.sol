@@ -103,14 +103,6 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     event AccruePerformanceFee(address indexed feeRecipient, uint256 performanceFee, uint256 yield, uint256 feeShares);
     event SetStrategyCap(address indexed strategy, uint256 cap);
 
-    /// @notice Modifier to require an account status check on the EVC.
-    /// @dev Calls `requireAccountStatusCheck` function from EVC for the specified account after the function body.
-    /// @param account The address of the account to check.
-    modifier requireAccountStatusCheck(address account) {
-        _;
-        evc.requireAccountStatusCheck(account);
-    }
-
     /// @dev Non reentrancy modifier for interest rate updates
     modifier nonReentrant() {
         if (esrSlot.locked == REENTRANCYLOCK__LOCKED) revert Reentrancy();
@@ -456,10 +448,13 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
         public
         override (ERC20, IERC20)
         nonReentrant
-        requireAccountStatusCheck(_msgSender())
         returns (bool)
     {
-        return super.transfer(to, amount);
+        super.transfer(to, amount);
+        
+        _requireAccountStatusCheck(_msgSender());
+
+        return true;
     }
 
     /// @notice Transfers a certain amount of tokens from a sender to a recipient.
@@ -471,10 +466,13 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
         public
         override (ERC20, IERC20)
         nonReentrant
-        requireAccountStatusCheck(from)
         returns (bool)
     {
-        return super.transferFrom(from, to, amount);
+        super.transferFrom(from, to, amount);
+
+        _requireAccountStatusCheck(from);
+
+        return true;
     }
 
     /// @dev See {IERC4626-deposit}.
@@ -493,12 +491,13 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
         public
         override
         nonReentrant
-        requireAccountStatusCheck(owner)
         returns (uint256 shares)
     {
         // Move interest to totalAssetsDeposited
         _updateInterestAccrued();
-        return super.withdraw(assets, receiver, owner);
+        shares = super.withdraw(assets, receiver, owner);
+
+        _requireAccountStatusCheck(owner);
     }
 
     /// @dev See {IERC4626-redeem}.
@@ -507,12 +506,13 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
         public
         override
         nonReentrant
-        requireAccountStatusCheck(owner)
         returns (uint256 assets)
     {
         // Move interest to totalAssetsDeposited
         _updateInterestAccrued();
-        return super.redeem(shares, receiver, owner);
+        assets = super.redeem(shares, receiver, owner);
+
+        _requireAccountStatusCheck(owner);
     }
 
     /// @notice Set hooks contract and hooked functions.
@@ -735,5 +735,12 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     /// @return The address of the message sender.
     function _msgSender() internal view override (Context, EVCUtil) returns (address) {
         return EVCUtil._msgSender();
+    }
+
+    /// @notice Function to require an account status check on the EVC.
+    /// @dev Calls `requireAccountStatusCheck` function from EVC for the specified account after the function body.
+    /// @param _account The address of the account to check.
+    function _requireAccountStatusCheck(address _account) private {
+        evc.requireAccountStatusCheck(_account);
     }
 }
