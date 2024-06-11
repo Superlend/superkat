@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "evk/test/unit/evault/EVaultTestBase.t.sol";
 import {FourSixTwoSixAgg} from "../../src/FourSixTwoSixAgg.sol";
+import {Rebalancer} from "../../src/Rebalancer.sol";
 import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
 import {Hooks} from "../../src/Hooks.sol";
 
@@ -15,6 +16,7 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
     address manager;
 
     FourSixTwoSixAgg fourSixTwoSixAgg;
+    Rebalancer rebalancer;
 
     function setUp() public virtual override {
         super.setUp();
@@ -24,6 +26,7 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
         user2 = makeAddr("User_2");
 
         vm.startPrank(deployer);
+        rebalancer = new Rebalancer();
         fourSixTwoSixAgg = new FourSixTwoSixAgg(
             evc,
             address(0),
@@ -41,6 +44,7 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_ADDER_ROLE_ADMINROLE(), deployer);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE_ADMINROLE(), deployer);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.MANAGER_ROLE_ADMINROLE(), deployer);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.REBALANCER_ROLE_ADMINROLE(), deployer);
 
         // grant roles to manager
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_MANAGER_ROLE(), manager);
@@ -48,6 +52,9 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_ADDER_ROLE(), manager);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ROLE(), manager);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.MANAGER_ROLE(), manager);
+
+        // grant rebalancing role
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.REBALANCER_ROLE(), address(rebalancer));
 
         vm.stopPrank();
     }

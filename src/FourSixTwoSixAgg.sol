@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
+// external dep
+// internal dep
+import {IFourSixTwoSixAgg} from "./interface/IFourSixTwoSixAgg.sol";
 import {Context} from "@openzeppelin/utils/Context.sol";
 import {ERC20, IERC20} from "@openzeppelin/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
@@ -16,7 +19,7 @@ import {Hooks} from "./Hooks.sol";
 /// @dev Do NOT use with rebasing tokens
 /// @dev Based on https://github.com/euler-xyz/euler-vault-kit/blob/master/src/Synths/EulerSavingsRate.sol
 /// @dev inspired by Yearn v3 ❤️
-contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEnumerable, Hooks {
+contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC4626, AccessControlEnumerable, Hooks {
     using SafeERC20 for IERC20;
     using SafeCast for uint256;
 
@@ -51,6 +54,8 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
     bytes32 public constant STRATEGY_REMOVER_ROLE_ADMINROLE = keccak256("STRATEGY_REMOVER_ROLE_ADMINROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant MANAGER_ROLE_ADMINROLE = keccak256("MANAGER_ROLE_ADMINROLE");
+    bytes32 public constant REBALANCER_ROLE = keccak256("REBALANCER_ROLE");
+    bytes32 public constant REBALANCER_ROLE_ADMINROLE = keccak256("REBALANCER_ROLE_ADMINROLE");
 
     /// @dev The maximum performanceFee the vault can have is 50%
     uint256 internal constant MAX_PERFORMANCE_FEE = 0.5e18;
@@ -80,18 +85,6 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         uint40 interestSmearEnd;
         uint168 interestLeft;
         uint8 locked;
-    }
-
-    /// @dev A struct that hold a strategy allocation's config
-    /// allocated: amount of asset deposited into strategy
-    /// allocationPoints: number of points allocated to this strategy
-    /// active: a boolean to indice if this strategy is active or not
-    /// cap: an optional cap in terms of deposited underlying asset. By default, it is set to 0(not activated)
-    struct Strategy {
-        uint120 allocated;
-        uint120 allocationPoints;
-        bool active;
-        uint120 cap;
     }
 
     event SetFeeRecipient(address indexed oldRecipient, address indexed newRecipient);
@@ -256,24 +249,6 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         _disableBalanceForwarder(_msgSender());
     }
 
-    /// @notice Rebalance strategy's allocation.
-    /// @param _strategy Address of strategy to rebalance.
-    function rebalance(address _strategy) external nonReentrant {
-        _rebalance(_strategy);
-
-        _gulp();
-    }
-
-    /// @notice Rebalance multiple strategies.
-    /// @param _strategies An array of strategy addresses to rebalance.
-    function rebalanceMultipleStrategies(address[] calldata _strategies) external nonReentrant {
-        for (uint256 i; i < _strategies.length; ++i) {
-            _rebalance(_strategies[i]);
-        }
-
-        _gulp();
-    }
-
     /// @notice Harvest strategy.
     /// @param strategy address of strategy
     function harvest(address strategy) external nonReentrant {
@@ -289,6 +264,28 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
             _harvest(_strategies[i]);
         }
         _gulp();
+    }
+
+    function rebalance(address _strategy, uint256 _amountToRebalance, bool _isDeposit)
+        external
+        nonReentrant
+        onlyRole(REBALANCER_ROLE)
+    {
+        _harvest(_strategy);
+
+        Strategy memory strategyData = strategies[_strategy];
+
+        if (_isDeposit) {
+            // Do required approval (safely) and deposit
+            IERC20(asset()).safeApprove(_strategy, _amountToRebalance);
+            IERC4626(_strategy).deposit(_amountToRebalance, address(this));
+            strategies[_strategy].allocated = uint120(strategyData.allocated + _amountToRebalance);
+            totalAllocated += _amountToRebalance;
+        } else {
+            IERC4626(_strategy).withdraw(_amountToRebalance, address(this), address(this));
+            strategies[_strategy].allocated = (strategyData.allocated - _amountToRebalance).toUint120();
+            totalAllocated -= _amountToRebalance;
+        }
     }
 
     /// @notice Adjust a certain strategy's allocation points.
@@ -643,80 +640,6 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         esrSlot = esrSlotCache;
 
         emit Gulp(esrSlotCache.interestLeft, esrSlotCache.interestSmearEnd);
-    }
-
-    /// @notice Rebalance strategy allocation.
-    /// @dev This function will first harvest yield, gulps and update interest.
-    /// @dev If current allocation is greater than target allocation, the aggregator will withdraw the excess assets.
-    ///      If current allocation is less than target allocation, the aggregator will:
-    ///         - Try to deposit the delta, if the cash is not sufficient, deposit all the available cash
-    ///         - If all the available cash is greater than the max deposit, deposit the max deposit
-    /// @param _strategy Address of strategy to rebalance.
-    function _rebalance(address _strategy) internal {
-        if (_strategy == address(0)) {
-            return; //nothing to rebalance as this is the cash reserve
-        }
-
-        _callHookTarget(REBALANCE, _msgSender());
-
-        _harvest(_strategy);
-
-        Strategy memory strategyData = strategies[_strategy];
-
-        // no rebalance if strategy have an allocated amount greater than cap
-        if ((strategyData.cap > 0) && (strategyData.allocated >= strategyData.cap)) return;
-
-        uint256 totalAllocationPointsCache = totalAllocationPoints;
-        uint256 totalAssetsAllocatableCache = totalAssetsAllocatable();
-        uint256 targetAllocation =
-            totalAssetsAllocatableCache * strategyData.allocationPoints / totalAllocationPointsCache;
-
-        if ((strategyData.cap > 0) && (targetAllocation > strategyData.cap)) targetAllocation = strategyData.cap;
-
-        uint256 amountToRebalance;
-        if (strategyData.allocated > targetAllocation) {
-            // Withdraw
-            amountToRebalance = strategyData.allocated - targetAllocation;
-
-            uint256 maxWithdraw = IERC4626(_strategy).maxWithdraw(address(this));
-            if (amountToRebalance > maxWithdraw) {
-                amountToRebalance = maxWithdraw;
-            }
-
-            IERC4626(_strategy).withdraw(amountToRebalance, address(this), address(this));
-            strategies[_strategy].allocated = (strategyData.allocated - amountToRebalance).toUint120();
-            totalAllocated -= amountToRebalance;
-        } else if (strategyData.allocated < targetAllocation) {
-            // Deposit
-            uint256 targetCash =
-                totalAssetsAllocatableCache * strategies[address(0)].allocationPoints / totalAllocationPointsCache;
-            uint256 currentCash = totalAssetsAllocatableCache - totalAllocated;
-
-            // Calculate available cash to put in strategies
-            uint256 cashAvailable = (currentCash > targetCash) ? currentCash - targetCash : 0;
-
-            amountToRebalance = targetAllocation - strategyData.allocated;
-            if (amountToRebalance > cashAvailable) {
-                amountToRebalance = cashAvailable;
-            }
-
-            uint256 maxDeposit = IERC4626(_strategy).maxDeposit(address(this));
-            if (amountToRebalance > maxDeposit) {
-                amountToRebalance = maxDeposit;
-            }
-
-            if (amountToRebalance == 0) {
-                return; // No cash to deposit
-            }
-
-            // Do required approval (safely) and deposit
-            IERC20(asset()).safeApprove(_strategy, amountToRebalance);
-            IERC4626(_strategy).deposit(amountToRebalance, address(this));
-            strategies[_strategy].allocated = uint120(strategyData.allocated + amountToRebalance);
-            totalAllocated += amountToRebalance;
-        }
-
-        emit Rebalance(_strategy, strategyData.allocated, targetAllocation, amountToRebalance);
     }
 
     function _harvest(address _strategy) internal {

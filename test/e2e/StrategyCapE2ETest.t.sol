@@ -80,7 +80,7 @@ contract StrategyCapE2ETest is FourSixTwoSixAggBase {
                 / fourSixTwoSixAgg.totalAllocationPoints();
 
             vm.prank(user1);
-            fourSixTwoSixAgg.rebalance(address(eTST));
+            rebalancer.rebalance(address(fourSixTwoSixAgg), address(eTST));
 
             assertEq(fourSixTwoSixAgg.totalAllocated(), expectedStrategyCash);
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), expectedStrategyCash);
@@ -98,7 +98,7 @@ contract StrategyCapE2ETest is FourSixTwoSixAggBase {
 
         uint256 strategyAllocatedBefore = (fourSixTwoSixAgg.getStrategy(address(eTST))).allocated;
 
-        fourSixTwoSixAgg.rebalance(address(eTST));
+        rebalancer.rebalance(address(fourSixTwoSixAgg), address(eTST));
         vm.stopPrank();
 
         assertEq(strategyAllocatedBefore, (fourSixTwoSixAgg.getStrategy(address(eTST))).allocated);
@@ -141,7 +141,7 @@ contract StrategyCapE2ETest is FourSixTwoSixAggBase {
             fourSixTwoSixAgg.setStrategyCap(address(eTST), cap);
 
             vm.prank(user1);
-            fourSixTwoSixAgg.rebalance(address(eTST));
+            rebalancer.rebalance(address(fourSixTwoSixAgg), address(eTST));
 
             assertEq(fourSixTwoSixAgg.totalAllocated(), cap);
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), cap);
