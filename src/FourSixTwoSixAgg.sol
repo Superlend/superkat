@@ -518,6 +518,10 @@ contract FourSixTwoSixAgg is BalanceForwarder, EVCUtil, ERC4626, AccessControlEn
         return super.redeem(shares, receiver, owner);
     }
 
+    /// @notice Set hooks contract and hooked functions.
+    /// @dev This funtion should be overriden to implement access control.
+    /// @param _hookTarget Hooks contract.
+    /// @param _hookedFns Hooked functions.
     function setHooksConfig(address _hookTarget, uint32 _hookedFns) public override onlyRole(MANAGER_ROLE) {
         super.setHooksConfig(_hookTarget, _hookedFns);
     }

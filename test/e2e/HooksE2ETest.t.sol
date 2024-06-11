@@ -60,7 +60,7 @@ contract HooksE2ETest is FourSixTwoSixAggBase {
         fourSixTwoSixAgg.setHooksConfig(hooksContract, expectedHookedFns);
         vm.stopPrank();
     }
-    
+
     function testSetHooksConfigWithInvalidHookedFns() public {
         uint32 expectedHookedFns = 1 << 5;
         vm.startPrank(manager);
@@ -103,8 +103,7 @@ contract HooksContract is IHookTarget {
         return this.isHookTarget.selector;
     }
 
-    fallback() external payable {
-    }
+    fallback() external payable {}
 }
 
 contract NotHooksContract is IHookTarget {
