@@ -47,8 +47,6 @@ abstract contract Hooks {
 
         address target = hookTarget;
 
-        // if (hookTarget == address(0)) revert E_OperationDisabled();
-
         (bool success, bytes memory data) = target.call(abi.encodePacked(msg.data, _caller));
 
         if (!success) _revertBytes(data);
