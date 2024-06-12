@@ -99,6 +99,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     event RemoveStrategy(address indexed _strategy);
     event AccruePerformanceFee(address indexed feeRecipient, uint256 performanceFee, uint256 yield, uint256 feeShares);
     event SetStrategyCap(address indexed strategy, uint256 cap);
+    event Rebalance(address indexed strategy, uint256 _amountToRebalance, bool _isDeposit);
 
     /// @dev Non reentrancy modifier for interest rate updates
     modifier nonReentrant() {
@@ -273,6 +274,8 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
             strategies[_strategy].allocated = (strategyData.allocated - _amountToRebalance).toUint120();
             totalAllocated -= _amountToRebalance;
         }
+
+        emit Rebalance(_strategy, _amountToRebalance, _isDeposit);
     }
 
     /// @notice Adjust a certain strategy's allocation points.

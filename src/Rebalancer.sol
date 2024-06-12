@@ -15,10 +15,10 @@ contract Rebalancer {
 
     /// @notice Rebalance strategies allocation for a specific curated vault.
     /// @param _curatedVault Curated vault address.
-    /// @param strategies Strategies addresses.
-    function executeRebalance(address _curatedVault, address[] calldata strategies) external {
-        for (uint256 i; i < strategies.length; ++i) {
-            _rebalance(_curatedVault, strategies[i]);
+    /// @param _strategies Strategies addresses.
+    function executeRebalance(address _curatedVault, address[] calldata _strategies) external {
+        for (uint256 i; i < _strategies.length; ++i) {
+            _rebalance(_curatedVault, _strategies[i]);
         }
     }
 
@@ -27,6 +27,8 @@ contract Rebalancer {
     ///      If current allocation is less than target allocation, the aggregator will:
     ///         - Try to deposit the delta, if the cash is not sufficient, deposit all the available cash
     ///         - If all the available cash is greater than the max deposit, deposit the max deposit
+    /// @param _curatedVault Curated vault address.
+    /// @param _strategy Strategy address.
     function _rebalance(address _curatedVault, address _strategy) private {
         if (_strategy == address(0)) {
             return; //nothing to rebalance as that's the cash reserve
