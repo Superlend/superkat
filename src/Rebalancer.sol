@@ -5,7 +5,7 @@ import {IFourSixTwoSixAgg} from "./interface/IFourSixTwoSixAgg.sol";
 import {IERC4626} from "@openzeppelin/token/ERC20/extensions/ERC4626.sol";
 
 contract Rebalancer {
-    event Rebalance(
+    event ExecuteRebalance(
         address indexed curatedVault,
         address indexed strategy,
         uint256 currentAllocation,
@@ -13,17 +13,10 @@ contract Rebalancer {
         uint256 amountToRebalance
     );
 
-    /// @notice Rebalance strategy allocation for a specific curated vault.
-    /// @param _curatedVault Curated vault address.
-    /// @param _strategy Strategy address.
-    function rebalance(address _curatedVault, address _strategy) external {
-        _rebalance(_curatedVault, _strategy);
-    }
-
     /// @notice Rebalance strategies allocation for a specific curated vault.
     /// @param _curatedVault Curated vault address.
     /// @param strategies Strategies addresses.
-    function rebalanceMultipleStrategies(address _curatedVault, address[] calldata strategies) external {
+    function executeRebalance(address _curatedVault, address[] calldata strategies) external {
         for (uint256 i; i < strategies.length; ++i) {
             _rebalance(_curatedVault, strategies[i]);
         }
@@ -93,6 +86,6 @@ contract Rebalancer {
 
         IFourSixTwoSixAgg(_curatedVault).rebalance(_strategy, amountToRebalance, isDeposit);
 
-        emit Rebalance(_curatedVault, _strategy, strategyData.allocated, targetAllocation, amountToRebalance);
+        emit ExecuteRebalance(_curatedVault, _strategy, strategyData.allocated, targetAllocation, amountToRebalance);
     }
 }

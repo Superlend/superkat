@@ -44,7 +44,9 @@ contract GulpTest is FourSixTwoSixAggBase {
                 / fourSixTwoSixAgg.totalAllocationPoints();
 
             vm.prank(user1);
-            rebalancer.rebalance(address(fourSixTwoSixAgg), address(eTST));
+            address[] memory strategiesToRebalance = new address[](1);
+            strategiesToRebalance[0] = address(eTST);
+            rebalancer.executeRebalance(address(fourSixTwoSixAgg), strategiesToRebalance);
 
             assertEq(fourSixTwoSixAgg.totalAllocated(), expectedStrategyCash);
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), expectedStrategyCash);
