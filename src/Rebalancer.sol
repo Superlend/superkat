@@ -38,9 +38,6 @@ contract Rebalancer {
 
         IFourSixTwoSixAgg.Strategy memory strategyData = IFourSixTwoSixAgg(_curatedVault).getStrategy(_strategy);
 
-        // no rebalance if strategy have an allocated amount greater than cap
-        if ((strategyData.cap > 0) && (strategyData.allocated >= strategyData.cap)) return;
-
         uint256 totalAllocationPointsCache = IFourSixTwoSixAgg(_curatedVault).totalAllocationPoints();
         uint256 totalAssetsAllocatableCache = IFourSixTwoSixAgg(_curatedVault).totalAssetsAllocatable();
         uint256 targetAllocation =

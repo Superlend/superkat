@@ -15,6 +15,8 @@ import {Hooks} from "./Hooks.sol";
 import {IFourSixTwoSixAgg} from "./interface/IFourSixTwoSixAgg.sol";
 import {BalanceForwarder, IBalanceForwarder} from "./BalanceForwarder.sol";
 
+import {Test, console2, stdError} from "forge-std/Test.sol";
+
 /// @dev Do NOT use with fee on transfer tokens
 /// @dev Do NOT use with rebasing tokens
 /// @dev Based on https://github.com/euler-xyz/euler-vault-kit/blob/master/src/Synths/EulerSavingsRate.sol
@@ -61,7 +63,8 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     uint256 internal constant MAX_PERFORMANCE_FEE = 0.5e18;
     uint256 public constant INTEREST_SMEAR = 2 weeks;
 
-    ESRSlot internal esrSlot;
+    /// @dev store the interest rate smearing params
+    ESR internal esrSlot;
 
     /// @dev Total amount of _asset deposited into FourSixTwoSixAgg contract
     uint256 public totalAssetsDeposited;
@@ -80,7 +83,12 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     /// @dev Mapping between strategy address and it's allocation config
     mapping(address => Strategy) internal strategies;
 
-    struct ESRSlot {
+    /// @dev Euler saving rate struct
+    /// lastInterestUpdate: last timestamo where interest was updated.
+    /// interestSmearEnd: timestamp when the smearing of interest end.
+    /// interestLeft: amount of interest left to smear.
+    /// locked: if locked or not for update.
+    struct ESR {
         uint40 lastInterestUpdate;
         uint40 interestSmearEnd;
         uint168 interestLeft;
@@ -190,7 +198,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
 
     /// @notice Opt in to strategy rewards
     /// @param _strategy Strategy address
-    function optInStrategyRewards(address _strategy) external onlyRole(MANAGER) {
+    function optInStrategyRewards(address _strategy) external onlyRole(MANAGER) nonReentrant {
         if (!strategies[_strategy].active) revert InactiveStrategy();
 
         IBalanceForwarder(_strategy).enableBalanceForwarder();
@@ -200,7 +208,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
 
     /// @notice Opt out of strategy rewards
     /// @param _strategy Strategy address
-    function optOutStrategyRewards(address _strategy) external onlyRole(MANAGER) {
+    function optOutStrategyRewards(address _strategy) external onlyRole(MANAGER) nonReentrant {
         IBalanceForwarder(_strategy).disableBalanceForwarder();
 
         emit OptOutStrategyRewards(_strategy);
@@ -214,6 +222,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     function claimStrategyReward(address _strategy, address _reward, address _recipient, bool _forfeitRecentReward)
         external
         onlyRole(MANAGER)
+        nonReentrant
     {
         address rewardStreams = IBalanceForwarder(_strategy).balanceTrackerAddress();
 
@@ -261,7 +270,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
 
         if (_isDeposit) {
             // Do required approval (safely) and deposit
-            IERC20(asset()).safeApprove(_strategy, _amountToRebalance);
+            IERC20(asset()).safeIncreaseAllowance(_strategy, _amountToRebalance);
             IERC4626(_strategy).deposit(_amountToRebalance, address(this));
             strategies[_strategy].allocated = uint120(strategyData.allocated + _amountToRebalance);
             totalAllocated += _amountToRebalance;
@@ -393,8 +402,8 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     }
 
     /// @notice update accrued interest
-    /// @return struct ESRSlot struct
-    function updateInterestAccrued() external returns (ESRSlot memory) {
+    /// @return struct ESR struct
+    function updateInterestAccrued() external returns (ESR memory) {
         return _updateInterestAccrued();
     }
 
@@ -416,9 +425,9 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
         return withdrawalQueue.length;
     }
 
-    /// @notice Return the ESRSlot struct
-    /// @return ESRSlot struct
-    function getESRSlot() external view returns (ESRSlot memory) {
+    /// @notice Return the ESR struct
+    /// @return ESR struct
+    function getESRSlot() external view returns (ESR memory) {
         return esrSlot;
     }
 
@@ -468,14 +477,14 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     /// @dev This funtion should be overriden to implement access control.
     /// @param _hookTarget Hooks contract.
     /// @param _hookedFns Hooked functions.
-    function setHooksConfig(address _hookTarget, uint32 _hookedFns) public override onlyRole(MANAGER) {
+    function setHooksConfig(address _hookTarget, uint32 _hookedFns) public override onlyRole(MANAGER) nonReentrant {
         super.setHooksConfig(_hookTarget, _hookedFns);
     }
 
     /// @notice update accrued interest.
-    /// @return struct ESRSlot struct.
-    function _updateInterestAccrued() internal returns (ESRSlot memory) {
-        ESRSlot memory esrSlotCache = esrSlot;
+    /// @return struct ESR struct.
+    function _updateInterestAccrued() internal returns (ESR memory) {
+        ESR memory esrSlotCache = esrSlot;
         uint256 accruedInterest = _interestAccruedFromCache(esrSlotCache);
         // it's safe to down-cast because the accrued interest is a fraction of interest left
         esrSlotCache.interestLeft -= uint168(accruedInterest);
@@ -529,7 +538,9 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
             revert NotEnoughAssets();
         }
 
+        console2.log("finished strategies withdraw");
         _gulp();
+        console2.log("gulped already");
 
         super._withdraw(caller, receiver, owner, assets, shares);
     }
@@ -545,15 +556,12 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
 
             _harvest(address(strategy));
 
-            Strategy storage strategyStorage = strategies[address(strategy)];
-
             uint256 underlyingBalance = strategy.maxWithdraw(address(this));
-
             uint256 desiredAssets = _targetBalance - _currentBalance;
             uint256 withdrawAmount = (underlyingBalance > desiredAssets) ? desiredAssets : underlyingBalance;
 
             // Update allocated assets
-            strategyStorage.allocated -= uint120(withdrawAmount);
+            strategies[address(strategy)].allocated -= uint120(withdrawAmount);
             totalAllocated -= withdrawAmount;
 
             // update assetsRetrieved
@@ -572,7 +580,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
 
     /// @dev gulp positive yield and increment the left interest
     function _gulp() internal {
-        ESRSlot memory esrSlotCache = _updateInterestAccrued();
+        ESR memory esrSlotCache = _updateInterestAccrued();
 
         if (totalAssetsDeposited == 0) return;
         uint256 toGulp = totalAssetsAllocatable() - totalAssetsDeposited - esrSlotCache.interestLeft;
@@ -592,28 +600,28 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     }
 
     function _harvest(address _strategy) internal {
-        Strategy memory strategyData = strategies[_strategy];
+        uint120 strategyAllocatedAmount = strategies[_strategy].allocated;
 
-        if (strategyData.allocated == 0) return;
+        if (strategyAllocatedAmount == 0) return;
 
         uint256 underlyingBalance = IERC4626(_strategy).maxWithdraw(address(this));
 
-        if (underlyingBalance == strategyData.allocated) {
+        if (underlyingBalance == strategyAllocatedAmount) {
             return;
-        } else if (underlyingBalance > strategyData.allocated) {
+        } else if (underlyingBalance > strategyAllocatedAmount) {
             // There's yield!
-            uint256 yield = underlyingBalance - strategyData.allocated;
+            uint256 yield = underlyingBalance - strategyAllocatedAmount;
             strategies[_strategy].allocated = uint120(underlyingBalance);
             totalAllocated += yield;
 
             _accruePerformanceFee(yield);
         } else {
-            uint256 loss = strategyData.allocated - underlyingBalance;
+            uint256 loss = strategyAllocatedAmount - underlyingBalance;
 
             strategies[_strategy].allocated = uint120(underlyingBalance);
             totalAllocated -= loss;
 
-            ESRSlot memory esrSlotCache = esrSlot;
+            ESR memory esrSlotCache = esrSlot;
             if (esrSlotCache.interestLeft >= loss) {
                 esrSlotCache.interestLeft -= uint168(loss);
             } else {
@@ -623,7 +631,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
             esrSlot = esrSlotCache;
         }
 
-        emit Harvest(_strategy, underlyingBalance, strategyData.allocated);
+        emit Harvest(_strategy, underlyingBalance, strategyAllocatedAmount);
     }
 
     function _accruePerformanceFee(uint256 _yield) internal {
@@ -660,7 +668,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     /// @dev Get accrued interest without updating it.
     /// @param esrSlotCache Cached esrSlot
     /// @return uint256 accrued interest
-    function _interestAccruedFromCache(ESRSlot memory esrSlotCache) internal view returns (uint256) {
+    function _interestAccruedFromCache(ESR memory esrSlotCache) internal view returns (uint256) {
         // If distribution ended, full amount is accrued
         if (block.timestamp >= esrSlotCache.interestSmearEnd) {
             return esrSlotCache.interestLeft;
