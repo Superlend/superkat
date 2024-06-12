@@ -48,13 +48,11 @@ abstract contract BalanceForwarder is IBalanceForwarder {
     }
 
     function _enableBalanceForwarder(address _sender, uint256 _senderBalance) internal {
-        address cachedBalanceTracker = address(balanceTracker);
-
-        if (cachedBalanceTracker == address(0)) revert NotSupported();
+        if (address(balanceTracker) == address(0)) revert NotSupported();
         if (isBalanceForwarderEnabled[_sender]) revert AlreadyEnabled();
 
         isBalanceForwarderEnabled[_sender] = true;
-        IBalanceTracker(cachedBalanceTracker).balanceTrackerHook(_sender, _senderBalance, false);
+        balanceTracker.balanceTrackerHook(_sender, _senderBalance, false);
 
         emit EnableBalanceForwarder(_sender);
     }
@@ -63,13 +61,11 @@ abstract contract BalanceForwarder is IBalanceForwarder {
     /// @dev Only the authenticated account can disable balance forwarding for itself
     /// @dev Should call the IBalanceTracker hook with the account's balance of 0
     function _disableBalanceForwarder(address _sender) internal {
-        address cachedBalanceTracker = address(balanceTracker);
-
-        if (cachedBalanceTracker == address(0)) revert NotSupported();
+        if (address(balanceTracker) == address(0)) revert NotSupported();
         if (!isBalanceForwarderEnabled[_sender]) revert AlreadyDisabled();
 
         isBalanceForwarderEnabled[_sender] = false;
-        IBalanceTracker(cachedBalanceTracker).balanceTrackerHook(_sender, 0, false);
+        balanceTracker.balanceTrackerHook(_sender, 0, false);
 
         emit DisableBalanceForwarder(_sender);
     }
