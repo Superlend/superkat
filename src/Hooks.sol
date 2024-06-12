@@ -14,11 +14,10 @@ abstract contract Hooks {
 
     uint32 public constant DEPOSIT = 1 << 0;
     uint32 public constant WITHDRAW = 1 << 1;
-    uint32 public constant REBALANCE = 1 << 2;
-    uint32 public constant ADD_STRATEGY = 1 << 3;
-    uint32 public constant REMOVE_STRATEGY = 1 << 4;
+    uint32 public constant ADD_STRATEGY = 1 << 2;
+    uint32 public constant REMOVE_STRATEGY = 1 << 3;
 
-    uint32 constant ACTIONS_COUNTER = 1 << 5;
+    uint32 constant ACTIONS_COUNTER = 1 << 4;
 
     /// @dev Contract with hooks implementation
     address public hookTarget;

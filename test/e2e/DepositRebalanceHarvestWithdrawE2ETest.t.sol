@@ -55,7 +55,9 @@ contract DepositRebalanceHarvestWithdrawE2ETest is FourSixTwoSixAggBase {
                 / fourSixTwoSixAgg.totalAllocationPoints();
 
             vm.prank(user1);
-            fourSixTwoSixAgg.rebalance(address(eTST));
+            address[] memory strategiesToRebalance = new address[](1);
+            strategiesToRebalance[0] = address(eTST);
+            rebalancer.executeRebalance(address(fourSixTwoSixAgg), strategiesToRebalance);
 
             assertEq(fourSixTwoSixAgg.totalAllocated(), expectedStrategyCash);
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), expectedStrategyCash);
@@ -134,7 +136,9 @@ contract DepositRebalanceHarvestWithdrawE2ETest is FourSixTwoSixAggBase {
                 / fourSixTwoSixAgg.totalAllocationPoints();
 
             vm.prank(user1);
-            fourSixTwoSixAgg.rebalance(address(eTST));
+            address[] memory strategiesToRebalance = new address[](1);
+            strategiesToRebalance[0] = address(eTST);
+            rebalancer.executeRebalance(address(fourSixTwoSixAgg), strategiesToRebalance);
 
             assertEq(fourSixTwoSixAgg.totalAllocated(), expectedStrategyCash);
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), expectedStrategyCash);
@@ -233,7 +237,7 @@ contract DepositRebalanceHarvestWithdrawE2ETest is FourSixTwoSixAggBase {
             strategiesToRebalance[0] = address(eTST);
             strategiesToRebalance[1] = address(eTSTsecondary);
             vm.prank(user1);
-            fourSixTwoSixAgg.rebalanceMultipleStrategies(strategiesToRebalance);
+            rebalancer.executeRebalance(address(fourSixTwoSixAgg), strategiesToRebalance);
 
             assertEq(fourSixTwoSixAgg.totalAllocated(), expectedeTSTStrategyCash + expectedeTSTsecondaryStrategyCash);
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), expectedeTSTStrategyCash);
@@ -319,7 +323,9 @@ contract DepositRebalanceHarvestWithdrawE2ETest is FourSixTwoSixAggBase {
                 / fourSixTwoSixAgg.totalAllocationPoints();
 
             vm.prank(user1);
-            fourSixTwoSixAgg.rebalance(address(eTST));
+            address[] memory strategiesToRebalance = new address[](1);
+            strategiesToRebalance[0] = address(eTST);
+            rebalancer.executeRebalance(address(fourSixTwoSixAgg), strategiesToRebalance);
 
             assertEq(fourSixTwoSixAgg.totalAllocated(), expectedStrategyCash);
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), expectedStrategyCash);
@@ -421,7 +427,7 @@ contract DepositRebalanceHarvestWithdrawE2ETest is FourSixTwoSixAggBase {
             strategiesToRebalance[0] = address(eTST);
             strategiesToRebalance[1] = address(eTSTsecondary);
             vm.prank(user1);
-            fourSixTwoSixAgg.rebalanceMultipleStrategies(strategiesToRebalance);
+            rebalancer.executeRebalance(address(fourSixTwoSixAgg), strategiesToRebalance);
 
             assertEq(fourSixTwoSixAgg.totalAllocated(), expectedeTSTStrategyCash + expectedeTSTsecondaryStrategyCash);
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), expectedeTSTStrategyCash);
@@ -552,7 +558,7 @@ contract DepositRebalanceHarvestWithdrawE2ETest is FourSixTwoSixAggBase {
             strategiesToRebalance[0] = address(eTST);
             strategiesToRebalance[1] = address(eTSTsecondary);
             vm.prank(user1);
-            fourSixTwoSixAgg.rebalanceMultipleStrategies(strategiesToRebalance);
+            rebalancer.executeRebalance(address(fourSixTwoSixAgg), strategiesToRebalance);
 
             assertEq(fourSixTwoSixAgg.totalAllocated(), expectedeTSTStrategyCash + expectedeTSTsecondaryStrategyCash);
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), expectedeTSTStrategyCash);

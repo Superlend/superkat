@@ -44,7 +44,9 @@ contract HarvestTest is FourSixTwoSixAggBase {
                 / fourSixTwoSixAgg.totalAllocationPoints();
 
             vm.prank(user1);
-            fourSixTwoSixAgg.rebalance(address(eTST));
+            address[] memory strategiesToRebalance = new address[](1);
+            strategiesToRebalance[0] = address(eTST);
+            rebalancer.executeRebalance(address(fourSixTwoSixAgg), strategiesToRebalance);
 
             assertEq(fourSixTwoSixAgg.totalAllocated(), expectedStrategyCash);
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), expectedStrategyCash);

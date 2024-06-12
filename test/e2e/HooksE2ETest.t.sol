@@ -27,7 +27,7 @@ contract HooksE2ETest is FourSixTwoSixAggBase {
 
     function testSetHooksConfig() public {
         uint32 expectedHookedFns = fourSixTwoSixAgg.DEPOSIT() | fourSixTwoSixAgg.WITHDRAW()
-            | fourSixTwoSixAgg.REBALANCE() | fourSixTwoSixAgg.ADD_STRATEGY() | fourSixTwoSixAgg.REMOVE_STRATEGY();
+            | fourSixTwoSixAgg.ADD_STRATEGY() | fourSixTwoSixAgg.REMOVE_STRATEGY();
 
         vm.startPrank(manager);
         address hooksContract = address(new HooksContract());
@@ -42,7 +42,7 @@ contract HooksE2ETest is FourSixTwoSixAggBase {
 
     function testSetHooksConfigWithAddressZero() public {
         uint32 expectedHookedFns = fourSixTwoSixAgg.DEPOSIT() | fourSixTwoSixAgg.WITHDRAW()
-            | fourSixTwoSixAgg.REBALANCE() | fourSixTwoSixAgg.ADD_STRATEGY() | fourSixTwoSixAgg.REMOVE_STRATEGY();
+            | fourSixTwoSixAgg.ADD_STRATEGY() | fourSixTwoSixAgg.REMOVE_STRATEGY();
 
         vm.startPrank(manager);
         vm.expectRevert(Hooks.InvalidHooksTarget.selector);
@@ -52,7 +52,7 @@ contract HooksE2ETest is FourSixTwoSixAggBase {
 
     function testSetHooksConfigWithNotHooksContract() public {
         uint32 expectedHookedFns = fourSixTwoSixAgg.DEPOSIT() | fourSixTwoSixAgg.WITHDRAW()
-            | fourSixTwoSixAgg.REBALANCE() | fourSixTwoSixAgg.ADD_STRATEGY() | fourSixTwoSixAgg.REMOVE_STRATEGY();
+            | fourSixTwoSixAgg.ADD_STRATEGY() | fourSixTwoSixAgg.REMOVE_STRATEGY();
 
         vm.startPrank(manager);
         address hooksContract = address(new NotHooksContract());

@@ -24,7 +24,7 @@ jobs:
                   version: nightly
 
             - name: Run foundry build
-              run: forge build
+              run: forge build --sizes
 
             - name: Run foundry fmt check
               run: forge fmt --check    

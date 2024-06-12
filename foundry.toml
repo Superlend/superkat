@@ -4,7 +4,7 @@ out = "out"
 libs = ["lib"]
 test = 'test'
 optimizer = true
-optimizer_runs = 20_000
+optimizer_runs = 1000
 # solc = "0.8.0"
 gas_reports = ["*"]
 fs_permissions = [{ access = "read", path = "./"}]
