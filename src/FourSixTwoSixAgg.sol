@@ -208,20 +208,18 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
 
     /// @notice Claim a specific strategy rewards
     /// @param _strategy Strategy address.
-    /// @param _rewarded The address of the rewarded token.
     /// @param _reward The address of the reward token.
     /// @param _recipient The address to receive the claimed reward tokens.
     /// @param _forfeitRecentReward Whether to forfeit the recent rewards and not update the accumulator.
     function claimStrategyReward(
         address _strategy,
-        address _rewarded,
         address _reward,
         address _recipient,
         bool _forfeitRecentReward
     ) external onlyRole(MANAGER) {
         address rewardStreams = IBalanceForwarder(_strategy).balanceTrackerAddress();
 
-        IRewardStreams(rewardStreams).claimReward(_rewarded, _reward, _recipient, _forfeitRecentReward);
+        IRewardStreams(rewardStreams).claimReward(_strategy, _reward, _recipient, _forfeitRecentReward);
     }
 
     /// @notice Enables balance forwarding for sender
