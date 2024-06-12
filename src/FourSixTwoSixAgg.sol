@@ -8,7 +8,7 @@ import {SafeERC20} from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import {ERC4626, IERC4626, Math} from "@openzeppelin/token/ERC20/extensions/ERC4626.sol";
 import {AccessControlEnumerable} from "@openzeppelin/access/AccessControlEnumerable.sol";
 import {SafeCast} from "@openzeppelin/utils/math/SafeCast.sol";
-import {EVCUtil, IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
+import {EVCUtil} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {IRewardStreams} from "reward-streams/interfaces/IRewardStreams.sol";
 // internal dep
 import {Hooks} from "./Hooks.sol";
@@ -119,7 +119,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     /// @param _initialStrategies An array of initial strategies addresses
     /// @param _initialStrategiesAllocationPoints An array of initial strategies allocation points
     constructor(
-        IEVC _evc,
+        address _evc,
         address _balanceTracker,
         address _asset,
         string memory _name,
@@ -127,7 +127,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
         uint256 _initialCashAllocationPoints,
         address[] memory _initialStrategies,
         uint256[] memory _initialStrategiesAllocationPoints
-    ) BalanceForwarder(_balanceTracker) EVCUtil(address(_evc)) ERC4626(IERC20(_asset)) ERC20(_name, _symbol) {
+    ) BalanceForwarder(_balanceTracker) EVCUtil(_evc) ERC4626(IERC20(_asset)) ERC20(_name, _symbol) {
         esrSlot.locked = REENTRANCYLOCK__UNLOCKED;
 
         if (_initialStrategies.length != _initialStrategiesAllocationPoints.length) revert ArrayLengthMismatch();
@@ -211,12 +211,10 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     /// @param _reward The address of the reward token.
     /// @param _recipient The address to receive the claimed reward tokens.
     /// @param _forfeitRecentReward Whether to forfeit the recent rewards and not update the accumulator.
-    function claimStrategyReward(
-        address _strategy,
-        address _reward,
-        address _recipient,
-        bool _forfeitRecentReward
-    ) external onlyRole(MANAGER) {
+    function claimStrategyReward(address _strategy, address _reward, address _recipient, bool _forfeitRecentReward)
+        external
+        onlyRole(MANAGER)
+    {
         address rewardStreams = IBalanceForwarder(_strategy).balanceTrackerAddress();
 
         IRewardStreams(rewardStreams).claimReward(_strategy, _reward, _recipient, _forfeitRecentReward);
@@ -302,9 +300,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     /// @param _strategy Strategy address.
     /// @param _cap Cap amount
     function setStrategyCap(address _strategy, uint256 _cap) external nonReentrant onlyRole(STRATEGY_MANAGER) {
-        Strategy memory strategyDataCache = strategies[_strategy];
-
-        if (!strategyDataCache.active) {
+        if (!strategies[_strategy].active) {
             revert InactiveStrategy();
         }
 
@@ -341,12 +337,12 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     /// @param _strategy Address of the strategy
     /// @param _allocationPoints Strategy's allocation points
     function addStrategy(address _strategy, uint256 _allocationPoints) external nonReentrant onlyRole(STRATEGY_ADDER) {
-        if (IERC4626(_strategy).asset() != asset()) {
-            revert InvalidStrategyAsset();
-        }
-
         if (strategies[_strategy].active) {
             revert StrategyAlreadyExist();
+        }
+
+        if (IERC4626(_strategy).asset() != asset()) {
+            revert InvalidStrategyAsset();
         }
 
         _callHookTarget(ADD_STRATEGY, _msgSender());
@@ -432,36 +428,6 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
         return _interestAccruedFromCache(esrSlot);
     }
 
-    /// @notice Transfers a certain amount of tokens to a recipient.
-    /// @param to The recipient of the transfer.
-    /// @param amount The amount shares to transfer.
-    /// @return A boolean indicating whether the transfer was successful.
-    function transfer(address to, uint256 amount) public override (ERC20, IERC20) nonReentrant returns (bool) {
-        super.transfer(to, amount);
-
-        _requireAccountStatusCheck(_msgSender());
-
-        return true;
-    }
-
-    /// @notice Transfers a certain amount of tokens from a sender to a recipient.
-    /// @param from The sender of the transfer.
-    /// @param to The recipient of the transfer.
-    /// @param amount The amount of shares to transfer.
-    /// @return A boolean indicating whether the transfer was successful.
-    function transferFrom(address from, address to, uint256 amount)
-        public
-        override (ERC20, IERC20)
-        nonReentrant
-        returns (bool)
-    {
-        super.transferFrom(from, to, amount);
-
-        _requireAccountStatusCheck(from);
-
-        return true;
-    }
-
     /// @dev See {IERC4626-deposit}.
     function deposit(uint256 assets, address receiver) public override nonReentrant returns (uint256) {
         return super.deposit(assets, receiver);
@@ -482,9 +448,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     {
         // Move interest to totalAssetsDeposited
         _updateInterestAccrued();
-        shares = super.withdraw(assets, receiver, owner);
-
-        _requireAccountStatusCheck(owner);
+        return super.withdraw(assets, receiver, owner);
     }
 
     /// @dev See {IERC4626-redeem}.
@@ -497,9 +461,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     {
         // Move interest to totalAssetsDeposited
         _updateInterestAccrued();
-        assets = super.redeem(shares, receiver, owner);
-
-        _requireAccountStatusCheck(owner);
+        return super.redeem(shares, receiver, owner);
     }
 
     /// @notice Set hooks contract and hooked functions.
@@ -722,12 +684,5 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     /// @return The address of the message sender.
     function _msgSender() internal view override (Context, EVCUtil) returns (address) {
         return EVCUtil._msgSender();
-    }
-
-    /// @notice Function to require an account status check on the EVC.
-    /// @dev Calls `requireAccountStatusCheck` function from EVC for the specified account after the function body.
-    /// @param _account The address of the account to check.
-    function _requireAccountStatusCheck(address _account) private {
-        evc.requireAccountStatusCheck(_account);
     }
 }

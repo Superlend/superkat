@@ -24,7 +24,7 @@ contract BalanceForwarderE2ETest is FourSixTwoSixAggBase {
         trackingReward = address(new TrackingRewardStreams(address(evc), 2 weeks));
 
         fourSixTwoSixAgg = new FourSixTwoSixAgg(
-            evc,
+            address(evc),
             trackingReward,
             address(assetTST),
             "assetTST_Agg",

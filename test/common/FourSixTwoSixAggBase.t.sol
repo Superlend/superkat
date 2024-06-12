@@ -28,7 +28,7 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
         vm.startPrank(deployer);
         rebalancer = new Rebalancer();
         fourSixTwoSixAgg = new FourSixTwoSixAgg(
-            evc,
+            address(evc),
             address(0),
             address(assetTST),
             "assetTST_Agg",
