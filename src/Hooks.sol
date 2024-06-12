@@ -32,10 +32,12 @@ abstract contract Hooks {
     }
 
     /// @notice Set hooks contract and hooked functions.
-    /// @dev This funtion should be overriden to implement access control.
+    /// @dev This funtion should be overriden to implement access control and call _setHooksConfig().
     /// @param _hookTarget Hooks contract.
     /// @param _hookedFns Hooked functions.
-    function setHooksConfig(address _hookTarget, uint32 _hookedFns) public virtual {
+    function setHooksConfig(address _hookTarget, uint32 _hookedFns) public virtual;
+
+    function _setHooksConfig(address _hookTarget, uint32 _hookedFns) internal {
         if (_hookTarget != address(0) && IHookTarget(_hookTarget).isHookTarget() != IHookTarget.isHookTarget.selector) {
             revert NotHooksContract();
         }

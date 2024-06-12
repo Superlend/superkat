@@ -476,7 +476,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     /// @param _hookTarget Hooks contract.
     /// @param _hookedFns Hooked functions.
     function setHooksConfig(address _hookTarget, uint32 _hookedFns) public override onlyRole(MANAGER) nonReentrant {
-        super.setHooksConfig(_hookTarget, _hookedFns);
+        _setHooksConfig(_hookTarget, _hookedFns);
     }
 
     /// @notice update accrued interest.
