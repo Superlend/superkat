@@ -15,8 +15,6 @@ import {Hooks} from "./Hooks.sol";
 import {IFourSixTwoSixAgg} from "./interface/IFourSixTwoSixAgg.sol";
 import {BalanceForwarder, IBalanceForwarder} from "./BalanceForwarder.sol";
 
-import {Test, console2, stdError} from "forge-std/Test.sol";
-
 /// @dev Do NOT use with fee on transfer tokens
 /// @dev Do NOT use with rebasing tokens
 /// @dev Based on https://github.com/euler-xyz/euler-vault-kit/blob/master/src/Synths/EulerSavingsRate.sol
@@ -538,9 +536,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
             revert NotEnoughAssets();
         }
 
-        console2.log("finished strategies withdraw");
         _gulp();
-        console2.log("gulped already");
 
         super._withdraw(caller, receiver, owner, assets, shares);
     }
