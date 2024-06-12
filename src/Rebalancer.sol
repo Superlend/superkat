@@ -5,28 +5,39 @@ import {IFourSixTwoSixAgg} from "./interface/IFourSixTwoSixAgg.sol";
 import {IERC4626} from "@openzeppelin/token/ERC20/extensions/ERC4626.sol";
 
 contract Rebalancer {
-    /// @notice Rebalance strategy allocation.
-    /// @dev This function will first harvest yield, gulps and update interest.
-    /// @dev If current allocation is greater than target allocation, the aggregator will withdraw the excess assets.
-    ///      If current allocation is less than target allocation, the aggregator will:
-    ///         - Try to deposit the delta, if the cash is not sufficient, deposit all the available cash
-    ///         - If all the available cash is greater than the max deposit, deposit the max deposit
+    event Rebalance(
+        address indexed curatedVault,
+        address indexed strategy,
+        uint256 currentAllocation,
+        uint256 targetAllocation,
+        uint256 amountToRebalance
+    );
+
+    /// @notice Rebalance strategy allocation for a specific curated vault.
+    /// @param _curatedVault Curated vault address.
+    /// @param _strategy Strategy address.
     function rebalance(address _curatedVault, address _strategy) external {
         _rebalance(_curatedVault, _strategy);
     }
 
+    /// @notice Rebalance strategies allocation for a specific curated vault.
+    /// @param _curatedVault Curated vault address.
+    /// @param strategies Strategies addresses.
     function rebalanceMultipleStrategies(address _curatedVault, address[] calldata strategies) external {
         for (uint256 i; i < strategies.length; ++i) {
             _rebalance(_curatedVault, strategies[i]);
         }
     }
 
+    /// @dev This function will first harvest yield, gulps and update interest.
+    /// @dev If current allocation is greater than target allocation, the aggregator will withdraw the excess assets.
+    ///      If current allocation is less than target allocation, the aggregator will:
+    ///         - Try to deposit the delta, if the cash is not sufficient, deposit all the available cash
+    ///         - If all the available cash is greater than the max deposit, deposit the max deposit
     function _rebalance(address _curatedVault, address _strategy) private {
         if (_strategy == address(0)) {
             return; //nothing to rebalance as that's the cash reserve
         }
-
-        // _callHookTarget(REBALANCE, _msgSender());
 
         IFourSixTwoSixAgg(_curatedVault).harvest(_strategy);
 
@@ -82,14 +93,6 @@ contract Rebalancer {
 
         IFourSixTwoSixAgg(_curatedVault).rebalance(_strategy, amountToRebalance, isDeposit);
 
-        // emit Rebalance(_strategy, strategyData.allocated, targetAllocation, amountToRebalance)
+        emit Rebalance(_curatedVault, _strategy, strategyData.allocated, targetAllocation, amountToRebalance);
     }
-
-    // /// @notice Rebalance strategy's allocation.
-    // /// @param _strategy Address of strategy to rebalance.
-    // function rebalance(address _strategy) external {
-    //     _rebalance(_strategy);
-
-    //     _gulp();
-    // }
 }
