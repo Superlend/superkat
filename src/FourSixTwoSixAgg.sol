@@ -388,7 +388,6 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
         for (uint256 i = 0; i < lastStrategyIndex; ++i) {
             if (withdrawalQueue[i] == _strategy) {
                 withdrawalQueue[i] = withdrawalQueue[lastStrategyIndex];
-                withdrawalQueue[lastStrategyIndex] = _strategy;
 
                 break;
             }
