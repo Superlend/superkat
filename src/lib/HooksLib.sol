@@ -8,18 +8,12 @@ pragma solidity ^0.8.0;
 /// @dev This is copied from https://github.com/euler-xyz/euler-vault-kit/blob/30b0b9e36b0a912fe430c7482e9b3bb12d180a4e/src/EVault/shared/types/Flags.sol
 library HooksLib {
     /// @dev Are *all* of the Hooks in bitMask set?
-    function isSet(HooksType self, uint32 bitMask) internal pure returns (bool) {
-        return (HooksType.unwrap(self) & bitMask) == bitMask;
+    function isSet(uint32 _hookedFns, uint32 _fn) internal pure returns (bool) {
+        return (_hookedFns & _fn) == _fn;
     }
 
     /// @dev Are *none* of the Hooks in bitMask set?
-    function isNotSet(HooksType self, uint32 bitMask) internal pure returns (bool) {
-        return (HooksType.unwrap(self) & bitMask) == 0;
-    }
-
-    function toUint32(HooksType self) internal pure returns (uint32) {
-        return HooksType.unwrap(self);
+    function isNotSet(uint32 _hookedFns, uint32 _fn) internal pure returns (bool) {
+        return (_hookedFns & _fn) == 0;
     }
 }
-
-type HooksType is uint32;

@@ -56,7 +56,7 @@ contract GulpTest is FourSixTwoSixAggBase {
 
     function testGulpAfterNegativeYieldEqualToInterestLeft() public {
         fourSixTwoSixAgg.gulp();
-        FourSixTwoSixAgg.ESRSlot memory ers = fourSixTwoSixAgg.getESRSlot();
+        FourSixTwoSixAgg.ESR memory ers = fourSixTwoSixAgg.getESRSlot();
         assertEq(fourSixTwoSixAgg.interestAccrued(), 0);
         assertEq(ers.interestLeft, 0);
 
@@ -106,7 +106,7 @@ contract GulpTest is FourSixTwoSixAggBase {
 
     function testGulpAfterNegativeYieldBiggerThanInterestLeft() public {
         fourSixTwoSixAgg.gulp();
-        FourSixTwoSixAgg.ESRSlot memory ers = fourSixTwoSixAgg.getESRSlot();
+        FourSixTwoSixAgg.ESR memory ers = fourSixTwoSixAgg.getESRSlot();
         assertEq(fourSixTwoSixAgg.interestAccrued(), 0);
         assertEq(ers.interestLeft, 0);
 

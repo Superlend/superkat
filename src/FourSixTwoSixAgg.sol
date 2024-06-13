@@ -8,7 +8,7 @@ import {SafeERC20} from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import {ERC4626, IERC4626, Math} from "@openzeppelin/token/ERC20/extensions/ERC4626.sol";
 import {AccessControlEnumerable} from "@openzeppelin/access/AccessControlEnumerable.sol";
 import {SafeCast} from "@openzeppelin/utils/math/SafeCast.sol";
-import {EVCUtil, IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
+import {EVCUtil} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {IRewardStreams} from "reward-streams/interfaces/IRewardStreams.sol";
 // internal dep
 import {Hooks} from "./Hooks.sol";
@@ -39,6 +39,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     error FeeRecipientNotSet();
     error FeeRecipientAlreadySet();
     error CanNotRemoveCashReserve();
+    error DuplicateInitialStrategy();
 
     uint8 internal constant REENTRANCYLOCK__UNLOCKED = 1;
     uint8 internal constant REENTRANCYLOCK__LOCKED = 2;
@@ -61,7 +62,8 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     uint256 internal constant MAX_PERFORMANCE_FEE = 0.5e18;
     uint256 public constant INTEREST_SMEAR = 2 weeks;
 
-    ESRSlot internal esrSlot;
+    /// @dev store the interest rate smearing params
+    ESR internal esrSlot;
 
     /// @dev Total amount of _asset deposited into FourSixTwoSixAgg contract
     uint256 public totalAssetsDeposited;
@@ -80,7 +82,12 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     /// @dev Mapping between strategy address and it's allocation config
     mapping(address => Strategy) internal strategies;
 
-    struct ESRSlot {
+    /// @dev Euler saving rate struct
+    /// lastInterestUpdate: last timestamo where interest was updated.
+    /// interestSmearEnd: timestamp when the smearing of interest end.
+    /// interestLeft: amount of interest left to smear.
+    /// locked: if locked or not for update.
+    struct ESR {
         uint40 lastInterestUpdate;
         uint40 interestSmearEnd;
         uint168 interestLeft;
@@ -119,7 +126,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     /// @param _initialStrategies An array of initial strategies addresses
     /// @param _initialStrategiesAllocationPoints An array of initial strategies allocation points
     constructor(
-        IEVC _evc,
+        address _evc,
         address _balanceTracker,
         address _asset,
         string memory _name,
@@ -127,7 +134,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
         uint256 _initialCashAllocationPoints,
         address[] memory _initialStrategies,
         uint256[] memory _initialStrategiesAllocationPoints
-    ) BalanceForwarder(_balanceTracker) EVCUtil(address(_evc)) ERC4626(IERC20(_asset)) ERC20(_name, _symbol) {
+    ) BalanceForwarder(_balanceTracker) EVCUtil(_evc) ERC4626(IERC20(_asset)) ERC20(_name, _symbol) {
         esrSlot.locked = REENTRANCYLOCK__UNLOCKED;
 
         if (_initialStrategies.length != _initialStrategiesAllocationPoints.length) revert ArrayLengthMismatch();
@@ -142,6 +149,8 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
             if (IERC4626(_initialStrategies[i]).asset() != asset()) {
                 revert InvalidStrategyAsset();
             }
+
+            if (strategies[_initialStrategies[i]].active) revert DuplicateInitialStrategy();
 
             strategies[_initialStrategies[i]] = Strategy({
                 allocated: 0,
@@ -190,7 +199,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
 
     /// @notice Opt in to strategy rewards
     /// @param _strategy Strategy address
-    function optInStrategyRewards(address _strategy) external onlyRole(MANAGER) {
+    function optInStrategyRewards(address _strategy) external onlyRole(MANAGER) nonReentrant {
         if (!strategies[_strategy].active) revert InactiveStrategy();
 
         IBalanceForwarder(_strategy).enableBalanceForwarder();
@@ -200,7 +209,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
 
     /// @notice Opt out of strategy rewards
     /// @param _strategy Strategy address
-    function optOutStrategyRewards(address _strategy) external onlyRole(MANAGER) {
+    function optOutStrategyRewards(address _strategy) external onlyRole(MANAGER) nonReentrant {
         IBalanceForwarder(_strategy).disableBalanceForwarder();
 
         emit OptOutStrategyRewards(_strategy);
@@ -208,20 +217,17 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
 
     /// @notice Claim a specific strategy rewards
     /// @param _strategy Strategy address.
-    /// @param _rewarded The address of the rewarded token.
     /// @param _reward The address of the reward token.
     /// @param _recipient The address to receive the claimed reward tokens.
     /// @param _forfeitRecentReward Whether to forfeit the recent rewards and not update the accumulator.
-    function claimStrategyReward(
-        address _strategy,
-        address _rewarded,
-        address _reward,
-        address _recipient,
-        bool _forfeitRecentReward
-    ) external onlyRole(MANAGER) {
+    function claimStrategyReward(address _strategy, address _reward, address _recipient, bool _forfeitRecentReward)
+        external
+        onlyRole(MANAGER)
+        nonReentrant
+    {
         address rewardStreams = IBalanceForwarder(_strategy).balanceTrackerAddress();
 
-        IRewardStreams(rewardStreams).claimReward(_rewarded, _reward, _recipient, _forfeitRecentReward);
+        IRewardStreams(rewardStreams).claimReward(_strategy, _reward, _recipient, _forfeitRecentReward);
     }
 
     /// @notice Enables balance forwarding for sender
@@ -265,7 +271,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
 
         if (_isDeposit) {
             // Do required approval (safely) and deposit
-            IERC20(asset()).safeApprove(_strategy, _amountToRebalance);
+            IERC20(asset()).safeIncreaseAllowance(_strategy, _amountToRebalance);
             IERC4626(_strategy).deposit(_amountToRebalance, address(this));
             strategies[_strategy].allocated = uint120(strategyData.allocated + _amountToRebalance);
             totalAllocated += _amountToRebalance;
@@ -304,9 +310,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     /// @param _strategy Strategy address.
     /// @param _cap Cap amount
     function setStrategyCap(address _strategy, uint256 _cap) external nonReentrant onlyRole(STRATEGY_MANAGER) {
-        Strategy memory strategyDataCache = strategies[_strategy];
-
-        if (!strategyDataCache.active) {
+        if (!strategies[_strategy].active) {
             revert InactiveStrategy();
         }
 
@@ -343,15 +347,15 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     /// @param _strategy Address of the strategy
     /// @param _allocationPoints Strategy's allocation points
     function addStrategy(address _strategy, uint256 _allocationPoints) external nonReentrant onlyRole(STRATEGY_ADDER) {
-        if (IERC4626(_strategy).asset() != asset()) {
-            revert InvalidStrategyAsset();
-        }
-
         if (strategies[_strategy].active) {
             revert StrategyAlreadyExist();
         }
 
-        _callHookTarget(ADD_STRATEGY, _msgSender());
+        if (IERC4626(_strategy).asset() != asset()) {
+            revert InvalidStrategyAsset();
+        }
+
+        _callHooksTarget(ADD_STRATEGY, _msgSender());
 
         strategies[_strategy] =
             Strategy({allocated: 0, allocationPoints: _allocationPoints.toUint120(), active: true, cap: 0});
@@ -375,7 +379,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
             revert AlreadyRemoved();
         }
 
-        _callHookTarget(REMOVE_STRATEGY, _msgSender());
+        _callHooksTarget(REMOVE_STRATEGY, _msgSender());
 
         totalAllocationPoints -= strategyStorage.allocationPoints;
         strategyStorage.active = false;
@@ -387,7 +391,6 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
         for (uint256 i = 0; i < lastStrategyIndex; ++i) {
             if (withdrawalQueue[i] == _strategy) {
                 withdrawalQueue[i] = withdrawalQueue[lastStrategyIndex];
-                withdrawalQueue[lastStrategyIndex] = _strategy;
 
                 break;
             }
@@ -399,8 +402,8 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     }
 
     /// @notice update accrued interest
-    /// @return struct ESRSlot struct
-    function updateInterestAccrued() external returns (ESRSlot memory) {
+    /// @return struct ESR struct
+    function updateInterestAccrued() external returns (ESR memory) {
         return _updateInterestAccrued();
     }
 
@@ -422,9 +425,9 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
         return withdrawalQueue.length;
     }
 
-    /// @notice Return the ESRSlot struct
-    /// @return ESRSlot struct
-    function getESRSlot() external view returns (ESRSlot memory) {
+    /// @notice Return the ESR struct
+    /// @return ESR struct
+    function getESRSlot() external view returns (ESR memory) {
         return esrSlot;
     }
 
@@ -432,36 +435,6 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     /// @return uint256 accrued interest
     function interestAccrued() external view returns (uint256) {
         return _interestAccruedFromCache(esrSlot);
-    }
-
-    /// @notice Transfers a certain amount of tokens to a recipient.
-    /// @param to The recipient of the transfer.
-    /// @param amount The amount shares to transfer.
-    /// @return A boolean indicating whether the transfer was successful.
-    function transfer(address to, uint256 amount) public override (ERC20, IERC20) nonReentrant returns (bool) {
-        super.transfer(to, amount);
-
-        _requireAccountStatusCheck(_msgSender());
-
-        return true;
-    }
-
-    /// @notice Transfers a certain amount of tokens from a sender to a recipient.
-    /// @param from The sender of the transfer.
-    /// @param to The recipient of the transfer.
-    /// @param amount The amount of shares to transfer.
-    /// @return A boolean indicating whether the transfer was successful.
-    function transferFrom(address from, address to, uint256 amount)
-        public
-        override (ERC20, IERC20)
-        nonReentrant
-        returns (bool)
-    {
-        super.transferFrom(from, to, amount);
-
-        _requireAccountStatusCheck(from);
-
-        return true;
     }
 
     /// @dev See {IERC4626-deposit}.
@@ -484,9 +457,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     {
         // Move interest to totalAssetsDeposited
         _updateInterestAccrued();
-        shares = super.withdraw(assets, receiver, owner);
-
-        _requireAccountStatusCheck(owner);
+        return super.withdraw(assets, receiver, owner);
     }
 
     /// @dev See {IERC4626-redeem}.
@@ -499,23 +470,21 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     {
         // Move interest to totalAssetsDeposited
         _updateInterestAccrued();
-        assets = super.redeem(shares, receiver, owner);
-
-        _requireAccountStatusCheck(owner);
+        return super.redeem(shares, receiver, owner);
     }
 
     /// @notice Set hooks contract and hooked functions.
     /// @dev This funtion should be overriden to implement access control.
-    /// @param _hookTarget Hooks contract.
+    /// @param _hooksTarget Hooks contract.
     /// @param _hookedFns Hooked functions.
-    function setHooksConfig(address _hookTarget, uint32 _hookedFns) public override onlyRole(MANAGER) {
-        super.setHooksConfig(_hookTarget, _hookedFns);
+    function setHooksConfig(address _hooksTarget, uint32 _hookedFns) public override onlyRole(MANAGER) nonReentrant {
+        _setHooksConfig(_hooksTarget, _hookedFns);
     }
 
     /// @notice update accrued interest.
-    /// @return struct ESRSlot struct.
-    function _updateInterestAccrued() internal returns (ESRSlot memory) {
-        ESRSlot memory esrSlotCache = esrSlot;
+    /// @return struct ESR struct.
+    function _updateInterestAccrued() internal returns (ESR memory) {
+        ESR memory esrSlotCache = esrSlot;
         uint256 accruedInterest = _interestAccruedFromCache(esrSlotCache);
         // it's safe to down-cast because the accrued interest is a fraction of interest left
         esrSlotCache.interestLeft -= uint168(accruedInterest);
@@ -544,7 +513,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     /// @dev Increate the total assets deposited, and call IERC4626._deposit()
     /// @dev See {IERC4626-_deposit}.
     function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal override {
-        _callHookTarget(DEPOSIT, caller);
+        _callHooksTarget(DEPOSIT, caller);
 
         totalAssetsDeposited += assets;
 
@@ -559,7 +528,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
         internal
         override
     {
-        _callHookTarget(WITHDRAW, caller);
+        _callHooksTarget(WITHDRAW, caller);
 
         totalAssetsDeposited -= assets;
         uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
@@ -585,15 +554,12 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
 
             _harvest(address(strategy));
 
-            Strategy storage strategyStorage = strategies[address(strategy)];
-
             uint256 underlyingBalance = strategy.maxWithdraw(address(this));
-
             uint256 desiredAssets = _targetBalance - _currentBalance;
             uint256 withdrawAmount = (underlyingBalance > desiredAssets) ? desiredAssets : underlyingBalance;
 
             // Update allocated assets
-            strategyStorage.allocated -= uint120(withdrawAmount);
+            strategies[address(strategy)].allocated -= uint120(withdrawAmount);
             totalAllocated -= withdrawAmount;
 
             // update assetsRetrieved
@@ -612,7 +578,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
 
     /// @dev gulp positive yield and increment the left interest
     function _gulp() internal {
-        ESRSlot memory esrSlotCache = _updateInterestAccrued();
+        ESR memory esrSlotCache = _updateInterestAccrued();
 
         if (totalAssetsDeposited == 0) return;
         uint256 toGulp = totalAssetsAllocatable() - totalAssetsDeposited - esrSlotCache.interestLeft;
@@ -632,28 +598,28 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     }
 
     function _harvest(address _strategy) internal {
-        Strategy memory strategyData = strategies[_strategy];
+        uint120 strategyAllocatedAmount = strategies[_strategy].allocated;
 
-        if (strategyData.allocated == 0) return;
+        if (strategyAllocatedAmount == 0) return;
 
         uint256 underlyingBalance = IERC4626(_strategy).maxWithdraw(address(this));
 
-        if (underlyingBalance == strategyData.allocated) {
+        if (underlyingBalance == strategyAllocatedAmount) {
             return;
-        } else if (underlyingBalance > strategyData.allocated) {
+        } else if (underlyingBalance > strategyAllocatedAmount) {
             // There's yield!
-            uint256 yield = underlyingBalance - strategyData.allocated;
+            uint256 yield = underlyingBalance - strategyAllocatedAmount;
             strategies[_strategy].allocated = uint120(underlyingBalance);
             totalAllocated += yield;
 
             _accruePerformanceFee(yield);
         } else {
-            uint256 loss = strategyData.allocated - underlyingBalance;
+            uint256 loss = strategyAllocatedAmount - underlyingBalance;
 
             strategies[_strategy].allocated = uint120(underlyingBalance);
             totalAllocated -= loss;
 
-            ESRSlot memory esrSlotCache = esrSlot;
+            ESR memory esrSlotCache = esrSlot;
             if (esrSlotCache.interestLeft >= loss) {
                 esrSlotCache.interestLeft -= uint168(loss);
             } else {
@@ -663,7 +629,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
             esrSlot = esrSlotCache;
         }
 
-        emit Harvest(_strategy, underlyingBalance, strategyData.allocated);
+        emit Harvest(_strategy, underlyingBalance, strategyAllocatedAmount);
     }
 
     function _accruePerformanceFee(uint256 _yield) internal {
@@ -700,7 +666,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     /// @dev Get accrued interest without updating it.
     /// @param esrSlotCache Cached esrSlot
     /// @return uint256 accrued interest
-    function _interestAccruedFromCache(ESRSlot memory esrSlotCache) internal view returns (uint256) {
+    function _interestAccruedFromCache(ESR memory esrSlotCache) internal view returns (uint256) {
         // If distribution ended, full amount is accrued
         if (block.timestamp >= esrSlotCache.interestSmearEnd) {
             return esrSlotCache.interestLeft;
@@ -724,12 +690,5 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     /// @return The address of the message sender.
     function _msgSender() internal view override (Context, EVCUtil) returns (address) {
         return EVCUtil._msgSender();
-    }
-
-    /// @notice Function to require an account status check on the EVC.
-    /// @dev Calls `requireAccountStatusCheck` function from EVC for the specified account after the function body.
-    /// @param _account The address of the account to check.
-    function _requireAccountStatusCheck(address _account) private {
-        evc.requireAccountStatusCheck(_account);
     }
 }
