@@ -39,6 +39,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     error FeeRecipientNotSet();
     error FeeRecipientAlreadySet();
     error CanNotRemoveCashReserve();
+    error DuplicateInitialStrategy();
 
     uint8 internal constant REENTRANCYLOCK__UNLOCKED = 1;
     uint8 internal constant REENTRANCYLOCK__LOCKED = 2;
@@ -148,6 +149,8 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
             if (IERC4626(_initialStrategies[i]).asset() != asset()) {
                 revert InvalidStrategyAsset();
             }
+
+            if (strategies[_initialStrategies[i]].active) revert DuplicateInitialStrategy();
 
             strategies[_initialStrategies[i]] = Strategy({
                 allocated: 0,
