@@ -352,7 +352,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
             revert InvalidStrategyAsset();
         }
 
-        _callHookTarget(ADD_STRATEGY, _msgSender());
+        _callHooksTarget(ADD_STRATEGY, _msgSender());
 
         strategies[_strategy] =
             Strategy({allocated: 0, allocationPoints: _allocationPoints.toUint120(), active: true, cap: 0});
@@ -376,7 +376,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
             revert AlreadyRemoved();
         }
 
-        _callHookTarget(REMOVE_STRATEGY, _msgSender());
+        _callHooksTarget(REMOVE_STRATEGY, _msgSender());
 
         totalAllocationPoints -= strategyStorage.allocationPoints;
         strategyStorage.active = false;
@@ -473,10 +473,10 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
 
     /// @notice Set hooks contract and hooked functions.
     /// @dev This funtion should be overriden to implement access control.
-    /// @param _hookTarget Hooks contract.
+    /// @param _hooksTarget Hooks contract.
     /// @param _hookedFns Hooked functions.
-    function setHooksConfig(address _hookTarget, uint32 _hookedFns) public override onlyRole(MANAGER) nonReentrant {
-        _setHooksConfig(_hookTarget, _hookedFns);
+    function setHooksConfig(address _hooksTarget, uint32 _hookedFns) public override onlyRole(MANAGER) nonReentrant {
+        _setHooksConfig(_hooksTarget, _hookedFns);
     }
 
     /// @notice update accrued interest.
@@ -511,7 +511,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     /// @dev Increate the total assets deposited, and call IERC4626._deposit()
     /// @dev See {IERC4626-_deposit}.
     function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal override {
-        _callHookTarget(DEPOSIT, caller);
+        _callHooksTarget(DEPOSIT, caller);
 
         totalAssetsDeposited += assets;
 
@@ -526,7 +526,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
         internal
         override
     {
-        _callHookTarget(WITHDRAW, caller);
+        _callHooksTarget(WITHDRAW, caller);
 
         totalAssetsDeposited -= assets;
         uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));

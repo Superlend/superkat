@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {HooksLib, HooksType} from "./lib/HooksLib.sol";
+import {HooksLib} from "./lib/HooksLib.sol";
 import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
 
 abstract contract Hooks {
-    using HooksLib for HooksType;
+    using HooksLib for uint32;
 
     error InvalidHooksTarget();
     error NotHooksContract();
@@ -18,49 +18,63 @@ abstract contract Hooks {
     uint32 public constant REMOVE_STRATEGY = 1 << 3;
 
     uint32 constant ACTIONS_COUNTER = 1 << 4;
+    uint256 public constant HOOKS_MASK = 0x00000000000000000000000000000000000000000000000000000000FFFFFFFF;
 
-    /// @dev Contract with hooks implementation
-    address public hookTarget;
-    /// @dev Hooked functions
-    HooksType public hookedFns;
+    /// @dev storing the hooks target and kooked functions.
+    uint256 hooksConfig;
+
+    event SetHooksConfig(address indexed hooksTarget, uint32 hookedFns);
 
     /// @notice Get the hooks contract and the hooked functions.
     /// @return address Hooks contract.
     /// @return uint32 Hooked functions.
     function getHooksConfig() external view returns (address, uint32) {
-        return (hookTarget, hookedFns.toUint32());
+        return _getHooksConfig(hooksConfig);
     }
 
     /// @notice Set hooks contract and hooked functions.
     /// @dev This funtion should be overriden to implement access control and call _setHooksConfig().
-    /// @param _hookTarget Hooks contract.
+    /// @param _hooksTarget Hooks contract.
     /// @param _hookedFns Hooked functions.
-    function setHooksConfig(address _hookTarget, uint32 _hookedFns) public virtual;
+    function setHooksConfig(address _hooksTarget, uint32 _hookedFns) public virtual;
 
-    function _setHooksConfig(address _hookTarget, uint32 _hookedFns) internal {
-        if (_hookTarget != address(0) && IHookTarget(_hookTarget).isHookTarget() != IHookTarget.isHookTarget.selector) {
+    /// @notice Set hooks contract and hooked functions.
+    /// @dev This funtion should be called when implementing setHooksConfig().
+    /// @param _hooksTarget Hooks contract.
+    /// @param _hookedFns Hooked functions.
+    function _setHooksConfig(address _hooksTarget, uint32 _hookedFns) internal {
+        if (_hooksTarget != address(0) && IHookTarget(_hooksTarget).isHookTarget() != IHookTarget.isHookTarget.selector)
+        {
             revert NotHooksContract();
         }
-        if (_hookedFns != 0 && _hookTarget == address(0)) {
+        if (_hookedFns != 0 && _hooksTarget == address(0)) {
             revert InvalidHooksTarget();
         }
         if (_hookedFns >= ACTIONS_COUNTER) revert InvalidHookedFns();
 
-        hookTarget = _hookTarget;
-        hookedFns = HooksType.wrap(_hookedFns);
+        hooksConfig = (uint256(uint160(_hooksTarget)) << 32) | uint256(_hookedFns);
+
+        emit SetHooksConfig(_hooksTarget, _hookedFns);
     }
 
     /// @notice Checks whether a hook has been installed for the function and if so, invokes the hook target.
-    /// @param _fn Function to check hook for.
+    /// @param _fn Function to call the hook for.
     /// @param _caller Caller's address.
-    function _callHookTarget(uint32 _fn, address _caller) internal {
-        if (hookedFns.isNotSet(_fn)) return;
+    function _callHooksTarget(uint32 _fn, address _caller) internal {
+        (address target, uint32 hookedFns) = _getHooksConfig(hooksConfig);
 
-        address target = hookTarget;
+        if (hookedFns.isNotSet(_fn)) return;
 
         (bool success, bytes memory data) = target.call(abi.encodePacked(msg.data, _caller));
 
         if (!success) _revertBytes(data);
+    }
+
+    /// @notice Get the hooks contract and the hooked functions.
+    /// @return address Hooks contract.
+    /// @return uint32 Hooked functions.
+    function _getHooksConfig(uint256 _hooksConfig) internal pure returns (address, uint32) {
+        return (address(uint160(_hooksConfig >> 32)), uint32(_hooksConfig & HOOKS_MASK));
     }
 
     /// @dev Revert with call error or EmptyError
