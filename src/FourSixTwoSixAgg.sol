@@ -104,7 +104,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     event ReorderWithdrawalQueue(uint8 index1, uint8 index2);
     event AddStrategy(address indexed strategy, uint256 allocationPoints);
     event RemoveStrategy(address indexed _strategy);
-    event AccruePerformanceFee(address indexed feeRecipient, uint256 performanceFee, uint256 yield, uint256 feeShares);
+    event AccruePerformanceFee(address indexed feeRecipient, uint256 yield, uint256 feeAssets);
     event SetStrategyCap(address indexed strategy, uint256 cap);
     event Rebalance(address indexed strategy, uint256 _amountToRebalance, bool _isDeposit);
 
@@ -609,10 +609,15 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
         } else if (underlyingBalance > strategyAllocatedAmount) {
             // There's yield!
             uint256 yield = underlyingBalance - strategyAllocatedAmount;
+            uint120 accruedPerformanceFee = _accruePerformanceFee(_strategy, yield);
+
+            if (accruedPerformanceFee != 0) {
+                underlyingBalance -= accruedPerformanceFee;
+                yield -= accruedPerformanceFee;
+            }
+            
             strategies[_strategy].allocated = uint120(underlyingBalance);
             totalAllocated += yield;
-
-            _accruePerformanceFee(yield);
         } else {
             uint256 loss = strategyAllocatedAmount - underlyingBalance;
 
@@ -632,19 +637,22 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
         emit Harvest(_strategy, underlyingBalance, strategyAllocatedAmount);
     }
 
-    function _accruePerformanceFee(uint256 _yield) internal {
+    function _accruePerformanceFee(address _strategy, uint256 _yield) internal returns (uint120) {
         address cachedFeeRecipient = feeRecipient;
         uint256 cachedPerformanceFee = performanceFee;
 
-        if (cachedFeeRecipient == address(0) || cachedPerformanceFee == 0) return;
+        if (cachedFeeRecipient == address(0) || cachedPerformanceFee == 0) return 0;
 
         // `feeAssets` will be rounded down to 0 if `yield * performanceFee < 1e18`.
         uint256 feeAssets = Math.mulDiv(_yield, cachedPerformanceFee, 1e18, Math.Rounding.Down);
-        uint256 feeShares = _convertToShares(feeAssets, Math.Rounding.Down);
 
-        if (feeShares != 0) _mint(cachedFeeRecipient, feeShares);
+        if(feeAssets > 0) {
+            IERC4626(_strategy).withdraw(feeAssets, cachedFeeRecipient, address(this));
+        }        
 
-        emit AccruePerformanceFee(cachedFeeRecipient, cachedPerformanceFee, _yield, feeShares);
+        emit AccruePerformanceFee(cachedFeeRecipient, _yield, feeAssets);
+
+        return feeAssets.toUint120();
     }
 
     /// @dev Override _afterTokenTransfer hook to call IBalanceTracker.balanceTrackerHook()
