@@ -102,13 +102,20 @@ contract PerformanceFeeE2ETest is FourSixTwoSixAggBase {
         }
 
         uint256 expectedPerformanceFee = yield * fourSixTwoSixAgg.performanceFee() / 1e18;
-        uint256 expectedPerformanceFeeShares = fourSixTwoSixAgg.convertToShares(expectedPerformanceFee);
+
+        FourSixTwoSixAgg.Strategy memory strategyBeforeHarvest = fourSixTwoSixAgg.getStrategy(address(eTST));
+        uint256 totalAllocatedBefore = fourSixTwoSixAgg.totalAllocated();
 
         // harvest
         vm.prank(user1);
         fourSixTwoSixAgg.harvest(address(eTST));
 
-        assertEq(fourSixTwoSixAgg.balanceOf(feeRecipient), expectedPerformanceFeeShares);
+        assertEq(assetTST.balanceOf(feeRecipient), expectedPerformanceFee);
+        assertEq(
+            fourSixTwoSixAgg.getStrategy(address(eTST)).allocated,
+            strategyBeforeHarvest.allocated + yield - expectedPerformanceFee
+        );
+        assertEq(fourSixTwoSixAgg.totalAllocated(), totalAllocatedBefore + yield - expectedPerformanceFee);
 
         // full withdraw, will have to withdraw from strategy as cash reserve is not enough
         {
