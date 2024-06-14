@@ -615,7 +615,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
                 underlyingBalance -= accruedPerformanceFee;
                 yield -= accruedPerformanceFee;
             }
-            
+
             strategies[_strategy].allocated = uint120(underlyingBalance);
             totalAllocated += yield;
         } else {
@@ -646,9 +646,9 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
         // `feeAssets` will be rounded down to 0 if `yield * performanceFee < 1e18`.
         uint256 feeAssets = Math.mulDiv(_yield, cachedPerformanceFee, 1e18, Math.Rounding.Down);
 
-        if(feeAssets > 0) {
+        if (feeAssets > 0) {
             IERC4626(_strategy).withdraw(feeAssets, cachedFeeRecipient, address(this));
-        }        
+        }
 
         emit AccruePerformanceFee(cachedFeeRecipient, _yield, feeAssets);
 
