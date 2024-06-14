@@ -8,7 +8,8 @@ import {
     EVault,
     IEVault,
     IRMTestDefault,
-    TestERC20
+    TestERC20,
+    FourSixTwoSixAggFactory
 } from "../common/FourSixTwoSixAggBase.t.sol";
 import {TrackingRewardStreams} from "reward-streams/TrackingRewardStreams.sol";
 
@@ -23,27 +24,38 @@ contract BalanceForwarderE2ETest is FourSixTwoSixAggBase {
         vm.startPrank(deployer);
         trackingReward = address(new TrackingRewardStreams(address(evc), 2 weeks));
 
-        fourSixTwoSixAgg = new FourSixTwoSixAgg(
-            address(evc),
-            trackingReward,
-            address(assetTST),
-            "assetTST_Agg",
-            "assetTST_Agg",
-            CASH_RESERVE_ALLOCATION_POINTS,
-            new address[](0),
-            new uint256[](0)
+        // fourSixTwoSixAgg = new FourSixTwoSixAgg(
+        //     address(evc),
+        //     trackingReward,
+        //     address(assetTST),
+        //     "assetTST_Agg",
+        //     "assetTST_Agg",
+        //     CASH_RESERVE_ALLOCATION_POINTS,
+        //     new address[](0),
+        //     new uint256[](0)
+        // );
+        fourSixTwoSixAggFactory = new FourSixTwoSixAggFactory(address(evc), trackingReward, address(rebalancer));
+        fourSixTwoSixAgg = FourSixTwoSixAgg(
+            fourSixTwoSixAggFactory.deployEulerAggregationLayer(
+                address(assetTST),
+                "assetTST_Agg",
+                "assetTST_Agg",
+                CASH_RESERVE_ALLOCATION_POINTS,
+                new address[](0),
+                new uint256[](0)
+            )
         );
 
         // grant admin roles to deployer
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_MANAGER_ADMIN(), deployer);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER_ADMIN(), deployer);
+        // fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER_ADMIN(), deployer);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_ADDER_ADMIN(), deployer);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ADMIN(), deployer);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.MANAGER_ADMIN(), deployer);
 
         // grant roles to manager
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_MANAGER(), manager);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER(), manager);
+        // fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER(), manager);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_ADDER(), manager);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_REMOVER(), manager);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.MANAGER(), manager);

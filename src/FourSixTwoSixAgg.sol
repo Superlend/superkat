@@ -12,8 +12,9 @@ import {EVCUtil} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {IRewardStreams} from "reward-streams/interfaces/IRewardStreams.sol";
 // internal dep
 import {Hooks} from "./Hooks.sol";
-import {IFourSixTwoSixAgg} from "./interface/IFourSixTwoSixAgg.sol";
 import {BalanceForwarder, IBalanceForwarder} from "./BalanceForwarder.sol";
+import {IFourSixTwoSixAgg} from "./interface/IFourSixTwoSixAgg.sol";
+import {IWithdrawalQueue} from "./interface/IWithdrawalQueue.sol";
 
 /// @dev Do NOT use with fee on transfer tokens
 /// @dev Do NOT use with rebasing tokens
@@ -26,11 +27,8 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     error Reentrancy();
     error ArrayLengthMismatch();
     error InitialAllocationPointsZero();
-    error NotEnoughAssets();
     error NegativeYield();
     error InactiveStrategy();
-    error OutOfBounds();
-    error SameIndexes();
     error InvalidStrategyAsset();
     error StrategyAlreadyExist();
     error AlreadyRemoved();
@@ -47,8 +45,6 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     // Roles
     bytes32 public constant STRATEGY_MANAGER = keccak256("STRATEGY_MANAGER");
     bytes32 public constant STRATEGY_MANAGER_ADMIN = keccak256("STRATEGY_MANAGER_ADMIN");
-    bytes32 public constant WITHDRAW_QUEUE_MANAGER = keccak256("WITHDRAW_QUEUE_MANAGER");
-    bytes32 public constant WITHDRAW_QUEUE_MANAGER_ADMIN = keccak256("WITHDRAW_QUEUE_MANAGER_ADMIN");
     bytes32 public constant STRATEGY_ADDER = keccak256("STRATEGY_ADDER");
     bytes32 public constant STRATEGY_ADDER_ADMIN = keccak256("STRATEGY_ADDER_ADMIN");
     bytes32 public constant STRATEGY_REMOVER = keccak256("STRATEGY_REMOVER");
@@ -76,8 +72,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     /// @dev fee recipient address
     address public feeRecipient;
 
-    /// @dev An array of strategy addresses to withdraw from
-    address[] public withdrawalQueue;
+    address public withdrawalQueue;
 
     /// @dev Mapping between strategy address and it's allocation config
     mapping(address => Strategy) internal strategies;
@@ -101,7 +96,6 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     event Gulp(uint256 interestLeft, uint256 interestSmearEnd);
     event Harvest(address indexed strategy, uint256 strategyBalanceAmount, uint256 strategyAllocatedAmount);
     event AdjustAllocationPoints(address indexed strategy, uint256 oldPoints, uint256 newPoints);
-    event ReorderWithdrawalQueue(uint8 index1, uint8 index2);
     event AddStrategy(address indexed strategy, uint256 allocationPoints);
     event RemoveStrategy(address indexed _strategy);
     event AccruePerformanceFee(address indexed feeRecipient, uint256 yield, uint256 feeAssets);
@@ -128,6 +122,9 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     constructor(
         address _evc,
         address _balanceTracker,
+        address _withdrawalQueue,
+        address _rebalancer,
+        address _owner,
         address _asset,
         string memory _name,
         string memory _symbol,
@@ -139,6 +136,8 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
 
         if (_initialStrategies.length != _initialStrategiesAllocationPoints.length) revert ArrayLengthMismatch();
         if (_initialCashAllocationPoints == 0) revert InitialAllocationPointsZero();
+
+        withdrawalQueue = _withdrawalQueue;
 
         strategies[address(0)] =
             Strategy({allocated: 0, allocationPoints: _initialCashAllocationPoints.toUint120(), active: true, cap: 0});
@@ -160,19 +159,22 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
             });
 
             cachedTotalAllocationPoints += _initialStrategiesAllocationPoints[i];
-            withdrawalQueue.push(_initialStrategies[i]);
         }
         totalAllocationPoints = cachedTotalAllocationPoints;
+        IWithdrawalQueue(withdrawalQueue).initWithdrawalQueue(_owner, _initialStrategies);
 
         // Setup DEFAULT_ADMIN
-        _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
+        _grantRole(DEFAULT_ADMIN_ROLE, _owner);
+        // By default, the Rebalancer contract is assigned the REBALANCER role
+        _grantRole(REBALANCER, _rebalancer);
 
         // Setup role admins
         _setRoleAdmin(STRATEGY_MANAGER, STRATEGY_MANAGER_ADMIN);
-        _setRoleAdmin(WITHDRAW_QUEUE_MANAGER, WITHDRAW_QUEUE_MANAGER_ADMIN);
+        // _setRoleAdmin(WITHDRAW_QUEUE_MANAGER, WITHDRAW_QUEUE_MANAGER_ADMIN);
         _setRoleAdmin(STRATEGY_ADDER, STRATEGY_ADDER_ADMIN);
         _setRoleAdmin(STRATEGY_REMOVER, STRATEGY_REMOVER_ADMIN);
         _setRoleAdmin(MANAGER, MANAGER_ADMIN);
+        _setRoleAdmin(REBALANCER, REBALANCER_ADMIN);
     }
 
     /// @notice Set performance fee recipient address
@@ -247,7 +249,8 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
 
     /// @notice Harvest strategy.
     /// @param strategy address of strategy
-    function harvest(address strategy) external nonReentrant {
+    //TODO: is this safe without the reentrancy check
+    function harvest(address strategy) external {
         _harvest(strategy);
 
         _gulp();
@@ -319,29 +322,6 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
         emit SetStrategyCap(_strategy, _cap);
     }
 
-    /// @notice Swap two strategies indexes in the withdrawal queue.
-    /// @dev Can only be called by an address that have the WITHDRAW_QUEUE_MANAGER.
-    /// @param _index1 index of first strategy
-    /// @param _index2 index of second strategy
-    function reorderWithdrawalQueue(uint8 _index1, uint8 _index2)
-        external
-        nonReentrant
-        onlyRole(WITHDRAW_QUEUE_MANAGER)
-    {
-        uint256 length = withdrawalQueue.length;
-        if (_index1 >= length || _index2 >= length) {
-            revert OutOfBounds();
-        }
-
-        if (_index1 == _index2) {
-            revert SameIndexes();
-        }
-
-        (withdrawalQueue[_index1], withdrawalQueue[_index2]) = (withdrawalQueue[_index2], withdrawalQueue[_index1]);
-
-        emit ReorderWithdrawalQueue(_index1, _index2);
-    }
-
     /// @notice Add new strategy with it's allocation points.
     /// @dev Can only be called by an address that have STRATEGY_ADDER.
     /// @param _strategy Address of the strategy
@@ -361,7 +341,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
             Strategy({allocated: 0, allocationPoints: _allocationPoints.toUint120(), active: true, cap: 0});
 
         totalAllocationPoints += _allocationPoints;
-        withdrawalQueue.push(_strategy);
+        IWithdrawalQueue(withdrawalQueue).addStrategyToWithdrawalQueue(_strategy);
 
         emit AddStrategy(_strategy, _allocationPoints);
     }
@@ -386,17 +366,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
         strategyStorage.allocationPoints = 0;
 
         // remove from withdrawalQueue
-        uint256 lastStrategyIndex = withdrawalQueue.length - 1;
-
-        for (uint256 i = 0; i < lastStrategyIndex; ++i) {
-            if (withdrawalQueue[i] == _strategy) {
-                withdrawalQueue[i] = withdrawalQueue[lastStrategyIndex];
-
-                break;
-            }
-        }
-
-        withdrawalQueue.pop();
+        IWithdrawalQueue(withdrawalQueue).removeStrategyFromWithdrawalQueue(_strategy);
 
         emit RemoveStrategy(_strategy);
     }
@@ -417,12 +387,6 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
     /// @return Strategy struct
     function getStrategy(address _strategy) external view returns (Strategy memory) {
         return strategies[_strategy];
-    }
-
-    /// @notice Return the withdrawal queue length.
-    /// @return uint256 length
-    function withdrawalQueueLength() external view returns (uint256) {
-        return withdrawalQueue.length;
     }
 
     /// @notice Return the ESR struct
@@ -533,47 +497,43 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
         totalAssetsDeposited -= assets;
         uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
 
-        if (assetsRetrieved < assets) assetsRetrieved = _withdrawFromStrategies(assetsRetrieved, assets);
         if (assetsRetrieved < assets) {
-            revert NotEnoughAssets();
+            IWithdrawalQueue(withdrawalQueue).executeWithdrawFromQueue(
+                caller, receiver, owner, assets, shares, assetsRetrieved
+            );
+        } else {
+            _executeWithdrawFromReserve(caller, receiver, owner, assets, shares);
         }
+    }
 
+    // TODO: add access control
+    function withdrawFromStrategy(address _strategy, uint256 _withdrawAmount) external {
+        // Update allocated assets
+        strategies[_strategy].allocated -= uint120(_withdrawAmount);
+        totalAllocated -= _withdrawAmount;
+
+        // Do actual withdraw from strategy
+        IERC4626(_strategy).withdraw(_withdrawAmount, address(this), address(this));
+    }
+
+    // TODO: add access control
+    function executeWithdrawFromReserve(address caller, address receiver, address owner, uint256 assets, uint256 shares)
+        external
+    {
+        _executeWithdrawFromReserve(caller, receiver, owner, assets, shares);
+    }
+
+    // TODO: add access control
+    function _executeWithdrawFromReserve(
+        address caller,
+        address receiver,
+        address owner,
+        uint256 assets,
+        uint256 shares
+    ) internal {
         _gulp();
 
         super._withdraw(caller, receiver, owner, assets, shares);
-    }
-
-    /// @dev Withdraw needed asset amount from strategies.
-    /// @param _currentBalance Aggregator asset balance.
-    /// @param _targetBalance target balance.
-    /// @return uint256 current balance after withdraw.
-    function _withdrawFromStrategies(uint256 _currentBalance, uint256 _targetBalance) internal returns (uint256) {
-        uint256 numStrategies = withdrawalQueue.length;
-        for (uint256 i; i < numStrategies; ++i) {
-            IERC4626 strategy = IERC4626(withdrawalQueue[i]);
-
-            _harvest(address(strategy));
-
-            uint256 underlyingBalance = strategy.maxWithdraw(address(this));
-            uint256 desiredAssets = _targetBalance - _currentBalance;
-            uint256 withdrawAmount = (underlyingBalance > desiredAssets) ? desiredAssets : underlyingBalance;
-
-            // Update allocated assets
-            strategies[address(strategy)].allocated -= uint120(withdrawAmount);
-            totalAllocated -= withdrawAmount;
-
-            // update assetsRetrieved
-            _currentBalance += withdrawAmount;
-
-            // Do actual withdraw from strategy
-            strategy.withdraw(withdrawAmount, address(this), address(this));
-
-            if (_currentBalance >= _targetBalance) {
-                break;
-            }
-        }
-
-        return _currentBalance;
     }
 
     /// @dev gulp positive yield and increment the left interest

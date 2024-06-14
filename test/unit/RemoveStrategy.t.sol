@@ -17,7 +17,7 @@ contract RemoveStrategyTest is FourSixTwoSixAggBase {
 
     function testRemoveStrategy() public {
         uint256 totalAllocationPointsBefore = fourSixTwoSixAgg.totalAllocationPoints();
-        uint256 withdrawalQueueLengthBefore = fourSixTwoSixAgg.withdrawalQueueLength();
+        uint256 withdrawalQueueLengthBefore = _getWithdrawalQueueLength();
 
         vm.prank(manager);
         fourSixTwoSixAgg.removeStrategy(address(eTST));
@@ -27,7 +27,7 @@ contract RemoveStrategyTest is FourSixTwoSixAggBase {
         assertEq(strategyAfter.active, false);
         assertEq(strategyAfter.allocationPoints, 0);
         assertEq(fourSixTwoSixAgg.totalAllocationPoints(), totalAllocationPointsBefore - strategyAllocationPoints);
-        assertEq(fourSixTwoSixAgg.withdrawalQueueLength(), withdrawalQueueLengthBefore - 1);
+        assertEq(_getWithdrawalQueueLength(), withdrawalQueueLengthBefore - 1);
     }
 
     function testRemoveStrategyWithMultipleStrategies() public {
@@ -37,7 +37,7 @@ contract RemoveStrategyTest is FourSixTwoSixAggBase {
         _addStrategy(manager, address(anotherStrategy), strategyAllocationPoints);
 
         uint256 totalAllocationPointsBefore = fourSixTwoSixAgg.totalAllocationPoints();
-        uint256 withdrawalQueueLengthBefore = fourSixTwoSixAgg.withdrawalQueueLength();
+        uint256 withdrawalQueueLengthBefore = _getWithdrawalQueueLength();
 
         vm.prank(manager);
         fourSixTwoSixAgg.removeStrategy(address(eTST));
@@ -47,7 +47,7 @@ contract RemoveStrategyTest is FourSixTwoSixAggBase {
         assertEq(strategyAfter.active, false);
         assertEq(strategyAfter.allocationPoints, 0);
         assertEq(fourSixTwoSixAgg.totalAllocationPoints(), totalAllocationPointsBefore - strategyAllocationPoints);
-        assertEq(fourSixTwoSixAgg.withdrawalQueueLength(), withdrawalQueueLengthBefore - 1);
+        assertEq(_getWithdrawalQueueLength(), withdrawalQueueLengthBefore - 1);
     }
 
     function testRemoveStrategy_WithdrawalQueueOrdering() public {

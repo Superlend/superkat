@@ -15,7 +15,7 @@ contract AdjustAllocationsPointsTest is FourSixTwoSixAggBase {
     function testAdjustAllocationPoints() public {
         uint256 newAllocationPoints = 859e18;
         uint256 totalAllocationPointsBefore = fourSixTwoSixAgg.totalAllocationPoints();
-        uint256 withdrawalQueueLengthBefore = fourSixTwoSixAgg.withdrawalQueueLength();
+        uint256 withdrawalQueueLengthBefore = _getWithdrawalQueueLength();
 
         vm.prank(manager);
         fourSixTwoSixAgg.adjustAllocationPoints(address(eTST), newAllocationPoints);
@@ -26,7 +26,7 @@ contract AdjustAllocationsPointsTest is FourSixTwoSixAggBase {
             fourSixTwoSixAgg.totalAllocationPoints(),
             totalAllocationPointsBefore + (newAllocationPoints - initialStrategyAllocationPoints)
         );
-        assertEq(fourSixTwoSixAgg.withdrawalQueueLength(), withdrawalQueueLengthBefore);
+        assertEq(_getWithdrawalQueueLength(), withdrawalQueueLengthBefore);
         assertEq(strategy.allocationPoints, newAllocationPoints);
     }
 

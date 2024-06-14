@@ -6,6 +6,9 @@ import {FourSixTwoSixAgg} from "../../src/FourSixTwoSixAgg.sol";
 import {Rebalancer} from "../../src/Rebalancer.sol";
 import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
 import {Hooks} from "../../src/Hooks.sol";
+import {FourSixTwoSixAggFactory} from "../../src/FourSixTwoSixAggFactory.sol";
+import {WithdrawalQueue} from "../../src/WithdrawalQueue.sol";
+import {IWithdrawalQueue} from "../../src/interface/IWithdrawalQueue.sol";
 
 contract FourSixTwoSixAggBase is EVaultTestBase {
     uint256 public constant CASH_RESERVE_ALLOCATION_POINTS = 1000e18;
@@ -15,8 +18,11 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
     address user2;
     address manager;
 
-    FourSixTwoSixAgg fourSixTwoSixAgg;
+    FourSixTwoSixAggFactory fourSixTwoSixAggFactory;
     Rebalancer rebalancer;
+
+    FourSixTwoSixAgg fourSixTwoSixAgg;
+    WithdrawalQueue withdrawalQueue;
 
     function setUp() public virtual override {
         super.setUp();
@@ -27,34 +33,34 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
 
         vm.startPrank(deployer);
         rebalancer = new Rebalancer();
-        fourSixTwoSixAgg = new FourSixTwoSixAgg(
-            address(evc),
-            address(0),
-            address(assetTST),
-            "assetTST_Agg",
-            "assetTST_Agg",
-            CASH_RESERVE_ALLOCATION_POINTS,
-            new address[](0),
-            new uint256[](0)
+        fourSixTwoSixAggFactory = new FourSixTwoSixAggFactory(address(evc), address(0), address(rebalancer));
+
+        fourSixTwoSixAgg = FourSixTwoSixAgg(
+            fourSixTwoSixAggFactory.deployEulerAggregationLayer(
+                address(assetTST),
+                "assetTST_Agg",
+                "assetTST_Agg",
+                CASH_RESERVE_ALLOCATION_POINTS,
+                new address[](0),
+                new uint256[](0)
+            )
         );
+        withdrawalQueue = WithdrawalQueue(fourSixTwoSixAgg.withdrawalQueue());
 
         // grant admin roles to deployer
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_MANAGER_ADMIN(), deployer);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER_ADMIN(), deployer);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_ADDER_ADMIN(), deployer);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ADMIN(), deployer);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.MANAGER_ADMIN(), deployer);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.REBALANCER_ADMIN(), deployer);
+        withdrawalQueue.grantRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER_ADMIN(), deployer);
 
         // grant roles to manager
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_MANAGER(), manager);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER(), manager);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_ADDER(), manager);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_REMOVER(), manager);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.MANAGER(), manager);
-
-        // grant rebalancing role
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.REBALANCER(), address(rebalancer));
+        withdrawalQueue.grantRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER(), manager);
 
         vm.stopPrank();
     }
@@ -71,10 +77,6 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
             fourSixTwoSixAgg.STRATEGY_MANAGER_ADMIN()
         );
         assertEq(
-            fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER()),
-            fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER_ADMIN()
-        );
-        assertEq(
             fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.STRATEGY_ADDER()), fourSixTwoSixAgg.STRATEGY_ADDER_ADMIN()
         );
         assertEq(
@@ -82,18 +84,22 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
             fourSixTwoSixAgg.STRATEGY_REMOVER_ADMIN()
         );
         assertEq(fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.MANAGER()), fourSixTwoSixAgg.MANAGER_ADMIN());
+        assertEq(
+            withdrawalQueue.getRoleAdmin(withdrawalQueue.WITHDRAW_QUEUE_MANAGER()),
+            withdrawalQueue.WITHDRAW_QUEUE_MANAGER_ADMIN()
+        );
 
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_MANAGER_ADMIN(), deployer));
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER_ADMIN(), deployer));
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_ADDER_ADMIN(), deployer));
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ADMIN(), deployer));
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.MANAGER_ADMIN(), deployer));
+        assertTrue(withdrawalQueue.hasRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER_ADMIN(), deployer));
 
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_MANAGER(), manager));
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER(), manager));
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_ADDER(), manager));
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_REMOVER(), manager));
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.MANAGER(), manager));
+        assertTrue(withdrawalQueue.hasRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER(), manager));
     }
 
     function _addStrategy(address from, address strategy, uint256 allocationPoints) internal {
@@ -101,12 +107,18 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
         fourSixTwoSixAgg.addStrategy(strategy, allocationPoints);
     }
 
+    function _getWithdrawalQueueLength() internal view returns (uint256) {
+        uint256 length = withdrawalQueue.withdrawalQueueLength();
+
+        return length;
+    }
+
     function _getWithdrawalQueue() internal view returns (address[] memory) {
-        uint256 length = fourSixTwoSixAgg.withdrawalQueueLength();
+        uint256 length = withdrawalQueue.withdrawalQueueLength();
 
         address[] memory queue = new address[](length);
         for (uint256 i = 0; i < length; ++i) {
-            queue[i] = fourSixTwoSixAgg.withdrawalQueue(i);
+            queue[i] = withdrawalQueue.withdrawalQueue(i);
         }
         return queue;
     }

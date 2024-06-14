@@ -8,7 +8,8 @@ import {
     EVault,
     IEVault,
     IRMTestDefault,
-    TestERC20
+    TestERC20,
+    WithdrawalQueue
 } from "../common/FourSixTwoSixAggBase.t.sol";
 
 contract DepositRebalanceHarvestWithdrawE2ETest is FourSixTwoSixAggBase {
@@ -611,7 +612,7 @@ contract DepositRebalanceHarvestWithdrawE2ETest is FourSixTwoSixAggBase {
             uint256 amountToWithdraw = fourSixTwoSixAgg.balanceOf(user1);
 
             vm.prank(user1);
-            vm.expectRevert(FourSixTwoSixAgg.NotEnoughAssets.selector);
+            vm.expectRevert(WithdrawalQueue.NotEnoughAssets.selector);
             fourSixTwoSixAgg.redeem(amountToWithdraw, user1, user1);
         }
     }

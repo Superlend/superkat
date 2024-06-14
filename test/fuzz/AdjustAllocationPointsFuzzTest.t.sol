@@ -16,7 +16,7 @@ contract AdjustAllocationsPointsFuzzTest is FourSixTwoSixAggBase {
 
         uint256 strategyAllocationPoints = (fourSixTwoSixAgg.getStrategy(address(eTST))).allocationPoints;
         uint256 totalAllocationPointsBefore = fourSixTwoSixAgg.totalAllocationPoints();
-        uint256 withdrawalQueueLengthBefore = fourSixTwoSixAgg.withdrawalQueueLength();
+        uint256 withdrawalQueueLengthBefore = _getWithdrawalQueueLength();
 
         vm.prank(manager);
         fourSixTwoSixAgg.adjustAllocationPoints(address(eTST), _newAllocationPoints);
@@ -34,7 +34,7 @@ contract AdjustAllocationsPointsFuzzTest is FourSixTwoSixAggBase {
                 totalAllocationPointsBefore + (_newAllocationPoints - strategyAllocationPoints)
             );
         }
-        assertEq(fourSixTwoSixAgg.withdrawalQueueLength(), withdrawalQueueLengthBefore);
+        assertEq(_getWithdrawalQueueLength(), withdrawalQueueLengthBefore);
         assertEq(strategy.allocationPoints, _newAllocationPoints);
     }
 }
