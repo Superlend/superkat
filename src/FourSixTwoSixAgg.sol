@@ -611,7 +611,7 @@ contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC46
             uint256 yield = underlyingBalance - strategyAllocatedAmount;
             uint120 accruedPerformanceFee = _accruePerformanceFee(_strategy, yield);
 
-            if (accruedPerformanceFee != 0) {
+            if (accruedPerformanceFee > 0) {
                 underlyingBalance -= accruedPerformanceFee;
                 yield -= accruedPerformanceFee;
             }
