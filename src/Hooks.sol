@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
+import {StorageLib, HooksStorage} from "./lib/StorageLib.sol";
 import {HooksLib} from "./lib/HooksLib.sol";
 import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
 
@@ -20,21 +21,13 @@ abstract contract Hooks {
 
     uint256 constant HOOKS_MASK = 0x00000000000000000000000000000000000000000000000000000000FFFFFFFF;
 
-    struct HooksStorage {
-        /// @dev storing the hooks target and kooked functions.
-        uint256 hooksConfig;
-    }
-
-    // keccak256(abi.encode(uint256(keccak256("euler_aggregation_vault.storage.Hooks")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 private constant HooksStorageLocation = 0x7daefa3ee1567d8892b825e51ce683a058a5785193bcc2ca50940db02ccbf700;
-
     event SetHooksConfig(address indexed hooksTarget, uint32 hookedFns);
 
     /// @notice Get the hooks contract and the hooked functions.
     /// @return address Hooks contract.
     /// @return uint32 Hooked functions.
     function getHooksConfig() external view returns (address, uint32) {
-        HooksStorage storage $ = _getHooksStorage();
+        HooksStorage storage $ = StorageLib._getHooksStorage();
 
         return _getHooksConfig($.hooksConfig);
     }
@@ -59,7 +52,7 @@ abstract contract Hooks {
         }
         if (_hookedFns >= ACTIONS_COUNTER) revert InvalidHookedFns();
 
-        HooksStorage storage $ = _getHooksStorage();
+        HooksStorage storage $ = StorageLib._getHooksStorage();
         $.hooksConfig = (uint256(uint160(_hooksTarget)) << 32) | uint256(_hookedFns);
 
         emit SetHooksConfig(_hooksTarget, _hookedFns);
@@ -69,7 +62,7 @@ abstract contract Hooks {
     /// @param _fn Function to call the hook for.
     /// @param _caller Caller's address.
     function _callHooksTarget(uint32 _fn, address _caller) internal {
-        HooksStorage storage $ = _getHooksStorage();
+        HooksStorage storage $ = StorageLib._getHooksStorage();
 
         (address target, uint32 hookedFns) = _getHooksConfig($.hooksConfig);
 
@@ -97,11 +90,5 @@ abstract contract Hooks {
         }
 
         revert EmptyError();
-    }
-
-    function _getHooksStorage() private pure returns (HooksStorage storage $) {
-        assembly {
-            $.slot := HooksStorageLocation
-        }
     }
 }

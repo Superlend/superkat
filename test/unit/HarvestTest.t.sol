@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {FourSixTwoSixAggBase, FourSixTwoSixAgg, console2, EVault} from "../common/FourSixTwoSixAggBase.t.sol";
+import {
+    FourSixTwoSixAggBase, FourSixTwoSixAgg, console2, EVault, Strategy
+} from "../common/FourSixTwoSixAggBase.t.sol";
 
 contract HarvestTest is FourSixTwoSixAggBase {
     uint256 user1InitialBalance = 100000e18;
@@ -36,7 +38,7 @@ contract HarvestTest is FourSixTwoSixAggBase {
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
         {
-            FourSixTwoSixAgg.Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
+            Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
 
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), strategyBefore.allocated);
 
@@ -56,7 +58,7 @@ contract HarvestTest is FourSixTwoSixAggBase {
 
     function testHarvest() public {
         // no yield increase
-        FourSixTwoSixAgg.Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
+        Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
         uint256 totalAllocatedBefore = fourSixTwoSixAgg.totalAllocated();
 
         assertTrue(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))) == strategyBefore.allocated);
@@ -101,7 +103,7 @@ contract HarvestTest is FourSixTwoSixAggBase {
             abi.encode(aggrCurrentStrategyBalance * 9e17 / 1e18)
         );
 
-        FourSixTwoSixAgg.Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
+        Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
 
         assertTrue(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))) < strategyBefore.allocated);
 
@@ -121,7 +123,7 @@ contract HarvestTest is FourSixTwoSixAggBase {
             abi.encode(aggrCurrentStrategyBalanceAfterNegYield)
         );
 
-        FourSixTwoSixAgg.Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
+        Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
         assertTrue(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))) < strategyBefore.allocated);
         uint256 negativeYield = strategyBefore.allocated - eTST.maxWithdraw(address(fourSixTwoSixAgg));
 
@@ -164,7 +166,7 @@ contract HarvestTest is FourSixTwoSixAggBase {
             abi.encode(aggrCurrentStrategyBalanceAfterNegYield)
         );
 
-        FourSixTwoSixAgg.Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
+        Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
         assertTrue(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))) < strategyBefore.allocated);
         uint256 negativeYield = strategyBefore.allocated - eTST.maxWithdraw(address(fourSixTwoSixAgg));
         uint256 user1SharesBefore = fourSixTwoSixAgg.balanceOf(user1);

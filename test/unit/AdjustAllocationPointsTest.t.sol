@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {FourSixTwoSixAggBase, FourSixTwoSixAgg} from "../common/FourSixTwoSixAggBase.t.sol";
+import {FourSixTwoSixAggBase, FourSixTwoSixAgg, Strategy} from "../common/FourSixTwoSixAggBase.t.sol";
 
 contract AdjustAllocationsPointsTest is FourSixTwoSixAggBase {
     uint256 initialStrategyAllocationPoints = 500e18;
@@ -20,7 +20,7 @@ contract AdjustAllocationsPointsTest is FourSixTwoSixAggBase {
         vm.prank(manager);
         fourSixTwoSixAgg.adjustAllocationPoints(address(eTST), newAllocationPoints);
 
-        FourSixTwoSixAgg.Strategy memory strategy = fourSixTwoSixAgg.getStrategy(address(eTST));
+        Strategy memory strategy = fourSixTwoSixAgg.getStrategy(address(eTST));
 
         assertEq(
             fourSixTwoSixAgg.totalAllocationPoints(),

@@ -17,6 +17,7 @@ import {IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IRewardStreams} from "reward-streams/interfaces/IRewardStreams.sol";
 // internal dep
+import {StorageLib, AggregationVaultStorage, Strategy} from "./lib/StorageLib.sol";
 import {Hooks} from "./Hooks.sol";
 import {BalanceForwarder, IBalanceForwarder, IBalanceTracker} from "./BalanceForwarder.sol";
 import {IFourSixTwoSixAgg} from "./interface/IFourSixTwoSixAgg.sol";
@@ -70,39 +71,6 @@ contract FourSixTwoSixAgg is
     uint256 internal constant MAX_PERFORMANCE_FEE = 0.5e18;
     uint256 public constant INTEREST_SMEAR = 2 weeks;
 
-    /// @custom:storage-location erc7201:euler_aggregation_vault.storage.AggregationVault
-    struct AggregationVaultStorage {
-        IEVC evc;
-        /// @dev Total amount of _asset deposited into FourSixTwoSixAgg contract
-        uint256 totalAssetsDeposited;
-        /// @dev Total amount of _asset deposited across all strategies.
-        uint256 totalAllocated;
-        /// @dev Total amount of allocation points across all strategies including the cash reserve.
-        uint256 totalAllocationPoints;
-        /// @dev fee rate
-        uint256 performanceFee;
-        /// @dev fee recipient address
-        address feeRecipient;
-        /// @dev Withdrawal queue contract's address
-        address withdrawalQueue;
-        /// @dev Mapping between strategy address and it's allocation config
-        mapping(address => Strategy) strategies;
-
-
-        /// lastInterestUpdate: last timestamo where interest was updated.
-        uint40 lastInterestUpdate;
-        /// interestSmearEnd: timestamp when the smearing of interest end.
-        uint40 interestSmearEnd;
-        /// interestLeft: amount of interest left to smear.
-        uint168 interestLeft;
-        /// locked: if locked or not for update.
-        uint8 locked;
-    }
-
-    // keccak256(abi.encode(uint256(keccak256("euler_aggregation_vault.storage.AggregationVault")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 private constant AggregationVaultStorageLocation =
-        0x7da5ece5aff94f3377324d715703a012d3253da37511270103c646f171c0aa00;
-
     event SetFeeRecipient(address indexed oldRecipient, address indexed newRecipient);
     event SetPerformanceFee(uint256 oldFee, uint256 newFee);
     event OptInStrategyRewards(address indexed strategy);
@@ -118,7 +86,7 @@ contract FourSixTwoSixAgg is
 
     /// @dev Non reentrancy modifier for interest rate updates
     modifier nonReentrant() {
-        AggregationVaultStorage storage $ = _getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         if ($.locked == REENTRANCYLOCK__LOCKED) revert Reentrancy();
 
@@ -152,12 +120,12 @@ contract FourSixTwoSixAgg is
 
         if (_initialCashAllocationPoints == 0) revert InitialAllocationPointsZero();
 
-        AggregationVaultStorage storage $ = _getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
         $.withdrawalQueue = _withdrawalQueue;
         $.strategies[address(0)] =
             Strategy({allocated: 0, allocationPoints: _initialCashAllocationPoints.toUint120(), active: true, cap: 0});
         $.totalAllocationPoints = _initialCashAllocationPoints;
-        $.evc = IEVC(_evc);
+        $.evc = _evc;
 
         _setBalanceTracker(_balanceTracker);
 
@@ -177,7 +145,7 @@ contract FourSixTwoSixAgg is
     /// @notice Set performance fee recipient address
     /// @notice @param _newFeeRecipient Recipient address
     function setFeeRecipient(address _newFeeRecipient) external onlyRole(MANAGER) {
-        AggregationVaultStorage storage $ = _getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
         address feeRecipientCached = $.feeRecipient;
 
         if (_newFeeRecipient == feeRecipientCached) revert FeeRecipientAlreadySet();
@@ -190,7 +158,7 @@ contract FourSixTwoSixAgg is
     /// @notice Set performance fee (1e18 == 100%)
     /// @notice @param _newFee Fee rate
     function setPerformanceFee(uint256 _newFee) external onlyRole(MANAGER) {
-        AggregationVaultStorage storage $ = _getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         uint256 performanceFeeCached = $.performanceFee;
 
@@ -206,7 +174,7 @@ contract FourSixTwoSixAgg is
     /// @notice Opt in to strategy rewards
     /// @param _strategy Strategy address
     function optInStrategyRewards(address _strategy) external onlyRole(MANAGER) nonReentrant {
-        AggregationVaultStorage storage $ = _getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         if (!$.strategies[_strategy].active) revert InactiveStrategy();
 
@@ -276,7 +244,7 @@ contract FourSixTwoSixAgg is
         nonReentrant
         onlyRole(REBALANCER)
     {
-        AggregationVaultStorage storage $ = _getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         Strategy memory strategyData = $.strategies[_strategy];
 
@@ -304,7 +272,7 @@ contract FourSixTwoSixAgg is
         nonReentrant
         onlyRole(STRATEGY_MANAGER)
     {
-        AggregationVaultStorage storage $ = _getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         Strategy memory strategyDataCache = $.strategies[_strategy];
 
@@ -323,7 +291,7 @@ contract FourSixTwoSixAgg is
     /// @param _strategy Strategy address.
     /// @param _cap Cap amount
     function setStrategyCap(address _strategy, uint256 _cap) external nonReentrant onlyRole(STRATEGY_MANAGER) {
-        AggregationVaultStorage storage $ = _getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         if (!$.strategies[_strategy].active) {
             revert InactiveStrategy();
@@ -339,7 +307,7 @@ contract FourSixTwoSixAgg is
     /// @param _strategy Address of the strategy
     /// @param _allocationPoints Strategy's allocation points
     function addStrategy(address _strategy, uint256 _allocationPoints) external nonReentrant onlyRole(STRATEGY_ADDER) {
-        AggregationVaultStorage storage $ = _getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         if ($.strategies[_strategy].active) {
             revert StrategyAlreadyExist();
@@ -367,7 +335,7 @@ contract FourSixTwoSixAgg is
     function removeStrategy(address _strategy) external nonReentrant onlyRole(STRATEGY_REMOVER) {
         if (_strategy == address(0)) revert CanNotRemoveCashReserve();
 
-        AggregationVaultStorage storage $ = _getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         Strategy storage strategyStorage = $.strategies[_strategy];
 
@@ -401,7 +369,7 @@ contract FourSixTwoSixAgg is
     /// @param _strategy strategy's address
     /// @return Strategy struct
     function getStrategy(address _strategy) external view returns (Strategy memory) {
-        AggregationVaultStorage storage $ = _getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         return $.strategies[_strategy];
     }
@@ -413,31 +381,31 @@ contract FourSixTwoSixAgg is
     }
 
     function totalAllocated() external view returns (uint256) {
-        AggregationVaultStorage storage $ = _getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         return $.totalAllocated;
     }
 
     function totalAllocationPoints() external view returns (uint256) {
-        AggregationVaultStorage storage $ = _getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         return $.totalAllocationPoints;
     }
 
     function totalAssetsDeposited() external view returns (uint256) {
-        AggregationVaultStorage storage $ = _getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         return $.totalAssetsDeposited;
     }
 
     function withdrawalQueue() external view returns (address) {
-        AggregationVaultStorage storage $ = _getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         return $.withdrawalQueue;
     }
 
     function performanceFeeConfig() external view returns (address, uint256) {
-        AggregationVaultStorage storage $ = _getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         return ($.feeRecipient, $.performanceFee);
     }
@@ -490,7 +458,7 @@ contract FourSixTwoSixAgg is
     function _updateInterestAccrued() internal {
         uint256 accruedInterest = _interestAccruedFromCache();
 
-        AggregationVaultStorage storage $ = _getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
         // it's safe to down-cast because the accrued interest is a fraction of interest left
         $.interestLeft -= uint168(accruedInterest);
         $.lastInterestUpdate = uint40(block.timestamp);
@@ -502,7 +470,7 @@ contract FourSixTwoSixAgg is
     /// @notice Return the total amount of assets deposited, plus the accrued interest.
     /// @return uint256 total amount
     function totalAssets() public view override returns (uint256) {
-        AggregationVaultStorage storage $ = _getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         return $.totalAssetsDeposited + _interestAccruedFromCache();
     }
@@ -511,7 +479,7 @@ contract FourSixTwoSixAgg is
     /// @dev the total assets allocatable is the amount of assets deposited into the aggregator + assets already deposited into strategies
     /// @return uint256 total assets
     function totalAssetsAllocatable() public view returns (uint256) {
-        AggregationVaultStorage storage $ = _getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         return IERC20(asset()).balanceOf(address(this)) + $.totalAllocated;
     }
@@ -521,7 +489,7 @@ contract FourSixTwoSixAgg is
     function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal override {
         _callHooksTarget(DEPOSIT, caller);
 
-        AggregationVaultStorage storage $ = _getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         $.totalAssetsDeposited += assets;
 
@@ -538,7 +506,7 @@ contract FourSixTwoSixAgg is
     {
         _callHooksTarget(WITHDRAW, caller);
 
-        AggregationVaultStorage storage $ = _getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         $.totalAssetsDeposited -= assets;
         uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
@@ -554,7 +522,7 @@ contract FourSixTwoSixAgg is
 
     // TODO: add access control
     function withdrawFromStrategy(address _strategy, uint256 _withdrawAmount) external {
-        AggregationVaultStorage storage $ = _getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         // Update allocated assets
         $.strategies[_strategy].allocated -= uint120(_withdrawAmount);
@@ -588,7 +556,7 @@ contract FourSixTwoSixAgg is
     function _gulp() internal {
         _updateInterestAccrued();
 
-        AggregationVaultStorage storage $ = _getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         if ($.totalAssetsDeposited == 0) return;
         uint256 toGulp = totalAssetsAllocatable() - $.totalAssetsDeposited - $.interestLeft;
@@ -605,7 +573,7 @@ contract FourSixTwoSixAgg is
     }
 
     function _harvest(address _strategy) internal {
-        AggregationVaultStorage storage $ = _getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         uint120 strategyAllocatedAmount = $.strategies[_strategy].allocated;
 
@@ -645,7 +613,7 @@ contract FourSixTwoSixAgg is
     }
 
     function _accruePerformanceFee(address _strategy, uint256 _yield) internal returns (uint120) {
-        AggregationVaultStorage storage $ = _getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         address cachedFeeRecipient = $.feeRecipient;
         uint256 cachedPerformanceFee = $.performanceFee;
@@ -687,7 +655,7 @@ contract FourSixTwoSixAgg is
     /// @dev Get accrued interest without updating it.
     /// @return uint256 accrued interest
     function _interestAccruedFromCache() internal view returns (uint256) {
-        AggregationVaultStorage storage $ = _getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         // If distribution ended, full amount is accrued
         if (block.timestamp >= $.interestSmearEnd) {
@@ -712,24 +680,18 @@ contract FourSixTwoSixAgg is
     /// @return The address of the message sender.
     function _msgSender() internal view override (ContextUpgradeable) returns (address) {
         address sender = msg.sender;
-        AggregationVaultStorage storage $ = _getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         if (sender == address($.evc)) {
-            (sender,) = $.evc.getCurrentOnBehalfOfAccount(address(0));
+            (sender,) = IEVC($.evc).getCurrentOnBehalfOfAccount(address(0));
         }
 
         return sender;
     }
 
     function _lock() private onlyInitializing {
-        AggregationVaultStorage storage $ = _getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         $.locked = REENTRANCYLOCK__UNLOCKED;
-    }
-
-    function _getAggregationVaultStorage() private pure returns (AggregationVaultStorage storage $) {
-        assembly {
-            $.slot := AggregationVaultStorageLocation
-        }
     }
 }

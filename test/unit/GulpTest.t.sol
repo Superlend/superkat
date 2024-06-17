@@ -1,7 +1,7 @@
 // // SPDX-License-Identifier: GPL-2.0-or-later
 // pragma solidity ^0.8.0;
 
-// import {FourSixTwoSixAggBase, FourSixTwoSixAgg, console2, EVault} from "../common/FourSixTwoSixAggBase.t.sol";
+// import {FourSixTwoSixAggBase, FourSixTwoSixAgg, console2, EVault, Strategy} from "../common/FourSixTwoSixAggBase.t.sol";
 
 // contract GulpTest is FourSixTwoSixAggBase {
 //     uint256 user1InitialBalance = 100000e18;
@@ -36,7 +36,7 @@
 //         // rebalance into strategy
 //         vm.warp(block.timestamp + 86400);
 //         {
-//             FourSixTwoSixAgg.Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
+//             Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
 
 //             assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), strategyBefore.allocated);
 

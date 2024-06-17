@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {FourSixTwoSixAggBase, FourSixTwoSixAgg} from "../common/FourSixTwoSixAggBase.t.sol";
+import {FourSixTwoSixAggBase, FourSixTwoSixAgg, Strategy} from "../common/FourSixTwoSixAggBase.t.sol";
 
 contract AdjustAllocationsPointsFuzzTest is FourSixTwoSixAggBase {
     function setUp() public virtual override {
@@ -21,7 +21,7 @@ contract AdjustAllocationsPointsFuzzTest is FourSixTwoSixAggBase {
         vm.prank(manager);
         fourSixTwoSixAgg.adjustAllocationPoints(address(eTST), _newAllocationPoints);
 
-        FourSixTwoSixAgg.Strategy memory strategy = fourSixTwoSixAgg.getStrategy(address(eTST));
+        Strategy memory strategy = fourSixTwoSixAgg.getStrategy(address(eTST));
 
         if (_newAllocationPoints < strategyAllocationPoints) {
             assertEq(

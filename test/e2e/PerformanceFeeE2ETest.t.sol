@@ -8,7 +8,8 @@ import {
     EVault,
     IEVault,
     IRMTestDefault,
-    TestERC20
+    TestERC20,
+    Strategy
 } from "../common/FourSixTwoSixAggBase.t.sol";
 
 contract PerformanceFeeE2ETest is FourSixTwoSixAggBase {
@@ -76,7 +77,7 @@ contract PerformanceFeeE2ETest is FourSixTwoSixAggBase {
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
         {
-            FourSixTwoSixAgg.Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
+            Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
 
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), strategyBefore.allocated);
 
@@ -108,7 +109,7 @@ contract PerformanceFeeE2ETest is FourSixTwoSixAggBase {
         (, uint256 performanceFee) = fourSixTwoSixAgg.performanceFeeConfig();
         uint256 expectedPerformanceFee = yield * performanceFee / 1e18;
 
-        FourSixTwoSixAgg.Strategy memory strategyBeforeHarvest = fourSixTwoSixAgg.getStrategy(address(eTST));
+        Strategy memory strategyBeforeHarvest = fourSixTwoSixAgg.getStrategy(address(eTST));
         uint256 totalAllocatedBefore = fourSixTwoSixAgg.totalAllocated();
 
         // harvest

@@ -8,7 +8,8 @@ import {
     EVault,
     IEVault,
     IRMTestDefault,
-    TestERC20
+    TestERC20,
+    Strategy
 } from "../common/FourSixTwoSixAggBase.t.sol";
 
 contract RebalanceTest is FourSixTwoSixAggBase {
@@ -46,7 +47,7 @@ contract RebalanceTest is FourSixTwoSixAggBase {
 
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
-        FourSixTwoSixAgg.Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
+        Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
 
         assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), strategyBefore.allocated);
 
@@ -88,7 +89,7 @@ contract RebalanceTest is FourSixTwoSixAggBase {
 
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
-        FourSixTwoSixAgg.Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
+        Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
 
         assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), strategyBefore.allocated);
 
@@ -154,7 +155,7 @@ contract RebalanceTest is FourSixTwoSixAggBase {
         // rebalance into eTSTsecondary
         vm.warp(block.timestamp + 86400);
         {
-            FourSixTwoSixAgg.Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTSTsecondary));
+            Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTSTsecondary));
 
             assertEq(
                 eTSTsecondary.convertToAssets(eTSTsecondary.balanceOf(address(fourSixTwoSixAgg))),
@@ -205,7 +206,7 @@ contract RebalanceTest is FourSixTwoSixAggBase {
 
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
-        FourSixTwoSixAgg.Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
+        Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
 
         assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), strategyBefore.allocated);
 
@@ -260,7 +261,7 @@ contract RebalanceTest is FourSixTwoSixAggBase {
 
         vm.warp(block.timestamp + 86400);
 
-        FourSixTwoSixAgg.Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
+        Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
 
         assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), strategyBefore.allocated);
 
@@ -315,7 +316,7 @@ contract RebalanceTest is FourSixTwoSixAggBase {
 
         vm.warp(block.timestamp + 86400);
 
-        FourSixTwoSixAgg.Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
+        Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
 
         assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), strategyBefore.allocated);
 
