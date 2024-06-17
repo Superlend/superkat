@@ -28,7 +28,10 @@ contract PerformanceFeeE2ETest is FourSixTwoSixAggBase {
     }
 
     function testSetPerformanceFee() public {
-        assertEq(fourSixTwoSixAgg.performanceFee(), 0);
+        {
+            (, uint256 fee) = fourSixTwoSixAgg.performanceFeeConfig();
+            assertEq(fee, 0);
+        }
 
         uint256 newPerformanceFee = 3e17;
 
@@ -37,8 +40,9 @@ contract PerformanceFeeE2ETest is FourSixTwoSixAggBase {
         fourSixTwoSixAgg.setPerformanceFee(newPerformanceFee);
         vm.stopPrank();
 
-        assertEq(fourSixTwoSixAgg.performanceFee(), newPerformanceFee);
-        assertEq(fourSixTwoSixAgg.feeRecipient(), feeRecipient);
+        (address feeRecipientAddr, uint256 fee) = fourSixTwoSixAgg.performanceFeeConfig();
+        assertEq(fee, newPerformanceFee);
+        assertEq(feeRecipientAddr, feeRecipient);
     }
 
     function testHarvestWithFeeEnabled() public {
@@ -101,7 +105,8 @@ contract PerformanceFeeE2ETest is FourSixTwoSixAggBase {
             eTST.skim(type(uint256).max, address(fourSixTwoSixAgg));
         }
 
-        uint256 expectedPerformanceFee = yield * fourSixTwoSixAgg.performanceFee() / 1e18;
+        (, uint256 performanceFee) = fourSixTwoSixAgg.performanceFeeConfig();
+        uint256 expectedPerformanceFee = yield * performanceFee / 1e18;
 
         FourSixTwoSixAgg.Strategy memory strategyBeforeHarvest = fourSixTwoSixAgg.getStrategy(address(eTST));
         uint256 totalAllocatedBefore = fourSixTwoSixAgg.totalAllocated();

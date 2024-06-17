@@ -24,16 +24,6 @@ contract BalanceForwarderE2ETest is FourSixTwoSixAggBase {
         vm.startPrank(deployer);
         trackingReward = address(new TrackingRewardStreams(address(evc), 2 weeks));
 
-        // fourSixTwoSixAgg = new FourSixTwoSixAgg(
-        //     address(evc),
-        //     trackingReward,
-        //     address(assetTST),
-        //     "assetTST_Agg",
-        //     "assetTST_Agg",
-        //     CASH_RESERVE_ALLOCATION_POINTS,
-        //     new address[](0),
-        //     new uint256[](0)
-        // );
         fourSixTwoSixAggFactory = new FourSixTwoSixAggFactory(address(evc), trackingReward, address(rebalancer));
         fourSixTwoSixAgg = FourSixTwoSixAgg(
             fourSixTwoSixAggFactory.deployEulerAggregationLayer(
@@ -86,7 +76,7 @@ contract BalanceForwarderE2ETest is FourSixTwoSixAggBase {
     }
 
     function testBalanceForwarderrAddress_Integrity() public view {
-        assertEq(address(fourSixTwoSixAgg.balanceTracker()), trackingReward);
+        assertEq(fourSixTwoSixAgg.balanceTrackerAddress(), trackingReward);
     }
 
     function testEnableBalanceForwarder() public {

@@ -118,7 +118,7 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
 
         address[] memory queue = new address[](length);
         for (uint256 i = 0; i < length; ++i) {
-            queue[i] = withdrawalQueue.withdrawalQueue(i);
+            queue[i] = withdrawalQueue.getWithdrawalQueueAtIndex(i);
         }
         return queue;
     }

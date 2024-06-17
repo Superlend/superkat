@@ -56,7 +56,7 @@ contract GulpTest is FourSixTwoSixAggBase {
 
     function testGulpAfterNegativeYieldEqualToInterestLeft() public {
         fourSixTwoSixAgg.gulp();
-        FourSixTwoSixAgg.ESR memory ers = fourSixTwoSixAgg.getESRSlot();
+        FourSixTwoSixAgg.AggregationVaultSavingRateStorage memory ers = fourSixTwoSixAgg.getAggregationVaultSavingRate();
         assertEq(fourSixTwoSixAgg.interestAccrued(), 0);
         assertEq(ers.interestLeft, 0);
 
@@ -84,13 +84,13 @@ contract GulpTest is FourSixTwoSixAggBase {
         // interest per day 23.809523809523
         assertEq(fourSixTwoSixAgg.interestAccrued(), 23809523809523809523);
         fourSixTwoSixAgg.gulp();
-        ers = fourSixTwoSixAgg.getESRSlot();
+        ers = fourSixTwoSixAgg.getAggregationVaultSavingRate();
         assertEq(ers.interestLeft, yield - 23809523809523809523);
 
         // move close to end of smearing
         vm.warp(block.timestamp + 11 days);
         fourSixTwoSixAgg.gulp();
-        ers = fourSixTwoSixAgg.getESRSlot();
+        ers = fourSixTwoSixAgg.getAggregationVaultSavingRate();
 
         // mock a decrease of strategy balance by ers.interestLeft
         uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(fourSixTwoSixAgg));
@@ -106,7 +106,7 @@ contract GulpTest is FourSixTwoSixAggBase {
 
     function testGulpAfterNegativeYieldBiggerThanInterestLeft() public {
         fourSixTwoSixAgg.gulp();
-        FourSixTwoSixAgg.ESR memory ers = fourSixTwoSixAgg.getESRSlot();
+        FourSixTwoSixAgg.AggregationVaultSavingRateStorage memory ers = fourSixTwoSixAgg.getAggregationVaultSavingRate();
         assertEq(fourSixTwoSixAgg.interestAccrued(), 0);
         assertEq(ers.interestLeft, 0);
 
@@ -134,13 +134,13 @@ contract GulpTest is FourSixTwoSixAggBase {
         // interest per day 23.809523809523
         assertEq(fourSixTwoSixAgg.interestAccrued(), 23809523809523809523);
         fourSixTwoSixAgg.gulp();
-        ers = fourSixTwoSixAgg.getESRSlot();
+        ers = fourSixTwoSixAgg.getAggregationVaultSavingRate();
         assertEq(ers.interestLeft, yield - 23809523809523809523);
 
         // move close to end of smearing
         vm.warp(block.timestamp + 11 days);
         fourSixTwoSixAgg.gulp();
-        ers = fourSixTwoSixAgg.getESRSlot();
+        ers = fourSixTwoSixAgg.getAggregationVaultSavingRate();
 
         // mock a decrease of strategy balance by ers.interestLeft
         uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(fourSixTwoSixAgg));

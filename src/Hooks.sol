@@ -16,12 +16,23 @@ abstract contract Hooks {
     uint32 public constant WITHDRAW = 1 << 1;
     uint32 public constant ADD_STRATEGY = 1 << 2;
     uint32 public constant REMOVE_STRATEGY = 1 << 3;
-
     uint32 constant ACTIONS_COUNTER = 1 << 4;
-    uint256 public constant HOOKS_MASK = 0x00000000000000000000000000000000000000000000000000000000FFFFFFFF;
 
-    /// @dev storing the hooks target and kooked functions.
-    uint256 hooksConfig;
+    uint256 constant HOOKS_MASK = 0x00000000000000000000000000000000000000000000000000000000FFFFFFFF;
+
+    struct HooksStorage {
+        /// @dev storing the hooks target and kooked functions.
+        uint256 hooksConfig;
+    }
+
+    // keccak256(abi.encode(uint256(keccak256("euler_aggregation_vault.storage.Hooks")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant HooksStorageLocation = 0x7daefa3ee1567d8892b825e51ce683a058a5785193bcc2ca50940db02ccbf700;
+
+    function _getHooksStorage() private pure returns (HooksStorage storage $) {
+        assembly {
+            $.slot := HooksStorageLocation
+        }
+    }
 
     event SetHooksConfig(address indexed hooksTarget, uint32 hookedFns);
 
@@ -29,7 +40,9 @@ abstract contract Hooks {
     /// @return address Hooks contract.
     /// @return uint32 Hooked functions.
     function getHooksConfig() external view returns (address, uint32) {
-        return _getHooksConfig(hooksConfig);
+        HooksStorage storage $ = _getHooksStorage();
+
+        return _getHooksConfig($.hooksConfig);
     }
 
     /// @notice Set hooks contract and hooked functions.
@@ -52,7 +65,8 @@ abstract contract Hooks {
         }
         if (_hookedFns >= ACTIONS_COUNTER) revert InvalidHookedFns();
 
-        hooksConfig = (uint256(uint160(_hooksTarget)) << 32) | uint256(_hookedFns);
+        HooksStorage storage $ = _getHooksStorage();
+        $.hooksConfig = (uint256(uint160(_hooksTarget)) << 32) | uint256(_hookedFns);
 
         emit SetHooksConfig(_hooksTarget, _hookedFns);
     }
@@ -61,7 +75,9 @@ abstract contract Hooks {
     /// @param _fn Function to call the hook for.
     /// @param _caller Caller's address.
     function _callHooksTarget(uint32 _fn, address _caller) internal {
-        (address target, uint32 hookedFns) = _getHooksConfig(hooksConfig);
+        HooksStorage storage $ = _getHooksStorage();
+
+        (address target, uint32 hookedFns) = _getHooksConfig($.hooksConfig);
 
         if (hookedFns.isNotSet(_fn)) return;
 
