@@ -2,13 +2,15 @@
 pragma solidity ^0.8.0;
 
 // external dep
-import {Context} from "@openzeppelin/utils/Context.sol";
-import {ERC20, IERC20} from "@openzeppelin/token/ERC20/ERC20.sol";
-import {SafeERC20} from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import {ERC4626, IERC4626, Math} from "@openzeppelin/token/ERC20/extensions/ERC4626.sol";
-import {AccessControlEnumerable} from "@openzeppelin/access/AccessControlEnumerable.sol";
-import {SafeCast} from "@openzeppelin/utils/math/SafeCast.sol";
+import {ContextUpgradeable} from "@openzeppelin-upgradeable/utils/ContextUpgradeable.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+// import {ERC4626, IERC4626, Math} from "@openzeppelin/token/ERC20/extensions/ERC4626.sol";
+// import {AccessControlEnumerable} from "@openzeppelin/access/AccessControlEnumerable.sol";
+import {ERC4626Upgradeable, IERC4626, ERC20Upgradeable, Math} from "@openzeppelin-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
+import {AccessControlEnumerableUpgradeable} from "@openzeppelin-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {EVCUtil} from "ethereum-vault-connector/utils/EVCUtil.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IRewardStreams} from "reward-streams/interfaces/IRewardStreams.sol";
 // internal dep
 import {Hooks} from "./Hooks.sol";
@@ -20,7 +22,7 @@ import {IWithdrawalQueue} from "./interface/IWithdrawalQueue.sol";
 /// @dev Do NOT use with rebasing tokens
 /// @dev Based on https://github.com/euler-xyz/euler-vault-kit/blob/master/src/Synths/EulerSavingsRate.sol
 /// @dev inspired by Yearn v3 ❤️
-contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC4626, AccessControlEnumerable, Hooks {
+contract FourSixTwoSixAgg is IFourSixTwoSixAgg, BalanceForwarder, EVCUtil, ERC4626Upgradeable, AccessControlEnumerableUpgradeable, Hooks {
     using SafeERC20 for IERC20;
     using SafeCast for uint256;
 

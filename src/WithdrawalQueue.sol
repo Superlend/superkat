@@ -2,12 +2,12 @@
 pragma solidity ^0.8.0;
 
 // external dep
-import {AccessControlEnumerable} from "@openzeppelin/access/AccessControlEnumerable.sol";
-import {IERC4626} from "@openzeppelin/token/ERC20/extensions/ERC4626.sol";
+import {AccessControlEnumerableUpgradeable} from "@openzeppelin-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
+import {IERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 // internal dep
 import {IFourSixTwoSixAgg} from "./interface/IFourSixTwoSixAgg.sol";
 
-contract WithdrawalQueue is AccessControlEnumerable {
+contract WithdrawalQueue is AccessControlEnumerableUpgradeable {
     error OutOfBounds();
     error SameIndexes();
     error NotEnoughAssets();

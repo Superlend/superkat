@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {IFourSixTwoSixAgg} from "./interface/IFourSixTwoSixAgg.sol";
-import {IERC4626} from "@openzeppelin/token/ERC20/extensions/ERC4626.sol";
+import {IERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 
 contract Rebalancer {
     event ExecuteRebalance(
