@@ -27,12 +27,7 @@ contract BalanceForwarderE2ETest is FourSixTwoSixAggBase {
         fourSixTwoSixAggFactory = new FourSixTwoSixAggFactory(address(evc), trackingReward, address(rebalancer));
         fourSixTwoSixAgg = FourSixTwoSixAgg(
             fourSixTwoSixAggFactory.deployEulerAggregationLayer(
-                address(assetTST),
-                "assetTST_Agg",
-                "assetTST_Agg",
-                CASH_RESERVE_ALLOCATION_POINTS,
-                new address[](0),
-                new uint256[](0)
+                address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS
             )
         );
 

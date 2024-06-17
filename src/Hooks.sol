@@ -28,12 +28,6 @@ abstract contract Hooks {
     // keccak256(abi.encode(uint256(keccak256("euler_aggregation_vault.storage.Hooks")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant HooksStorageLocation = 0x7daefa3ee1567d8892b825e51ce683a058a5785193bcc2ca50940db02ccbf700;
 
-    function _getHooksStorage() private pure returns (HooksStorage storage $) {
-        assembly {
-            $.slot := HooksStorageLocation
-        }
-    }
-
     event SetHooksConfig(address indexed hooksTarget, uint32 hookedFns);
 
     /// @notice Get the hooks contract and the hooked functions.
@@ -103,5 +97,11 @@ abstract contract Hooks {
         }
 
         revert EmptyError();
+    }
+
+    function _getHooksStorage() private pure returns (HooksStorage storage $) {
+        assembly {
+            $.slot := HooksStorageLocation
+        }
     }
 }

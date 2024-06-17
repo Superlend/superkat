@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 interface IWithdrawalQueue {
-    function init(address _owner, address[] calldata _initialStrategies) external;
+    function init(address _owner, address _eulerAggregationVault) external;
     function addStrategyToWithdrawalQueue(address _strategy) external;
     function removeStrategyFromWithdrawalQueue(address _strategy) external;
     function executeWithdrawFromQueue(

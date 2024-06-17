@@ -20,27 +20,26 @@ contract FourSixTwoSixAggFactory {
         address _asset,
         string memory _name,
         string memory _symbol,
-        uint256 _initialCashAllocationPoints,
-        address[] memory _initialStrategies,
-        uint256[] memory _initialStrategiesAllocationPoints
+        uint256 _initialCashAllocationPoints
     ) external returns (address) {
-        address withdrawalQueueAddr = address(new WithdrawalQueue());
-        FourSixTwoSixAgg fourSixTwoSixAggAddr = new FourSixTwoSixAgg();
+        WithdrawalQueue withdrawalQueue = new WithdrawalQueue();
+        FourSixTwoSixAgg fourSixTwoSixAgg = new FourSixTwoSixAgg();
 
-        fourSixTwoSixAggAddr.init(
+        address owner = msg.sender;
+
+        withdrawalQueue.init(owner, address(fourSixTwoSixAgg));
+        fourSixTwoSixAgg.init(
             evc,
             balanceTracker,
-            withdrawalQueueAddr,
+            address(withdrawalQueue),
             rebalancer,
-            msg.sender,
+            owner,
             _asset,
             _name,
             _symbol,
-            _initialCashAllocationPoints,
-            _initialStrategies,
-            _initialStrategiesAllocationPoints
+            _initialCashAllocationPoints
         );
 
-        return address(fourSixTwoSixAggAddr);
+        return address(fourSixTwoSixAgg);
     }
 }

@@ -26,22 +26,11 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable {
     bytes32 private constant WithdrawalQueueStorageLocation =
         0x8522ce6e5838588854909d348b0c9f7932eae519636e8e48e91e9b2639174600;
 
-    function _getWithdrawalQueueStorage() private pure returns (WithdrawalQueueStorage storage $) {
-        assembly {
-            $.slot := WithdrawalQueueStorageLocation
-        }
-    }
-
     event ReorderWithdrawalQueue(uint8 index1, uint8 index2);
 
-    function init(address _owner, address[] calldata _initialStrategies) external initializer {
+    function init(address _owner, address _eulerAggregationVault) external initializer {
         WithdrawalQueueStorage storage $ = _getWithdrawalQueueStorage();
-
-        $.eulerAggregationVault = msg.sender;
-
-        for (uint256 i; i < _initialStrategies.length; ++i) {
-            $.withdrawalQueue.push(_initialStrategies[i]);
-        }
+        $.eulerAggregationVault = _eulerAggregationVault;
 
         // Setup DEFAULT_ADMIN
         _grantRole(DEFAULT_ADMIN_ROLE, _owner);
@@ -143,9 +132,15 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable {
 
     /// @notice Return the withdrawal queue length.
     /// @return uint256 length
-    function withdrawalQueueLength() external view returns (uint256) {
+    function withdrawalQueueLength() external pure returns (uint256) {
         WithdrawalQueueStorage memory $ = _getWithdrawalQueueStorage();
 
         return $.withdrawalQueue.length;
+    }
+
+    function _getWithdrawalQueueStorage() private pure returns (WithdrawalQueueStorage storage $) {
+        assembly {
+            $.slot := WithdrawalQueueStorageLocation
+        }
     }
 }

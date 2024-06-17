@@ -18,23 +18,14 @@ abstract contract BalanceForwarder is IBalanceForwarder {
         IBalanceTracker balanceTracker;
         mapping(address => bool) isBalanceForwarderEnabled;
     }
-    // keccak256(abi.encode(uint256(keccak256("euler_aggregation_vault.storage.BalanceForwarder")) - 1)) & ~bytes32(uint256(0xff))
 
+    // keccak256(abi.encode(uint256(keccak256("euler_aggregation_vault.storage.BalanceForwarder")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant BalanceForwarderStorageLocation =
         0xf0af7cc3986d6cac468ac54c07f5f08359b3a00d65f8e2a86f2676ec79073f00;
 
-    function _getBalanceForwarderStorage() private pure returns (BalanceForwarderStorage storage $) {
-        assembly {
-            $.slot := BalanceForwarderStorageLocation
-        }
-    }
 
     event EnableBalanceForwarder(address indexed _user);
     event DisableBalanceForwarder(address indexed _user);
-
-    // constructor(address _balanceTracker) {
-    //     balanceTracker = IBalanceTracker(_balanceTracker);
-    // }
 
     /// @notice Enables balance forwarding for the authenticated account
     /// @dev Only the authenticated account can enable balance forwarding for itself
@@ -63,12 +54,13 @@ abstract contract BalanceForwarder is IBalanceForwarder {
 
     function _enableBalanceForwarder(address _sender, uint256 _senderBalance) internal {
         BalanceForwarderStorage storage $ = _getBalanceForwarderStorage();
+        IBalanceTracker balanceTrackerCached = $.balanceTracker;
 
-        if (address($.balanceTracker) == address(0)) revert NotSupported();
+        if (address(balanceTrackerCached) == address(0)) revert NotSupported();
         if ($.isBalanceForwarderEnabled[_sender]) revert AlreadyEnabled();
 
         $.isBalanceForwarderEnabled[_sender] = true;
-        $.balanceTracker.balanceTrackerHook(_sender, _senderBalance, false);
+        balanceTrackerCached.balanceTrackerHook(_sender, _senderBalance, false);
 
         emit EnableBalanceForwarder(_sender);
     }
@@ -78,14 +70,21 @@ abstract contract BalanceForwarder is IBalanceForwarder {
     /// @dev Should call the IBalanceTracker hook with the account's balance of 0
     function _disableBalanceForwarder(address _sender) internal {
         BalanceForwarderStorage storage $ = _getBalanceForwarderStorage();
-
-        if (address($.balanceTracker) == address(0)) revert NotSupported();
+        IBalanceTracker balanceTrackerCached = $.balanceTracker;
+        
+        if (address(balanceTrackerCached) == address(0)) revert NotSupported();
         if (!$.isBalanceForwarderEnabled[_sender]) revert AlreadyDisabled();
 
         $.isBalanceForwarderEnabled[_sender] = false;
-        $.balanceTracker.balanceTrackerHook(_sender, 0, false);
+        balanceTrackerCached.balanceTrackerHook(_sender, 0, false);
 
         emit DisableBalanceForwarder(_sender);
+    }
+
+    function _setBalanceTracker(address _balancerTracker) internal {
+        BalanceForwarderStorage storage $ = _getBalanceForwarderStorage();
+
+        $.balanceTracker = IBalanceTracker(_balancerTracker);
     }
 
     /// @notice Retrieves boolean indicating if the account opted in to forward balance changes to the rewards contract
@@ -97,11 +96,17 @@ abstract contract BalanceForwarder is IBalanceForwarder {
         return $.isBalanceForwarderEnabled[_account];
     }
 
-    /// @notice Retrieve the instance of rewards contract, tracking changes in account's balances
-    /// @return The balance tracker contract
-    function _balanceTracker() internal view returns (IBalanceTracker) {
+    /// @notice Retrieve the address of rewards contract, tracking changes in account's balances
+    /// @return The balance tracker address
+    function _balanceTrackerAddress() internal view returns (address) {
         BalanceForwarderStorage storage $ = _getBalanceForwarderStorage();
 
-        return $.balanceTracker;
+        return address($.balanceTracker);
+    }
+
+    function _getBalanceForwarderStorage() private pure returns (BalanceForwarderStorage storage $) {
+        assembly {
+            $.slot := BalanceForwarderStorageLocation
+        }
     }
 }

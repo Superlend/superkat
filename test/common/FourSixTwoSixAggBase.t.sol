@@ -37,12 +37,7 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
 
         fourSixTwoSixAgg = FourSixTwoSixAgg(
             fourSixTwoSixAggFactory.deployEulerAggregationLayer(
-                address(assetTST),
-                "assetTST_Agg",
-                "assetTST_Agg",
-                CASH_RESERVE_ALLOCATION_POINTS,
-                new address[](0),
-                new uint256[](0)
+                address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS
             )
         );
         withdrawalQueue = WithdrawalQueue(fourSixTwoSixAgg.withdrawalQueue());
