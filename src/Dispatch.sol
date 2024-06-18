@@ -7,8 +7,6 @@ import {HooksModule} from "./modules/Hooks.sol";
 import {RewardsModule} from "./modules/Rewards.sol";
 
 abstract contract Dispatch is RewardsModule, HooksModule {
-    error E_Unauthorized();
-
     address public immutable MODULE_REWARDS;
     address public immutable MODULE_HOOKS;
     address public immutable MODULE_FEE;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {StorageLib, AggregationVaultStorage, HooksStorage} from "./lib/StorageLib.sol";
+import {StorageLib, AggregationVaultStorage} from "./lib/StorageLib.sol";
 import {ErrorsLib} from "./lib/ErrorsLib.sol";
 import {IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
@@ -20,8 +20,6 @@ contract Shared {
 
     uint32 constant ACTIONS_COUNTER = 1 << 4;
     uint256 constant HOOKS_MASK = 0x00000000000000000000000000000000000000000000000000000000FFFFFFFF;
-
-    event SetHooksConfig(address indexed hooksTarget, uint32 hookedFns);
 
     modifier nonReentrant() {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
@@ -54,17 +52,15 @@ contract Shared {
         }
         if (_hookedFns >= ACTIONS_COUNTER) revert ErrorsLib.InvalidHookedFns();
 
-        HooksStorage storage $ = StorageLib._getHooksStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
         $.hooksConfig = (uint256(uint160(_hooksTarget)) << 32) | uint256(_hookedFns);
-
-        emit SetHooksConfig(_hooksTarget, _hookedFns);
     }
 
     /// @notice Checks whether a hook has been installed for the function and if so, invokes the hook target.
     /// @param _fn Function to call the hook for.
     /// @param _caller Caller's address.
     function _callHooksTarget(uint32 _fn, address _caller) internal {
-        HooksStorage storage $ = StorageLib._getHooksStorage();
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         (address target, uint32 hookedFns) = _getHooksConfig($.hooksConfig);
 

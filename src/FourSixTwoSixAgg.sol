@@ -1,27 +1,29 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {Shared} from "./Shared.sol";
-// external dep
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {
-    ERC4626Upgradeable,
-    IERC4626,
-    ERC20Upgradeable,
-    Math
-} from "@openzeppelin-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
-import {AccessControlEnumerableUpgradeable} from
-    "@openzeppelin-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+// interfaces
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-// internal dep
-import {StorageLib, AggregationVaultStorage, Strategy} from "./lib/StorageLib.sol";
-import {ErrorsLib} from "./lib/ErrorsLib.sol";
 import {IBalanceTracker} from "reward-streams/interfaces/IBalanceTracker.sol";
 import {IFourSixTwoSixAgg} from "./interface/IFourSixTwoSixAgg.sol";
 import {IWithdrawalQueue} from "./interface/IWithdrawalQueue.sol";
 import {Dispatch} from "./Dispatch.sol";
+// contracts
+import {
+    ERC4626Upgradeable,
+    ERC20Upgradeable
+} from "@openzeppelin-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
+import {AccessControlEnumerableUpgradeable} from
+    "@openzeppelin-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
+import {Shared} from "./Shared.sol";
 import {ContextUpgradeable} from "@openzeppelin-upgradeable/utils/ContextUpgradeable.sol";
+// libs
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {StorageLib, AggregationVaultStorage, Strategy} from "./lib/StorageLib.sol";
+import {ErrorsLib} from "./lib/ErrorsLib.sol";
+import {EventsLib} from "./lib/EventsLib.sol";
 
 /// @dev Do NOT use with fee on transfer tokens
 /// @dev Do NOT use with rebasing tokens
@@ -44,15 +46,6 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
     bytes32 public constant REBALANCER_ADMIN = keccak256("REBALANCER_ADMIN");
 
     uint256 public constant INTEREST_SMEAR = 2 weeks;
-
-    event Gulp(uint256 interestLeft, uint256 interestSmearEnd);
-    event Harvest(address indexed strategy, uint256 strategyBalanceAmount, uint256 strategyAllocatedAmount);
-    event AdjustAllocationPoints(address indexed strategy, uint256 oldPoints, uint256 newPoints);
-    event AddStrategy(address indexed strategy, uint256 allocationPoints);
-    event RemoveStrategy(address indexed _strategy);
-    event AccruePerformanceFee(address indexed feeRecipient, uint256 yield, uint256 feeAssets);
-    event SetStrategyCap(address indexed strategy, uint256 cap);
-    event Rebalance(address indexed strategy, uint256 _amountToRebalance, bool _isDeposit);
 
     constructor(address _rewardsModule, address _hooksModule, address _feeModule, address _allocationPointsModule)
         Dispatch(_rewardsModule, _hooksModule, _feeModule, _allocationPointsModule)
@@ -81,11 +74,10 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
         __ERC4626_init_unchained(IERC20(_initParams.asset));
         __ERC20_init_unchained(_initParams.name, _initParams.symbol);
 
-        _lock();
-
         if (_initParams.initialCashAllocationPoints == 0) revert ErrorsLib.InitialAllocationPointsZero();
 
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+        $.locked = REENTRANCYLOCK__UNLOCKED;
         $.withdrawalQueue = _initParams.withdrawalQueuePeriphery;
         $.strategies[address(0)] = Strategy({
             allocated: 0,
@@ -147,6 +139,53 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
     /// @dev Should call the IBalanceTracker hook with the account's balance of 0
     function disableBalanceForwarder() external override use(MODULE_REWARDS) {}
 
+    /// @notice Adjust a certain strategy's allocation points.
+    /// @dev Can only be called by an address that have the STRATEGY_MANAGER
+    /// @param _strategy address of strategy
+    /// @param _newPoints new strategy's points
+    function adjustAllocationPoints(address _strategy, uint256 _newPoints)
+        external
+        use(MODULE_ALLOCATION_POINTS)
+        onlyRole(STRATEGY_MANAGER)
+    {}
+
+    /// @notice Set cap on strategy allocated amount.
+    /// @dev By default, cap is set to 0, not activated.
+    /// @param _strategy Strategy address.
+    /// @param _cap Cap amount
+    function setStrategyCap(address _strategy, uint256 _cap)
+        external
+        use(MODULE_ALLOCATION_POINTS)
+        onlyRole(STRATEGY_MANAGER)
+    {}
+
+    /// @notice Add new strategy with it's allocation points.
+    /// @dev Can only be called by an address that have STRATEGY_ADDER.
+    /// @param _strategy Address of the strategy
+    /// @param _allocationPoints Strategy's allocation points
+    function addStrategy(address _strategy, uint256 _allocationPoints)
+        external
+        use(MODULE_ALLOCATION_POINTS)
+        onlyRole(STRATEGY_ADDER)
+    {}
+
+    /// @notice Remove strategy and set its allocation points to zero.
+    /// @dev This function does not pull funds, `harvest()` needs to be called to withdraw
+    /// @dev Can only be called by an address that have the STRATEGY_REMOVER
+    /// @param _strategy Address of the strategy
+    function removeStrategy(address _strategy) external use(MODULE_ALLOCATION_POINTS) onlyRole(STRATEGY_REMOVER) {}
+
+    /// @notice Set hooks contract and hooked functions.
+    /// @dev This funtion should be overriden to implement access control.
+    /// @param _hooksTarget Hooks contract.
+    /// @param _hookedFns Hooked functions.
+    function setHooksConfig(address _hooksTarget, uint32 _hookedFns)
+        external
+        override
+        onlyRole(MANAGER)
+        use(MODULE_HOOKS)
+    {}
+
     /// @notice Harvest strategy.
     /// @param strategy address of strategy
     //TODO: is this safe without the reentrancy check
@@ -186,44 +225,8 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
             $.totalAllocated -= _amountToRebalance;
         }
 
-        emit Rebalance(_strategy, _amountToRebalance, _isDeposit);
+        emit EventsLib.Rebalance(_strategy, _amountToRebalance, _isDeposit);
     }
-
-    /// @notice Adjust a certain strategy's allocation points.
-    /// @dev Can only be called by an address that have the STRATEGY_MANAGER
-    /// @param _strategy address of strategy
-    /// @param _newPoints new strategy's points
-    function adjustAllocationPoints(address _strategy, uint256 _newPoints)
-        external
-        use(MODULE_ALLOCATION_POINTS)
-        onlyRole(STRATEGY_MANAGER)
-    {}
-
-    /// @notice Set cap on strategy allocated amount.
-    /// @dev By default, cap is set to 0, not activated.
-    /// @param _strategy Strategy address.
-    /// @param _cap Cap amount
-    function setStrategyCap(address _strategy, uint256 _cap)
-        external
-        use(MODULE_ALLOCATION_POINTS)
-        onlyRole(STRATEGY_MANAGER)
-    {}
-
-    /// @notice Add new strategy with it's allocation points.
-    /// @dev Can only be called by an address that have STRATEGY_ADDER.
-    /// @param _strategy Address of the strategy
-    /// @param _allocationPoints Strategy's allocation points
-    function addStrategy(address _strategy, uint256 _allocationPoints)
-        external
-        use(MODULE_ALLOCATION_POINTS)
-        onlyRole(STRATEGY_ADDER)
-    {}
-
-    /// @notice Remove strategy and set its allocation points to zero.
-    /// @dev This function does not pull funds, `harvest()` needs to be called to withdraw
-    /// @dev Can only be called by an address that have the STRATEGY_REMOVER
-    /// @param _strategy Address of the strategy
-    function removeStrategy(address _strategy) external use(MODULE_ALLOCATION_POINTS) onlyRole(STRATEGY_REMOVER) {}
 
     /// @notice update accrued interest
     function updateInterestAccrued() external {
@@ -233,6 +236,25 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
     /// @notice gulp positive harvest yield
     function gulp() external nonReentrant {
         _gulp();
+    }
+
+    // TODO: add access control
+    function withdrawFromStrategy(address _strategy, uint256 _withdrawAmount) external {
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+
+        // Update allocated assets
+        $.strategies[_strategy].allocated -= uint120(_withdrawAmount);
+        $.totalAllocated -= _withdrawAmount;
+
+        // Do actual withdraw from strategy
+        IERC4626(_strategy).withdraw(_withdrawAmount, address(this), address(this));
+    }
+
+    // TODO: add access control
+    function executeWithdrawFromReserve(address caller, address receiver, address owner, uint256 assets, uint256 shares)
+        external
+    {
+        _executeWithdrawFromReserve(caller, receiver, owner, assets, shares);
     }
 
     /// @notice Get strategy params.
@@ -316,30 +338,6 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
         return super.redeem(shares, receiver, owner);
     }
 
-    /// @notice Set hooks contract and hooked functions.
-    /// @dev This funtion should be overriden to implement access control.
-    /// @param _hooksTarget Hooks contract.
-    /// @param _hookedFns Hooked functions.
-    function setHooksConfig(address _hooksTarget, uint32 _hookedFns)
-        external
-        override
-        onlyRole(MANAGER)
-        use(MODULE_HOOKS)
-    {}
-
-    /// @notice update accrued interest.
-    function _updateInterestAccrued() internal {
-        uint256 accruedInterest = _interestAccruedFromCache();
-
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
-        // it's safe to down-cast because the accrued interest is a fraction of interest left
-        $.interestLeft -= uint168(accruedInterest);
-        $.lastInterestUpdate = uint40(block.timestamp);
-
-        // Move interest accrued to totalAssetsDeposited
-        $.totalAssetsDeposited += accruedInterest;
-    }
-
     /// @notice Return the total amount of assets deposited, plus the accrued interest.
     /// @return uint256 total amount
     function totalAssets() public view override returns (uint256) {
@@ -393,26 +391,19 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
         }
     }
 
-    // TODO: add access control
-    function withdrawFromStrategy(address _strategy, uint256 _withdrawAmount) external {
+    /// @notice update accrued interest.
+    function _updateInterestAccrued() internal {
+        uint256 accruedInterest = _interestAccruedFromCache();
+
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+        // it's safe to down-cast because the accrued interest is a fraction of interest left
+        $.interestLeft -= uint168(accruedInterest);
+        $.lastInterestUpdate = uint40(block.timestamp);
 
-        // Update allocated assets
-        $.strategies[_strategy].allocated -= uint120(_withdrawAmount);
-        $.totalAllocated -= _withdrawAmount;
-
-        // Do actual withdraw from strategy
-        IERC4626(_strategy).withdraw(_withdrawAmount, address(this), address(this));
+        // Move interest accrued to totalAssetsDeposited
+        $.totalAssetsDeposited += accruedInterest;
     }
 
-    // TODO: add access control
-    function executeWithdrawFromReserve(address caller, address receiver, address owner, uint256 assets, uint256 shares)
-        external
-    {
-        _executeWithdrawFromReserve(caller, receiver, owner, assets, shares);
-    }
-
-    // TODO: add access control
     function _executeWithdrawFromReserve(
         address caller,
         address receiver,
@@ -442,7 +433,7 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
         $.interestSmearEnd = uint40(block.timestamp + INTEREST_SMEAR);
         $.interestLeft += uint168(toGulp); // toGulp <= maxGulp <= max uint168
 
-        emit Gulp($.interestLeft, $.interestSmearEnd);
+        emit EventsLib.Gulp($.interestLeft, $.interestSmearEnd);
     }
 
     function _harvest(address _strategy) internal {
@@ -482,7 +473,7 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
             }
         }
 
-        emit Harvest(_strategy, underlyingBalance, strategyAllocatedAmount);
+        emit EventsLib.Harvest(_strategy, underlyingBalance, strategyAllocatedAmount);
     }
 
     function _accruePerformanceFee(address _strategy, uint256 _yield) internal returns (uint120) {
@@ -500,7 +491,7 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
             IERC4626(_strategy).withdraw(feeAssets, cachedFeeRecipient, address(this));
         }
 
-        emit AccruePerformanceFee(cachedFeeRecipient, _yield, feeAssets);
+        emit EventsLib.AccruePerformanceFee(cachedFeeRecipient, _yield, feeAssets);
 
         return feeAssets.toUint120();
     }
@@ -545,12 +536,6 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
         uint256 timePassed = block.timestamp - $.lastInterestUpdate;
 
         return $.interestLeft * timePassed / totalDuration;
-    }
-
-    function _lock() private onlyInitializing {
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
-
-        $.locked = REENTRANCYLOCK__UNLOCKED;
     }
 
     function _msgSender() internal view override (ContextUpgradeable, Shared) returns (address) {
