@@ -8,7 +8,9 @@ import {
     EVault,
     IEVault,
     IRMTestDefault,
-    TestERC20
+    TestERC20,
+    Strategy,
+    ErrorsLib
 } from "../common/FourSixTwoSixAggBase.t.sol";
 
 contract StrategyCapE2ETest is FourSixTwoSixAggBase {
@@ -31,7 +33,7 @@ contract StrategyCapE2ETest is FourSixTwoSixAggBase {
         vm.prank(manager);
         fourSixTwoSixAgg.setStrategyCap(address(eTST), cap);
 
-        FourSixTwoSixAgg.Strategy memory strategy = fourSixTwoSixAgg.getStrategy(address(eTST));
+        Strategy memory strategy = fourSixTwoSixAgg.getStrategy(address(eTST));
 
         assertEq(strategy.cap, cap);
     }
@@ -40,7 +42,7 @@ contract StrategyCapE2ETest is FourSixTwoSixAggBase {
         uint256 cap = 1000000e18;
 
         vm.prank(manager);
-        vm.expectRevert(FourSixTwoSixAgg.InactiveStrategy.selector);
+        vm.expectRevert(ErrorsLib.InactiveStrategy.selector);
         fourSixTwoSixAgg.setStrategyCap(address(0x2), cap);
     }
 
@@ -72,7 +74,7 @@ contract StrategyCapE2ETest is FourSixTwoSixAggBase {
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
         {
-            FourSixTwoSixAgg.Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
+            Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
 
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), strategyBefore.allocated);
 
@@ -132,7 +134,7 @@ contract StrategyCapE2ETest is FourSixTwoSixAggBase {
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
         {
-            FourSixTwoSixAgg.Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
+            Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
 
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), strategyBefore.allocated);
 

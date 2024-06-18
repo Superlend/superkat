@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {FourSixTwoSixAggBase, FourSixTwoSixAgg, IEVault} from "../common/FourSixTwoSixAggBase.t.sol";
+import {FourSixTwoSixAggBase, FourSixTwoSixAgg, IEVault, Strategy} from "../common/FourSixTwoSixAggBase.t.sol";
 
 contract RemoveStrategyTest is FourSixTwoSixAggBase {
     uint256 strategyAllocationPoints;
@@ -22,7 +22,7 @@ contract RemoveStrategyTest is FourSixTwoSixAggBase {
         vm.prank(manager);
         fourSixTwoSixAgg.removeStrategy(address(eTST));
 
-        FourSixTwoSixAgg.Strategy memory strategyAfter = fourSixTwoSixAgg.getStrategy(address(eTST));
+        Strategy memory strategyAfter = fourSixTwoSixAgg.getStrategy(address(eTST));
 
         assertEq(strategyAfter.active, false);
         assertEq(strategyAfter.allocationPoints, 0);
@@ -42,7 +42,7 @@ contract RemoveStrategyTest is FourSixTwoSixAggBase {
         vm.prank(manager);
         fourSixTwoSixAgg.removeStrategy(address(eTST));
 
-        FourSixTwoSixAgg.Strategy memory strategyAfter = fourSixTwoSixAgg.getStrategy(address(eTST));
+        Strategy memory strategyAfter = fourSixTwoSixAgg.getStrategy(address(eTST));
 
         assertEq(strategyAfter.active, false);
         assertEq(strategyAfter.allocationPoints, 0);

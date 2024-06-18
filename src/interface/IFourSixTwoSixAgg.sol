@@ -1,25 +1,20 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-interface IFourSixTwoSixAgg {
-    /// @dev A struct that hold a strategy allocation's config
-    /// allocated: amount of asset deposited into strategy
-    /// allocationPoints: number of points allocated to this strategy
-    /// active: a boolean to indice if this strategy is active or not
-    /// cap: an optional cap in terms of deposited underlying asset. By default, it is set to 0(not activated)
-    struct Strategy {
-        uint120 allocated;
-        uint120 allocationPoints;
-        bool active;
-        uint120 cap;
-    }
+import {Strategy} from "../lib/StorageLib.sol";
 
+interface IFourSixTwoSixAgg {
     function rebalance(address _strategy, uint256 _amountToRebalance, bool _isDeposit) external;
     function gulp() external;
     function harvest(address strategy) external;
-    function withdrawFromStrategy(address _strategy, uint256 _withdrawAmount) external;
-    function executeWithdrawFromReserve(address caller, address receiver, address owner, uint256 assets, uint256 shares)
-        external;
+    function executeStrategyWithdraw(address _strategy, uint256 _withdrawAmount) external;
+    function executeAggregationVaultWithdraw(
+        address caller,
+        address receiver,
+        address owner,
+        uint256 assets,
+        uint256 shares
+    ) external;
     function getStrategy(address _strategy) external view returns (Strategy memory);
     function totalAllocationPoints() external view returns (uint256);
     function totalAllocated() external view returns (uint256);

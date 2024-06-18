@@ -10,7 +10,7 @@ import {
     IRMTestDefault,
     TestERC20,
     IHookTarget,
-    Hooks
+    ErrorsLib
 } from "../common/FourSixTwoSixAggBase.t.sol";
 
 contract HooksE2ETest is FourSixTwoSixAggBase {
@@ -45,7 +45,7 @@ contract HooksE2ETest is FourSixTwoSixAggBase {
             | fourSixTwoSixAgg.ADD_STRATEGY() | fourSixTwoSixAgg.REMOVE_STRATEGY();
 
         vm.startPrank(manager);
-        vm.expectRevert(Hooks.InvalidHooksTarget.selector);
+        vm.expectRevert(ErrorsLib.InvalidHooksTarget.selector);
         fourSixTwoSixAgg.setHooksConfig(address(0), expectedHookedFns);
         vm.stopPrank();
     }
@@ -56,7 +56,7 @@ contract HooksE2ETest is FourSixTwoSixAggBase {
 
         vm.startPrank(manager);
         address hooksContract = address(new NotHooksContract());
-        vm.expectRevert(Hooks.NotHooksContract.selector);
+        vm.expectRevert(ErrorsLib.NotHooksContract.selector);
         fourSixTwoSixAgg.setHooksConfig(hooksContract, expectedHookedFns);
         vm.stopPrank();
     }
@@ -65,7 +65,7 @@ contract HooksE2ETest is FourSixTwoSixAggBase {
         uint32 expectedHookedFns = 1 << 5;
         vm.startPrank(manager);
         address hooksContract = address(new HooksContract());
-        vm.expectRevert(Hooks.InvalidHookedFns.selector);
+        vm.expectRevert(ErrorsLib.InvalidHookedFns.selector);
         fourSixTwoSixAgg.setHooksConfig(hooksContract, expectedHookedFns);
         vm.stopPrank();
     }

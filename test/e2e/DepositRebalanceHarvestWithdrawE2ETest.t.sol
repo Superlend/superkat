@@ -9,7 +9,8 @@ import {
     IEVault,
     IRMTestDefault,
     TestERC20,
-    WithdrawalQueue
+    WithdrawalQueue,
+    Strategy
 } from "../common/FourSixTwoSixAggBase.t.sol";
 
 contract DepositRebalanceHarvestWithdrawE2ETest is FourSixTwoSixAggBase {
@@ -48,7 +49,7 @@ contract DepositRebalanceHarvestWithdrawE2ETest is FourSixTwoSixAggBase {
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
         {
-            FourSixTwoSixAgg.Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
+            Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
 
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), strategyBefore.allocated);
 
@@ -71,7 +72,7 @@ contract DepositRebalanceHarvestWithdrawE2ETest is FourSixTwoSixAggBase {
         // partial withdraw, no need to withdraw from strategy as cash reserve is enough
         uint256 amountToWithdraw = 6000e18;
         {
-            FourSixTwoSixAgg.Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
+            Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
             uint256 strategyShareBalanceBefore = eTST.balanceOf(address(fourSixTwoSixAgg));
             uint256 totalAssetsDepositedBefore = fourSixTwoSixAgg.totalAssetsDeposited();
             uint256 aggregatorTotalSupplyBefore = fourSixTwoSixAgg.totalSupply();
@@ -129,7 +130,7 @@ contract DepositRebalanceHarvestWithdrawE2ETest is FourSixTwoSixAggBase {
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
         {
-            FourSixTwoSixAgg.Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
+            Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
 
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), strategyBefore.allocated);
 
@@ -216,9 +217,8 @@ contract DepositRebalanceHarvestWithdrawE2ETest is FourSixTwoSixAggBase {
         // 10k deposited; 4000 for reserve, 2000 for eTST, 4000 for eTSTsecondary
         vm.warp(block.timestamp + 86400);
         {
-            FourSixTwoSixAgg.Strategy memory eTSTstrategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
-            FourSixTwoSixAgg.Strategy memory eTSTsecondarystrategyBefore =
-                fourSixTwoSixAgg.getStrategy(address(eTSTsecondary));
+            Strategy memory eTSTstrategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
+            Strategy memory eTSTsecondarystrategyBefore = fourSixTwoSixAgg.getStrategy(address(eTSTsecondary));
 
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), eTSTstrategyBefore.allocated);
             assertEq(
@@ -316,7 +316,7 @@ contract DepositRebalanceHarvestWithdrawE2ETest is FourSixTwoSixAggBase {
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
         {
-            FourSixTwoSixAgg.Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
+            Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
 
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), strategyBefore.allocated);
 
@@ -406,9 +406,8 @@ contract DepositRebalanceHarvestWithdrawE2ETest is FourSixTwoSixAggBase {
         // 10k deposited; 4000 for reserve, 2000 for eTST, 4000 for eTSTsecondary
         vm.warp(block.timestamp + 86400);
         {
-            FourSixTwoSixAgg.Strategy memory eTSTstrategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
-            FourSixTwoSixAgg.Strategy memory eTSTsecondarystrategyBefore =
-                fourSixTwoSixAgg.getStrategy(address(eTSTsecondary));
+            Strategy memory eTSTstrategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
+            Strategy memory eTSTsecondarystrategyBefore = fourSixTwoSixAgg.getStrategy(address(eTSTsecondary));
 
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), eTSTstrategyBefore.allocated);
             assertEq(
@@ -537,9 +536,8 @@ contract DepositRebalanceHarvestWithdrawE2ETest is FourSixTwoSixAggBase {
         // 10k deposited; 4000 for reserve, 2000 for eTST, 4000 for eTSTsecondary
         vm.warp(block.timestamp + 86400);
         {
-            FourSixTwoSixAgg.Strategy memory eTSTstrategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
-            FourSixTwoSixAgg.Strategy memory eTSTsecondarystrategyBefore =
-                fourSixTwoSixAgg.getStrategy(address(eTSTsecondary));
+            Strategy memory eTSTstrategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
+            Strategy memory eTSTsecondarystrategyBefore = fourSixTwoSixAgg.getStrategy(address(eTSTsecondary));
 
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), eTSTstrategyBefore.allocated);
             assertEq(

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {IFourSixTwoSixAgg} from "./interface/IFourSixTwoSixAgg.sol";
-import {IERC4626} from "@openzeppelin/token/ERC20/extensions/ERC4626.sol";
+import {IFourSixTwoSixAgg, Strategy} from "./interface/IFourSixTwoSixAgg.sol";
+import {IERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 
 contract Rebalancer {
     event ExecuteRebalance(
@@ -36,7 +36,7 @@ contract Rebalancer {
 
         IFourSixTwoSixAgg(_curatedVault).harvest(_strategy);
 
-        IFourSixTwoSixAgg.Strategy memory strategyData = IFourSixTwoSixAgg(_curatedVault).getStrategy(_strategy);
+        Strategy memory strategyData = IFourSixTwoSixAgg(_curatedVault).getStrategy(_strategy);
 
         uint256 totalAllocationPointsCache = IFourSixTwoSixAgg(_curatedVault).totalAllocationPoints();
         uint256 totalAssetsAllocatableCache = IFourSixTwoSixAgg(_curatedVault).totalAssetsAllocatable();
