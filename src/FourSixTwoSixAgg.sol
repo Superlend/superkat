@@ -34,22 +34,19 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
     using SafeCast for uint256;
 
     // Roles
-    bytes32 public constant STRATEGY_MANAGER = keccak256("STRATEGY_MANAGER");
-    bytes32 public constant STRATEGY_MANAGER_ADMIN = keccak256("STRATEGY_MANAGER_ADMIN");
+    bytes32 public constant ALLOCATIONS_MANAGER = keccak256("ALLOCATIONS_MANAGER");
+    bytes32 public constant ALLOCATIONS_MANAGER_ADMIN = keccak256("ALLOCATIONS_MANAGER_ADMIN");
     bytes32 public constant STRATEGY_ADDER = keccak256("STRATEGY_ADDER");
     bytes32 public constant STRATEGY_ADDER_ADMIN = keccak256("STRATEGY_ADDER_ADMIN");
     bytes32 public constant STRATEGY_REMOVER = keccak256("STRATEGY_REMOVER");
     bytes32 public constant STRATEGY_REMOVER_ADMIN = keccak256("STRATEGY_REMOVER_ADMIN");
-    bytes32 public constant MANAGER = keccak256("MANAGER");
-    bytes32 public constant MANAGER_ADMIN = keccak256("MANAGER_ADMIN");
+    bytes32 public constant AGGREGATION_VAULT_MANAGER = keccak256("AGGREGATION_VAULT_MANAGER");
+    bytes32 public constant AGGREGATION_VAULT_MANAGER_ADMIN = keccak256("AGGREGATION_VAULT_MANAGER_ADMIN");
     bytes32 public constant REBALANCER = keccak256("REBALANCER");
     bytes32 public constant REBALANCER_ADMIN = keccak256("REBALANCER_ADMIN");
 
+    /// @dev interest rate smearing period
     uint256 public constant INTEREST_SMEAR = 2 weeks;
-
-    constructor(address _rewardsModule, address _hooksModule, address _feeModule, address _allocationPointsModule)
-        Dispatch(_rewardsModule, _hooksModule, _feeModule, _allocationPointsModule)
-    {}
 
     struct InitParams {
         address evc;
@@ -62,13 +59,10 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
         string symbol;
         uint256 initialCashAllocationPoints;
     }
-    // /// @param _evc EVC address
-    // /// @param _asset Aggregator's asset address
-    // /// @param _name Aggregator's name
-    // /// @param _symbol Aggregator's symbol
-    // /// @param _initialCashAllocationPoints Initial points to be allocated to the cash reserve
-    // /// @param _initialStrategies An array of initial strategies addresses
-    // /// @param _initialStrategiesAllocationPoints An array of initial strategies allocation points
+
+    constructor(address _rewardsModule, address _hooksModule, address _feeModule, address _allocationPointsModule)
+        Dispatch(_rewardsModule, _hooksModule, _feeModule, _allocationPointsModule)
+    {}
 
     function init(InitParams calldata _initParams) external initializer {
         __ERC4626_init_unchained(IERC20(_initParams.asset));
@@ -96,28 +90,38 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
         _grantRole(REBALANCER, _initParams.rebalancerPerihpery);
 
         // Setup role admins
-        _setRoleAdmin(STRATEGY_MANAGER, STRATEGY_MANAGER_ADMIN);
+        _setRoleAdmin(ALLOCATIONS_MANAGER, ALLOCATIONS_MANAGER_ADMIN);
         _setRoleAdmin(STRATEGY_ADDER, STRATEGY_ADDER_ADMIN);
         _setRoleAdmin(STRATEGY_REMOVER, STRATEGY_REMOVER_ADMIN);
-        _setRoleAdmin(MANAGER, MANAGER_ADMIN);
+        _setRoleAdmin(AGGREGATION_VAULT_MANAGER, AGGREGATION_VAULT_MANAGER_ADMIN);
         _setRoleAdmin(REBALANCER, REBALANCER_ADMIN);
     }
 
     /// @notice Set performance fee recipient address
     /// @notice @param _newFeeRecipient Recipient address
-    function setFeeRecipient(address _newFeeRecipient) external onlyRole(MANAGER) use(MODULE_FEE) {}
+    function setFeeRecipient(address _newFeeRecipient) external onlyRole(AGGREGATION_VAULT_MANAGER) use(MODULE_FEE) {}
 
     /// @notice Set performance fee (1e18 == 100%)
     /// @notice @param _newFee Fee rate
-    function setPerformanceFee(uint256 _newFee) external onlyRole(MANAGER) use(MODULE_FEE) {}
+    function setPerformanceFee(uint256 _newFee) external onlyRole(AGGREGATION_VAULT_MANAGER) use(MODULE_FEE) {}
 
     /// @notice Opt in to strategy rewards
     /// @param _strategy Strategy address
-    function optInStrategyRewards(address _strategy) external override onlyRole(MANAGER) use(MODULE_REWARDS) {}
+    function optInStrategyRewards(address _strategy)
+        external
+        override
+        onlyRole(AGGREGATION_VAULT_MANAGER)
+        use(MODULE_REWARDS)
+    {}
 
     /// @notice Opt out of strategy rewards
     /// @param _strategy Strategy address
-    function optOutStrategyRewards(address _strategy) external override onlyRole(MANAGER) use(MODULE_REWARDS) {}
+    function optOutStrategyRewards(address _strategy)
+        external
+        override
+        onlyRole(AGGREGATION_VAULT_MANAGER)
+        use(MODULE_REWARDS)
+    {}
 
     /// @notice Claim a specific strategy rewards
     /// @param _strategy Strategy address.
@@ -127,7 +131,7 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
     function claimStrategyReward(address _strategy, address _reward, address _recipient, bool _forfeitRecentReward)
         external
         override
-        onlyRole(MANAGER)
+        onlyRole(AGGREGATION_VAULT_MANAGER)
         use(MODULE_REWARDS)
     {}
 
@@ -140,13 +144,13 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
     function disableBalanceForwarder() external override use(MODULE_REWARDS) {}
 
     /// @notice Adjust a certain strategy's allocation points.
-    /// @dev Can only be called by an address that have the STRATEGY_MANAGER
+    /// @dev Can only be called by an address that have the ALLOCATIONS_MANAGER
     /// @param _strategy address of strategy
     /// @param _newPoints new strategy's points
     function adjustAllocationPoints(address _strategy, uint256 _newPoints)
         external
         use(MODULE_ALLOCATION_POINTS)
-        onlyRole(STRATEGY_MANAGER)
+        onlyRole(ALLOCATIONS_MANAGER)
     {}
 
     /// @notice Set cap on strategy allocated amount.
@@ -156,7 +160,7 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
     function setStrategyCap(address _strategy, uint256 _cap)
         external
         use(MODULE_ALLOCATION_POINTS)
-        onlyRole(STRATEGY_MANAGER)
+        onlyRole(ALLOCATIONS_MANAGER)
     {}
 
     /// @notice Add new strategy with it's allocation points.
@@ -182,7 +186,7 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
     function setHooksConfig(address _hooksTarget, uint32 _hookedFns)
         external
         override
-        onlyRole(MANAGER)
+        onlyRole(AGGREGATION_VAULT_MANAGER)
         use(MODULE_HOOKS)
     {}
 

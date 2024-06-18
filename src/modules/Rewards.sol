@@ -18,7 +18,6 @@ import {EventsLib} from "../lib/EventsLib.sol";
 /// @author Euler Labs (https://www.eulerlabs.com/)
 /// @notice A generic contract to integrate with https://github.com/euler-xyz/reward-streams
 abstract contract RewardsModule is IBalanceForwarder, Shared {
-    
     /// @notice Opt in to strategy rewards
     /// @param _strategy Strategy address
     function optInStrategyRewards(address _strategy) external virtual nonReentrant {

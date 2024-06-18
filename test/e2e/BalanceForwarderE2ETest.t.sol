@@ -42,18 +42,18 @@ contract BalanceForwarderE2ETest is FourSixTwoSixAggBase {
         );
 
         // grant admin roles to deployer
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_MANAGER_ADMIN(), deployer);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.ALLOCATIONS_MANAGER_ADMIN(), deployer);
         // fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER_ADMIN(), deployer);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_ADDER_ADMIN(), deployer);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ADMIN(), deployer);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.MANAGER_ADMIN(), deployer);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.AGGREGATION_VAULT_MANAGER_ADMIN(), deployer);
 
         // grant roles to manager
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_MANAGER(), manager);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.ALLOCATIONS_MANAGER(), manager);
         // fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.WITHDRAW_QUEUE_MANAGER(), manager);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_ADDER(), manager);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_REMOVER(), manager);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.MANAGER(), manager);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.AGGREGATION_VAULT_MANAGER(), manager);
         vm.stopPrank();
 
         uint256 initialStrategyAllocationPoints = 500e18;

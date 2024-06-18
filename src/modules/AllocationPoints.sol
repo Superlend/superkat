@@ -16,7 +16,7 @@ abstract contract AllocationPointsModule is Shared {
     using SafeCast for uint256;
 
     /// @notice Adjust a certain strategy's allocation points.
-    /// @dev Can only be called by an address that have the STRATEGY_MANAGER
+    /// @dev Can only be called by an address that have the ALLOCATIONS_MANAGER
     /// @param _strategy address of strategy
     /// @param _newPoints new strategy's points
     function adjustAllocationPoints(address _strategy, uint256 _newPoints) external virtual nonReentrant {

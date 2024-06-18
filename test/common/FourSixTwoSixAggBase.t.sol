@@ -70,18 +70,18 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
         withdrawalQueue = WithdrawalQueue(fourSixTwoSixAgg.withdrawalQueue());
 
         // grant admin roles to deployer
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_MANAGER_ADMIN(), deployer);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.ALLOCATIONS_MANAGER_ADMIN(), deployer);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_ADDER_ADMIN(), deployer);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ADMIN(), deployer);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.MANAGER_ADMIN(), deployer);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.AGGREGATION_VAULT_MANAGER_ADMIN(), deployer);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.REBALANCER_ADMIN(), deployer);
         withdrawalQueue.grantRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER_ADMIN(), deployer);
 
         // grant roles to manager
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_MANAGER(), manager);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.ALLOCATIONS_MANAGER(), manager);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_ADDER(), manager);
         fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_REMOVER(), manager);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.MANAGER(), manager);
+        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.AGGREGATION_VAULT_MANAGER(), manager);
         withdrawalQueue.grantRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER(), manager);
 
         vm.stopPrank();
@@ -95,8 +95,8 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
         assertEq(cashReserve.active, true);
 
         assertEq(
-            fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.STRATEGY_MANAGER()),
-            fourSixTwoSixAgg.STRATEGY_MANAGER_ADMIN()
+            fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.ALLOCATIONS_MANAGER()),
+            fourSixTwoSixAgg.ALLOCATIONS_MANAGER_ADMIN()
         );
         assertEq(
             fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.STRATEGY_ADDER()), fourSixTwoSixAgg.STRATEGY_ADDER_ADMIN()
@@ -105,22 +105,25 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
             fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.STRATEGY_REMOVER()),
             fourSixTwoSixAgg.STRATEGY_REMOVER_ADMIN()
         );
-        assertEq(fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.MANAGER()), fourSixTwoSixAgg.MANAGER_ADMIN());
+        assertEq(
+            fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.AGGREGATION_VAULT_MANAGER()),
+            fourSixTwoSixAgg.AGGREGATION_VAULT_MANAGER_ADMIN()
+        );
         assertEq(
             withdrawalQueue.getRoleAdmin(withdrawalQueue.WITHDRAW_QUEUE_MANAGER()),
             withdrawalQueue.WITHDRAW_QUEUE_MANAGER_ADMIN()
         );
 
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_MANAGER_ADMIN(), deployer));
+        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.ALLOCATIONS_MANAGER_ADMIN(), deployer));
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_ADDER_ADMIN(), deployer));
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ADMIN(), deployer));
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.MANAGER_ADMIN(), deployer));
+        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.AGGREGATION_VAULT_MANAGER_ADMIN(), deployer));
         assertTrue(withdrawalQueue.hasRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER_ADMIN(), deployer));
 
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_MANAGER(), manager));
+        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.ALLOCATIONS_MANAGER(), manager));
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_ADDER(), manager));
         assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_REMOVER(), manager));
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.MANAGER(), manager));
+        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.AGGREGATION_VAULT_MANAGER(), manager));
         assertTrue(withdrawalQueue.hasRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER(), manager));
     }
 
