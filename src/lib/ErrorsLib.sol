@@ -23,4 +23,5 @@ library ErrorsLib {
     error NotHooksContract();
     error InvalidHookedFns();
     error EmptyError();
+    error NotWithdrawaQueue();
 }

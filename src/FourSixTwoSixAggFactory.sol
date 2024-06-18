@@ -46,7 +46,6 @@ contract FourSixTwoSixAggFactory {
         withdrawalQueueAddr = _withdrawalQueueAddr;
     }
 
-    // TODO: decrease bytecode size, use clones or something
     function deployEulerAggregationLayer(
         address _asset,
         string memory _name,

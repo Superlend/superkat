@@ -242,8 +242,13 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
         _gulp();
     }
 
-    // TODO: add access control
-    function withdrawFromStrategy(address _strategy, uint256 _withdrawAmount) external {
+    /// @notice Execute a withdraw from a strategy.
+    /// @dev Can only be called from the WithdrawalQueue contract.
+    /// @param _strategy Strategy's address.
+    /// @param _withdrawAmount Amount to withdraw.
+    function executeStrategyWithdraw(address _strategy, uint256 _withdrawAmount) external {
+        _isCallerWithdrawalQueue();
+
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         // Update allocated assets
@@ -254,11 +259,28 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
         IERC4626(_strategy).withdraw(_withdrawAmount, address(this), address(this));
     }
 
-    // TODO: add access control
-    function executeWithdrawFromReserve(address caller, address receiver, address owner, uint256 assets, uint256 shares)
-        external
-    {
-        _executeWithdrawFromReserve(caller, receiver, owner, assets, shares);
+    /// @notice Execute a withdraw from the AggregationVault
+    /// @dev This function should be called and can only be called by the WithdrawalQueue.
+    /// @param caller Withdraw call initiator.
+    /// @param receiver Receiver of the withdrawn asset.
+    /// @param owner Owner of shares to withdraw against.
+    /// @param assets Amount of asset to withdraw.
+    /// @param shares Amount of shares to withdraw against.
+    function executeAggregationVaultWithdraw(
+        address caller,
+        address receiver,
+        address owner,
+        uint256 assets,
+        uint256 shares
+    ) external {
+        _isCallerWithdrawalQueue();
+
+        _gulp();
+
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+        $.totalAssetsDeposited -= assets;
+
+        super._withdraw(caller, receiver, owner, assets, shares);
     }
 
     /// @notice Get strategy params.
@@ -383,16 +405,11 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
 
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
-        $.totalAssetsDeposited -= assets;
         uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
 
-        if (assetsRetrieved < assets) {
-            IWithdrawalQueue($.withdrawalQueue).executeWithdrawFromQueue(
-                caller, receiver, owner, assets, shares, assetsRetrieved
-            );
-        } else {
-            _executeWithdrawFromReserve(caller, receiver, owner, assets, shares);
-        }
+        IWithdrawalQueue($.withdrawalQueue).callWithdrawalQueue(
+            caller, receiver, owner, assets, shares, assetsRetrieved
+        );
     }
 
     /// @notice update accrued interest.
@@ -406,18 +423,6 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
 
         // Move interest accrued to totalAssetsDeposited
         $.totalAssetsDeposited += accruedInterest;
-    }
-
-    function _executeWithdrawFromReserve(
-        address caller,
-        address receiver,
-        address owner,
-        uint256 assets,
-        uint256 shares
-    ) internal {
-        _gulp();
-
-        super._withdraw(caller, receiver, owner, assets, shares);
     }
 
     /// @dev gulp positive yield and increment the left interest
@@ -544,5 +549,11 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
 
     function _msgSender() internal view override (ContextUpgradeable, Shared) returns (address) {
         return Shared._msgSender();
+    }
+
+    function _isCallerWithdrawalQueue() internal view {
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+
+        if (_msgSender() != $.withdrawalQueue) revert ErrorsLib.NotWithdrawaQueue();
     }
 }

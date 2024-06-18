@@ -12,6 +12,7 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable {
     error OutOfBounds();
     error SameIndexes();
     error NotEnoughAssets();
+    error NotAuthorized();
 
     bytes32 public constant WITHDRAW_QUEUE_MANAGER = keccak256("WITHDRAW_QUEUE_MANAGER");
     bytes32 public constant WITHDRAW_QUEUE_MANAGER_ADMIN = keccak256("WITHDRAW_QUEUE_MANAGER_ADMIN");
@@ -37,21 +38,17 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable {
         _setRoleAdmin(WITHDRAW_QUEUE_MANAGER, WITHDRAW_QUEUE_MANAGER_ADMIN);
     }
 
-    function getWithdrawalQueueAtIndex(uint256 _index) external view returns (address) {
-        WithdrawalQueueStorage storage $ = _getWithdrawalQueueStorage();
-
-        return $.withdrawalQueue[_index];
-    }
-
-    // TODO: add access control
     function addStrategyToWithdrawalQueue(address _strategy) external {
+        _isCallerAggregationVault();
+
         WithdrawalQueueStorage storage $ = _getWithdrawalQueueStorage();
 
         $.withdrawalQueue.push(_strategy);
     }
 
-    // TODO: add access control
     function removeStrategyFromWithdrawalQueue(address _strategy) external {
+        _isCallerAggregationVault();
+
         WithdrawalQueueStorage storage $ = _getWithdrawalQueueStorage();
 
         uint256 lastStrategyIndex = $.withdrawalQueue.length - 1;
@@ -65,47 +62,6 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable {
         }
 
         $.withdrawalQueue.pop();
-    }
-
-    // TODO: add access control
-    function executeWithdrawFromQueue(
-        address caller,
-        address receiver,
-        address owner,
-        uint256 assets,
-        uint256 shares,
-        uint256 availableAssets
-    ) external {
-        WithdrawalQueueStorage memory $ = _getWithdrawalQueueStorage();
-        address eulerAggregationVaultCached = $.eulerAggregationVault;
-
-        uint256 numStrategies = $.withdrawalQueue.length;
-        for (uint256 i; i < numStrategies; ++i) {
-            IERC4626 strategy = IERC4626($.withdrawalQueue[i]);
-
-            IFourSixTwoSixAgg(eulerAggregationVaultCached).harvest(address(strategy));
-
-            uint256 underlyingBalance = strategy.maxWithdraw(eulerAggregationVaultCached);
-            uint256 desiredAssets = assets - availableAssets;
-            uint256 withdrawAmount = (underlyingBalance > desiredAssets) ? desiredAssets : underlyingBalance;
-
-            IFourSixTwoSixAgg(eulerAggregationVaultCached).withdrawFromStrategy(address(strategy), withdrawAmount);
-
-            // update assetsRetrieved
-            availableAssets += withdrawAmount;
-
-            if (availableAssets >= assets) {
-                break;
-            }
-        }
-
-        if (availableAssets < assets) {
-            revert NotEnoughAssets();
-        }
-
-        IFourSixTwoSixAgg(eulerAggregationVaultCached).executeWithdrawFromReserve(
-            caller, receiver, owner, assets, shares
-        );
     }
 
     /// @notice Swap two strategies indexes in the withdrawal queue.
@@ -130,12 +86,70 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable {
         emit ReorderWithdrawalQueue(_index1, _index2);
     }
 
+    function callWithdrawalQueue(
+        address caller,
+        address receiver,
+        address owner,
+        uint256 assets,
+        uint256 shares,
+        uint256 availableAssets
+    ) external {
+        _isCallerAggregationVault();
+
+        WithdrawalQueueStorage memory $ = _getWithdrawalQueueStorage();
+        address eulerAggregationVaultCached = $.eulerAggregationVault;
+
+        if (availableAssets < assets) {
+            uint256 numStrategies = $.withdrawalQueue.length;
+            for (uint256 i; i < numStrategies; ++i) {
+                IERC4626 strategy = IERC4626($.withdrawalQueue[i]);
+
+                IFourSixTwoSixAgg(eulerAggregationVaultCached).harvest(address(strategy));
+
+                uint256 underlyingBalance = strategy.maxWithdraw(eulerAggregationVaultCached);
+                uint256 desiredAssets = assets - availableAssets;
+                uint256 withdrawAmount = (underlyingBalance > desiredAssets) ? desiredAssets : underlyingBalance;
+
+                IFourSixTwoSixAgg(eulerAggregationVaultCached).executeStrategyWithdraw(
+                    address(strategy), withdrawAmount
+                );
+
+                // update assetsRetrieved
+                availableAssets += withdrawAmount;
+
+                if (availableAssets >= assets) {
+                    break;
+                }
+            }
+        }
+
+        if (availableAssets < assets) {
+            revert NotEnoughAssets();
+        }
+
+        IFourSixTwoSixAgg(eulerAggregationVaultCached).executeAggregationVaultWithdraw(
+            caller, receiver, owner, assets, shares
+        );
+    }
+
+    function getWithdrawalQueueAtIndex(uint256 _index) external view returns (address) {
+        WithdrawalQueueStorage storage $ = _getWithdrawalQueueStorage();
+
+        return $.withdrawalQueue[_index];
+    }
+
     /// @notice Return the withdrawal queue length.
     /// @return uint256 length
     function withdrawalQueueLength() external pure returns (uint256) {
         WithdrawalQueueStorage memory $ = _getWithdrawalQueueStorage();
 
         return $.withdrawalQueue.length;
+    }
+
+    function _isCallerAggregationVault() private view {
+        WithdrawalQueueStorage storage $ = _getWithdrawalQueueStorage();
+
+        if (msg.sender != $.eulerAggregationVault) revert NotAuthorized();
     }
 
     function _getWithdrawalQueueStorage() private pure returns (WithdrawalQueueStorage storage $) {
