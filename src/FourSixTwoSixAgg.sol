@@ -48,6 +48,18 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
     /// @dev interest rate smearing period
     uint256 public constant INTEREST_SMEAR = 2 weeks;
 
+    /// @dev Euler saving rate struct
+    /// lastInterestUpdate: last timestamo where interest was updated.
+    /// interestSmearEnd: timestamp when the smearing of interest end.
+    /// interestLeft: amount of interest left to smear.
+    /// locked: if locked or not for update.
+    struct AggregationVaultSavingRate {
+        uint40 lastInterestUpdate;
+        uint40 interestSmearEnd;
+        uint168 interestLeft;
+        uint8 locked;
+    }
+
     struct InitParams {
         address evc;
         address balanceTracker;
@@ -296,6 +308,18 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
     /// @return uint256 accrued interest
     function interestAccrued() external view returns (uint256) {
         return _interestAccruedFromCache();
+    }
+
+    function getAggregationVaultSavingRate() external view returns (AggregationVaultSavingRate memory) {
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+        AggregationVaultSavingRate memory avsr = AggregationVaultSavingRate({
+            lastInterestUpdate: $.lastInterestUpdate,
+            interestSmearEnd: $.interestSmearEnd,
+            interestLeft: $.interestLeft,
+            locked: $.locked
+        });
+
+        return avsr;
     }
 
     function totalAllocated() external view returns (uint256) {
