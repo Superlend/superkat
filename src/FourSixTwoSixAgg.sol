@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {Base} from "./Base.sol";
+import {Shared} from "./Shared.sol";
 // external dep
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {
@@ -17,7 +17,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 // internal dep
 import {StorageLib, AggregationVaultStorage, Strategy} from "./lib/StorageLib.sol";
 import {ErrorsLib} from "./lib/ErrorsLib.sol";
-import {IBalanceTracker} from "./Rewards.sol";
+import {IBalanceTracker} from "reward-streams/interfaces/IBalanceTracker.sol";
 import {IFourSixTwoSixAgg} from "./interface/IFourSixTwoSixAgg.sol";
 import {IWithdrawalQueue} from "./interface/IWithdrawalQueue.sol";
 import {Dispatch} from "./Dispatch.sol";
@@ -43,12 +43,8 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
     bytes32 public constant REBALANCER = keccak256("REBALANCER");
     bytes32 public constant REBALANCER_ADMIN = keccak256("REBALANCER_ADMIN");
 
-    /// @dev The maximum performanceFee the vault can have is 50%
-    uint256 internal constant MAX_PERFORMANCE_FEE = 0.5e18;
     uint256 public constant INTEREST_SMEAR = 2 weeks;
 
-    event SetFeeRecipient(address indexed oldRecipient, address indexed newRecipient);
-    event SetPerformanceFee(uint256 oldFee, uint256 newFee);
     event Gulp(uint256 interestLeft, uint256 interestSmearEnd);
     event Harvest(address indexed strategy, uint256 strategyBalanceAmount, uint256 strategyAllocatedAmount);
     event AdjustAllocationPoints(address indexed strategy, uint256 oldPoints, uint256 newPoints);
@@ -58,8 +54,21 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
     event SetStrategyCap(address indexed strategy, uint256 cap);
     event Rebalance(address indexed strategy, uint256 _amountToRebalance, bool _isDeposit);
 
-    constructor(address _rewardsModule, address _hooksModule) Dispatch(_rewardsModule, _hooksModule) {}
+    constructor(address _rewardsModule, address _hooksModule, address _feeModule)
+        Dispatch(_rewardsModule, _hooksModule, _feeModule)
+    {}
 
+    struct InitParams {
+        address evc;
+        address balanceTracker;
+        address withdrawalQueuePeriphery;
+        address rebalancerPerihpery;
+        address aggregationVaultOwner;
+        address asset;
+        string name;
+        string symbol;
+        uint256 initialCashAllocationPoints;
+    }
     // /// @param _evc EVC address
     // /// @param _asset Aggregator's asset address
     // /// @param _name Aggregator's name
@@ -109,32 +118,11 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
 
     /// @notice Set performance fee recipient address
     /// @notice @param _newFeeRecipient Recipient address
-    function setFeeRecipient(address _newFeeRecipient) external onlyRole(MANAGER) {
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
-        address feeRecipientCached = $.feeRecipient;
-
-        if (_newFeeRecipient == feeRecipientCached) revert ErrorsLib.FeeRecipientAlreadySet();
-
-        emit SetFeeRecipient(feeRecipientCached, _newFeeRecipient);
-
-        $.feeRecipient = _newFeeRecipient;
-    }
+    function setFeeRecipient(address _newFeeRecipient) external onlyRole(MANAGER) use(MODULE_FEE) {}
 
     /// @notice Set performance fee (1e18 == 100%)
     /// @notice @param _newFee Fee rate
-    function setPerformanceFee(uint256 _newFee) external onlyRole(MANAGER) {
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
-
-        uint256 performanceFeeCached = $.performanceFee;
-
-        if (_newFee > MAX_PERFORMANCE_FEE) revert ErrorsLib.MaxPerformanceFeeExceeded();
-        if ($.feeRecipient == address(0)) revert ErrorsLib.FeeRecipientNotSet();
-        if (_newFee == performanceFeeCached) revert ErrorsLib.PerformanceFeeAlreadySet();
-
-        emit SetPerformanceFee(performanceFeeCached, _newFee);
-
-        $.performanceFee = _newFee;
-    }
+    function setPerformanceFee(uint256 _newFee) external onlyRole(MANAGER) use(MODULE_FEE) {}
 
     /// @notice Opt in to strategy rewards
     /// @param _strategy Strategy address
@@ -158,12 +146,7 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
 
     /// @notice Enables balance forwarding for sender
     /// @dev Should call the IBalanceTracker hook with the current user's balance
-    function enableBalanceForwarder() external override nonReentrant {
-        address user = _msgSender();
-        uint256 userBalance = this.balanceOf(user);
-
-        _enableBalanceForwarder(user, userBalance);
-    }
+    function enableBalanceForwarder() external override use(MODULE_REWARDS) {}
 
     /// @notice Disables balance forwarding for the sender
     /// @dev Should call the IBalanceTracker hook with the account's balance of 0
@@ -304,9 +287,9 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
     }
 
     /// @notice update accrued interest
-    // function updateInterestAccrued() external returns (AggregationVaultSavingRateStorage memory) {
-    //     return _updateInterestAccrued();
-    // }
+    function updateInterestAccrued() external {
+        return _updateInterestAccrued();
+    }
 
     /// @notice gulp positive harvest yield
     function gulp() external nonReentrant {
@@ -631,7 +614,7 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
         $.locked = REENTRANCYLOCK__UNLOCKED;
     }
 
-    function _msgSender() internal view override (ContextUpgradeable, Base) returns (address) {
-        return Base._msgSender();
+    function _msgSender() internal view override (ContextUpgradeable, Shared) returns (address) {
+        return Shared._msgSender();
     }
 }

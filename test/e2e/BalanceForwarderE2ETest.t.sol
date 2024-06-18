@@ -30,6 +30,7 @@ contract BalanceForwarderE2ETest is FourSixTwoSixAggBase {
             trackingReward,
             address(rewardsImpl),
             address(hooksImpl),
+            address(feeModuleImpl),
             address(rebalancer),
             address(withdrawalQueueImpl)
         );

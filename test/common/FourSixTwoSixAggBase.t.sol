@@ -5,8 +5,9 @@ import "evk/test/unit/evault/EVaultTestBase.t.sol";
 import {FourSixTwoSixAgg, Strategy} from "../../src/FourSixTwoSixAgg.sol";
 import {Rebalancer} from "../../src/Rebalancer.sol";
 import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
-import {Hooks, HooksModule} from "../../src/Hooks.sol";
-import {Rewards} from "../../src/Rewards.sol";
+import {Hooks, HooksModule} from "../../src/modules/Hooks.sol";
+import {Rewards} from "../../src/modules/Rewards.sol";
+import {Fee} from "../../src/modules/Fee.sol";
 import {FourSixTwoSixAggFactory} from "../../src/FourSixTwoSixAggFactory.sol";
 import {WithdrawalQueue} from "../../src/WithdrawalQueue.sol";
 import {IWithdrawalQueue} from "../../src/interface/IWithdrawalQueue.sol";
@@ -23,6 +24,7 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
     // core modules
     Rewards rewardsImpl;
     Hooks hooksImpl;
+    Fee feeModuleImpl;
     // peripheries
     Rebalancer rebalancer;
     WithdrawalQueue withdrawalQueueImpl;
@@ -42,6 +44,8 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
         vm.startPrank(deployer);
         rewardsImpl = new Rewards();
         hooksImpl = new Hooks();
+        feeModuleImpl = new Fee();
+
         rebalancer = new Rebalancer();
         withdrawalQueueImpl = new WithdrawalQueue();
         fourSixTwoSixAggFactory = new FourSixTwoSixAggFactory(
@@ -49,6 +53,7 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
             address(0),
             address(rewardsImpl),
             address(hooksImpl),
+            address(feeModuleImpl),
             address(rebalancer),
             address(withdrawalQueueImpl)
         );

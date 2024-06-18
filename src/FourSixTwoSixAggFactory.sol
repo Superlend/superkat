@@ -2,19 +2,23 @@
 pragma solidity ^0.8.0;
 
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
-import {Rewards} from "./Rewards.sol";
-import {Hooks} from "./Hooks.sol";
+// core modules
+import {Rewards} from "./modules/Rewards.sol";
+import {Hooks} from "./modules/Hooks.sol";
+import {Fee} from "./modules/Fee.sol";
+// core peripheries
 import {WithdrawalQueue} from "./WithdrawalQueue.sol";
 import {FourSixTwoSixAgg} from "./FourSixTwoSixAgg.sol";
 
 contract FourSixTwoSixAggFactory {
-    // core dependencies
+    /// core dependencies
     address public immutable evc;
     address public immutable balanceTracker;
-    // core modules
+    /// core modules
     address public immutable rewardsImpl;
     address public immutable hooksImpl;
-    // peripheries
+    address public immutable feeModuleImpl;
+    /// peripheries
     /// @dev Rebalancer periphery, one instance can serve different aggregation vaults
     address public immutable rebalancer;
     /// @dev Withdrawal queue perihperhy, need to be deployed per aggregation vault
@@ -25,6 +29,7 @@ contract FourSixTwoSixAggFactory {
         address _balanceTracker,
         address _rewardsImpl,
         address _hooksImpl,
+        address _feeModuleImpl,
         address _rebalancer,
         address _withdrawalQueueImpl
     ) {
@@ -32,6 +37,7 @@ contract FourSixTwoSixAggFactory {
         balanceTracker = _balanceTracker;
         rewardsImpl = _rewardsImpl;
         hooksImpl = _hooksImpl;
+        feeModuleImpl = _feeModuleImpl;
 
         rebalancer = _rebalancer;
         withdrawalQueueImpl = _withdrawalQueueImpl;
@@ -46,13 +52,14 @@ contract FourSixTwoSixAggFactory {
     ) external returns (address) {
         // cloning core modules
         address rewardsImplAddr = Clones.clone(rewardsImpl);
-        Hooks hooks = Hooks(Clones.clone(hooksImpl));
+        address hooks = Clones.clone(hooksImpl);
+        address feeModule = Clones.clone(feeModuleImpl);
 
         // cloning peripheries
         WithdrawalQueue withdrawalQueue = WithdrawalQueue(Clones.clone(withdrawalQueueImpl));
 
         // deploy new aggregation vault
-        FourSixTwoSixAgg fourSixTwoSixAgg = new FourSixTwoSixAgg(rewardsImplAddr, address(hooks));
+        FourSixTwoSixAgg fourSixTwoSixAgg = new FourSixTwoSixAgg(rewardsImplAddr, hooks, feeModule);
 
         withdrawalQueue.init(msg.sender, address(fourSixTwoSixAgg));
         fourSixTwoSixAgg.init(
