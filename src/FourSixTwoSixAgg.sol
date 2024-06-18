@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
+import {Base} from "./Base.sol";
 // external dep
-import {ContextUpgradeable} from "@openzeppelin-upgradeable/utils/ContextUpgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {
     ERC4626Upgradeable,
@@ -13,47 +13,23 @@ import {
 import {AccessControlEnumerableUpgradeable} from
     "@openzeppelin-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {IRewardStreams} from "reward-streams/interfaces/IRewardStreams.sol";
 // internal dep
 import {StorageLib, AggregationVaultStorage, Strategy} from "./lib/StorageLib.sol";
-import {Hooks} from "./Hooks.sol";
-import {BalanceForwarder, IBalanceForwarder, IBalanceTracker} from "./BalanceForwarder.sol";
+import {ErrorsLib} from "./lib/ErrorsLib.sol";
+import {IBalanceTracker} from "./Rewards.sol";
 import {IFourSixTwoSixAgg} from "./interface/IFourSixTwoSixAgg.sol";
 import {IWithdrawalQueue} from "./interface/IWithdrawalQueue.sol";
+import {Dispatch} from "./Dispatch.sol";
+import {ContextUpgradeable} from "@openzeppelin-upgradeable/utils/ContextUpgradeable.sol";
 
 /// @dev Do NOT use with fee on transfer tokens
 /// @dev Do NOT use with rebasing tokens
 /// @dev Based on https://github.com/euler-xyz/euler-vault-kit/blob/master/src/Synths/EulerSavingsRate.sol
 /// @dev inspired by Yearn v3 ❤️
-contract FourSixTwoSixAgg is
-    ERC4626Upgradeable,
-    AccessControlEnumerableUpgradeable,
-    BalanceForwarder,
-    Hooks,
-    IFourSixTwoSixAgg
-{
+contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradeable, Dispatch, IFourSixTwoSixAgg {
     using SafeERC20 for IERC20;
     using SafeCast for uint256;
-
-    error Reentrancy();
-    error ArrayLengthMismatch();
-    error InitialAllocationPointsZero();
-    error NegativeYield();
-    error InactiveStrategy();
-    error InvalidStrategyAsset();
-    error StrategyAlreadyExist();
-    error AlreadyRemoved();
-    error PerformanceFeeAlreadySet();
-    error MaxPerformanceFeeExceeded();
-    error FeeRecipientNotSet();
-    error FeeRecipientAlreadySet();
-    error CanNotRemoveCashReserve();
-    error DuplicateInitialStrategy();
-
-    uint8 internal constant REENTRANCYLOCK__UNLOCKED = 1;
-    uint8 internal constant REENTRANCYLOCK__LOCKED = 2;
 
     // Roles
     bytes32 public constant STRATEGY_MANAGER = keccak256("STRATEGY_MANAGER");
@@ -73,8 +49,6 @@ contract FourSixTwoSixAgg is
 
     event SetFeeRecipient(address indexed oldRecipient, address indexed newRecipient);
     event SetPerformanceFee(uint256 oldFee, uint256 newFee);
-    event OptInStrategyRewards(address indexed strategy);
-    event OptOutStrategyRewards(address indexed strategy);
     event Gulp(uint256 interestLeft, uint256 interestSmearEnd);
     event Harvest(address indexed strategy, uint256 strategyBalanceAmount, uint256 strategyAllocatedAmount);
     event AdjustAllocationPoints(address indexed strategy, uint256 oldPoints, uint256 newPoints);
@@ -84,16 +58,7 @@ contract FourSixTwoSixAgg is
     event SetStrategyCap(address indexed strategy, uint256 cap);
     event Rebalance(address indexed strategy, uint256 _amountToRebalance, bool _isDeposit);
 
-    /// @dev Non reentrancy modifier for interest rate updates
-    modifier nonReentrant() {
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
-
-        if ($.locked == REENTRANCYLOCK__LOCKED) revert Reentrancy();
-
-        $.locked = REENTRANCYLOCK__LOCKED;
-        _;
-        $.locked = REENTRANCYLOCK__UNLOCKED;
-    }
+    constructor(address _rewardsModule, address _hooksModule) Dispatch(_rewardsModule, _hooksModule) {}
 
     // /// @param _evc EVC address
     // /// @param _asset Aggregator's asset address
@@ -118,7 +83,7 @@ contract FourSixTwoSixAgg is
 
         _lock();
 
-        if (_initialCashAllocationPoints == 0) revert InitialAllocationPointsZero();
+        if (_initialCashAllocationPoints == 0) revert ErrorsLib.InitialAllocationPointsZero();
 
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
         $.withdrawalQueue = _withdrawalQueue;
@@ -148,7 +113,7 @@ contract FourSixTwoSixAgg is
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
         address feeRecipientCached = $.feeRecipient;
 
-        if (_newFeeRecipient == feeRecipientCached) revert FeeRecipientAlreadySet();
+        if (_newFeeRecipient == feeRecipientCached) revert ErrorsLib.FeeRecipientAlreadySet();
 
         emit SetFeeRecipient(feeRecipientCached, _newFeeRecipient);
 
@@ -162,9 +127,9 @@ contract FourSixTwoSixAgg is
 
         uint256 performanceFeeCached = $.performanceFee;
 
-        if (_newFee > MAX_PERFORMANCE_FEE) revert MaxPerformanceFeeExceeded();
-        if ($.feeRecipient == address(0)) revert FeeRecipientNotSet();
-        if (_newFee == performanceFeeCached) revert PerformanceFeeAlreadySet();
+        if (_newFee > MAX_PERFORMANCE_FEE) revert ErrorsLib.MaxPerformanceFeeExceeded();
+        if ($.feeRecipient == address(0)) revert ErrorsLib.FeeRecipientNotSet();
+        if (_newFee == performanceFeeCached) revert ErrorsLib.PerformanceFeeAlreadySet();
 
         emit SetPerformanceFee(performanceFeeCached, _newFee);
 
@@ -173,23 +138,11 @@ contract FourSixTwoSixAgg is
 
     /// @notice Opt in to strategy rewards
     /// @param _strategy Strategy address
-    function optInStrategyRewards(address _strategy) external onlyRole(MANAGER) nonReentrant {
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
-
-        if (!$.strategies[_strategy].active) revert InactiveStrategy();
-
-        IBalanceForwarder(_strategy).enableBalanceForwarder();
-
-        emit OptInStrategyRewards(_strategy);
-    }
+    function optInStrategyRewards(address _strategy) external override onlyRole(MANAGER) use(MODULE_REWARDS) {}
 
     /// @notice Opt out of strategy rewards
     /// @param _strategy Strategy address
-    function optOutStrategyRewards(address _strategy) external onlyRole(MANAGER) nonReentrant {
-        IBalanceForwarder(_strategy).disableBalanceForwarder();
-
-        emit OptOutStrategyRewards(_strategy);
-    }
+    function optOutStrategyRewards(address _strategy) external override onlyRole(MANAGER) use(MODULE_REWARDS) {}
 
     /// @notice Claim a specific strategy rewards
     /// @param _strategy Strategy address.
@@ -198,13 +151,10 @@ contract FourSixTwoSixAgg is
     /// @param _forfeitRecentReward Whether to forfeit the recent rewards and not update the accumulator.
     function claimStrategyReward(address _strategy, address _reward, address _recipient, bool _forfeitRecentReward)
         external
+        override
         onlyRole(MANAGER)
-        nonReentrant
-    {
-        address rewardStreams = IBalanceForwarder(_strategy).balanceTrackerAddress();
-
-        IRewardStreams(rewardStreams).claimReward(_strategy, _reward, _recipient, _forfeitRecentReward);
-    }
+        use(MODULE_REWARDS)
+    {}
 
     /// @notice Enables balance forwarding for sender
     /// @dev Should call the IBalanceTracker hook with the current user's balance
@@ -217,9 +167,7 @@ contract FourSixTwoSixAgg is
 
     /// @notice Disables balance forwarding for the sender
     /// @dev Should call the IBalanceTracker hook with the account's balance of 0
-    function disableBalanceForwarder() external override nonReentrant {
-        _disableBalanceForwarder(_msgSender());
-    }
+    function disableBalanceForwarder() external override use(MODULE_REWARDS) {}
 
     /// @notice Harvest strategy.
     /// @param strategy address of strategy
@@ -277,7 +225,7 @@ contract FourSixTwoSixAgg is
         Strategy memory strategyDataCache = $.strategies[_strategy];
 
         if (!strategyDataCache.active) {
-            revert InactiveStrategy();
+            revert ErrorsLib.InactiveStrategy();
         }
 
         $.strategies[_strategy].allocationPoints = _newPoints.toUint120();
@@ -294,7 +242,7 @@ contract FourSixTwoSixAgg is
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         if (!$.strategies[_strategy].active) {
-            revert InactiveStrategy();
+            revert ErrorsLib.InactiveStrategy();
         }
 
         $.strategies[_strategy].cap = _cap.toUint120();
@@ -310,11 +258,11 @@ contract FourSixTwoSixAgg is
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         if ($.strategies[_strategy].active) {
-            revert StrategyAlreadyExist();
+            revert ErrorsLib.StrategyAlreadyExist();
         }
 
         if (IERC4626(_strategy).asset() != asset()) {
-            revert InvalidStrategyAsset();
+            revert ErrorsLib.InvalidStrategyAsset();
         }
 
         _callHooksTarget(ADD_STRATEGY, _msgSender());
@@ -333,14 +281,14 @@ contract FourSixTwoSixAgg is
     /// @dev Can only be called by an address that have the STRATEGY_REMOVER
     /// @param _strategy Address of the strategy
     function removeStrategy(address _strategy) external nonReentrant onlyRole(STRATEGY_REMOVER) {
-        if (_strategy == address(0)) revert CanNotRemoveCashReserve();
+        if (_strategy == address(0)) revert ErrorsLib.CanNotRemoveCashReserve();
 
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         Strategy storage strategyStorage = $.strategies[_strategy];
 
         if (!strategyStorage.active) {
-            revert AlreadyRemoved();
+            revert ErrorsLib.AlreadyRemoved();
         }
 
         _callHooksTarget(REMOVE_STRATEGY, _msgSender());
@@ -450,9 +398,12 @@ contract FourSixTwoSixAgg is
     /// @dev This funtion should be overriden to implement access control.
     /// @param _hooksTarget Hooks contract.
     /// @param _hookedFns Hooked functions.
-    function setHooksConfig(address _hooksTarget, uint32 _hookedFns) public override onlyRole(MANAGER) nonReentrant {
-        _setHooksConfig(_hooksTarget, _hookedFns);
-    }
+    function setHooksConfig(address _hooksTarget, uint32 _hookedFns)
+        external
+        override
+        onlyRole(MANAGER)
+        use(MODULE_HOOKS)
+    {}
 
     /// @notice update accrued interest.
     function _updateInterestAccrued() internal {
@@ -674,24 +625,13 @@ contract FourSixTwoSixAgg is
         return $.interestLeft * timePassed / totalDuration;
     }
 
-    /// @notice Retrieves the message sender in the context of the EVC.
-    /// @dev This function returns the account on behalf of which the current operation is being performed, which is
-    ///      either msg.sender or the account authenticated by the EVC.
-    /// @return The address of the message sender.
-    function _msgSender() internal view override (ContextUpgradeable) returns (address) {
-        address sender = msg.sender;
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
-
-        if (sender == address($.evc)) {
-            (sender,) = IEVC($.evc).getCurrentOnBehalfOfAccount(address(0));
-        }
-
-        return sender;
-    }
-
     function _lock() private onlyInitializing {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         $.locked = REENTRANCYLOCK__UNLOCKED;
+    }
+
+    function _msgSender() internal view override (ContextUpgradeable, Base) returns (address) {
+        return Base._msgSender();
     }
 }

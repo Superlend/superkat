@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
+import {Base} from "./Base.sol";
 import {StorageLib, HooksStorage} from "./lib/StorageLib.sol";
 import {HooksLib} from "./lib/HooksLib.sol";
 import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
 
-abstract contract Hooks {
+abstract contract HooksModule is Base {
     using HooksLib for uint32;
 
     error InvalidHooksTarget();
@@ -23,26 +24,10 @@ abstract contract Hooks {
 
     event SetHooksConfig(address indexed hooksTarget, uint32 hookedFns);
 
-    /// @notice Get the hooks contract and the hooked functions.
-    /// @return address Hooks contract.
-    /// @return uint32 Hooked functions.
-    function getHooksConfig() external view returns (address, uint32) {
-        HooksStorage storage $ = StorageLib._getHooksStorage();
-
-        return _getHooksConfig($.hooksConfig);
-    }
-
     /// @notice Set hooks contract and hooked functions.
-    /// @dev This funtion should be overriden to implement access control and call _setHooksConfig().
     /// @param _hooksTarget Hooks contract.
     /// @param _hookedFns Hooked functions.
-    function setHooksConfig(address _hooksTarget, uint32 _hookedFns) public virtual;
-
-    /// @notice Set hooks contract and hooked functions.
-    /// @dev This funtion should be called when implementing setHooksConfig().
-    /// @param _hooksTarget Hooks contract.
-    /// @param _hookedFns Hooked functions.
-    function _setHooksConfig(address _hooksTarget, uint32 _hookedFns) internal {
+    function setHooksConfig(address _hooksTarget, uint32 _hookedFns) external virtual nonReentrant {
         if (_hooksTarget != address(0) && IHookTarget(_hooksTarget).isHookTarget() != IHookTarget.isHookTarget.selector)
         {
             revert NotHooksContract();
@@ -56,6 +41,15 @@ abstract contract Hooks {
         $.hooksConfig = (uint256(uint160(_hooksTarget)) << 32) | uint256(_hookedFns);
 
         emit SetHooksConfig(_hooksTarget, _hookedFns);
+    }
+
+    /// @notice Get the hooks contract and the hooked functions.
+    /// @return address Hooks contract.
+    /// @return uint32 Hooked functions.
+    function getHooksConfig() external view returns (address, uint32) {
+        HooksStorage storage $ = StorageLib._getHooksStorage();
+
+        return _getHooksConfig($.hooksConfig);
     }
 
     /// @notice Checks whether a hook has been installed for the function and if so, invokes the hook target.
@@ -92,3 +86,5 @@ abstract contract Hooks {
         revert EmptyError();
     }
 }
+
+contract Hooks is HooksModule {}

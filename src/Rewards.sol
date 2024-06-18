@@ -1,39 +1,74 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
+import {Base} from "./Base.sol";
 import {StorageLib, BalanceForwarderStorage, AggregationVaultStorage} from "./lib/StorageLib.sol";
 import {IBalanceForwarder} from "./interface/IBalanceForwarder.sol";
 import {IBalanceTracker} from "reward-streams/interfaces/IBalanceTracker.sol";
 import {IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
+import {ErrorsLib} from "./lib/ErrorsLib.sol";
+import {IRewardStreams} from "reward-streams/interfaces/IRewardStreams.sol";
 
 /// @title BalanceForwarder contract
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
 /// @notice A generic contract to integrate with https://github.com/euler-xyz/reward-streams
-abstract contract BalanceForwarderModule is IBalanceForwarder {
+abstract contract RewardsModule is IBalanceForwarder, Base {
     using StorageLib for *;
 
-    error NotSupported();
-    error AlreadyEnabled();
-    error AlreadyDisabled();
-
+    event OptInStrategyRewards(address indexed strategy);
+    event OptOutStrategyRewards(address indexed strategy);
     event EnableBalanceForwarder(address indexed _user);
     event DisableBalanceForwarder(address indexed _user);
+
+    /// @notice Opt in to strategy rewards
+    /// @param _strategy Strategy address
+    function optInStrategyRewards(address _strategy) external virtual nonReentrant {
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+
+        if (!$.strategies[_strategy].active) revert ErrorsLib.InactiveStrategy();
+
+        IBalanceForwarder(_strategy).enableBalanceForwarder();
+
+        emit OptInStrategyRewards(_strategy);
+    }
+
+    /// @notice Opt out of strategy rewards
+    /// @param _strategy Strategy address
+    function optOutStrategyRewards(address _strategy) external virtual nonReentrant {
+        IBalanceForwarder(_strategy).disableBalanceForwarder();
+
+        emit OptOutStrategyRewards(_strategy);
+    }
+
+    /// @notice Claim a specific strategy rewards
+    /// @param _strategy Strategy address.
+    /// @param _reward The address of the reward token.
+    /// @param _recipient The address to receive the claimed reward tokens.
+    /// @param _forfeitRecentReward Whether to forfeit the recent rewards and not update the accumulator.
+    function claimStrategyReward(address _strategy, address _reward, address _recipient, bool _forfeitRecentReward)
+        external
+        virtual
+        nonReentrant
+    {
+        address rewardStreams = IBalanceForwarder(_strategy).balanceTrackerAddress();
+
+        IRewardStreams(rewardStreams).claimReward(_strategy, _reward, _recipient, _forfeitRecentReward);
+    }
 
     /// @notice Enables balance forwarding for the authenticated account
     /// @dev Only the authenticated account can enable balance forwarding for itself
     /// @dev Should call the IBalanceTracker hook with the current account's balance
-    function enableBalanceForwarder() external override {
-        address user = _msgSender();
-        uint256 userBalance = this.balanceOf(user);
-
-        _enableBalanceForwarder(user, userBalance);
+    function enableBalanceForwarder() external virtual {
+        return;
     }
 
     /// @notice Disables balance forwarding for the authenticated account
     /// @dev Only the authenticated account can disable balance forwarding for itself
     /// @dev Should call the IBalanceTracker hook with the account's balance of 0
-    function disableBalanceForwarder() external virtual;
+    function disableBalanceForwarder() external virtual nonReentrant {
+        _disableBalanceForwarder(_msgSender());
+    }
 
     /// @notice Retrieve the address of rewards contract, tracking changes in account's balances
     /// @return The balance tracker address
@@ -54,8 +89,8 @@ abstract contract BalanceForwarderModule is IBalanceForwarder {
         BalanceForwarderStorage storage $ = StorageLib._getBalanceForwarderStorage();
         IBalanceTracker balanceTrackerCached = IBalanceTracker($.balanceTracker);
 
-        if (address(balanceTrackerCached) == address(0)) revert NotSupported();
-        if ($.isBalanceForwarderEnabled[_sender]) revert AlreadyEnabled();
+        if (address(balanceTrackerCached) == address(0)) revert ErrorsLib.NotSupported();
+        if ($.isBalanceForwarderEnabled[_sender]) revert ErrorsLib.AlreadyEnabled();
 
         $.isBalanceForwarderEnabled[_sender] = true;
         balanceTrackerCached.balanceTrackerHook(_sender, _senderBalance, false);
@@ -70,8 +105,8 @@ abstract contract BalanceForwarderModule is IBalanceForwarder {
         BalanceForwarderStorage storage $ = StorageLib._getBalanceForwarderStorage();
         IBalanceTracker balanceTrackerCached = IBalanceTracker($.balanceTracker);
 
-        if (address(balanceTrackerCached) == address(0)) revert NotSupported();
-        if (!$.isBalanceForwarderEnabled[_sender]) revert AlreadyDisabled();
+        if (address(balanceTrackerCached) == address(0)) revert ErrorsLib.NotSupported();
+        if (!$.isBalanceForwarderEnabled[_sender]) revert ErrorsLib.AlreadyDisabled();
 
         $.isBalanceForwarderEnabled[_sender] = false;
         balanceTrackerCached.balanceTrackerHook(_sender, 0, false);
@@ -101,17 +136,6 @@ abstract contract BalanceForwarderModule is IBalanceForwarder {
 
         return address($.balanceTracker);
     }
-
-    function _msgSender() internal view override returns (address) {
-        address sender = msg.sender;
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
-
-        if (sender == address($.evc)) {
-            (sender,) = IEVC($.evc).getCurrentOnBehalfOfAccount(address(0));
-        }
-
-        return sender;
-    }
 }
 
-contract BalanceForwarder is BalanceForwarderModule {}
+contract Rewards is RewardsModule {}

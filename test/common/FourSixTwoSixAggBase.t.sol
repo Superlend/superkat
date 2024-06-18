@@ -5,10 +5,12 @@ import "evk/test/unit/evault/EVaultTestBase.t.sol";
 import {FourSixTwoSixAgg, Strategy} from "../../src/FourSixTwoSixAgg.sol";
 import {Rebalancer} from "../../src/Rebalancer.sol";
 import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
-import {Hooks} from "../../src/Hooks.sol";
+import {Hooks, HooksModule} from "../../src/Hooks.sol";
+import {Rewards} from "../../src/Rewards.sol";
 import {FourSixTwoSixAggFactory} from "../../src/FourSixTwoSixAggFactory.sol";
 import {WithdrawalQueue} from "../../src/WithdrawalQueue.sol";
 import {IWithdrawalQueue} from "../../src/interface/IWithdrawalQueue.sol";
+import {ErrorsLib} from "../../src/lib/ErrorsLib.sol";
 
 contract FourSixTwoSixAggBase is EVaultTestBase {
     uint256 public constant CASH_RESERVE_ALLOCATION_POINTS = 1000e18;
@@ -18,8 +20,14 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
     address user2;
     address manager;
 
-    FourSixTwoSixAggFactory fourSixTwoSixAggFactory;
+    // core modules
+    Rewards rewardsImpl;
+    Hooks hooksImpl;
+    // peripheries
     Rebalancer rebalancer;
+    WithdrawalQueue withdrawalQueueImpl;
+
+    FourSixTwoSixAggFactory fourSixTwoSixAggFactory;
 
     FourSixTwoSixAgg fourSixTwoSixAgg;
     WithdrawalQueue withdrawalQueue;
@@ -32,8 +40,18 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
         user2 = makeAddr("User_2");
 
         vm.startPrank(deployer);
+        rewardsImpl = new Rewards();
+        hooksImpl = new Hooks();
         rebalancer = new Rebalancer();
-        fourSixTwoSixAggFactory = new FourSixTwoSixAggFactory(address(evc), address(0), address(rebalancer));
+        withdrawalQueueImpl = new WithdrawalQueue();
+        fourSixTwoSixAggFactory = new FourSixTwoSixAggFactory(
+            address(evc),
+            address(0),
+            address(rewardsImpl),
+            address(hooksImpl),
+            address(rebalancer),
+            address(withdrawalQueueImpl)
+        );
 
         fourSixTwoSixAgg = FourSixTwoSixAgg(
             fourSixTwoSixAggFactory.deployEulerAggregationLayer(
