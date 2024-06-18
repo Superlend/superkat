@@ -61,18 +61,20 @@ contract FourSixTwoSixAggFactory {
         // deploy new aggregation vault
         FourSixTwoSixAgg fourSixTwoSixAgg = new FourSixTwoSixAgg(rewardsImplAddr, hooks, feeModule);
 
+        FourSixTwoSixAgg.InitParams memory aggregationVaultInitParams = FourSixTwoSixAgg.InitParams({
+            evc: evc,
+            balanceTracker: balanceTracker,
+            withdrawalQueuePeriphery: address(withdrawalQueue),
+            rebalancerPerihpery: rebalancer,
+            aggregationVaultOwner: msg.sender,
+            asset: _asset,
+            name: _name,
+            symbol: _symbol,
+            initialCashAllocationPoints: _initialCashAllocationPoints
+        });
+
         withdrawalQueue.init(msg.sender, address(fourSixTwoSixAgg));
-        fourSixTwoSixAgg.init(
-            evc,
-            balanceTracker,
-            address(withdrawalQueue),
-            rebalancer,
-            msg.sender,
-            _asset,
-            _name,
-            _symbol,
-            _initialCashAllocationPoints
-        );
+        fourSixTwoSixAgg.init(aggregationVaultInitParams);
 
         return address(fourSixTwoSixAgg);
     }

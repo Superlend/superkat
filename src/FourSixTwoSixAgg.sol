@@ -76,37 +76,32 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
     // /// @param _initialCashAllocationPoints Initial points to be allocated to the cash reserve
     // /// @param _initialStrategies An array of initial strategies addresses
     // /// @param _initialStrategiesAllocationPoints An array of initial strategies allocation points
-    function init(
-        address _evc,
-        address _balanceTracker,
-        address _withdrawalQueue,
-        address _rebalancer,
-        address _owner,
-        address _asset,
-        string memory _name,
-        string memory _symbol,
-        uint256 _initialCashAllocationPoints
-    ) external initializer {
-        __ERC4626_init_unchained(IERC20(_asset));
-        __ERC20_init_unchained(_name, _symbol);
+
+    function init(InitParams calldata _initParams) external initializer {
+        __ERC4626_init_unchained(IERC20(_initParams.asset));
+        __ERC20_init_unchained(_initParams.name, _initParams.symbol);
 
         _lock();
 
-        if (_initialCashAllocationPoints == 0) revert ErrorsLib.InitialAllocationPointsZero();
+        if (_initParams.initialCashAllocationPoints == 0) revert ErrorsLib.InitialAllocationPointsZero();
 
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
-        $.withdrawalQueue = _withdrawalQueue;
-        $.strategies[address(0)] =
-            Strategy({allocated: 0, allocationPoints: _initialCashAllocationPoints.toUint120(), active: true, cap: 0});
-        $.totalAllocationPoints = _initialCashAllocationPoints;
-        $.evc = _evc;
+        $.withdrawalQueue = _initParams.withdrawalQueuePeriphery;
+        $.strategies[address(0)] = Strategy({
+            allocated: 0,
+            allocationPoints: _initParams.initialCashAllocationPoints.toUint120(),
+            active: true,
+            cap: 0
+        });
+        $.totalAllocationPoints = _initParams.initialCashAllocationPoints;
+        $.evc = _initParams.evc;
 
-        _setBalanceTracker(_balanceTracker);
+        _setBalanceTracker(_initParams.balanceTracker);
 
         // Setup DEFAULT_ADMIN
-        _grantRole(DEFAULT_ADMIN_ROLE, _owner);
+        _grantRole(DEFAULT_ADMIN_ROLE, _initParams.aggregationVaultOwner);
         // By default, the Rebalancer contract is assigned the REBALANCER role
-        _grantRole(REBALANCER, _rebalancer);
+        _grantRole(REBALANCER, _initParams.rebalancerPerihpery);
 
         // Setup role admins
         _setRoleAdmin(STRATEGY_MANAGER, STRATEGY_MANAGER_ADMIN);
