@@ -12,6 +12,7 @@ import {FourSixTwoSixAggFactory} from "../../src/FourSixTwoSixAggFactory.sol";
 import {WithdrawalQueue} from "../../src/WithdrawalQueue.sol";
 import {IWithdrawalQueue} from "../../src/interface/IWithdrawalQueue.sol";
 import {ErrorsLib} from "../../src/lib/ErrorsLib.sol";
+import {AllocationPoints} from "../../src/modules/AllocationPoints.sol";
 
 contract FourSixTwoSixAggBase is EVaultTestBase {
     uint256 public constant CASH_RESERVE_ALLOCATION_POINTS = 1000e18;
@@ -25,6 +26,7 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
     Rewards rewardsImpl;
     Hooks hooksImpl;
     Fee feeModuleImpl;
+    AllocationPoints allocationPointsModuleImpl;
     // peripheries
     Rebalancer rebalancer;
     WithdrawalQueue withdrawalQueueImpl;
@@ -45,6 +47,7 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
         rewardsImpl = new Rewards();
         hooksImpl = new Hooks();
         feeModuleImpl = new Fee();
+        allocationPointsModuleImpl = new AllocationPoints();
 
         rebalancer = new Rebalancer();
         withdrawalQueueImpl = new WithdrawalQueue();
@@ -54,6 +57,7 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
             address(rewardsImpl),
             address(hooksImpl),
             address(feeModuleImpl),
+            address(allocationPointsModuleImpl),
             address(rebalancer),
             address(withdrawalQueueImpl)
         );

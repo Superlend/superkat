@@ -19,4 +19,8 @@ library ErrorsLib {
     error NotSupported();
     error AlreadyEnabled();
     error AlreadyDisabled();
+    error InvalidHooksTarget();
+    error NotHooksContract();
+    error InvalidHookedFns();
+    error EmptyError();
 }

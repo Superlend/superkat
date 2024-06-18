@@ -54,8 +54,8 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
     event SetStrategyCap(address indexed strategy, uint256 cap);
     event Rebalance(address indexed strategy, uint256 _amountToRebalance, bool _isDeposit);
 
-    constructor(address _rewardsModule, address _hooksModule, address _feeModule)
-        Dispatch(_rewardsModule, _hooksModule, _feeModule)
+    constructor(address _rewardsModule, address _hooksModule, address _feeModule, address _allocationPointsModule)
+        Dispatch(_rewardsModule, _hooksModule, _feeModule, _allocationPointsModule)
     {}
 
     struct InitParams {
@@ -195,91 +195,35 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
     /// @param _newPoints new strategy's points
     function adjustAllocationPoints(address _strategy, uint256 _newPoints)
         external
-        nonReentrant
+        use(MODULE_ALLOCATION_POINTS)
         onlyRole(STRATEGY_MANAGER)
-    {
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
-
-        Strategy memory strategyDataCache = $.strategies[_strategy];
-
-        if (!strategyDataCache.active) {
-            revert ErrorsLib.InactiveStrategy();
-        }
-
-        $.strategies[_strategy].allocationPoints = _newPoints.toUint120();
-        $.totalAllocationPoints = $.totalAllocationPoints + _newPoints - strategyDataCache.allocationPoints;
-
-        emit AdjustAllocationPoints(_strategy, strategyDataCache.allocationPoints, _newPoints);
-    }
+    {}
 
     /// @notice Set cap on strategy allocated amount.
     /// @dev By default, cap is set to 0, not activated.
     /// @param _strategy Strategy address.
     /// @param _cap Cap amount
-    function setStrategyCap(address _strategy, uint256 _cap) external nonReentrant onlyRole(STRATEGY_MANAGER) {
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
-
-        if (!$.strategies[_strategy].active) {
-            revert ErrorsLib.InactiveStrategy();
-        }
-
-        $.strategies[_strategy].cap = _cap.toUint120();
-
-        emit SetStrategyCap(_strategy, _cap);
-    }
+    function setStrategyCap(address _strategy, uint256 _cap)
+        external
+        use(MODULE_ALLOCATION_POINTS)
+        onlyRole(STRATEGY_MANAGER)
+    {}
 
     /// @notice Add new strategy with it's allocation points.
     /// @dev Can only be called by an address that have STRATEGY_ADDER.
     /// @param _strategy Address of the strategy
     /// @param _allocationPoints Strategy's allocation points
-    function addStrategy(address _strategy, uint256 _allocationPoints) external nonReentrant onlyRole(STRATEGY_ADDER) {
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
-
-        if ($.strategies[_strategy].active) {
-            revert ErrorsLib.StrategyAlreadyExist();
-        }
-
-        if (IERC4626(_strategy).asset() != asset()) {
-            revert ErrorsLib.InvalidStrategyAsset();
-        }
-
-        _callHooksTarget(ADD_STRATEGY, _msgSender());
-
-        $.strategies[_strategy] =
-            Strategy({allocated: 0, allocationPoints: _allocationPoints.toUint120(), active: true, cap: 0});
-
-        $.totalAllocationPoints += _allocationPoints;
-        IWithdrawalQueue($.withdrawalQueue).addStrategyToWithdrawalQueue(_strategy);
-
-        emit AddStrategy(_strategy, _allocationPoints);
-    }
+    function addStrategy(address _strategy, uint256 _allocationPoints)
+        external
+        use(MODULE_ALLOCATION_POINTS)
+        onlyRole(STRATEGY_ADDER)
+    {}
 
     /// @notice Remove strategy and set its allocation points to zero.
     /// @dev This function does not pull funds, `harvest()` needs to be called to withdraw
     /// @dev Can only be called by an address that have the STRATEGY_REMOVER
     /// @param _strategy Address of the strategy
-    function removeStrategy(address _strategy) external nonReentrant onlyRole(STRATEGY_REMOVER) {
-        if (_strategy == address(0)) revert ErrorsLib.CanNotRemoveCashReserve();
-
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
-
-        Strategy storage strategyStorage = $.strategies[_strategy];
-
-        if (!strategyStorage.active) {
-            revert ErrorsLib.AlreadyRemoved();
-        }
-
-        _callHooksTarget(REMOVE_STRATEGY, _msgSender());
-
-        $.totalAllocationPoints -= strategyStorage.allocationPoints;
-        strategyStorage.active = false;
-        strategyStorage.allocationPoints = 0;
-
-        // remove from withdrawalQueue
-        IWithdrawalQueue($.withdrawalQueue).removeStrategyFromWithdrawalQueue(_strategy);
-
-        emit RemoveStrategy(_strategy);
-    }
+    function removeStrategy(address _strategy) external use(MODULE_ALLOCATION_POINTS) onlyRole(STRATEGY_REMOVER) {}
 
     /// @notice update accrued interest
     function updateInterestAccrued() external {

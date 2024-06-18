@@ -15,32 +15,35 @@ contract FourSixTwoSixAggFactory {
     address public immutable evc;
     address public immutable balanceTracker;
     /// core modules
-    address public immutable rewardsImpl;
-    address public immutable hooksImpl;
+    address public immutable rewardsModuleImpl;
+    address public immutable hooksModuleImpl;
     address public immutable feeModuleImpl;
+    address public immutable allocationpointsModuleImpl;
     /// peripheries
     /// @dev Rebalancer periphery, one instance can serve different aggregation vaults
-    address public immutable rebalancer;
+    address public immutable rebalancerAddr;
     /// @dev Withdrawal queue perihperhy, need to be deployed per aggregation vault
-    address public immutable withdrawalQueueImpl;
+    address public immutable withdrawalQueueAddr;
 
     constructor(
         address _evc,
         address _balanceTracker,
-        address _rewardsImpl,
-        address _hooksImpl,
+        address _rewardsModuleImpl,
+        address _hooksModuleImpl,
         address _feeModuleImpl,
-        address _rebalancer,
-        address _withdrawalQueueImpl
+        address _allocationpointsModuleImpl,
+        address _rebalancerAddr,
+        address _withdrawalQueueAddr
     ) {
         evc = _evc;
         balanceTracker = _balanceTracker;
-        rewardsImpl = _rewardsImpl;
-        hooksImpl = _hooksImpl;
+        rewardsModuleImpl = _rewardsModuleImpl;
+        hooksModuleImpl = _hooksModuleImpl;
         feeModuleImpl = _feeModuleImpl;
+        allocationpointsModuleImpl = _allocationpointsModuleImpl;
 
-        rebalancer = _rebalancer;
-        withdrawalQueueImpl = _withdrawalQueueImpl;
+        rebalancerAddr = _rebalancerAddr;
+        withdrawalQueueAddr = _withdrawalQueueAddr;
     }
 
     // TODO: decrease bytecode size, use clones or something
@@ -51,21 +54,23 @@ contract FourSixTwoSixAggFactory {
         uint256 _initialCashAllocationPoints
     ) external returns (address) {
         // cloning core modules
-        address rewardsImplAddr = Clones.clone(rewardsImpl);
-        address hooks = Clones.clone(hooksImpl);
-        address feeModule = Clones.clone(feeModuleImpl);
+        address rewardsModuleAddr = Clones.clone(rewardsModuleImpl);
+        address hooksModuleAddr = Clones.clone(hooksModuleImpl);
+        address feeModuleAddr = Clones.clone(feeModuleImpl);
+        address allocationpointsModuleAddr = Clones.clone(allocationpointsModuleImpl);
 
         // cloning peripheries
-        WithdrawalQueue withdrawalQueue = WithdrawalQueue(Clones.clone(withdrawalQueueImpl));
+        WithdrawalQueue withdrawalQueue = WithdrawalQueue(Clones.clone(withdrawalQueueAddr));
 
         // deploy new aggregation vault
-        FourSixTwoSixAgg fourSixTwoSixAgg = new FourSixTwoSixAgg(rewardsImplAddr, hooks, feeModule);
+        FourSixTwoSixAgg fourSixTwoSixAgg =
+            new FourSixTwoSixAgg(rewardsModuleAddr, hooksModuleAddr, feeModuleAddr, allocationpointsModuleAddr);
 
         FourSixTwoSixAgg.InitParams memory aggregationVaultInitParams = FourSixTwoSixAgg.InitParams({
             evc: evc,
             balanceTracker: balanceTracker,
             withdrawalQueuePeriphery: address(withdrawalQueue),
-            rebalancerPerihpery: rebalancer,
+            rebalancerPerihpery: rebalancerAddr,
             aggregationVaultOwner: msg.sender,
             asset: _asset,
             name: _name,

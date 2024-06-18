@@ -12,11 +12,15 @@ abstract contract Dispatch is RewardsModule, HooksModule {
     address public immutable MODULE_REWARDS;
     address public immutable MODULE_HOOKS;
     address public immutable MODULE_FEE;
+    address public immutable MODULE_ALLOCATION_POINTS;
 
-    constructor(address _rewardsModule, address _hooksModule, address _feeModule) Shared() {
+    constructor(address _rewardsModule, address _hooksModule, address _feeModule, address _allocationPointsModule)
+        Shared()
+    {
         MODULE_REWARDS = _rewardsModule;
         MODULE_HOOKS = _hooksModule;
         MODULE_FEE = _feeModule;
+        MODULE_ALLOCATION_POINTS = _allocationPointsModule;
     }
 
     // Modifier proxies the function call to a module and low-level returns the result

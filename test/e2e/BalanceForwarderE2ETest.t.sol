@@ -31,6 +31,7 @@ contract BalanceForwarderE2ETest is FourSixTwoSixAggBase {
             address(rewardsImpl),
             address(hooksImpl),
             address(feeModuleImpl),
+            address(allocationPointsModuleImpl),
             address(rebalancer),
             address(withdrawalQueueImpl)
         );
