@@ -113,7 +113,7 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable {
     /// @param _index1 index of first strategy
     /// @param _index2 index of second strategy
     function reorderWithdrawalQueue(uint8 _index1, uint8 _index2) external onlyRole(WITHDRAW_QUEUE_MANAGER) {
-        WithdrawalQueueStorage memory $ = _getWithdrawalQueueStorage();
+        WithdrawalQueueStorage storage $ = _getWithdrawalQueueStorage();
 
         uint256 length = $.withdrawalQueue.length;
         if (_index1 >= length || _index2 >= length) {
