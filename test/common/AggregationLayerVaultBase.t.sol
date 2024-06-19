@@ -1,18 +1,21 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
+// interfaces
+import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
+import {IWithdrawalQueue} from "../../src/interface/IWithdrawalQueue.sol";
+// contracts
 import "evk/test/unit/evault/EVaultTestBase.t.sol";
 import {AggregationLayerVault, Strategy} from "../../src/AggregationLayerVault.sol";
-import {Rebalancer} from "../../src/Rebalancer.sol";
-import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
-import {Hooks, HooksModule} from "../../src/modules/Hooks.sol";
-import {Rewards} from "../../src/modules/Rewards.sol";
-import {Fee} from "../../src/modules/Fee.sol";
+import {Rebalancer} from "../../src/plugin/Rebalancer.sol";
+import {Hooks, HooksModule} from "../../src/module/Hooks.sol";
+import {Rewards} from "../../src/module/Rewards.sol";
+import {Fee} from "../../src/module/Fee.sol";
 import {AggregationLayerVaultFactory} from "../../src/AggregationLayerVaultFactory.sol";
-import {WithdrawalQueue} from "../../src/WithdrawalQueue.sol";
-import {IWithdrawalQueue} from "../../src/interface/IWithdrawalQueue.sol";
+import {WithdrawalQueue} from "../../src/plugin/WithdrawalQueue.sol";
+import {AllocationPoints} from "../../src/module/AllocationPoints.sol";
+// libs
 import {ErrorsLib} from "../../src/lib/ErrorsLib.sol";
-import {AllocationPoints} from "../../src/modules/AllocationPoints.sol";
 
 contract AggregationLayerVaultBase is EVaultTestBase {
     uint256 public constant CASH_RESERVE_ALLOCATION_POINTS = 1000e18;

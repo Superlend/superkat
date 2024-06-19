@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 // interfaces
 import {IERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 // internal dep
-import {IFourSixTwoSixAgg} from "./interface/IFourSixTwoSixAgg.sol";
+import {IFourSixTwoSixAgg} from "../interface/IFourSixTwoSixAgg.sol";
 // contracts
 import {AccessControlEnumerableUpgradeable} from
     "@openzeppelin-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";

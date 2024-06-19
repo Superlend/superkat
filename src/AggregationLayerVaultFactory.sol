@@ -3,11 +3,11 @@ pragma solidity ^0.8.0;
 
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 // core modules
-import {Rewards} from "./modules/Rewards.sol";
-import {Hooks} from "./modules/Hooks.sol";
-import {Fee} from "./modules/Fee.sol";
+import {Rewards} from "./module/Rewards.sol";
+import {Hooks} from "./module/Hooks.sol";
+import {Fee} from "./module/Fee.sol";
 // core plugins
-import {WithdrawalQueue} from "./WithdrawalQueue.sol";
+import {WithdrawalQueue} from "./plugin/WithdrawalQueue.sol";
 import {AggregationLayerVault} from "./AggregationLayerVault.sol";
 
 contract AggregationLayerVaultFactory {

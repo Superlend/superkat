@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
+import {TrackingRewardStreams} from "reward-streams/TrackingRewardStreams.sol";
 import {
     AggregationLayerVaultBase,
     AggregationLayerVault,
@@ -12,7 +13,6 @@ import {
     AggregationLayerVaultFactory,
     Rewards
 } from "../common/AggregationLayerVaultBase.t.sol";
-import {TrackingRewardStreams} from "reward-streams/TrackingRewardStreams.sol";
 
 contract BalanceForwarderE2ETest is AggregationLayerVaultBase {
     uint256 user1InitialBalance = 100000e18;

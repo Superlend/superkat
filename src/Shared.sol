@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {StorageLib, AggregationVaultStorage} from "./lib/StorageLib.sol";
-import {ErrorsLib} from "./lib/ErrorsLib.sol";
+// interfaces
 import {IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
+// libs
+import {StorageLib, AggregationVaultStorage} from "./lib/StorageLib.sol";
+import {ErrorsLib} from "./lib/ErrorsLib.sol";
 import {HooksLib} from "./lib/HooksLib.sol";
 
 contract Shared {

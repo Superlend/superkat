@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {IFourSixTwoSixAgg, Strategy} from "./interface/IFourSixTwoSixAgg.sol";
+// interfaces
+import {IFourSixTwoSixAgg, Strategy} from "../interface/IFourSixTwoSixAgg.sol";
 import {IERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 
 contract Rebalancer {

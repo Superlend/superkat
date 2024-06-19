@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-
 pragma solidity ^0.8.0;
 
+//contracts
 import {Shared} from "./Shared.sol";
-import {HooksModule} from "./modules/Hooks.sol";
-import {RewardsModule} from "./modules/Rewards.sol";
+import {HooksModule} from "./module/Hooks.sol";
+import {RewardsModule} from "./module/Rewards.sol";
 
 abstract contract Dispatch is RewardsModule, HooksModule {
     address public immutable MODULE_REWARDS;
