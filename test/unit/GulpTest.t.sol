@@ -2,10 +2,14 @@
 pragma solidity ^0.8.0;
 
 import {
-    FourSixTwoSixAggBase, FourSixTwoSixAgg, console2, EVault, Strategy
-} from "../common/FourSixTwoSixAggBase.t.sol";
+    AggregationLayerVaultBase,
+    AggregationLayerVault,
+    console2,
+    EVault,
+    Strategy
+} from "../common/AggregationLayerVaultBase.t.sol";
 
-contract GulpTest is FourSixTwoSixAggBase {
+contract GulpTest is AggregationLayerVaultBase {
     uint256 user1InitialBalance = 100000e18;
     uint256 amountToDeposit = 10000e18;
 
@@ -19,140 +23,142 @@ contract GulpTest is FourSixTwoSixAggBase {
 
         // deposit into aggregator
         {
-            uint256 balanceBefore = fourSixTwoSixAgg.balanceOf(user1);
-            uint256 totalSupplyBefore = fourSixTwoSixAgg.totalSupply();
-            uint256 totalAssetsDepositedBefore = fourSixTwoSixAgg.totalAssetsDeposited();
+            uint256 balanceBefore = aggregationLayerVault.balanceOf(user1);
+            uint256 totalSupplyBefore = aggregationLayerVault.totalSupply();
+            uint256 totalAssetsDepositedBefore = aggregationLayerVault.totalAssetsDeposited();
             uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
 
             vm.startPrank(user1);
-            assetTST.approve(address(fourSixTwoSixAgg), amountToDeposit);
-            fourSixTwoSixAgg.deposit(amountToDeposit, user1);
+            assetTST.approve(address(aggregationLayerVault), amountToDeposit);
+            aggregationLayerVault.deposit(amountToDeposit, user1);
             vm.stopPrank();
 
-            assertEq(fourSixTwoSixAgg.balanceOf(user1), balanceBefore + amountToDeposit);
-            assertEq(fourSixTwoSixAgg.totalSupply(), totalSupplyBefore + amountToDeposit);
-            assertEq(fourSixTwoSixAgg.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
+            assertEq(aggregationLayerVault.balanceOf(user1), balanceBefore + amountToDeposit);
+            assertEq(aggregationLayerVault.totalSupply(), totalSupplyBefore + amountToDeposit);
+            assertEq(aggregationLayerVault.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
             assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - amountToDeposit);
         }
 
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
         {
-            Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
+            Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
 
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), strategyBefore.allocated);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), strategyBefore.allocated);
 
-            uint256 expectedStrategyCash = fourSixTwoSixAgg.totalAssetsAllocatable() * strategyBefore.allocationPoints
-                / fourSixTwoSixAgg.totalAllocationPoints();
+            uint256 expectedStrategyCash = aggregationLayerVault.totalAssetsAllocatable()
+                * strategyBefore.allocationPoints / aggregationLayerVault.totalAllocationPoints();
 
             vm.prank(user1);
             address[] memory strategiesToRebalance = new address[](1);
             strategiesToRebalance[0] = address(eTST);
-            rebalancer.executeRebalance(address(fourSixTwoSixAgg), strategiesToRebalance);
+            rebalancer.executeRebalance(address(aggregationLayerVault), strategiesToRebalance);
 
-            assertEq(fourSixTwoSixAgg.totalAllocated(), expectedStrategyCash);
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), expectedStrategyCash);
-            assertEq((fourSixTwoSixAgg.getStrategy(address(eTST))).allocated, expectedStrategyCash);
+            assertEq(aggregationLayerVault.totalAllocated(), expectedStrategyCash);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), expectedStrategyCash);
+            assertEq((aggregationLayerVault.getStrategy(address(eTST))).allocated, expectedStrategyCash);
         }
     }
 
     function testGulpAfterNegativeYieldEqualToInterestLeft() public {
-        fourSixTwoSixAgg.gulp();
-        FourSixTwoSixAgg.AggregationVaultSavingRate memory ers = fourSixTwoSixAgg.getAggregationVaultSavingRate();
-        assertEq(fourSixTwoSixAgg.interestAccrued(), 0);
+        aggregationLayerVault.gulp();
+        AggregationLayerVault.AggregationVaultSavingRate memory ers =
+            aggregationLayerVault.getAggregationVaultSavingRate();
+        assertEq(aggregationLayerVault.interestAccrued(), 0);
         assertEq(ers.interestLeft, 0);
 
         vm.warp(block.timestamp + 2 days);
-        fourSixTwoSixAgg.gulp();
-        assertEq(fourSixTwoSixAgg.interestAccrued(), 0);
+        aggregationLayerVault.gulp();
+        assertEq(aggregationLayerVault.interestAccrued(), 0);
 
         vm.warp(block.timestamp + 1 days);
-        assertEq(fourSixTwoSixAgg.interestAccrued(), 0);
+        assertEq(aggregationLayerVault.interestAccrued(), 0);
         uint256 yield;
         {
-            uint256 aggrCurrentStrategyShareBalance = eTST.balanceOf(address(fourSixTwoSixAgg));
+            uint256 aggrCurrentStrategyShareBalance = eTST.balanceOf(address(aggregationLayerVault));
             uint256 aggrCurrentStrategyUnderlyingBalance = eTST.convertToAssets(aggrCurrentStrategyShareBalance);
             uint256 aggrNewStrategyUnderlyingBalance = aggrCurrentStrategyUnderlyingBalance * 11e17 / 1e18;
             yield = aggrNewStrategyUnderlyingBalance - aggrCurrentStrategyUnderlyingBalance;
             assetTST.mint(address(eTST), yield);
-            eTST.skim(type(uint256).max, address(fourSixTwoSixAgg));
+            eTST.skim(type(uint256).max, address(aggregationLayerVault));
         }
         vm.prank(user1);
-        fourSixTwoSixAgg.harvest(address(eTST));
+        aggregationLayerVault.harvest(address(eTST));
 
-        assertEq(fourSixTwoSixAgg.interestAccrued(), 0);
+        assertEq(aggregationLayerVault.interestAccrued(), 0);
 
         vm.warp(block.timestamp + 1 days);
         // interest per day 23.809523809523
-        assertEq(fourSixTwoSixAgg.interestAccrued(), 23809523809523809523);
-        fourSixTwoSixAgg.gulp();
-        ers = fourSixTwoSixAgg.getAggregationVaultSavingRate();
+        assertEq(aggregationLayerVault.interestAccrued(), 23809523809523809523);
+        aggregationLayerVault.gulp();
+        ers = aggregationLayerVault.getAggregationVaultSavingRate();
         assertEq(ers.interestLeft, yield - 23809523809523809523);
 
         // move close to end of smearing
         vm.warp(block.timestamp + 11 days);
-        fourSixTwoSixAgg.gulp();
-        ers = fourSixTwoSixAgg.getAggregationVaultSavingRate();
+        aggregationLayerVault.gulp();
+        ers = aggregationLayerVault.getAggregationVaultSavingRate();
 
         // mock a decrease of strategy balance by ers.interestLeft
-        uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(fourSixTwoSixAgg));
+        uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(aggregationLayerVault));
         uint256 aggrCurrentStrategyBalanceAfterNegYield = aggrCurrentStrategyBalance - ers.interestLeft;
         vm.mockCall(
             address(eTST),
-            abi.encodeWithSelector(EVault.balanceOf.selector, address(fourSixTwoSixAgg)),
+            abi.encodeWithSelector(EVault.balanceOf.selector, address(aggregationLayerVault)),
             abi.encode(aggrCurrentStrategyBalanceAfterNegYield)
         );
         vm.prank(user1);
-        fourSixTwoSixAgg.harvest(address(eTST));
+        aggregationLayerVault.harvest(address(eTST));
     }
 
     function testGulpAfterNegativeYieldBiggerThanInterestLeft() public {
-        fourSixTwoSixAgg.gulp();
-        FourSixTwoSixAgg.AggregationVaultSavingRate memory ers = fourSixTwoSixAgg.getAggregationVaultSavingRate();
-        assertEq(fourSixTwoSixAgg.interestAccrued(), 0);
+        aggregationLayerVault.gulp();
+        AggregationLayerVault.AggregationVaultSavingRate memory ers =
+            aggregationLayerVault.getAggregationVaultSavingRate();
+        assertEq(aggregationLayerVault.interestAccrued(), 0);
         assertEq(ers.interestLeft, 0);
 
         vm.warp(block.timestamp + 2 days);
-        fourSixTwoSixAgg.gulp();
-        assertEq(fourSixTwoSixAgg.interestAccrued(), 0);
+        aggregationLayerVault.gulp();
+        assertEq(aggregationLayerVault.interestAccrued(), 0);
 
         vm.warp(block.timestamp + 1 days);
-        assertEq(fourSixTwoSixAgg.interestAccrued(), 0);
+        assertEq(aggregationLayerVault.interestAccrued(), 0);
         uint256 yield;
         {
-            uint256 aggrCurrentStrategyShareBalance = eTST.balanceOf(address(fourSixTwoSixAgg));
+            uint256 aggrCurrentStrategyShareBalance = eTST.balanceOf(address(aggregationLayerVault));
             uint256 aggrCurrentStrategyUnderlyingBalance = eTST.convertToAssets(aggrCurrentStrategyShareBalance);
             uint256 aggrNewStrategyUnderlyingBalance = aggrCurrentStrategyUnderlyingBalance * 11e17 / 1e18;
             yield = aggrNewStrategyUnderlyingBalance - aggrCurrentStrategyUnderlyingBalance;
             assetTST.mint(address(eTST), yield);
-            eTST.skim(type(uint256).max, address(fourSixTwoSixAgg));
+            eTST.skim(type(uint256).max, address(aggregationLayerVault));
         }
         vm.prank(user1);
-        fourSixTwoSixAgg.harvest(address(eTST));
+        aggregationLayerVault.harvest(address(eTST));
 
-        assertEq(fourSixTwoSixAgg.interestAccrued(), 0);
+        assertEq(aggregationLayerVault.interestAccrued(), 0);
 
         vm.warp(block.timestamp + 1 days);
         // interest per day 23.809523809523
-        assertEq(fourSixTwoSixAgg.interestAccrued(), 23809523809523809523);
-        fourSixTwoSixAgg.gulp();
-        ers = fourSixTwoSixAgg.getAggregationVaultSavingRate();
+        assertEq(aggregationLayerVault.interestAccrued(), 23809523809523809523);
+        aggregationLayerVault.gulp();
+        ers = aggregationLayerVault.getAggregationVaultSavingRate();
         assertEq(ers.interestLeft, yield - 23809523809523809523);
 
         // move close to end of smearing
         vm.warp(block.timestamp + 11 days);
-        fourSixTwoSixAgg.gulp();
-        ers = fourSixTwoSixAgg.getAggregationVaultSavingRate();
+        aggregationLayerVault.gulp();
+        ers = aggregationLayerVault.getAggregationVaultSavingRate();
 
         // mock a decrease of strategy balance by ers.interestLeft
-        uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(fourSixTwoSixAgg));
+        uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(aggregationLayerVault));
         uint256 aggrCurrentStrategyBalanceAfterNegYield = aggrCurrentStrategyBalance - (ers.interestLeft * 2);
         vm.mockCall(
             address(eTST),
-            abi.encodeWithSelector(EVault.balanceOf.selector, address(fourSixTwoSixAgg)),
+            abi.encodeWithSelector(EVault.balanceOf.selector, address(aggregationLayerVault)),
             abi.encode(aggrCurrentStrategyBalanceAfterNegYield)
         );
         vm.prank(user1);
-        fourSixTwoSixAgg.harvest(address(eTST));
+        aggregationLayerVault.harvest(address(eTST));
     }
 }

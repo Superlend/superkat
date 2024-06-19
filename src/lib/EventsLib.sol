@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 library EventsLib {
-    /// @dev FourSixTwoSixAgg events
+    /// @dev AggregationLayerVault events
     event Gulp(uint256 interestLeft, uint256 interestSmearEnd);
     event Harvest(address indexed strategy, uint256 strategyBalanceAmount, uint256 strategyAllocatedAmount);
     event AccruePerformanceFee(address indexed feeRecipient, uint256 yield, uint256 feeAssets);

@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {FourSixTwoSixAggBase, FourSixTwoSixAgg, Strategy, ErrorsLib} from "../common/FourSixTwoSixAggBase.t.sol";
+import {
+    AggregationLayerVaultBase,
+    AggregationLayerVault,
+    Strategy,
+    ErrorsLib
+} from "../common/AggregationLayerVaultBase.t.sol";
 
-contract AdjustAllocationsPointsTest is FourSixTwoSixAggBase {
+contract AdjustAllocationsPointsTest is AggregationLayerVaultBase {
     uint256 initialStrategyAllocationPoints = 500e18;
 
     function setUp() public virtual override {
@@ -14,16 +19,16 @@ contract AdjustAllocationsPointsTest is FourSixTwoSixAggBase {
 
     function testAdjustAllocationPoints() public {
         uint256 newAllocationPoints = 859e18;
-        uint256 totalAllocationPointsBefore = fourSixTwoSixAgg.totalAllocationPoints();
+        uint256 totalAllocationPointsBefore = aggregationLayerVault.totalAllocationPoints();
         uint256 withdrawalQueueLengthBefore = _getWithdrawalQueueLength();
 
         vm.prank(manager);
-        fourSixTwoSixAgg.adjustAllocationPoints(address(eTST), newAllocationPoints);
+        aggregationLayerVault.adjustAllocationPoints(address(eTST), newAllocationPoints);
 
-        Strategy memory strategy = fourSixTwoSixAgg.getStrategy(address(eTST));
+        Strategy memory strategy = aggregationLayerVault.getStrategy(address(eTST));
 
         assertEq(
-            fourSixTwoSixAgg.totalAllocationPoints(),
+            aggregationLayerVault.totalAllocationPoints(),
             totalAllocationPointsBefore + (newAllocationPoints - initialStrategyAllocationPoints)
         );
         assertEq(_getWithdrawalQueueLength(), withdrawalQueueLengthBefore);
@@ -35,7 +40,7 @@ contract AdjustAllocationsPointsTest is FourSixTwoSixAggBase {
 
         vm.startPrank(deployer);
         vm.expectRevert();
-        fourSixTwoSixAgg.adjustAllocationPoints(address(eTST), newAllocationPoints);
+        aggregationLayerVault.adjustAllocationPoints(address(eTST), newAllocationPoints);
         vm.stopPrank();
     }
 
@@ -44,7 +49,7 @@ contract AdjustAllocationsPointsTest is FourSixTwoSixAggBase {
 
         vm.startPrank(manager);
         vm.expectRevert(ErrorsLib.InactiveStrategy.selector);
-        fourSixTwoSixAgg.adjustAllocationPoints(address(eTST2), newAllocationPoints);
+        aggregationLayerVault.adjustAllocationPoints(address(eTST2), newAllocationPoints);
         vm.stopPrank();
     }
 }

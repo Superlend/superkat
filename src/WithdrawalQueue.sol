@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-// external dep
-import {AccessControlEnumerableUpgradeable} from
-    "@openzeppelin-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
+// interfaces
 import {IERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 // internal dep
 import {IFourSixTwoSixAgg} from "./interface/IFourSixTwoSixAgg.sol";
+// contracts
+import {AccessControlEnumerableUpgradeable} from
+    "@openzeppelin-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
 
 contract WithdrawalQueue is AccessControlEnumerableUpgradeable {
     error OutOfBounds();
@@ -29,6 +30,9 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable {
 
     event ReorderWithdrawalQueue(uint8 index1, uint8 index2);
 
+    /// @notice Initialize WithdrawalQueue.
+    /// @param _owner Aggregation layer vault owner.
+    /// @param _eulerAggregationVault Address of aggregation layer vault.
     function init(address _owner, address _eulerAggregationVault) external initializer {
         WithdrawalQueueStorage storage $ = _getWithdrawalQueueStorage();
         $.eulerAggregationVault = _eulerAggregationVault;
@@ -38,6 +42,9 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable {
         _setRoleAdmin(WITHDRAW_QUEUE_MANAGER, WITHDRAW_QUEUE_MANAGER_ADMIN);
     }
 
+    /// @notice Add a strategy to withdrawal queue array.
+    /// @dev Can only be called by the aggregation layer vault's address.
+    /// @param _strategy Strategy address to add
     function addStrategyToWithdrawalQueue(address _strategy) external {
         _isCallerAggregationVault();
 
@@ -46,6 +53,9 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable {
         $.withdrawalQueue.push(_strategy);
     }
 
+    /// @notice Remove a strategy from withdrawal queue array.
+    /// @dev Can only be called by the aggregation layer vault's address.
+    /// @param _strategy Strategy address to add.
     function removeStrategyFromWithdrawalQueue(address _strategy) external {
         _isCallerAggregationVault();
 
@@ -65,9 +75,9 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable {
     }
 
     /// @notice Swap two strategies indexes in the withdrawal queue.
-    /// @dev Can only be called by an address that have the WITHDRAW_QUEUE_MANAGER.
-    /// @param _index1 index of first strategy
-    /// @param _index2 index of second strategy
+    /// @dev Can only be called by an address that have the WITHDRAW_QUEUE_MANAGER role.
+    /// @param _index1 index of first strategy.
+    /// @param _index2 index of second strategy.
     function reorderWithdrawalQueue(uint8 _index1, uint8 _index2) external onlyRole(WITHDRAW_QUEUE_MANAGER) {
         WithdrawalQueueStorage storage $ = _getWithdrawalQueueStorage();
 
@@ -86,6 +96,14 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable {
         emit ReorderWithdrawalQueue(_index1, _index2);
     }
 
+    /// @notice Execute the withdraw initiated in the aggregation layer vault.
+    /// @dev Can only be called by the aggregation layer vault's address.
+    /// @param caller Initiator's address of withdraw.
+    /// @param receiver Withdraw receiver address.
+    /// @param owner Shares's owner to burn.
+    /// @param assets Amount of asset to withdraw.
+    /// @param shares Amount of shares to burn.
+    /// @param availableAssets Amount of available asset in aggregation layer vault's cash reserve.
     function callWithdrawalQueue(
         address caller,
         address receiver,
@@ -121,6 +139,9 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable {
                     break;
                 }
             }
+
+            // re-calculate shares in case of socialized loss
+            shares = IERC4626(eulerAggregationVaultCached).previewWithdraw(assets);
         }
 
         if (availableAssets < assets) {
@@ -132,6 +153,9 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable {
         );
     }
 
+    /// @notice Get strategy address from withdrawal queue by index.
+    /// @param _index Index to fetch.
+    /// @return address Strategy address.
     function getWithdrawalQueueAtIndex(uint256 _index) external view returns (address) {
         WithdrawalQueueStorage storage $ = _getWithdrawalQueueStorage();
 
@@ -139,19 +163,22 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable {
     }
 
     /// @notice Return the withdrawal queue length.
-    /// @return uint256 length
+    /// @return uint256 length.
     function withdrawalQueueLength() external pure returns (uint256) {
         WithdrawalQueueStorage memory $ = _getWithdrawalQueueStorage();
 
         return $.withdrawalQueue.length;
     }
 
+    /// @dev Check if the msg.sender is the aggregation layer vault.
     function _isCallerAggregationVault() private view {
         WithdrawalQueueStorage storage $ = _getWithdrawalQueueStorage();
 
         if (msg.sender != $.eulerAggregationVault) revert NotAuthorized();
     }
 
+    /// @dev Return storage pointer.
+    /// @return $ WithdrawalQueueStorage storage struct.
     function _getWithdrawalQueueStorage() private pure returns (WithdrawalQueueStorage storage $) {
         assembly {
             $.slot := WithdrawalQueueStorageLocation

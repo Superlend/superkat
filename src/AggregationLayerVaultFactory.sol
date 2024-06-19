@@ -6,11 +6,11 @@ import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {Rewards} from "./modules/Rewards.sol";
 import {Hooks} from "./modules/Hooks.sol";
 import {Fee} from "./modules/Fee.sol";
-// core peripheries
+// core plugins
 import {WithdrawalQueue} from "./WithdrawalQueue.sol";
-import {FourSixTwoSixAgg} from "./FourSixTwoSixAgg.sol";
+import {AggregationLayerVault} from "./AggregationLayerVault.sol";
 
-contract FourSixTwoSixAggFactory {
+contract AggregationLayerVaultFactory {
     /// core dependencies
     address public immutable evc;
     address public immutable balanceTracker;
@@ -19,7 +19,7 @@ contract FourSixTwoSixAggFactory {
     address public immutable hooksModuleImpl;
     address public immutable feeModuleImpl;
     address public immutable allocationpointsModuleImpl;
-    /// peripheries
+    /// plugins
     /// @dev Rebalancer periphery, one instance can serve different aggregation vaults
     address public immutable rebalancerAddr;
     /// @dev Withdrawal queue perihperhy, need to be deployed per aggregation vault
@@ -58,14 +58,14 @@ contract FourSixTwoSixAggFactory {
         address feeModuleAddr = Clones.clone(feeModuleImpl);
         address allocationpointsModuleAddr = Clones.clone(allocationpointsModuleImpl);
 
-        // cloning peripheries
+        // cloning plugins
         WithdrawalQueue withdrawalQueue = WithdrawalQueue(Clones.clone(withdrawalQueueAddr));
 
         // deploy new aggregation vault
-        FourSixTwoSixAgg fourSixTwoSixAgg =
-            new FourSixTwoSixAgg(rewardsModuleAddr, hooksModuleAddr, feeModuleAddr, allocationpointsModuleAddr);
+        AggregationLayerVault aggregationLayerVault =
+            new AggregationLayerVault(rewardsModuleAddr, hooksModuleAddr, feeModuleAddr, allocationpointsModuleAddr);
 
-        FourSixTwoSixAgg.InitParams memory aggregationVaultInitParams = FourSixTwoSixAgg.InitParams({
+        AggregationLayerVault.InitParams memory aggregationVaultInitParams = AggregationLayerVault.InitParams({
             evc: evc,
             balanceTracker: balanceTracker,
             withdrawalQueuePeriphery: address(withdrawalQueue),
@@ -77,9 +77,9 @@ contract FourSixTwoSixAggFactory {
             initialCashAllocationPoints: _initialCashAllocationPoints
         });
 
-        withdrawalQueue.init(msg.sender, address(fourSixTwoSixAgg));
-        fourSixTwoSixAgg.init(aggregationVaultInitParams);
+        withdrawalQueue.init(msg.sender, address(aggregationLayerVault));
+        aggregationLayerVault.init(aggregationVaultInitParams);
 
-        return address(fourSixTwoSixAgg);
+        return address(aggregationLayerVault);
     }
 }

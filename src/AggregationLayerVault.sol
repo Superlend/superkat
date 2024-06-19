@@ -7,8 +7,8 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IBalanceTracker} from "reward-streams/interfaces/IBalanceTracker.sol";
 import {IFourSixTwoSixAgg} from "./interface/IFourSixTwoSixAgg.sol";
 import {IWithdrawalQueue} from "./interface/IWithdrawalQueue.sol";
-import {Dispatch} from "./Dispatch.sol";
 // contracts
+import {Dispatch} from "./Dispatch.sol";
 import {
     ERC4626Upgradeable,
     ERC20Upgradeable
@@ -27,9 +27,13 @@ import {EventsLib} from "./lib/EventsLib.sol";
 
 /// @dev Do NOT use with fee on transfer tokens
 /// @dev Do NOT use with rebasing tokens
-/// @dev Based on https://github.com/euler-xyz/euler-vault-kit/blob/master/src/Synths/EulerSavingsRate.sol
 /// @dev inspired by Yearn v3 ❤️
-contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradeable, Dispatch, IFourSixTwoSixAgg {
+contract AggregationLayerVault is
+    ERC4626Upgradeable,
+    AccessControlEnumerableUpgradeable,
+    Dispatch,
+    IFourSixTwoSixAgg
+{
     using SafeERC20 for IERC20;
     using SafeCast for uint256;
 
@@ -49,6 +53,7 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
     uint256 public constant INTEREST_SMEAR = 2 weeks;
 
     /// @dev Euler saving rate struct
+    /// @dev Based on https://github.com/euler-xyz/euler-vault-kit/blob/master/src/Synths/EulerSavingsRate.sol
     /// lastInterestUpdate: last timestamo where interest was updated.
     /// interestSmearEnd: timestamp when the smearing of interest end.
     /// interestLeft: amount of interest left to smear.
@@ -204,7 +209,6 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
 
     /// @notice Harvest strategy.
     /// @param strategy address of strategy
-    //TODO: is this safe without the reentrancy check
     function harvest(address strategy) external {
         _harvest(strategy);
 
@@ -287,12 +291,12 @@ contract FourSixTwoSixAgg is ERC4626Upgradeable, AccessControlEnumerableUpgradea
     ) external {
         _isCallerWithdrawalQueue();
 
-        _gulp();
-
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
         $.totalAssetsDeposited -= assets;
 
         super._withdraw(caller, receiver, owner, assets, shares);
+
+        _gulp();
     }
 
     /// @notice Get strategy params.

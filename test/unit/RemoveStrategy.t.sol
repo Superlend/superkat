@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {FourSixTwoSixAggBase, FourSixTwoSixAgg, IEVault, Strategy} from "../common/FourSixTwoSixAggBase.t.sol";
+import {
+    AggregationLayerVaultBase,
+    AggregationLayerVault,
+    IEVault,
+    Strategy
+} from "../common/AggregationLayerVaultBase.t.sol";
 
-contract RemoveStrategyTest is FourSixTwoSixAggBase {
+contract RemoveStrategyTest is AggregationLayerVaultBase {
     uint256 strategyAllocationPoints;
 
     IEVault anotherStrategy;
@@ -16,17 +21,17 @@ contract RemoveStrategyTest is FourSixTwoSixAggBase {
     }
 
     function testRemoveStrategy() public {
-        uint256 totalAllocationPointsBefore = fourSixTwoSixAgg.totalAllocationPoints();
+        uint256 totalAllocationPointsBefore = aggregationLayerVault.totalAllocationPoints();
         uint256 withdrawalQueueLengthBefore = _getWithdrawalQueueLength();
 
         vm.prank(manager);
-        fourSixTwoSixAgg.removeStrategy(address(eTST));
+        aggregationLayerVault.removeStrategy(address(eTST));
 
-        Strategy memory strategyAfter = fourSixTwoSixAgg.getStrategy(address(eTST));
+        Strategy memory strategyAfter = aggregationLayerVault.getStrategy(address(eTST));
 
         assertEq(strategyAfter.active, false);
         assertEq(strategyAfter.allocationPoints, 0);
-        assertEq(fourSixTwoSixAgg.totalAllocationPoints(), totalAllocationPointsBefore - strategyAllocationPoints);
+        assertEq(aggregationLayerVault.totalAllocationPoints(), totalAllocationPointsBefore - strategyAllocationPoints);
         assertEq(_getWithdrawalQueueLength(), withdrawalQueueLengthBefore - 1);
     }
 
@@ -36,17 +41,17 @@ contract RemoveStrategyTest is FourSixTwoSixAggBase {
         );
         _addStrategy(manager, address(anotherStrategy), strategyAllocationPoints);
 
-        uint256 totalAllocationPointsBefore = fourSixTwoSixAgg.totalAllocationPoints();
+        uint256 totalAllocationPointsBefore = aggregationLayerVault.totalAllocationPoints();
         uint256 withdrawalQueueLengthBefore = _getWithdrawalQueueLength();
 
         vm.prank(manager);
-        fourSixTwoSixAgg.removeStrategy(address(eTST));
+        aggregationLayerVault.removeStrategy(address(eTST));
 
-        Strategy memory strategyAfter = fourSixTwoSixAgg.getStrategy(address(eTST));
+        Strategy memory strategyAfter = aggregationLayerVault.getStrategy(address(eTST));
 
         assertEq(strategyAfter.active, false);
         assertEq(strategyAfter.allocationPoints, 0);
-        assertEq(fourSixTwoSixAgg.totalAllocationPoints(), totalAllocationPointsBefore - strategyAllocationPoints);
+        assertEq(aggregationLayerVault.totalAllocationPoints(), totalAllocationPointsBefore - strategyAllocationPoints);
         assertEq(_getWithdrawalQueueLength(), withdrawalQueueLengthBefore - 1);
     }
 
@@ -70,7 +75,7 @@ contract RemoveStrategyTest is FourSixTwoSixAggBase {
         assertEq(withdrawalQueue[3], strategy3);
 
         vm.prank(manager);
-        fourSixTwoSixAgg.removeStrategy(strategy2);
+        aggregationLayerVault.removeStrategy(strategy2);
 
         withdrawalQueue = _getWithdrawalQueue();
         assertEq(withdrawalQueue.length, 3);
@@ -79,7 +84,7 @@ contract RemoveStrategyTest is FourSixTwoSixAggBase {
         assertEq(withdrawalQueue[2], strategy3);
 
         vm.prank(manager);
-        fourSixTwoSixAgg.removeStrategy(strategy3);
+        aggregationLayerVault.removeStrategy(strategy3);
 
         withdrawalQueue = _getWithdrawalQueue();
         assertEq(withdrawalQueue.length, 2);
@@ -87,14 +92,14 @@ contract RemoveStrategyTest is FourSixTwoSixAggBase {
         assertEq(withdrawalQueue[1], strategy1);
 
         vm.prank(manager);
-        fourSixTwoSixAgg.removeStrategy(address(eTST));
+        aggregationLayerVault.removeStrategy(address(eTST));
 
         withdrawalQueue = _getWithdrawalQueue();
         assertEq(withdrawalQueue.length, 1);
         assertEq(withdrawalQueue[0], strategy1);
 
         vm.prank(manager);
-        fourSixTwoSixAgg.removeStrategy(strategy1);
+        aggregationLayerVault.removeStrategy(strategy1);
 
         withdrawalQueue = _getWithdrawalQueue();
         assertEq(withdrawalQueue.length, 0);
@@ -103,12 +108,12 @@ contract RemoveStrategyTest is FourSixTwoSixAggBase {
     function testRemoveStrategy_fromUnauthorized() public {
         vm.prank(deployer);
         vm.expectRevert();
-        fourSixTwoSixAgg.removeStrategy(address(eTST));
+        aggregationLayerVault.removeStrategy(address(eTST));
     }
 
     function testRemoveStrategy_AlreadyRemoved() public {
         vm.prank(manager);
         vm.expectRevert();
-        fourSixTwoSixAgg.removeStrategy(address(eTST2));
+        aggregationLayerVault.removeStrategy(address(eTST2));
     }
 }

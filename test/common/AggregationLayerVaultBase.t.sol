@@ -2,19 +2,19 @@
 pragma solidity ^0.8.0;
 
 import "evk/test/unit/evault/EVaultTestBase.t.sol";
-import {FourSixTwoSixAgg, Strategy} from "../../src/FourSixTwoSixAgg.sol";
+import {AggregationLayerVault, Strategy} from "../../src/AggregationLayerVault.sol";
 import {Rebalancer} from "../../src/Rebalancer.sol";
 import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
 import {Hooks, HooksModule} from "../../src/modules/Hooks.sol";
 import {Rewards} from "../../src/modules/Rewards.sol";
 import {Fee} from "../../src/modules/Fee.sol";
-import {FourSixTwoSixAggFactory} from "../../src/FourSixTwoSixAggFactory.sol";
+import {AggregationLayerVaultFactory} from "../../src/AggregationLayerVaultFactory.sol";
 import {WithdrawalQueue} from "../../src/WithdrawalQueue.sol";
 import {IWithdrawalQueue} from "../../src/interface/IWithdrawalQueue.sol";
 import {ErrorsLib} from "../../src/lib/ErrorsLib.sol";
 import {AllocationPoints} from "../../src/modules/AllocationPoints.sol";
 
-contract FourSixTwoSixAggBase is EVaultTestBase {
+contract AggregationLayerVaultBase is EVaultTestBase {
     uint256 public constant CASH_RESERVE_ALLOCATION_POINTS = 1000e18;
 
     address deployer;
@@ -27,13 +27,12 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
     Hooks hooksImpl;
     Fee feeModuleImpl;
     AllocationPoints allocationPointsModuleImpl;
-    // peripheries
+    // plugins
     Rebalancer rebalancer;
     WithdrawalQueue withdrawalQueueImpl;
 
-    FourSixTwoSixAggFactory fourSixTwoSixAggFactory;
-
-    FourSixTwoSixAgg fourSixTwoSixAgg;
+    AggregationLayerVaultFactory aggregationLayerVaultFactory;
+    AggregationLayerVault aggregationLayerVault;
     WithdrawalQueue withdrawalQueue;
 
     function setUp() public virtual override {
@@ -51,7 +50,7 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
 
         rebalancer = new Rebalancer();
         withdrawalQueueImpl = new WithdrawalQueue();
-        fourSixTwoSixAggFactory = new FourSixTwoSixAggFactory(
+        aggregationLayerVaultFactory = new AggregationLayerVaultFactory(
             address(evc),
             address(0),
             address(rewardsImpl),
@@ -62,74 +61,75 @@ contract FourSixTwoSixAggBase is EVaultTestBase {
             address(withdrawalQueueImpl)
         );
 
-        fourSixTwoSixAgg = FourSixTwoSixAgg(
-            fourSixTwoSixAggFactory.deployEulerAggregationLayer(
+        aggregationLayerVault = AggregationLayerVault(
+            aggregationLayerVaultFactory.deployEulerAggregationLayer(
                 address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS
             )
         );
-        withdrawalQueue = WithdrawalQueue(fourSixTwoSixAgg.withdrawalQueue());
+        withdrawalQueue = WithdrawalQueue(aggregationLayerVault.withdrawalQueue());
 
         // grant admin roles to deployer
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.ALLOCATIONS_MANAGER_ADMIN(), deployer);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_ADDER_ADMIN(), deployer);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ADMIN(), deployer);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.AGGREGATION_VAULT_MANAGER_ADMIN(), deployer);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.REBALANCER_ADMIN(), deployer);
+        aggregationLayerVault.grantRole(aggregationLayerVault.ALLOCATIONS_MANAGER_ADMIN(), deployer);
+        aggregationLayerVault.grantRole(aggregationLayerVault.STRATEGY_ADDER_ADMIN(), deployer);
+        aggregationLayerVault.grantRole(aggregationLayerVault.STRATEGY_REMOVER_ADMIN(), deployer);
+        aggregationLayerVault.grantRole(aggregationLayerVault.AGGREGATION_VAULT_MANAGER_ADMIN(), deployer);
+        aggregationLayerVault.grantRole(aggregationLayerVault.REBALANCER_ADMIN(), deployer);
         withdrawalQueue.grantRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER_ADMIN(), deployer);
 
         // grant roles to manager
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.ALLOCATIONS_MANAGER(), manager);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_ADDER(), manager);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.STRATEGY_REMOVER(), manager);
-        fourSixTwoSixAgg.grantRole(fourSixTwoSixAgg.AGGREGATION_VAULT_MANAGER(), manager);
+        aggregationLayerVault.grantRole(aggregationLayerVault.ALLOCATIONS_MANAGER(), manager);
+        aggregationLayerVault.grantRole(aggregationLayerVault.STRATEGY_ADDER(), manager);
+        aggregationLayerVault.grantRole(aggregationLayerVault.STRATEGY_REMOVER(), manager);
+        aggregationLayerVault.grantRole(aggregationLayerVault.AGGREGATION_VAULT_MANAGER(), manager);
         withdrawalQueue.grantRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER(), manager);
 
         vm.stopPrank();
     }
 
     function testInitialParams() public {
-        Strategy memory cashReserve = fourSixTwoSixAgg.getStrategy(address(0));
+        Strategy memory cashReserve = aggregationLayerVault.getStrategy(address(0));
 
         assertEq(cashReserve.allocated, 0);
         assertEq(cashReserve.allocationPoints, CASH_RESERVE_ALLOCATION_POINTS);
         assertEq(cashReserve.active, true);
 
         assertEq(
-            fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.ALLOCATIONS_MANAGER()),
-            fourSixTwoSixAgg.ALLOCATIONS_MANAGER_ADMIN()
+            aggregationLayerVault.getRoleAdmin(aggregationLayerVault.ALLOCATIONS_MANAGER()),
+            aggregationLayerVault.ALLOCATIONS_MANAGER_ADMIN()
         );
         assertEq(
-            fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.STRATEGY_ADDER()), fourSixTwoSixAgg.STRATEGY_ADDER_ADMIN()
+            aggregationLayerVault.getRoleAdmin(aggregationLayerVault.STRATEGY_ADDER()),
+            aggregationLayerVault.STRATEGY_ADDER_ADMIN()
         );
         assertEq(
-            fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.STRATEGY_REMOVER()),
-            fourSixTwoSixAgg.STRATEGY_REMOVER_ADMIN()
+            aggregationLayerVault.getRoleAdmin(aggregationLayerVault.STRATEGY_REMOVER()),
+            aggregationLayerVault.STRATEGY_REMOVER_ADMIN()
         );
         assertEq(
-            fourSixTwoSixAgg.getRoleAdmin(fourSixTwoSixAgg.AGGREGATION_VAULT_MANAGER()),
-            fourSixTwoSixAgg.AGGREGATION_VAULT_MANAGER_ADMIN()
+            aggregationLayerVault.getRoleAdmin(aggregationLayerVault.AGGREGATION_VAULT_MANAGER()),
+            aggregationLayerVault.AGGREGATION_VAULT_MANAGER_ADMIN()
         );
         assertEq(
             withdrawalQueue.getRoleAdmin(withdrawalQueue.WITHDRAW_QUEUE_MANAGER()),
             withdrawalQueue.WITHDRAW_QUEUE_MANAGER_ADMIN()
         );
 
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.ALLOCATIONS_MANAGER_ADMIN(), deployer));
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_ADDER_ADMIN(), deployer));
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_REMOVER_ADMIN(), deployer));
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.AGGREGATION_VAULT_MANAGER_ADMIN(), deployer));
+        assertTrue(aggregationLayerVault.hasRole(aggregationLayerVault.ALLOCATIONS_MANAGER_ADMIN(), deployer));
+        assertTrue(aggregationLayerVault.hasRole(aggregationLayerVault.STRATEGY_ADDER_ADMIN(), deployer));
+        assertTrue(aggregationLayerVault.hasRole(aggregationLayerVault.STRATEGY_REMOVER_ADMIN(), deployer));
+        assertTrue(aggregationLayerVault.hasRole(aggregationLayerVault.AGGREGATION_VAULT_MANAGER_ADMIN(), deployer));
         assertTrue(withdrawalQueue.hasRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER_ADMIN(), deployer));
 
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.ALLOCATIONS_MANAGER(), manager));
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_ADDER(), manager));
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.STRATEGY_REMOVER(), manager));
-        assertTrue(fourSixTwoSixAgg.hasRole(fourSixTwoSixAgg.AGGREGATION_VAULT_MANAGER(), manager));
+        assertTrue(aggregationLayerVault.hasRole(aggregationLayerVault.ALLOCATIONS_MANAGER(), manager));
+        assertTrue(aggregationLayerVault.hasRole(aggregationLayerVault.STRATEGY_ADDER(), manager));
+        assertTrue(aggregationLayerVault.hasRole(aggregationLayerVault.STRATEGY_REMOVER(), manager));
+        assertTrue(aggregationLayerVault.hasRole(aggregationLayerVault.AGGREGATION_VAULT_MANAGER(), manager));
         assertTrue(withdrawalQueue.hasRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER(), manager));
     }
 
     function _addStrategy(address from, address strategy, uint256 allocationPoints) internal {
         vm.prank(from);
-        fourSixTwoSixAgg.addStrategy(strategy, allocationPoints);
+        aggregationLayerVault.addStrategy(strategy, allocationPoints);
     }
 
     function _getWithdrawalQueueLength() internal view returns (uint256) {

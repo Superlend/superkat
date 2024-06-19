@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 struct AggregationVaultStorage {
     /// @dev EVC address
     address evc;
-    /// @dev Total amount of _asset deposited into FourSixTwoSixAgg contract
+    /// @dev Total amount of _asset deposited into AggregationLayerVault contract
     uint256 totalAssetsDeposited;
     /// @dev Total amount of _asset deposited across all strategies.
     uint256 totalAllocated;

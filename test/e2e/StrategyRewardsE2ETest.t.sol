@@ -2,17 +2,17 @@
 pragma solidity ^0.8.0;
 
 import {
-    FourSixTwoSixAggBase,
-    FourSixTwoSixAgg,
+    AggregationLayerVaultBase,
+    AggregationLayerVault,
     console2,
     EVault,
     IEVault,
     IRMTestDefault,
     TestERC20
-} from "../common/FourSixTwoSixAggBase.t.sol";
+} from "../common/AggregationLayerVaultBase.t.sol";
 import {TrackingRewardStreams} from "reward-streams/TrackingRewardStreams.sol";
 
-contract StrategyRewardsE2ETest is FourSixTwoSixAggBase {
+contract StrategyRewardsE2ETest is AggregationLayerVaultBase {
     uint256 user1InitialBalance = 100000e18;
 
     function setUp() public virtual override {
@@ -26,19 +26,19 @@ contract StrategyRewardsE2ETest is FourSixTwoSixAggBase {
 
     function testOptInStrategyRewards() public {
         vm.prank(manager);
-        fourSixTwoSixAgg.optInStrategyRewards(address(eTST));
+        aggregationLayerVault.optInStrategyRewards(address(eTST));
 
-        assertTrue(eTST.balanceForwarderEnabled(address(fourSixTwoSixAgg)));
+        assertTrue(eTST.balanceForwarderEnabled(address(aggregationLayerVault)));
     }
 
     function testOptOutStrategyRewards() public {
         vm.prank(manager);
-        fourSixTwoSixAgg.optInStrategyRewards(address(eTST));
-        assertTrue(eTST.balanceForwarderEnabled(address(fourSixTwoSixAgg)));
+        aggregationLayerVault.optInStrategyRewards(address(eTST));
+        assertTrue(eTST.balanceForwarderEnabled(address(aggregationLayerVault)));
 
         vm.prank(manager);
-        fourSixTwoSixAgg.optOutStrategyRewards(address(eTST));
+        aggregationLayerVault.optOutStrategyRewards(address(eTST));
 
-        assertFalse(eTST.balanceForwarderEnabled(address(fourSixTwoSixAgg)));
+        assertFalse(eTST.balanceForwarderEnabled(address(aggregationLayerVault)));
     }
 }
