@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {HooksLib} from "./lib/HooksLib.sol";
+// interfaces
+import {IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
+// libs
+import {StorageLib, AggregationVaultStorage} from "./lib/StorageLib.sol";
+import {ErrorsLib} from "./lib/ErrorsLib.sol";
+import {HooksLib} from "./lib/HooksLib.sol";
 
-abstract contract Hooks {
+contract Shared {
     using HooksLib for uint32;
 
-    error InvalidHooksTarget();
-    error NotHooksContract();
-    error InvalidHookedFns();
-    error EmptyError();
+    uint8 internal constant REENTRANCYLOCK__UNLOCKED = 1;
+    uint8 internal constant REENTRANCYLOCK__LOCKED = 2;
 
     uint32 public constant DEPOSIT = 1 << 0;
     uint32 public constant WITHDRAW = 1 << 1;
@@ -18,50 +21,50 @@ abstract contract Hooks {
     uint32 public constant REMOVE_STRATEGY = 1 << 3;
 
     uint32 constant ACTIONS_COUNTER = 1 << 4;
-    uint256 public constant HOOKS_MASK = 0x00000000000000000000000000000000000000000000000000000000FFFFFFFF;
+    uint256 constant HOOKS_MASK = 0x00000000000000000000000000000000000000000000000000000000FFFFFFFF;
 
-    /// @dev storing the hooks target and kooked functions.
-    uint256 hooksConfig;
+    modifier nonReentrant() {
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
-    event SetHooksConfig(address indexed hooksTarget, uint32 hookedFns);
+        if ($.locked == REENTRANCYLOCK__LOCKED) revert ErrorsLib.Reentrancy();
 
-    /// @notice Get the hooks contract and the hooked functions.
-    /// @return address Hooks contract.
-    /// @return uint32 Hooked functions.
-    function getHooksConfig() external view returns (address, uint32) {
-        return _getHooksConfig(hooksConfig);
+        $.locked = REENTRANCYLOCK__LOCKED;
+        _;
+        $.locked = REENTRANCYLOCK__UNLOCKED;
     }
 
-    /// @notice Set hooks contract and hooked functions.
-    /// @dev This funtion should be overriden to implement access control and call _setHooksConfig().
-    /// @param _hooksTarget Hooks contract.
-    /// @param _hookedFns Hooked functions.
-    function setHooksConfig(address _hooksTarget, uint32 _hookedFns) public virtual;
+    function _msgSender() internal view virtual returns (address) {
+        address sender = msg.sender;
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
-    /// @notice Set hooks contract and hooked functions.
-    /// @dev This funtion should be called when implementing setHooksConfig().
-    /// @param _hooksTarget Hooks contract.
-    /// @param _hookedFns Hooked functions.
+        if (sender == address($.evc)) {
+            (sender,) = IEVC($.evc).getCurrentOnBehalfOfAccount(address(0));
+        }
+
+        return sender;
+    }
+
     function _setHooksConfig(address _hooksTarget, uint32 _hookedFns) internal {
         if (_hooksTarget != address(0) && IHookTarget(_hooksTarget).isHookTarget() != IHookTarget.isHookTarget.selector)
         {
-            revert NotHooksContract();
+            revert ErrorsLib.NotHooksContract();
         }
         if (_hookedFns != 0 && _hooksTarget == address(0)) {
-            revert InvalidHooksTarget();
+            revert ErrorsLib.InvalidHooksTarget();
         }
-        if (_hookedFns >= ACTIONS_COUNTER) revert InvalidHookedFns();
+        if (_hookedFns >= ACTIONS_COUNTER) revert ErrorsLib.InvalidHookedFns();
 
-        hooksConfig = (uint256(uint160(_hooksTarget)) << 32) | uint256(_hookedFns);
-
-        emit SetHooksConfig(_hooksTarget, _hookedFns);
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+        $.hooksConfig = (uint256(uint160(_hooksTarget)) << 32) | uint256(_hookedFns);
     }
 
     /// @notice Checks whether a hook has been installed for the function and if so, invokes the hook target.
     /// @param _fn Function to call the hook for.
     /// @param _caller Caller's address.
     function _callHooksTarget(uint32 _fn, address _caller) internal {
-        (address target, uint32 hookedFns) = _getHooksConfig(hooksConfig);
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+
+        (address target, uint32 hookedFns) = _getHooksConfig($.hooksConfig);
 
         if (hookedFns.isNotSet(_fn)) return;
 
@@ -86,6 +89,6 @@ abstract contract Hooks {
             }
         }
 
-        revert EmptyError();
+        revert ErrorsLib.EmptyError();
     }
 }

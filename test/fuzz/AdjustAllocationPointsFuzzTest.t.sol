@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {FourSixTwoSixAggBase, FourSixTwoSixAgg} from "../common/FourSixTwoSixAggBase.t.sol";
+import {AggregationLayerVaultBase, AggregationLayerVault, Strategy} from "../common/AggregationLayerVaultBase.t.sol";
 
-contract AdjustAllocationsPointsFuzzTest is FourSixTwoSixAggBase {
+contract AdjustAllocationsPointsFuzzTest is AggregationLayerVaultBase {
     function setUp() public virtual override {
         super.setUp();
 
@@ -14,27 +14,27 @@ contract AdjustAllocationsPointsFuzzTest is FourSixTwoSixAggBase {
     function testFuzzAdjustAllocationPoints(uint256 _newAllocationPoints) public {
         _newAllocationPoints = bound(_newAllocationPoints, 0, type(uint120).max);
 
-        uint256 strategyAllocationPoints = (fourSixTwoSixAgg.getStrategy(address(eTST))).allocationPoints;
-        uint256 totalAllocationPointsBefore = fourSixTwoSixAgg.totalAllocationPoints();
-        uint256 withdrawalQueueLengthBefore = fourSixTwoSixAgg.withdrawalQueueLength();
+        uint256 strategyAllocationPoints = (aggregationLayerVault.getStrategy(address(eTST))).allocationPoints;
+        uint256 totalAllocationPointsBefore = aggregationLayerVault.totalAllocationPoints();
+        uint256 withdrawalQueueLengthBefore = _getWithdrawalQueueLength();
 
         vm.prank(manager);
-        fourSixTwoSixAgg.adjustAllocationPoints(address(eTST), _newAllocationPoints);
+        aggregationLayerVault.adjustAllocationPoints(address(eTST), _newAllocationPoints);
 
-        FourSixTwoSixAgg.Strategy memory strategy = fourSixTwoSixAgg.getStrategy(address(eTST));
+        Strategy memory strategy = aggregationLayerVault.getStrategy(address(eTST));
 
         if (_newAllocationPoints < strategyAllocationPoints) {
             assertEq(
-                fourSixTwoSixAgg.totalAllocationPoints(),
+                aggregationLayerVault.totalAllocationPoints(),
                 totalAllocationPointsBefore - (strategyAllocationPoints - _newAllocationPoints)
             );
         } else {
             assertEq(
-                fourSixTwoSixAgg.totalAllocationPoints(),
+                aggregationLayerVault.totalAllocationPoints(),
                 totalAllocationPointsBefore + (_newAllocationPoints - strategyAllocationPoints)
             );
         }
-        assertEq(fourSixTwoSixAgg.withdrawalQueueLength(), withdrawalQueueLengthBefore);
+        assertEq(_getWithdrawalQueueLength(), withdrawalQueueLengthBefore);
         assertEq(strategy.allocationPoints, _newAllocationPoints);
     }
 }

@@ -2,16 +2,18 @@
 pragma solidity ^0.8.0;
 
 import {
-    FourSixTwoSixAggBase,
-    FourSixTwoSixAgg,
+    AggregationLayerVaultBase,
+    AggregationLayerVault,
     console2,
     EVault,
     IEVault,
     IRMTestDefault,
-    TestERC20
-} from "../common/FourSixTwoSixAggBase.t.sol";
+    TestERC20,
+    Strategy,
+    ErrorsLib
+} from "../common/AggregationLayerVaultBase.t.sol";
 
-contract StrategyCapE2ETest is FourSixTwoSixAggBase {
+contract StrategyCapE2ETest is AggregationLayerVaultBase {
     uint256 user1InitialBalance = 100000e18;
 
     function setUp() public virtual override {
@@ -26,12 +28,12 @@ contract StrategyCapE2ETest is FourSixTwoSixAggBase {
     function testSetCap() public {
         uint256 cap = 1000000e18;
 
-        assertEq((fourSixTwoSixAgg.getStrategy(address(eTST))).cap, 0);
+        assertEq((aggregationLayerVault.getStrategy(address(eTST))).cap, 0);
 
         vm.prank(manager);
-        fourSixTwoSixAgg.setStrategyCap(address(eTST), cap);
+        aggregationLayerVault.setStrategyCap(address(eTST), cap);
 
-        FourSixTwoSixAgg.Strategy memory strategy = fourSixTwoSixAgg.getStrategy(address(eTST));
+        Strategy memory strategy = aggregationLayerVault.getStrategy(address(eTST));
 
         assertEq(strategy.cap, cap);
     }
@@ -40,54 +42,55 @@ contract StrategyCapE2ETest is FourSixTwoSixAggBase {
         uint256 cap = 1000000e18;
 
         vm.prank(manager);
-        vm.expectRevert(FourSixTwoSixAgg.InactiveStrategy.selector);
-        fourSixTwoSixAgg.setStrategyCap(address(0x2), cap);
+        vm.expectRevert(ErrorsLib.InactiveStrategy.selector);
+        aggregationLayerVault.setStrategyCap(address(0x2), cap);
     }
 
     function testRebalanceAfterHittingCap() public {
         uint256 cap = 3333333333333333333333;
         vm.prank(manager);
-        fourSixTwoSixAgg.setStrategyCap(address(eTST), cap);
+        aggregationLayerVault.setStrategyCap(address(eTST), cap);
 
         uint256 amountToDeposit = 10000e18;
 
         // deposit into aggregator
         {
-            uint256 balanceBefore = fourSixTwoSixAgg.balanceOf(user1);
-            uint256 totalSupplyBefore = fourSixTwoSixAgg.totalSupply();
-            uint256 totalAssetsDepositedBefore = fourSixTwoSixAgg.totalAssetsDeposited();
+            uint256 balanceBefore = aggregationLayerVault.balanceOf(user1);
+            uint256 totalSupplyBefore = aggregationLayerVault.totalSupply();
+            uint256 totalAssetsDepositedBefore = aggregationLayerVault.totalAssetsDeposited();
             uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
 
             vm.startPrank(user1);
-            assetTST.approve(address(fourSixTwoSixAgg), amountToDeposit);
-            fourSixTwoSixAgg.deposit(amountToDeposit, user1);
+            assetTST.approve(address(aggregationLayerVault), amountToDeposit);
+            aggregationLayerVault.deposit(amountToDeposit, user1);
             vm.stopPrank();
 
-            assertEq(fourSixTwoSixAgg.balanceOf(user1), balanceBefore + amountToDeposit);
-            assertEq(fourSixTwoSixAgg.totalSupply(), totalSupplyBefore + amountToDeposit);
-            assertEq(fourSixTwoSixAgg.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
+            assertEq(aggregationLayerVault.balanceOf(user1), balanceBefore + amountToDeposit);
+            assertEq(aggregationLayerVault.totalSupply(), totalSupplyBefore + amountToDeposit);
+            assertEq(aggregationLayerVault.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
             assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - amountToDeposit);
         }
 
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
         {
-            FourSixTwoSixAgg.Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
+            Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
 
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), strategyBefore.allocated);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), strategyBefore.allocated);
 
-            uint256 expectedStrategyCash = fourSixTwoSixAgg.totalAssetsAllocatable() * strategyBefore.allocationPoints
-                / fourSixTwoSixAgg.totalAllocationPoints();
+            uint256 expectedStrategyCash = aggregationLayerVault.totalAssetsAllocatable()
+                * strategyBefore.allocationPoints / aggregationLayerVault.totalAllocationPoints();
 
             vm.prank(user1);
             address[] memory strategiesToRebalance = new address[](1);
             strategiesToRebalance[0] = address(eTST);
-            rebalancer.executeRebalance(address(fourSixTwoSixAgg), strategiesToRebalance);
+            rebalancer.executeRebalance(address(aggregationLayerVault), strategiesToRebalance);
 
-            assertEq(fourSixTwoSixAgg.totalAllocated(), expectedStrategyCash);
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), expectedStrategyCash);
+            assertEq(aggregationLayerVault.totalAllocated(), expectedStrategyCash);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), expectedStrategyCash);
             assertEq(
-                (fourSixTwoSixAgg.getStrategy(address(eTST))).allocated, strategyBefore.allocated + expectedStrategyCash
+                (aggregationLayerVault.getStrategy(address(eTST))).allocated,
+                strategyBefore.allocated + expectedStrategyCash
             );
         }
 
@@ -95,17 +98,17 @@ contract StrategyCapE2ETest is FourSixTwoSixAggBase {
         vm.warp(block.timestamp + 86400);
         vm.startPrank(user1);
 
-        assetTST.approve(address(fourSixTwoSixAgg), amountToDeposit);
-        fourSixTwoSixAgg.deposit(amountToDeposit, user1);
+        assetTST.approve(address(aggregationLayerVault), amountToDeposit);
+        aggregationLayerVault.deposit(amountToDeposit, user1);
 
-        uint256 strategyAllocatedBefore = (fourSixTwoSixAgg.getStrategy(address(eTST))).allocated;
+        uint256 strategyAllocatedBefore = (aggregationLayerVault.getStrategy(address(eTST))).allocated;
 
         address[] memory strategiesToRebalance = new address[](1);
         strategiesToRebalance[0] = address(eTST);
-        rebalancer.executeRebalance(address(fourSixTwoSixAgg), strategiesToRebalance);
+        rebalancer.executeRebalance(address(aggregationLayerVault), strategiesToRebalance);
         vm.stopPrank();
 
-        assertEq(strategyAllocatedBefore, (fourSixTwoSixAgg.getStrategy(address(eTST))).allocated);
+        assertEq(strategyAllocatedBefore, (aggregationLayerVault.getStrategy(address(eTST))).allocated);
     }
 
     function testRebalanceWhentargetAllocationGreaterThanCap() public {
@@ -113,45 +116,45 @@ contract StrategyCapE2ETest is FourSixTwoSixAggBase {
 
         // deposit into aggregator
         {
-            uint256 balanceBefore = fourSixTwoSixAgg.balanceOf(user1);
-            uint256 totalSupplyBefore = fourSixTwoSixAgg.totalSupply();
-            uint256 totalAssetsDepositedBefore = fourSixTwoSixAgg.totalAssetsDeposited();
+            uint256 balanceBefore = aggregationLayerVault.balanceOf(user1);
+            uint256 totalSupplyBefore = aggregationLayerVault.totalSupply();
+            uint256 totalAssetsDepositedBefore = aggregationLayerVault.totalAssetsDeposited();
             uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
 
             vm.startPrank(user1);
-            assetTST.approve(address(fourSixTwoSixAgg), amountToDeposit);
-            fourSixTwoSixAgg.deposit(amountToDeposit, user1);
+            assetTST.approve(address(aggregationLayerVault), amountToDeposit);
+            aggregationLayerVault.deposit(amountToDeposit, user1);
             vm.stopPrank();
 
-            assertEq(fourSixTwoSixAgg.balanceOf(user1), balanceBefore + amountToDeposit);
-            assertEq(fourSixTwoSixAgg.totalSupply(), totalSupplyBefore + amountToDeposit);
-            assertEq(fourSixTwoSixAgg.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
+            assertEq(aggregationLayerVault.balanceOf(user1), balanceBefore + amountToDeposit);
+            assertEq(aggregationLayerVault.totalSupply(), totalSupplyBefore + amountToDeposit);
+            assertEq(aggregationLayerVault.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
             assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - amountToDeposit);
         }
 
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
         {
-            FourSixTwoSixAgg.Strategy memory strategyBefore = fourSixTwoSixAgg.getStrategy(address(eTST));
+            Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
 
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), strategyBefore.allocated);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), strategyBefore.allocated);
 
-            uint256 expectedStrategyCash = fourSixTwoSixAgg.totalAssetsAllocatable() * strategyBefore.allocationPoints
-                / fourSixTwoSixAgg.totalAllocationPoints();
+            uint256 expectedStrategyCash = aggregationLayerVault.totalAssetsAllocatable()
+                * strategyBefore.allocationPoints / aggregationLayerVault.totalAllocationPoints();
 
             // set cap 10% less than target allocation
             uint256 cap = expectedStrategyCash * 9e17 / 1e18;
             vm.prank(manager);
-            fourSixTwoSixAgg.setStrategyCap(address(eTST), cap);
+            aggregationLayerVault.setStrategyCap(address(eTST), cap);
 
             vm.prank(user1);
             address[] memory strategiesToRebalance = new address[](1);
             strategiesToRebalance[0] = address(eTST);
-            rebalancer.executeRebalance(address(fourSixTwoSixAgg), strategiesToRebalance);
+            rebalancer.executeRebalance(address(aggregationLayerVault), strategiesToRebalance);
 
-            assertEq(fourSixTwoSixAgg.totalAllocated(), cap);
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(fourSixTwoSixAgg))), cap);
-            assertEq((fourSixTwoSixAgg.getStrategy(address(eTST))).allocated, strategyBefore.allocated + cap);
+            assertEq(aggregationLayerVault.totalAllocated(), cap);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), cap);
+            assertEq((aggregationLayerVault.getStrategy(address(eTST))).allocated, strategyBefore.allocated + cap);
         }
     }
 }

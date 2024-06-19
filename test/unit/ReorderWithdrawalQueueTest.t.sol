@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {FourSixTwoSixAggBase, FourSixTwoSixAgg, IEVault} from "../common/FourSixTwoSixAggBase.t.sol";
+import {
+    AggregationLayerVaultBase,
+    AggregationLayerVault,
+    IEVault,
+    WithdrawalQueue
+} from "../common/AggregationLayerVaultBase.t.sol";
 
-contract ReorderWithdrawalQueueTest is FourSixTwoSixAggBase {
+contract ReorderWithdrawalQueueTest is AggregationLayerVaultBase {
     uint256 eTSTAllocationPoints = 500e18;
     uint256 eTSTsecondaryAllocationPoints = 700e18;
 
@@ -25,37 +30,31 @@ contract ReorderWithdrawalQueueTest is FourSixTwoSixAggBase {
     }
 
     function testReorderWithdrawalQueue() public {
+        assertEq(aggregationLayerVault.getStrategy(_getWithdrawalQueue()[0]).allocationPoints, eTSTAllocationPoints);
         assertEq(
-            fourSixTwoSixAgg.getStrategy(fourSixTwoSixAgg.withdrawalQueue(0)).allocationPoints, eTSTAllocationPoints
-        );
-        assertEq(
-            fourSixTwoSixAgg.getStrategy(fourSixTwoSixAgg.withdrawalQueue(1)).allocationPoints,
-            eTSTsecondaryAllocationPoints
+            aggregationLayerVault.getStrategy(_getWithdrawalQueue()[1]).allocationPoints, eTSTsecondaryAllocationPoints
         );
 
         vm.prank(manager);
-        fourSixTwoSixAgg.reorderWithdrawalQueue(0, 1);
+        withdrawalQueue.reorderWithdrawalQueue(0, 1);
 
         assertEq(
-            fourSixTwoSixAgg.getStrategy(fourSixTwoSixAgg.withdrawalQueue(0)).allocationPoints,
-            eTSTsecondaryAllocationPoints
+            aggregationLayerVault.getStrategy(_getWithdrawalQueue()[0]).allocationPoints, eTSTsecondaryAllocationPoints
         );
-        assertEq(
-            fourSixTwoSixAgg.getStrategy(fourSixTwoSixAgg.withdrawalQueue(1)).allocationPoints, eTSTAllocationPoints
-        );
+        assertEq(aggregationLayerVault.getStrategy(_getWithdrawalQueue()[1]).allocationPoints, eTSTAllocationPoints);
     }
 
     function testReorderWithdrawalQueueWhenOutOfBounds() public {
         vm.startPrank(manager);
-        vm.expectRevert(FourSixTwoSixAgg.OutOfBounds.selector);
-        fourSixTwoSixAgg.reorderWithdrawalQueue(0, 3);
+        vm.expectRevert(WithdrawalQueue.OutOfBounds.selector);
+        withdrawalQueue.reorderWithdrawalQueue(0, 3);
         vm.stopPrank();
     }
 
     function testReorderWithdrawalQueueWhenSameIndex() public {
         vm.startPrank(manager);
-        vm.expectRevert(FourSixTwoSixAgg.SameIndexes.selector);
-        fourSixTwoSixAgg.reorderWithdrawalQueue(1, 1);
+        vm.expectRevert(WithdrawalQueue.SameIndexes.selector);
+        withdrawalQueue.reorderWithdrawalQueue(0, 0);
         vm.stopPrank();
     }
 }

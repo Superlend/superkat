@@ -17,6 +17,9 @@ int_types = "long"
 quote_style = "double"
 number_underscore = "preserve"
 override_spacing = true
+ignore = [
+    "src/lib/StorageLib.sol"
+]
 
 [profile.test]
 no_match_test = "Fuzz"
