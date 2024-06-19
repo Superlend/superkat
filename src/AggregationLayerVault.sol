@@ -113,16 +113,13 @@ contract AggregationLayerVault is
         _setRoleAdmin(REBALANCER, REBALANCER_ADMIN);
     }
 
-    /// @notice Set performance fee recipient address
-    /// @notice @param _newFeeRecipient Recipient address
+    /// @dev See {FeeModule-setFeeRecipient}.
     function setFeeRecipient(address _newFeeRecipient) external onlyRole(AGGREGATION_VAULT_MANAGER) use(MODULE_FEE) {}
 
-    /// @notice Set performance fee (1e18 == 100%)
-    /// @notice @param _newFee Fee rate
+    /// @dev See {FeeModule-setPerformanceFee}.
     function setPerformanceFee(uint256 _newFee) external onlyRole(AGGREGATION_VAULT_MANAGER) use(MODULE_FEE) {}
 
-    /// @notice Opt in to strategy rewards
-    /// @param _strategy Strategy address
+    /// @dev See {RewardsModule-optInStrategyRewards}.
     function optInStrategyRewards(address _strategy)
         external
         override
@@ -130,8 +127,7 @@ contract AggregationLayerVault is
         use(MODULE_REWARDS)
     {}
 
-    /// @notice Opt out of strategy rewards
-    /// @param _strategy Strategy address
+    /// @dev See {RewardsModule-optOutStrategyRewards}.
     function optOutStrategyRewards(address _strategy)
         external
         override
@@ -139,6 +135,7 @@ contract AggregationLayerVault is
         use(MODULE_REWARDS)
     {}
 
+    /// @dev See {RewardsModule-optOutStrategyRewards}.
     function enableRewardForStrategy(address _strategy, address _reward)
         external
         override
@@ -146,6 +143,7 @@ contract AggregationLayerVault is
         use(MODULE_REWARDS)
     {}
 
+    /// @dev See {RewardsModule-disableRewardForStrategy}.
     function disableRewardForStrategy(address _strategy, address _reward, bool _forfeitRecentReward)
         external
         override
@@ -153,11 +151,7 @@ contract AggregationLayerVault is
         use(MODULE_REWARDS)
     {}
 
-    /// @notice Claim a specific strategy rewards
-    /// @param _strategy Strategy address.
-    /// @param _reward The address of the reward token.
-    /// @param _recipient The address to receive the claimed reward tokens.
-    /// @param _forfeitRecentReward Whether to forfeit the recent rewards and not update the accumulator.
+    /// @dev See {RewardsModule-claimStrategyReward}.
     function claimStrategyReward(address _strategy, address _reward, address _recipient, bool _forfeitRecentReward)
         external
         override
@@ -165,54 +159,37 @@ contract AggregationLayerVault is
         use(MODULE_REWARDS)
     {}
 
-    /// @notice Enables balance forwarding for sender
-    /// @dev Should call the IBalanceTracker hook with the current user's balance
+    /// @dev See {RewardsModule-enableBalanceForwarder}.
     function enableBalanceForwarder() external override use(MODULE_REWARDS) {}
 
-    /// @notice Disables balance forwarding for the sender
-    /// @dev Should call the IBalanceTracker hook with the account's balance of 0
+    /// @dev See {RewardsModule-disableBalanceForwarder}.
     function disableBalanceForwarder() external override use(MODULE_REWARDS) {}
 
-    /// @notice Adjust a certain strategy's allocation points.
-    /// @dev Can only be called by an address that have the ALLOCATIONS_MANAGER
-    /// @param _strategy address of strategy
-    /// @param _newPoints new strategy's points
+    /// @dev See {AllocationPointsModule-adjustAllocationPoints}.
     function adjustAllocationPoints(address _strategy, uint256 _newPoints)
         external
         use(MODULE_ALLOCATION_POINTS)
         onlyRole(ALLOCATIONS_MANAGER)
     {}
 
-    /// @notice Set cap on strategy allocated amount.
-    /// @dev By default, cap is set to 0, not activated.
-    /// @param _strategy Strategy address.
-    /// @param _cap Cap amount
+    /// @dev See {AllocationPointsModule-setStrategyCap}.
     function setStrategyCap(address _strategy, uint256 _cap)
         external
         use(MODULE_ALLOCATION_POINTS)
         onlyRole(ALLOCATIONS_MANAGER)
     {}
 
-    /// @notice Add new strategy with it's allocation points.
-    /// @dev Can only be called by an address that have STRATEGY_ADDER.
-    /// @param _strategy Address of the strategy
-    /// @param _allocationPoints Strategy's allocation points
+    /// @dev See {AllocationPointsModule-addStrategy}.
     function addStrategy(address _strategy, uint256 _allocationPoints)
         external
         use(MODULE_ALLOCATION_POINTS)
         onlyRole(STRATEGY_ADDER)
     {}
 
-    /// @notice Remove strategy and set its allocation points to zero.
-    /// @dev This function does not pull funds, `harvest()` needs to be called to withdraw
-    /// @dev Can only be called by an address that have the STRATEGY_REMOVER
-    /// @param _strategy Address of the strategy
+    /// @dev See {AllocationPointsModule-removeStrategy}.
     function removeStrategy(address _strategy) external use(MODULE_ALLOCATION_POINTS) onlyRole(STRATEGY_REMOVER) {}
 
-    /// @notice Set hooks contract and hooked functions.
-    /// @dev This funtion should be overriden to implement access control.
-    /// @param _hooksTarget Hooks contract.
-    /// @param _hookedFns Hooked functions.
+    /// @dev See {HooksModule-setHooksConfig}.
     function setHooksConfig(address _hooksTarget, uint32 _hookedFns)
         external
         override
@@ -436,8 +413,7 @@ contract AggregationLayerVault is
 
     /// @dev Withdraw asset back to the user.
     /// @dev See {IERC4626-_withdraw}.
-    /// @dev if the cash reserve can not cover the amount to withdraw, this function will loop through the strategies
-    ///      to cover the remaining amount. This function will revert if the amount to withdraw is not available
+    /// @dev This function call WithdrawalQueue.callWithdrawalQueue() that should handle the rest of the withdraw execution flow.
     function _withdraw(address caller, address receiver, address owner, uint256 assets, uint256 shares)
         internal
         override
