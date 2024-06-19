@@ -25,16 +25,17 @@ contract BalanceForwarderE2ETest is AggregationLayerVaultBase {
         vm.startPrank(deployer);
         trackingReward = address(new TrackingRewardStreams(address(evc), 2 weeks));
 
-        aggregationLayerVaultFactory = new AggregationLayerVaultFactory(
-            address(evc),
-            trackingReward,
-            address(rewardsImpl),
-            address(hooksImpl),
-            address(feeModuleImpl),
-            address(allocationPointsModuleImpl),
-            address(rebalancer),
-            address(withdrawalQueueImpl)
-        );
+        AggregationLayerVaultFactory.FactoryParams memory factoryParams = AggregationLayerVaultFactory.FactoryParams({
+            evc: address(evc),
+            balanceTracker: trackingReward,
+            rewardsModuleImpl: address(rewardsImpl),
+            hooksModuleImpl: address(hooksImpl),
+            feeModuleImpl: address(feeModuleImpl),
+            allocationPointsModuleImpl: address(allocationPointsModuleImpl),
+            rebalancer: address(rebalancer),
+            withdrawalQueueImpl: address(withdrawalQueueImpl)
+        });
+        aggregationLayerVaultFactory = new AggregationLayerVaultFactory(factoryParams);
         aggregationLayerVault = AggregationLayerVault(
             aggregationLayerVaultFactory.deployEulerAggregationLayer(
                 address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS

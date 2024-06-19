@@ -98,8 +98,7 @@ contract AggregationLayerVault is
         });
         $.totalAllocationPoints = _initParams.initialCashAllocationPoints;
         $.evc = _initParams.evc;
-
-        _setBalanceTracker(_initParams.balanceTracker);
+        $.balanceTracker = _initParams.balanceTracker;
 
         // Setup DEFAULT_ADMIN
         _grantRole(DEFAULT_ADMIN_ROLE, _initParams.aggregationVaultOwner);
