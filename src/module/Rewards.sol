@@ -39,6 +39,9 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
         emit EventsLib.OptOutStrategyRewards(_strategy);
     }
 
+    /// @notice Enable aggregation layer vault rewards for specific strategy's reward token.
+    /// @param _strategy Strategy address.
+    /// @param _reward Reward token address.
     function enableRewardForStrategy(address _strategy, address _reward) external virtual nonReentrant {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
@@ -49,6 +52,10 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
         emit EventsLib.EnableRewardForStrategy(_strategy, _reward);
     }
 
+    /// @notice Disable aggregation layer vault rewards for specific strategy's reward token.
+    /// @param _strategy Strategy address.
+    /// @param _reward Reward token address.
+    /// @param _forfeitRecentReward Whether to forfeit the recent rewards or not.
     function disableRewardForStrategy(address _strategy, address _reward, bool _forfeitRecentReward)
         external
         virtual

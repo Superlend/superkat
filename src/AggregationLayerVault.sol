@@ -139,6 +139,20 @@ contract AggregationLayerVault is
         use(MODULE_REWARDS)
     {}
 
+    function enableRewardForStrategy(address _strategy, address _reward)
+        external
+        override
+        onlyRole(AGGREGATION_VAULT_MANAGER)
+        use(MODULE_REWARDS)
+    {}
+
+    function disableRewardForStrategy(address _strategy, address _reward, bool _forfeitRecentReward)
+        external
+        override
+        onlyRole(AGGREGATION_VAULT_MANAGER)
+        use(MODULE_REWARDS)
+    {}
+
     /// @notice Claim a specific strategy rewards
     /// @param _strategy Strategy address.
     /// @param _reward The address of the reward token.
