@@ -1,49 +1,51 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
-// core modules
+// contracts
 import {Rewards} from "./module/Rewards.sol";
 import {Hooks} from "./module/Hooks.sol";
 import {Fee} from "./module/Fee.sol";
-// core plugins
 import {WithdrawalQueue} from "./plugin/WithdrawalQueue.sol";
 import {AggregationLayerVault} from "./AggregationLayerVault.sol";
+// libs
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
 contract AggregationLayerVaultFactory {
     /// core dependencies
     address public immutable evc;
     address public immutable balanceTracker;
-    /// core modules
+    /// core modules implementations addresses
     address public immutable rewardsModuleImpl;
     address public immutable hooksModuleImpl;
     address public immutable feeModuleImpl;
-    address public immutable allocationpointsModuleImpl;
+    address public immutable allocationPointsModuleImpl;
     /// plugins
-    /// @dev Rebalancer periphery, one instance can serve different aggregation vaults
-    address public immutable rebalancerAddr;
-    /// @dev Withdrawal queue perihperhy, need to be deployed per aggregation vault
-    address public immutable withdrawalQueueAddr;
+    /// @dev Rebalancer plugin contract address, one instance can serve different aggregation vaults
+    address public immutable rebalancer;
+    /// @dev WithdrawalQueue plugin implementation address, need to be deployed per aggregation vault
+    address public immutable withdrawalQueueImpl;
 
-    constructor(
-        address _evc,
-        address _balanceTracker,
-        address _rewardsModuleImpl,
-        address _hooksModuleImpl,
-        address _feeModuleImpl,
-        address _allocationpointsModuleImpl,
-        address _rebalancerAddr,
-        address _withdrawalQueueAddr
-    ) {
-        evc = _evc;
-        balanceTracker = _balanceTracker;
-        rewardsModuleImpl = _rewardsModuleImpl;
-        hooksModuleImpl = _hooksModuleImpl;
-        feeModuleImpl = _feeModuleImpl;
-        allocationpointsModuleImpl = _allocationpointsModuleImpl;
+    struct FactoryParams {
+        address evc;
+        address balanceTracker;
+        address rewardsModuleImpl;
+        address hooksModuleImpl;
+        address feeModuleImpl;
+        address allocationPointsModuleImpl;
+        address rebalancer;
+        address withdrawalQueueImpl;
+    }
 
-        rebalancerAddr = _rebalancerAddr;
-        withdrawalQueueAddr = _withdrawalQueueAddr;
+    constructor(FactoryParams memory _factoryParams) {
+        evc = _factoryParams.evc;
+        balanceTracker = _factoryParams.balanceTracker;
+        rewardsModuleImpl = _factoryParams.rewardsModuleImpl;
+        hooksModuleImpl = _factoryParams.hooksModuleImpl;
+        feeModuleImpl = _factoryParams.feeModuleImpl;
+        allocationPointsModuleImpl = _factoryParams.allocationPointsModuleImpl;
+
+        rebalancer = _factoryParams.rebalancer;
+        withdrawalQueueImpl = _factoryParams.withdrawalQueueImpl;
     }
 
     function deployEulerAggregationLayer(
@@ -56,10 +58,10 @@ contract AggregationLayerVaultFactory {
         address rewardsModuleAddr = Clones.clone(rewardsModuleImpl);
         address hooksModuleAddr = Clones.clone(hooksModuleImpl);
         address feeModuleAddr = Clones.clone(feeModuleImpl);
-        address allocationpointsModuleAddr = Clones.clone(allocationpointsModuleImpl);
+        address allocationpointsModuleAddr = Clones.clone(allocationPointsModuleImpl);
 
         // cloning plugins
-        WithdrawalQueue withdrawalQueue = WithdrawalQueue(Clones.clone(withdrawalQueueAddr));
+        WithdrawalQueue withdrawalQueue = WithdrawalQueue(Clones.clone(withdrawalQueueImpl));
 
         // deploy new aggregation vault
         AggregationLayerVault aggregationLayerVault =
@@ -69,7 +71,7 @@ contract AggregationLayerVaultFactory {
             evc: evc,
             balanceTracker: balanceTracker,
             withdrawalQueuePeriphery: address(withdrawalQueue),
-            rebalancerPerihpery: rebalancerAddr,
+            rebalancerPerihpery: rebalancer,
             aggregationVaultOwner: msg.sender,
             asset: _asset,
             name: _name,

@@ -53,16 +53,18 @@ contract AggregationLayerVaultBase is EVaultTestBase {
 
         rebalancer = new Rebalancer();
         withdrawalQueueImpl = new WithdrawalQueue();
-        aggregationLayerVaultFactory = new AggregationLayerVaultFactory(
-            address(evc),
-            address(0),
-            address(rewardsImpl),
-            address(hooksImpl),
-            address(feeModuleImpl),
-            address(allocationPointsModuleImpl),
-            address(rebalancer),
-            address(withdrawalQueueImpl)
-        );
+
+        AggregationLayerVaultFactory.FactoryParams memory factoryParams = AggregationLayerVaultFactory.FactoryParams({
+            evc: address(evc),
+            balanceTracker: address(0),
+            rewardsModuleImpl: address(rewardsImpl),
+            hooksModuleImpl: address(hooksImpl),
+            feeModuleImpl: address(feeModuleImpl),
+            allocationPointsModuleImpl: address(allocationPointsModuleImpl),
+            rebalancer: address(rebalancer),
+            withdrawalQueueImpl: address(withdrawalQueueImpl)
+        });
+        aggregationLayerVaultFactory = new AggregationLayerVaultFactory(factoryParams);
 
         aggregationLayerVault = AggregationLayerVault(
             aggregationLayerVaultFactory.deployEulerAggregationLayer(

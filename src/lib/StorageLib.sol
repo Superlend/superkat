@@ -44,7 +44,6 @@ struct AggregationVaultStorage {
 /// allocationPoints: number of points allocated to this strategy
 /// active: a boolean to indice if this strategy is active or not
 /// cap: an optional cap in terms of deposited underlying asset. By default, it is set to 0(not activated)
-
 struct Strategy {
     uint120 allocated;
     uint120 allocationPoints;

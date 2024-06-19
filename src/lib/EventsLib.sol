@@ -6,12 +6,12 @@ library EventsLib {
     event Gulp(uint256 interestLeft, uint256 interestSmearEnd);
     event Harvest(address indexed strategy, uint256 strategyBalanceAmount, uint256 strategyAllocatedAmount);
     event AccruePerformanceFee(address indexed feeRecipient, uint256 yield, uint256 feeAssets);
-    event Rebalance(address indexed strategy, uint256 _amountToRebalance, bool _isDeposit);
+    event Rebalance(address indexed strategy, uint256 amountToRebalance, bool isDeposit);
 
     /// @dev Allocationpoints events
     event AdjustAllocationPoints(address indexed strategy, uint256 oldPoints, uint256 newPoints);
     event AddStrategy(address indexed strategy, uint256 allocationPoints);
-    event RemoveStrategy(address indexed _strategy);
+    event RemoveStrategy(address indexed strategy);
     event SetStrategyCap(address indexed strategy, uint256 cap);
 
     /// @dev Fee events
@@ -24,6 +24,8 @@ library EventsLib {
     /// @dev Rewards events
     event OptInStrategyRewards(address indexed strategy);
     event OptOutStrategyRewards(address indexed strategy);
-    event EnableBalanceForwarder(address indexed _user);
-    event DisableBalanceForwarder(address indexed _user);
+    event EnableBalanceForwarder(address indexed user);
+    event DisableBalanceForwarder(address indexed user);
+    event EnableRewardForStrategy(address indexed strategy, address indexed reward);
+    event DisableRewardForStrategy(address indexed strategy, address indexed reward, bool forfeitRecentReward);
 }
