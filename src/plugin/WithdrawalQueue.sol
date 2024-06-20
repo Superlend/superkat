@@ -104,14 +104,17 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue
     /// @param assets Amount of asset to withdraw.
     /// @param shares Amount of shares to burn.
     /// @param availableAssets Amount of available asset in aggregation layer vault's cash reserve.
+    /// @return uint256 The amount of assets withdrawn from the aggregation layer vault.
+    /// @return uint256 The amount of aggregation layer vault shares burned.
     function callWithdrawalQueue(
         address caller,
         address receiver,
         address owner,
         uint256 assets,
         uint256 shares,
-        uint256 availableAssets
-    ) external {
+        uint256 availableAssets,
+        bool _isRedeem
+    ) external returns (uint256, uint256) {
         _isCallerAggregationVault();
 
         WithdrawalQueueStorage memory $ = _getWithdrawalQueueStorage();
@@ -140,8 +143,13 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue
                 }
             }
 
-            // re-calculate shares in case of socialized loss
-            shares = IERC4626(eulerAggregationVaultCached).previewWithdraw(assets);
+            if (_isRedeem) {
+                // re-calculate assets in case of socialized loss
+                assets = IERC4626(eulerAggregationVaultCached).previewRedeem(shares);
+            } else {
+                // re-calculate shares in case of socialized loss
+                shares = IERC4626(eulerAggregationVaultCached).previewWithdraw(assets);
+            }
         }
 
         if (availableAssets < assets) {
@@ -151,6 +159,8 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue
         IFourSixTwoSixAgg(eulerAggregationVaultCached).executeAggregationVaultWithdraw(
             caller, receiver, owner, assets, shares
         );
+
+        return (assets, shares);
     }
 
     /// @notice Get strategy address from withdrawal queue by index.

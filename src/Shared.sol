@@ -17,10 +17,12 @@ contract Shared {
 
     uint32 public constant DEPOSIT = 1 << 0;
     uint32 public constant WITHDRAW = 1 << 1;
-    uint32 public constant ADD_STRATEGY = 1 << 2;
-    uint32 public constant REMOVE_STRATEGY = 1 << 3;
+    uint32 public constant MINT = 1 << 2;
+    uint32 public constant REDEEM = 1 << 3;
+    uint32 public constant ADD_STRATEGY = 1 << 4;
+    uint32 public constant REMOVE_STRATEGY = 1 << 5;
 
-    uint32 constant ACTIONS_COUNTER = 1 << 4;
+    uint32 constant ACTIONS_COUNTER = 1 << 6;
     uint256 constant HOOKS_MASK = 0x00000000000000000000000000000000000000000000000000000000FFFFFFFF;
 
     modifier nonReentrant() {

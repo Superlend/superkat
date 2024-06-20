@@ -281,10 +281,10 @@ contract AggregationLayerVault is
     ) external {
         _isCallerWithdrawalQueue();
 
+        super._withdraw(caller, receiver, owner, assets, shares);
+
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
         $.totalAssetsDeposited -= assets;
-
-        super._withdraw(caller, receiver, owner, assets, shares);
 
         _gulp();
     }
@@ -347,13 +347,43 @@ contract AggregationLayerVault is
     }
 
     /// @dev See {IERC4626-deposit}.
+    /// @dev Increate the total assets deposited.
     function deposit(uint256 assets, address receiver) public override nonReentrant returns (uint256) {
-        return super.deposit(assets, receiver);
+        uint256 maxAssets = maxDeposit(receiver);
+        if (assets > maxAssets) {
+            revert ERC4626ExceededMaxDeposit(receiver, assets, maxAssets);
+        }
+
+        address caller = _msgSender();
+        _callHooksTarget(DEPOSIT, caller);
+
+        uint256 shares = previewDeposit(assets);
+        super._deposit(caller, receiver, assets, shares);
+
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+        $.totalAssetsDeposited += assets;
+
+        return shares;
     }
 
     /// @dev See {IERC4626-mint}.
+    /// @dev Increate the total assets deposited.
     function mint(uint256 shares, address receiver) public override nonReentrant returns (uint256) {
-        return super.mint(shares, receiver);
+        uint256 maxShares = maxMint(receiver);
+        if (shares > maxShares) {
+            revert ERC4626ExceededMaxMint(receiver, shares, maxShares);
+        }
+
+        address caller = _msgSender();
+        _callHooksTarget(DEPOSIT, caller);
+
+        uint256 assets = previewMint(shares);
+        super._deposit(caller, receiver, assets, shares);
+
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+        $.totalAssetsDeposited += assets;
+
+        return assets;
     }
 
     /// @dev See {IERC4626-withdraw}.
@@ -366,7 +396,25 @@ contract AggregationLayerVault is
     {
         // Move interest to totalAssetsDeposited
         _updateInterestAccrued();
-        return super.withdraw(assets, receiver, owner);
+
+        uint256 maxAssets = _convertToAssets(balanceOf(owner), Math.Rounding.Floor);
+        if (assets > maxAssets) {
+            revert ERC4626ExceededMaxWithdraw(owner, assets, maxAssets);
+        }
+
+        address caller = _msgSender();
+        _callHooksTarget(WITHDRAW, caller);
+
+        shares = _convertToShares(assets, Math.Rounding.Ceil);
+
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+        uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
+
+        (, shares) = IWithdrawalQueue($.withdrawalQueue).callWithdrawalQueue(
+            caller, receiver, owner, assets, shares, assetsRetrieved, false
+        );
+
+        return shares;
     }
 
     /// @dev See {IERC4626-redeem}.
@@ -379,7 +427,25 @@ contract AggregationLayerVault is
     {
         // Move interest to totalAssetsDeposited
         _updateInterestAccrued();
-        return super.redeem(shares, receiver, owner);
+
+        uint256 maxShares = balanceOf(owner);
+        if (shares > maxShares) {
+            revert ERC4626ExceededMaxRedeem(owner, shares, maxShares);
+        }
+
+        address caller = _msgSender();
+        _callHooksTarget(REDEEM, caller);
+
+        assets = _convertToAssets(shares, Math.Rounding.Floor);
+
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+        uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
+
+        (assets,) = IWithdrawalQueue($.withdrawalQueue).callWithdrawalQueue(
+            caller, receiver, owner, assets, shares, assetsRetrieved, true
+        );
+
+        return assets;
     }
 
     /// @notice Return the total amount of assets deposited, plus the accrued interest.
@@ -397,36 +463,6 @@ contract AggregationLayerVault is
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         return IERC20(asset()).balanceOf(address(this)) + $.totalAllocated;
-    }
-
-    /// @dev Increate the total assets deposited, and call IERC4626._deposit()
-    /// @dev See {IERC4626-_deposit}.
-    function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal override {
-        _callHooksTarget(DEPOSIT, caller);
-
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
-
-        $.totalAssetsDeposited += assets;
-
-        super._deposit(caller, receiver, assets, shares);
-    }
-
-    /// @dev Withdraw asset back to the user.
-    /// @dev See {IERC4626-_withdraw}.
-    /// @dev This function call WithdrawalQueue.callWithdrawalQueue() that should handle the rest of the withdraw execution flow.
-    function _withdraw(address caller, address receiver, address owner, uint256 assets, uint256 shares)
-        internal
-        override
-    {
-        _callHooksTarget(WITHDRAW, caller);
-
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
-
-        uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
-
-        IWithdrawalQueue($.withdrawalQueue).callWithdrawalQueue(
-            caller, receiver, owner, assets, shares, assetsRetrieved
-        );
     }
 
     /// @notice update accrued interest.
