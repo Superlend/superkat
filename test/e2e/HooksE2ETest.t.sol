@@ -62,7 +62,7 @@ contract HooksE2ETest is AggregationLayerVaultBase {
     }
 
     function testSetHooksConfigWithInvalidHookedFns() public {
-        uint32 expectedHookedFns = 1 << 5;
+        uint32 expectedHookedFns = 1 << 6;
         vm.startPrank(manager);
         address hooksContract = address(new HooksContract());
         vm.expectRevert(ErrorsLib.InvalidHookedFns.selector);
