@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IBalanceTracker} from "reward-streams/interfaces/IBalanceTracker.sol";
-import {IFourSixTwoSixAgg} from "./interface/IFourSixTwoSixAgg.sol";
+import {IAggregationLayerVault} from "./interface/IAggregationLayerVault.sol";
 import {IWithdrawalQueue} from "./interface/IWithdrawalQueue.sol";
 // contracts
 import {Dispatch} from "./Dispatch.sol";
@@ -32,7 +32,7 @@ contract AggregationLayerVault is
     ERC4626Upgradeable,
     AccessControlEnumerableUpgradeable,
     Dispatch,
-    IFourSixTwoSixAgg
+    IAggregationLayerVault
 {
     using SafeERC20 for IERC20;
     using SafeCast for uint256;
@@ -197,23 +197,6 @@ contract AggregationLayerVault is
         use(MODULE_HOOKS)
     {}
 
-    /// @notice Harvest strategy.
-    /// @param strategy address of strategy
-    function harvest(address strategy) external {
-        _harvest(strategy);
-
-        _gulp();
-    }
-
-    /// @notice Harvest multiple strategies.
-    /// @param _strategies an array of strategy addresses.
-    function harvestMultipleStrategies(address[] calldata _strategies) external nonReentrant {
-        for (uint256 i; i < _strategies.length; ++i) {
-            _harvest(_strategies[i]);
-        }
-        _gulp();
-    }
-
     function rebalance(address _strategy, uint256 _amountToRebalance, bool _isDeposit)
         external
         nonReentrant
@@ -236,6 +219,13 @@ contract AggregationLayerVault is
         }
 
         emit EventsLib.Rebalance(_strategy, _amountToRebalance, _isDeposit);
+    }
+
+    /// @notice Harvest all the strategies.
+    function harvest() external nonReentrant {
+        _updateInterestAccrued();
+
+        _harvest();
     }
 
     /// @notice update accrued interest
@@ -375,7 +365,7 @@ contract AggregationLayerVault is
         }
 
         address caller = _msgSender();
-        _callHooksTarget(DEPOSIT, caller);
+        _callHooksTarget(MINT, caller);
 
         uint256 assets = previewMint(shares);
         super._deposit(caller, receiver, assets, shares);
@@ -404,6 +394,8 @@ contract AggregationLayerVault is
 
         address caller = _msgSender();
         _callHooksTarget(WITHDRAW, caller);
+
+        _harvest();
 
         shares = _convertToShares(assets, Math.Rounding.Ceil);
 
@@ -435,6 +427,8 @@ contract AggregationLayerVault is
 
         address caller = _msgSender();
         _callHooksTarget(REDEEM, caller);
+
+        _harvest();
 
         assets = _convertToAssets(shares, Math.Rounding.Floor);
 
@@ -498,7 +492,17 @@ contract AggregationLayerVault is
         emit EventsLib.Gulp($.interestLeft, $.interestSmearEnd);
     }
 
-    function _harvest(address _strategy) internal {
+    function _harvest() internal {
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+
+        (address[] memory withdrawalQueueArray, uint256 length) =
+            IWithdrawalQueue($.withdrawalQueue).getWithdrawalQueueArray();
+        for (uint256 i; i < length; ++i) {
+            _executeHarvest(withdrawalQueueArray[i]);
+        }
+    }
+
+    function _executeHarvest(address _strategy) internal {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         uint120 strategyAllocatedAmount = $.strategies[_strategy].allocated;
@@ -534,6 +538,8 @@ contract AggregationLayerVault is
                 $.interestLeft = 0;
             }
         }
+
+        _gulp();
 
         emit EventsLib.Harvest(_strategy, underlyingBalance, strategyAllocatedAmount);
     }

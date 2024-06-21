@@ -17,4 +17,5 @@ interface IWithdrawalQueue {
     function reorderWithdrawalQueue(uint8 _index1, uint8 _index2) external;
 
     function withdrawalQueueLength() external view returns (uint256);
+    function getWithdrawalQueueArray() external view returns (address[] memory, uint256);
 }

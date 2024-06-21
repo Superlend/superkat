@@ -114,7 +114,7 @@ contract PerformanceFeeE2ETest is AggregationLayerVaultBase {
 
         // harvest
         vm.prank(user1);
-        aggregationLayerVault.harvest(address(eTST));
+        aggregationLayerVault.harvest();
 
         assertEq(assetTST.balanceOf(feeRecipient), expectedPerformanceFee);
         assertEq(

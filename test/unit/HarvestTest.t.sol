@@ -68,7 +68,7 @@ contract HarvestTest is AggregationLayerVaultBase {
         assertTrue(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))) == strategyBefore.allocated);
 
         vm.prank(user1);
-        aggregationLayerVault.harvest(address(eTST));
+        aggregationLayerVault.harvest();
 
         assertEq((aggregationLayerVault.getStrategy(address(eTST))).allocated, strategyBefore.allocated);
         assertEq(aggregationLayerVault.totalAllocated(), totalAllocatedBefore);
@@ -88,7 +88,7 @@ contract HarvestTest is AggregationLayerVaultBase {
         uint256 expectedAllocated = eTST.maxWithdraw(address(aggregationLayerVault));
 
         vm.prank(user1);
-        aggregationLayerVault.harvest(address(eTST));
+        aggregationLayerVault.harvest();
 
         assertEq((aggregationLayerVault.getStrategy(address(eTST))).allocated, expectedAllocated);
         assertEq(
@@ -113,7 +113,7 @@ contract HarvestTest is AggregationLayerVaultBase {
         assertTrue(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))) < strategyBefore.allocated);
 
         vm.prank(user1);
-        aggregationLayerVault.harvest(address(eTST));
+        aggregationLayerVault.harvest();
     }
 
     function testHarvestNegativeYieldAndWithdrawSingleUser() public {
@@ -139,7 +139,7 @@ contract HarvestTest is AggregationLayerVaultBase {
         uint256 user1AssetTSTBalanceBefore = assetTST.balanceOf(user1);
 
         vm.startPrank(user1);
-        aggregationLayerVault.harvest(address(eTST));
+        aggregationLayerVault.harvest();
         aggregationLayerVault.redeem(user1SharesBefore, user1, user1);
         vm.stopPrank();
 
@@ -185,7 +185,7 @@ contract HarvestTest is AggregationLayerVaultBase {
             / aggregationLayerVault.totalSupply() - user2SocializedLoss;
 
         vm.prank(user1);
-        aggregationLayerVault.harvest(address(eTST));
+        aggregationLayerVault.harvest();
 
         uint256 user1SharesAfter = aggregationLayerVault.balanceOf(user1);
         uint256 user1AssetsAfter = aggregationLayerVault.convertToAssets(user1SharesAfter);

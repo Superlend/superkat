@@ -83,7 +83,7 @@ contract GulpTest is AggregationLayerVaultBase {
             eTST.skim(type(uint256).max, address(aggregationLayerVault));
         }
         vm.prank(user1);
-        aggregationLayerVault.harvest(address(eTST));
+        aggregationLayerVault.harvest();
 
         assertEq(aggregationLayerVault.interestAccrued(), 0);
 
@@ -108,7 +108,7 @@ contract GulpTest is AggregationLayerVaultBase {
             abi.encode(aggrCurrentStrategyBalanceAfterNegYield)
         );
         vm.prank(user1);
-        aggregationLayerVault.harvest(address(eTST));
+        aggregationLayerVault.harvest();
     }
 
     function testGulpAfterNegativeYieldBiggerThanInterestLeft() public {
@@ -134,7 +134,7 @@ contract GulpTest is AggregationLayerVaultBase {
             eTST.skim(type(uint256).max, address(aggregationLayerVault));
         }
         vm.prank(user1);
-        aggregationLayerVault.harvest(address(eTST));
+        aggregationLayerVault.harvest();
 
         assertEq(aggregationLayerVault.interestAccrued(), 0);
 
@@ -159,6 +159,6 @@ contract GulpTest is AggregationLayerVaultBase {
             abi.encode(aggrCurrentStrategyBalanceAfterNegYield)
         );
         vm.prank(user1);
-        aggregationLayerVault.harvest(address(eTST));
+        aggregationLayerVault.harvest();
     }
 }

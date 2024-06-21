@@ -347,7 +347,7 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
 
         // harvest
         vm.prank(user1);
-        aggregationLayerVault.harvest(address(eTST));
+        aggregationLayerVault.harvest();
         vm.warp(block.timestamp + 2 weeks);
 
         // full withdraw, will have to withdraw from strategy as cash reserve is not enough
@@ -474,11 +474,8 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
         }
 
         // harvest
-        address[] memory strategiesToHarvest = new address[](2);
-        strategiesToHarvest[0] = address(eTST);
-        strategiesToHarvest[1] = address(eTSTsecondary);
         vm.prank(user1);
-        aggregationLayerVault.harvestMultipleStrategies(strategiesToHarvest);
+        aggregationLayerVault.harvest();
         vm.warp(block.timestamp + 2 weeks);
 
         // full withdraw, will have to withdraw from strategy as cash reserve is not enough
@@ -608,10 +605,8 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
         }
 
         // harvest
-        address[] memory strategiesToHarvest = new address[](1);
-        strategiesToHarvest[0] = address(eTST);
         vm.prank(user1);
-        aggregationLayerVault.harvestMultipleStrategies(strategiesToHarvest);
+        aggregationLayerVault.harvest();
         vm.warp(block.timestamp + 2 weeks);
 
         vm.prank(manager);

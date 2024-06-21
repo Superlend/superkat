@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 // interfaces
 import {IERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
-import {IFourSixTwoSixAgg} from "../interface/IFourSixTwoSixAgg.sol";
+import {IAggregationLayerVault} from "../interface/IAggregationLayerVault.sol";
 import {IWithdrawalQueue} from "../interface/IWithdrawalQueue.sol";
 // contracts
 import {AccessControlEnumerableUpgradeable} from
@@ -117,7 +117,7 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue
     ) external returns (uint256, uint256) {
         _isCallerAggregationVault();
 
-        WithdrawalQueueStorage memory $ = _getWithdrawalQueueStorage();
+        WithdrawalQueueStorage storage $ = _getWithdrawalQueueStorage();
         address eulerAggregationVaultCached = $.eulerAggregationVault;
 
         if (availableAssets < assets) {
@@ -125,13 +125,11 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue
             for (uint256 i; i < numStrategies; ++i) {
                 IERC4626 strategy = IERC4626($.withdrawalQueue[i]);
 
-                IFourSixTwoSixAgg(eulerAggregationVaultCached).harvest(address(strategy));
-
                 uint256 underlyingBalance = strategy.maxWithdraw(eulerAggregationVaultCached);
                 uint256 desiredAssets = assets - availableAssets;
                 uint256 withdrawAmount = (underlyingBalance > desiredAssets) ? desiredAssets : underlyingBalance;
 
-                IFourSixTwoSixAgg(eulerAggregationVaultCached).executeStrategyWithdraw(
+                IAggregationLayerVault(eulerAggregationVaultCached).executeStrategyWithdraw(
                     address(strategy), withdrawAmount
                 );
 
@@ -156,7 +154,7 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue
             revert NotEnoughAssets();
         }
 
-        IFourSixTwoSixAgg(eulerAggregationVaultCached).executeAggregationVaultWithdraw(
+        IAggregationLayerVault(eulerAggregationVaultCached).executeAggregationVaultWithdraw(
             caller, receiver, owner, assets, shares
         );
 
@@ -170,6 +168,18 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue
         WithdrawalQueueStorage storage $ = _getWithdrawalQueueStorage();
 
         return $.withdrawalQueue[_index];
+    }
+
+    function getWithdrawalQueueArray() external view returns (address[] memory, uint256) {
+        WithdrawalQueueStorage storage $ = _getWithdrawalQueueStorage();
+        uint256 withdrawalQueueLengthCached = $.withdrawalQueue.length;
+
+        address[] memory withdrawalQueueMem = new address[](withdrawalQueueLengthCached);
+        for (uint256 i; i < withdrawalQueueLengthCached; ++i) {
+            withdrawalQueueMem[i] = $.withdrawalQueue[i];
+        }
+
+        return (withdrawalQueueMem, withdrawalQueueLengthCached);
     }
 
     /// @notice Return the withdrawal queue length.

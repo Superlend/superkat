@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 // interfaces
-import {IFourSixTwoSixAgg, Strategy} from "../interface/IFourSixTwoSixAgg.sol";
+import {IAggregationLayerVault, Strategy} from "../interface/IAggregationLayerVault.sol";
 import {IERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 
 contract Rebalancer {
@@ -18,12 +18,13 @@ contract Rebalancer {
     /// @param _curatedVault Curated vault address.
     /// @param _strategies Strategies addresses.
     function executeRebalance(address _curatedVault, address[] calldata _strategies) external {
+        IAggregationLayerVault(_curatedVault).gulp();
+
         for (uint256 i; i < _strategies.length; ++i) {
             _rebalance(_curatedVault, _strategies[i]);
         }
     }
 
-    /// @dev This function will first harvest yield, gulps and update interest.
     /// @dev If current allocation is greater than target allocation, the aggregator will withdraw the excess assets.
     ///      If current allocation is less than target allocation, the aggregator will:
     ///         - Try to deposit the delta, if the cash is not sufficient, deposit all the available cash
@@ -35,12 +36,10 @@ contract Rebalancer {
             return; //nothing to rebalance as that's the cash reserve
         }
 
-        IFourSixTwoSixAgg(_curatedVault).harvest(_strategy);
+        Strategy memory strategyData = IAggregationLayerVault(_curatedVault).getStrategy(_strategy);
 
-        Strategy memory strategyData = IFourSixTwoSixAgg(_curatedVault).getStrategy(_strategy);
-
-        uint256 totalAllocationPointsCache = IFourSixTwoSixAgg(_curatedVault).totalAllocationPoints();
-        uint256 totalAssetsAllocatableCache = IFourSixTwoSixAgg(_curatedVault).totalAssetsAllocatable();
+        uint256 totalAllocationPointsCache = IAggregationLayerVault(_curatedVault).totalAllocationPoints();
+        uint256 totalAssetsAllocatableCache = IAggregationLayerVault(_curatedVault).totalAssetsAllocatable();
         uint256 targetAllocation =
             totalAssetsAllocatableCache * strategyData.allocationPoints / totalAllocationPointsCache;
 
@@ -61,8 +60,9 @@ contract Rebalancer {
         } else if (strategyData.allocated < targetAllocation) {
             // Deposit
             uint256 targetCash = totalAssetsAllocatableCache
-                * IFourSixTwoSixAgg(_curatedVault).getStrategy(address(0)).allocationPoints / totalAllocationPointsCache;
-            uint256 currentCash = totalAssetsAllocatableCache - IFourSixTwoSixAgg(_curatedVault).totalAllocated();
+                * IAggregationLayerVault(_curatedVault).getStrategy(address(0)).allocationPoints
+                / totalAllocationPointsCache;
+            uint256 currentCash = totalAssetsAllocatableCache - IAggregationLayerVault(_curatedVault).totalAllocated();
 
             // Calculate available cash to put in strategies
             uint256 cashAvailable = (currentCash > targetCash) ? currentCash - targetCash : 0;
@@ -84,7 +84,7 @@ contract Rebalancer {
             isDeposit = true;
         }
 
-        IFourSixTwoSixAgg(_curatedVault).rebalance(_strategy, amountToRebalance, isDeposit);
+        IAggregationLayerVault(_curatedVault).rebalance(_strategy, amountToRebalance, isDeposit);
 
         emit ExecuteRebalance(_curatedVault, _strategy, strategyData.allocated, targetAllocation, amountToRebalance);
     }

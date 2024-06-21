@@ -3,10 +3,10 @@ pragma solidity ^0.8.0;
 
 import {Strategy} from "../lib/StorageLib.sol";
 
-interface IFourSixTwoSixAgg {
+interface IAggregationLayerVault {
     function rebalance(address _strategy, uint256 _amountToRebalance, bool _isDeposit) external;
     function gulp() external;
-    function harvest(address strategy) external;
+    function harvest() external;
     function executeStrategyWithdraw(address _strategy, uint256 _withdrawAmount) external;
     function executeAggregationVaultWithdraw(
         address caller,
