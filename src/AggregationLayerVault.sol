@@ -497,25 +497,51 @@ contract AggregationLayerVault is
 
         (address[] memory withdrawalQueueArray, uint256 length) =
             IWithdrawalQueue($.withdrawalQueue).getWithdrawalQueueArray();
+
+        uint256 totalYield;
+        uint256 totalLoss;
         for (uint256 i; i < length; ++i) {
-            _executeHarvest(withdrawalQueueArray[i]);
+            (uint256 yield, uint256 loss) = _executeHarvest(withdrawalQueueArray[i]);
+
+            totalYield += yield;
+            totalLoss += loss;
         }
+
+        $.totalAllocated = $.totalAllocated + totalYield - totalLoss;
+
+        if (totalLoss > totalYield) {
+            uint256 netLoss = totalLoss - totalYield;
+            $.totalAllocated -= netLoss;
+
+            if ($.interestLeft >= netLoss) {
+                // cut loss from interest left only
+                $.interestLeft -= uint168(netLoss);
+            } else {
+                // cut the interest left and socialize the diff
+                $.totalAssetsDeposited -= netLoss - $.interestLeft;
+                $.interestLeft = 0;
+            }
+        }
+
+        _gulp();
     }
 
-    function _executeHarvest(address _strategy) internal {
+    function _executeHarvest(address _strategy) internal returns (uint256, uint256) {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         uint120 strategyAllocatedAmount = $.strategies[_strategy].allocated;
 
-        if (strategyAllocatedAmount == 0) return;
+        if (strategyAllocatedAmount == 0) return (0, 0);
 
         uint256 underlyingBalance = IERC4626(_strategy).maxWithdraw(address(this));
 
+        uint256 yield;
+        uint256 loss;
         if (underlyingBalance == strategyAllocatedAmount) {
-            return;
+            return (yield, loss);
         } else if (underlyingBalance > strategyAllocatedAmount) {
             // There's yield!
-            uint256 yield = underlyingBalance - strategyAllocatedAmount;
+            yield = underlyingBalance - strategyAllocatedAmount;
             uint120 accruedPerformanceFee = _accruePerformanceFee(_strategy, yield);
 
             if (accruedPerformanceFee > 0) {
@@ -524,24 +550,26 @@ contract AggregationLayerVault is
             }
 
             $.strategies[_strategy].allocated = uint120(underlyingBalance);
-            $.totalAllocated += yield;
+            // $.totalAllocated += yield;
         } else {
-            uint256 loss = strategyAllocatedAmount - underlyingBalance;
+            loss = strategyAllocatedAmount - underlyingBalance;
 
             $.strategies[_strategy].allocated = uint120(underlyingBalance);
-            $.totalAllocated -= loss;
+            // $.totalAllocated -= loss;
 
-            if ($.interestLeft >= loss) {
-                $.interestLeft -= uint168(loss);
-            } else {
-                $.totalAssetsDeposited -= loss - $.interestLeft;
-                $.interestLeft = 0;
-            }
+            // if ($.interestLeft >= loss) {
+            //     $.interestLeft -= uint168(loss);
+            // } else {
+            //     $.totalAssetsDeposited -= loss - $.interestLeft;
+            //     $.interestLeft = 0;
+            // }
         }
 
-        _gulp();
+        // _gulp();
 
         emit EventsLib.Harvest(_strategy, underlyingBalance, strategyAllocatedAmount);
+
+        return (yield, loss);
     }
 
     function _accruePerformanceFee(address _strategy, uint256 _yield) internal returns (uint120) {
