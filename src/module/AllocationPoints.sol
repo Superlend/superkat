@@ -10,8 +10,8 @@ import {Shared} from "../Shared.sol";
 // libs
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {StorageLib, AggregationVaultStorage} from "../lib/StorageLib.sol";
-import {ErrorsLib} from "../lib/ErrorsLib.sol";
-import {EventsLib} from "../lib/EventsLib.sol";
+import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
+import {EventsLib as Events} from "../lib/EventsLib.sol";
 
 /// @title FeeModule contract
 /// @custom:security-contact security@euler.xyz
@@ -29,13 +29,13 @@ abstract contract AllocationPointsModule is Shared {
         IAggregationLayerVault.Strategy memory strategyDataCache = $.strategies[_strategy];
 
         if (!strategyDataCache.active) {
-            revert ErrorsLib.InactiveStrategy();
+            revert Errors.InactiveStrategy();
         }
 
         $.strategies[_strategy].allocationPoints = _newPoints.toUint120();
         $.totalAllocationPoints = $.totalAllocationPoints + _newPoints - strategyDataCache.allocationPoints;
 
-        emit EventsLib.AdjustAllocationPoints(_strategy, strategyDataCache.allocationPoints, _newPoints);
+        emit Events.AdjustAllocationPoints(_strategy, strategyDataCache.allocationPoints, _newPoints);
     }
 
     /// @notice Set cap on strategy allocated amount.
@@ -46,12 +46,12 @@ abstract contract AllocationPointsModule is Shared {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         if (!$.strategies[_strategy].active) {
-            revert ErrorsLib.InactiveStrategy();
+            revert Errors.InactiveStrategy();
         }
 
         $.strategies[_strategy].cap = _cap.toUint120();
 
-        emit EventsLib.SetStrategyCap(_strategy, _cap);
+        emit Events.SetStrategyCap(_strategy, _cap);
     }
 
     /// @notice Add new strategy with it's allocation points.
@@ -62,11 +62,11 @@ abstract contract AllocationPointsModule is Shared {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         if ($.strategies[_strategy].active) {
-            revert ErrorsLib.StrategyAlreadyExist();
+            revert Errors.StrategyAlreadyExist();
         }
 
         if (IERC4626(_strategy).asset() != IERC4626(address(this)).asset()) {
-            revert ErrorsLib.InvalidStrategyAsset();
+            revert Errors.InvalidStrategyAsset();
         }
 
         _callHooksTarget(ADD_STRATEGY, _msgSender());
@@ -81,7 +81,7 @@ abstract contract AllocationPointsModule is Shared {
         $.totalAllocationPoints += _allocationPoints;
         IWithdrawalQueue($.withdrawalQueue).addStrategyToWithdrawalQueue(_strategy);
 
-        emit EventsLib.AddStrategy(_strategy, _allocationPoints);
+        emit Events.AddStrategy(_strategy, _allocationPoints);
     }
 
     /// @notice Remove strategy and set its allocation points to zero.
@@ -89,14 +89,14 @@ abstract contract AllocationPointsModule is Shared {
     /// @dev Can only be called by an address that have the STRATEGY_REMOVER
     /// @param _strategy Address of the strategy
     function removeStrategy(address _strategy) external virtual nonReentrant {
-        if (_strategy == address(0)) revert ErrorsLib.CanNotRemoveCashReserve();
+        if (_strategy == address(0)) revert Errors.CanNotRemoveCashReserve();
 
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         IAggregationLayerVault.Strategy storage strategyStorage = $.strategies[_strategy];
 
         if (!strategyStorage.active) {
-            revert ErrorsLib.AlreadyRemoved();
+            revert Errors.AlreadyRemoved();
         }
 
         _callHooksTarget(REMOVE_STRATEGY, _msgSender());
@@ -108,7 +108,7 @@ abstract contract AllocationPointsModule is Shared {
         // remove from withdrawalQueue
         IWithdrawalQueue($.withdrawalQueue).removeStrategyFromWithdrawalQueue(_strategy);
 
-        emit EventsLib.RemoveStrategy(_strategy);
+        emit Events.RemoveStrategy(_strategy);
     }
 }
 

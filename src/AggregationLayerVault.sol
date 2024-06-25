@@ -22,8 +22,8 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {StorageLib, AggregationVaultStorage} from "./lib/StorageLib.sol";
-import {ErrorsLib} from "./lib/ErrorsLib.sol";
-import {EventsLib} from "./lib/EventsLib.sol";
+import {ErrorsLib as Errors} from "./lib/ErrorsLib.sol";
+import {EventsLib as Events} from "./lib/EventsLib.sol";
 
 /// @title AggregationLayerVault contract
 /// @custom:security-contact security@euler.xyz
@@ -65,7 +65,7 @@ contract AggregationLayerVault is
         __ERC4626_init_unchained(IERC20(_initParams.asset));
         __ERC20_init_unchained(_initParams.name, _initParams.symbol);
 
-        if (_initParams.initialCashAllocationPoints == 0) revert ErrorsLib.InitialAllocationPointsZero();
+        if (_initParams.initialCashAllocationPoints == 0) revert Errors.InitialAllocationPointsZero();
 
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
         $.locked = REENTRANCYLOCK__UNLOCKED;
@@ -203,7 +203,7 @@ contract AggregationLayerVault is
             $.totalAllocated -= _amountToRebalance;
         }
 
-        emit EventsLib.Rebalance(_strategy, _amountToRebalance, _isDeposit);
+        emit Events.Rebalance(_strategy, _amountToRebalance, _isDeposit);
     }
 
     /// @notice Harvest all the strategies.
@@ -447,7 +447,7 @@ contract AggregationLayerVault is
         $.interestSmearEnd = uint40(block.timestamp + INTEREST_SMEAR);
         $.interestLeft += uint168(toGulp); // toGulp <= maxGulp <= max uint168
 
-        emit EventsLib.Gulp($.interestLeft, $.interestSmearEnd);
+        emit Events.Gulp($.interestLeft, $.interestSmearEnd);
     }
 
     /// @dev Loop through stratgies, aggregated yield and lossm and account for net amount.
@@ -484,6 +484,8 @@ contract AggregationLayerVault is
             $.interestLeft = cachedInterestLeft;
         }
 
+        emit Events.Harvest($.totalAllocated, totalYield, totalLoss);
+
         _gulp();
     }
 
@@ -519,7 +521,7 @@ contract AggregationLayerVault is
 
             $.strategies[_strategy].allocated = uint120(underlyingBalance);
         }
-        emit EventsLib.Harvest(_strategy, underlyingBalance, strategyAllocatedAmount);
+        emit Events.ExecuteHarvest(_strategy, underlyingBalance, strategyAllocatedAmount);
 
         return (yield, loss);
     }
@@ -543,7 +545,7 @@ contract AggregationLayerVault is
             IERC4626(_strategy).withdraw(feeAssets, cachedFeeRecipient, address(this));
         }
 
-        emit EventsLib.AccruePerformanceFee(cachedFeeRecipient, _yield, feeAssets);
+        emit Events.AccruePerformanceFee(cachedFeeRecipient, _yield, feeAssets);
 
         return feeAssets.toUint120();
     }
@@ -599,6 +601,6 @@ contract AggregationLayerVault is
     function _isCallerWithdrawalQueue() internal view {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
-        if (_msgSender() != $.withdrawalQueue) revert ErrorsLib.NotWithdrawaQueue();
+        if (_msgSender() != $.withdrawalQueue) revert Errors.NotWithdrawaQueue();
     }
 }

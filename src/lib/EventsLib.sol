@@ -4,9 +4,10 @@ pragma solidity ^0.8.0;
 library EventsLib {
     /// @dev AggregationLayerVault events
     event Gulp(uint256 interestLeft, uint256 interestSmearEnd);
-    event Harvest(address indexed strategy, uint256 strategyBalanceAmount, uint256 strategyAllocatedAmount);
     event AccruePerformanceFee(address indexed feeRecipient, uint256 yield, uint256 feeAssets);
     event Rebalance(address indexed strategy, uint256 amountToRebalance, bool isDeposit);
+    event ExecuteHarvest(address indexed strategy, uint256 strategyBalanceAmount, uint256 strategyAllocatedAmount);
+    event Harvest(uint256 totalAllocated, uint256 totlaYield, uint256 totalLoss);
 
     /// @dev Allocationpoints events
     event AdjustAllocationPoints(address indexed strategy, uint256 oldPoints, uint256 newPoints);
