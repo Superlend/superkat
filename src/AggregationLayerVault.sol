@@ -25,8 +25,6 @@ import {StorageLib, AggregationVaultStorage} from "./lib/StorageLib.sol";
 import {ErrorsLib} from "./lib/ErrorsLib.sol";
 import {EventsLib} from "./lib/EventsLib.sol";
 
-import {Test, console2, stdError} from "forge-std/Test.sol";
-
 /// @title AggregationLayerVault contract
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
@@ -439,8 +437,8 @@ contract AggregationLayerVault is
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         if ($.totalAssetsDeposited == 0) return;
+
         uint256 toGulp = totalAssetsAllocatable() - $.totalAssetsDeposited - $.interestLeft;
-        console2.log("toGulp", toGulp);
         if (toGulp == 0) return;
 
         uint256 maxGulp = type(uint168).max - $.interestLeft;
@@ -465,24 +463,17 @@ contract AggregationLayerVault is
         for (uint256 i; i < length; ++i) {
             (uint256 yield, uint256 loss) = _executeHarvest(withdrawalQueueArray[i]);
 
-            console2.log("yield", yield);
-            console2.log("loss", loss);
-
             totalYield += yield;
             totalLoss += loss;
         }
 
         $.totalAllocated = $.totalAllocated + totalYield - totalLoss;
 
-        console2.log("totalLoss", totalLoss);
-        console2.log("totalYield", totalYield);
-
         if (totalLoss > totalYield) {
             uint256 netLoss = totalLoss - totalYield;
             uint168 cachedInterestLeft = $.interestLeft;
 
             if (cachedInterestLeft >= netLoss) {
-                console2.log("cutiing from left interest");
                 // cut loss from interest left only
                 cachedInterestLeft -= uint168(netLoss);
             } else {
@@ -509,10 +500,6 @@ contract AggregationLayerVault is
         if (strategyAllocatedAmount == 0) return (0, 0);
 
         uint256 underlyingBalance = IERC4626(_strategy).maxWithdraw(address(this));
-
-        console2.log("underlyingBalance", underlyingBalance);
-        console2.log("strategyAllocatedAmount", strategyAllocatedAmount);
-
         uint256 yield;
         uint256 loss;
         if (underlyingBalance == strategyAllocatedAmount) {

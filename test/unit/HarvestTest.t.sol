@@ -243,7 +243,6 @@ contract HarvestTest is AggregationLayerVaultBase {
         expectedAllocated = eTST.maxWithdraw(address(aggregationLayerVault));
         assertTrue(expectedAllocated < strategyBefore.allocated);
 
-        uint256 negativeYield = strategyBefore.allocated - eTST.maxWithdraw(address(aggregationLayerVault));
         uint256 user1SharesBefore = aggregationLayerVault.balanceOf(user1);
         uint256 expectedUser1Assets = user1SharesBefore * amountToDeposit / aggregationLayerVault.totalSupply();
         uint256 totalAssetsDepositedBefore = aggregationLayerVault.totalAssetsDeposited();
