@@ -9,6 +9,9 @@ import {StorageLib, AggregationVaultStorage} from "./lib/StorageLib.sol";
 import {ErrorsLib} from "./lib/ErrorsLib.sol";
 import {HooksLib} from "./lib/HooksLib.sol";
 
+/// @title Shared contract
+/// @custom:security-contact security@euler.xyz
+/// @author Euler Labs (https://www.eulerlabs.com/)
 contract Shared {
     using HooksLib for uint32;
 

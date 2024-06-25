@@ -13,6 +13,9 @@ import {StorageLib, AggregationVaultStorage} from "../lib/StorageLib.sol";
 import {ErrorsLib} from "../lib/ErrorsLib.sol";
 import {EventsLib} from "../lib/EventsLib.sol";
 
+/// @title FeeModule contract
+/// @custom:security-contact security@euler.xyz
+/// @author Euler Labs (https://www.eulerlabs.com/)
 abstract contract AllocationPointsModule is Shared {
     using SafeCast for uint256;
 

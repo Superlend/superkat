@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 interface IAggregationLayerVault {
+    /// @dev Struct to pass init() call params.
     struct InitParams {
         address evc;
         address balanceTracker;
@@ -24,6 +25,19 @@ interface IAggregationLayerVault {
         uint120 allocationPoints;
         bool active;
         uint120 cap;
+    }
+
+    /// @dev Euler saving rate struct
+    /// @dev Based on https://github.com/euler-xyz/euler-vault-kit/blob/master/src/Synths/EulerSavingsRate.sol
+    /// lastInterestUpdate: last timestamo where interest was updated.
+    /// interestSmearEnd: timestamp when the smearing of interest end.
+    /// interestLeft: amount of interest left to smear.
+    /// locked: if locked or not for update.
+    struct AggregationVaultSavingRate {
+        uint40 lastInterestUpdate;
+        uint40 interestSmearEnd;
+        uint168 interestLeft;
+        uint8 locked;
     }
 
     function rebalance(address _strategy, uint256 _amountToRebalance, bool _isDeposit) external;

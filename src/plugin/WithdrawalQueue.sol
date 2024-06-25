@@ -9,6 +9,12 @@ import {IWithdrawalQueue} from "../interface/IWithdrawalQueue.sol";
 import {AccessControlEnumerableUpgradeable} from
     "@openzeppelin-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
 
+/// @title WithdrawalQueue plugin
+/// @custom:security-contact security@euler.xyz
+/// @author Euler Labs (https://www.eulerlabs.com/)
+/// @notice This contract manage the withdrawalQueue aray(add/remove strategy to the queue, re-order queue).
+/// Also it handles finishing the withdraw execution flow through the `callWithdrawalQueue()` function
+/// that will be called by the AggregationLayerVault.
 contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue {
     error OutOfBounds();
     error SameIndexes();
@@ -157,6 +163,9 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue
         return $.withdrawalQueue[_index];
     }
 
+    /// @notice Get the withdrawal queue array and it's length.
+    /// @return withdrawalQueueMem The withdrawal queue array in memory.
+    /// @return withdrawalQueueLengthCached An uint256 which is the length of the array.
     function getWithdrawalQueueArray() external view returns (address[] memory, uint256) {
         WithdrawalQueueStorage storage $ = _getWithdrawalQueueStorage();
         uint256 withdrawalQueueLengthCached = $.withdrawalQueue.length;

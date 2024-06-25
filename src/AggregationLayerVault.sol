@@ -27,6 +27,9 @@ import {EventsLib} from "./lib/EventsLib.sol";
 
 import {Test, console2, stdError} from "forge-std/Test.sol";
 
+/// @title AggregationLayerVault contract
+/// @custom:security-contact security@euler.xyz
+/// @author Euler Labs (https://www.eulerlabs.com/)
 /// @dev Do NOT use with fee on transfer tokens
 /// @dev Do NOT use with rebasing tokens
 /// @dev inspired by Yearn v3 ❤️
@@ -54,23 +57,12 @@ contract AggregationLayerVault is
     /// @dev interest rate smearing period
     uint256 public constant INTEREST_SMEAR = 2 weeks;
 
-    /// @dev Euler saving rate struct
-    /// @dev Based on https://github.com/euler-xyz/euler-vault-kit/blob/master/src/Synths/EulerSavingsRate.sol
-    /// lastInterestUpdate: last timestamo where interest was updated.
-    /// interestSmearEnd: timestamp when the smearing of interest end.
-    /// interestLeft: amount of interest left to smear.
-    /// locked: if locked or not for update.
-    struct AggregationVaultSavingRate {
-        uint40 lastInterestUpdate;
-        uint40 interestSmearEnd;
-        uint168 interestLeft;
-        uint8 locked;
-    }
-
     constructor(address _rewardsModule, address _hooksModule, address _feeModule, address _allocationPointsModule)
         Dispatch(_rewardsModule, _hooksModule, _feeModule, _allocationPointsModule)
     {}
 
+    /// @notice Initialize the AggregationLayerVault.
+    /// @param _initParams InitParams struct.
     function init(InitParams calldata _initParams) external initializer {
         __ERC4626_init_unchained(IERC20(_initParams.asset));
         __ERC20_init_unchained(_initParams.name, _initParams.symbol);

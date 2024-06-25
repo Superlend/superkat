@@ -13,6 +13,9 @@ import {StorageLib, AggregationVaultStorage} from "../lib/StorageLib.sol";
 import {ErrorsLib} from "../lib/ErrorsLib.sol";
 import {EventsLib} from "../lib/EventsLib.sol";
 
+/// @title FeeModule contract
+/// @custom:security-contact security@euler.xyz
+/// @author Euler Labs (https://www.eulerlabs.com/)
 abstract contract FeeModule is Shared {
     /// @dev The maximum performanceFee the vault can have is 50%
     uint256 internal constant MAX_PERFORMANCE_FEE = 0.5e18;

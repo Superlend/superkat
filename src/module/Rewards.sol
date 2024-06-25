@@ -16,7 +16,7 @@ import {EventsLib} from "../lib/EventsLib.sol";
 /// @title Rewards module
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
-/// @notice A module to provide balancer tracking for reward streats and to integrate with strategies rewards.
+/// @notice A module to provide balancer tracking for reward streams and to integrate with strategies rewards.
 /// @dev See https://github.com/euler-xyz/reward-streams.
 abstract contract RewardsModule is IBalanceForwarder, Shared {
     /// @notice Opt in to strategy rewards

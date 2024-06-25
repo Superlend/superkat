@@ -6,21 +6,21 @@ import {IAggregationLayerVault} from "../interface/IAggregationLayerVault.sol";
 
 /// @custom:storage-location erc7201:euler_aggregation_vault.storage.AggregationVault
 struct AggregationVaultStorage {
-    /// @dev EVC address
+    /// EVC address
     address evc;
-    /// @dev Total amount of _asset deposited into AggregationLayerVault contract
+    /// Total amount of _asset deposited into AggregationLayerVault contract
     uint256 totalAssetsDeposited;
-    /// @dev Total amount of _asset deposited across all strategies.
+    /// Total amount of _asset deposited across all strategies.
     uint256 totalAllocated;
-    /// @dev Total amount of allocation points across all strategies including the cash reserve.
+    /// Total amount of allocation points across all strategies including the cash reserve.
     uint256 totalAllocationPoints;
-    /// @dev fee rate
+    /// fee rate
     uint256 performanceFee;
-    /// @dev fee recipient address
+    /// fee recipient address
     address feeRecipient;
-    /// @dev Withdrawal queue contract's address
+    /// Withdrawal queue contract's address
     address withdrawalQueue;
-    /// @dev Mapping between strategy address and it's allocation config
+    /// Mapping between strategy address and it's allocation config
     mapping(address => IAggregationLayerVault.Strategy) strategies;
 
     
@@ -33,8 +33,9 @@ struct AggregationVaultStorage {
     /// locked: if locked or not for update.
     uint8 locked;
 
-
+    /// Address of balance tracker contract for reward streams integration.
     address balanceTracker;
+    /// A mapping to check if a user address enabled balance forwarding for reward streams integration.
     mapping(address => bool) isBalanceForwarderEnabled;
 
     
@@ -47,6 +48,7 @@ library StorageLib {
     bytes32 private constant AggregationVaultStorageLocation =
         0x7da5ece5aff94f3377324d715703a012d3253da37511270103c646f171c0aa00;
 
+    /// @dev A function to return a pointer for the AggregationVaultStorageLocation.
     function _getAggregationVaultStorage() internal pure returns (AggregationVaultStorage storage $) {
         assembly {
             $.slot := AggregationVaultStorageLocation

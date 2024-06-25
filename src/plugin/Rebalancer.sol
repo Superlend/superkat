@@ -5,6 +5,11 @@ pragma solidity ^0.8.0;
 import {IAggregationLayerVault} from "../interface/IAggregationLayerVault.sol";
 import {IERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 
+/// @title Rebalancer plugin
+/// @custom:security-contact security@euler.xyz
+/// @author Euler Labs (https://www.eulerlabs.com/)
+/// @notice A contract to execute rebalance() on the AggregationLayerVault.
+/// @dev Usually this contract will hold the `REBALANCER` role.
 contract Rebalancer {
     event ExecuteRebalance(
         address indexed curatedVault,

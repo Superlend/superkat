@@ -10,6 +10,9 @@ import {AggregationLayerVault, IAggregationLayerVault} from "./AggregationLayerV
 // libs
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
+/// @title AggregationLayerVaultFactory contract
+/// @custom:security-contact security@euler.xyz
+/// @author Euler Labs (https://www.eulerlabs.com/)
 contract AggregationLayerVaultFactory {
     /// core dependencies
     address public immutable evc;
@@ -25,6 +28,7 @@ contract AggregationLayerVaultFactory {
     /// @dev WithdrawalQueue plugin implementation address, need to be deployed per aggregation vault
     address public immutable withdrawalQueueImpl;
 
+    /// @dev Init params struct.
     struct FactoryParams {
         address evc;
         address balanceTracker;
@@ -36,6 +40,8 @@ contract AggregationLayerVaultFactory {
         address withdrawalQueueImpl;
     }
 
+    /// @notice Constructor.
+    /// @param _factoryParams FactoryParams struct.
     constructor(FactoryParams memory _factoryParams) {
         evc = _factoryParams.evc;
         balanceTracker = _factoryParams.balanceTracker;
@@ -48,6 +54,15 @@ contract AggregationLayerVaultFactory {
         withdrawalQueueImpl = _factoryParams.withdrawalQueueImpl;
     }
 
+    /// @notice Deploy a new aggregation layer vault.
+    /// @dev This will clone a new WithdrawalQueue plugin instance for the aggregation layer vault.
+    /// @dev  This will use the defaut Rebalancer plugin configured in this factory.
+    /// @dev Both plugins are possible to change by the aggregation layer vault manager.
+    /// @param _asset Aggreation layer vault' asset address.
+    /// @param _name Vaut name.
+    /// @param _symbol Vault symbol.
+    /// @param _initialCashAllocationPoints The amount of points to initally allocate for cash reserve.
+    /// @return aggregationLayerVault The address of the new deployed aggregation layer vault.
     function deployEulerAggregationLayer(
         address _asset,
         string memory _name,
