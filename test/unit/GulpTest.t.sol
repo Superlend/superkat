@@ -6,7 +6,7 @@ import {
     AggregationLayerVault,
     console2,
     EVault,
-    Strategy
+    IAggregationLayerVault
 } from "../common/AggregationLayerVaultBase.t.sol";
 
 contract GulpTest is AggregationLayerVaultBase {
@@ -42,7 +42,7 @@ contract GulpTest is AggregationLayerVaultBase {
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
         {
-            Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
+            IAggregationLayerVault.Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
 
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), strategyBefore.allocated);
 

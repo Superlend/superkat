@@ -98,35 +98,32 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue
 
     /// @notice Execute the withdraw initiated in the aggregation layer vault.
     /// @dev Can only be called by the aggregation layer vault's address.
-    /// @param caller Initiator's address of withdraw.
-    /// @param receiver Withdraw receiver address.
-    /// @param owner Shares's owner to burn.
-    /// @param assets Amount of asset to withdraw.
-    /// @param shares Amount of shares to burn.
-    /// @param availableAssets Amount of available asset in aggregation layer vault's cash reserve.
-    /// @return uint256 The amount of assets withdrawn from the aggregation layer vault.
-    /// @return uint256 The amount of aggregation layer vault shares burned.
+    /// @param _caller Initiator's address of withdraw.
+    /// @param _receiver Withdraw receiver address.
+    /// @param _owner Shares's owner to burn.
+    /// @param _assets Amount of asset to withdraw.
+    /// @param _shares Amount of shares to burn.
+    /// @param _availableAssets Amount of available asset in aggregation layer vault's cash reserve.
     function callWithdrawalQueue(
-        address caller,
-        address receiver,
-        address owner,
-        uint256 assets,
-        uint256 shares,
-        uint256 availableAssets,
-        bool _isRedeem
-    ) external returns (uint256, uint256) {
+        address _caller,
+        address _receiver,
+        address _owner,
+        uint256 _assets,
+        uint256 _shares,
+        uint256 _availableAssets
+    ) external {
         _isCallerAggregationVault();
 
         WithdrawalQueueStorage storage $ = _getWithdrawalQueueStorage();
         address eulerAggregationVaultCached = $.eulerAggregationVault;
 
-        if (availableAssets < assets) {
+        if (_availableAssets < _assets) {
             uint256 numStrategies = $.withdrawalQueue.length;
             for (uint256 i; i < numStrategies; ++i) {
                 IERC4626 strategy = IERC4626($.withdrawalQueue[i]);
 
                 uint256 underlyingBalance = strategy.maxWithdraw(eulerAggregationVaultCached);
-                uint256 desiredAssets = assets - availableAssets;
+                uint256 desiredAssets = _assets - _availableAssets;
                 uint256 withdrawAmount = (underlyingBalance > desiredAssets) ? desiredAssets : underlyingBalance;
 
                 IAggregationLayerVault(eulerAggregationVaultCached).executeStrategyWithdraw(
@@ -134,31 +131,21 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue
                 );
 
                 // update assetsRetrieved
-                availableAssets += withdrawAmount;
+                _availableAssets += withdrawAmount;
 
-                if (availableAssets >= assets) {
+                if (_availableAssets >= _assets) {
                     break;
                 }
             }
-
-            if (_isRedeem) {
-                // re-calculate assets in case of socialized loss
-                assets = IERC4626(eulerAggregationVaultCached).previewRedeem(shares);
-            } else {
-                // re-calculate shares in case of socialized loss
-                shares = IERC4626(eulerAggregationVaultCached).previewWithdraw(assets);
-            }
         }
 
-        if (availableAssets < assets) {
+        if (_availableAssets < _assets) {
             revert NotEnoughAssets();
         }
 
         IAggregationLayerVault(eulerAggregationVaultCached).executeAggregationVaultWithdraw(
-            caller, receiver, owner, assets, shares
+            _caller, _receiver, _owner, _assets, _shares
         );
-
-        return (assets, shares);
     }
 
     /// @notice Get strategy address from withdrawal queue by index.
@@ -184,8 +171,8 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue
 
     /// @notice Return the withdrawal queue length.
     /// @return uint256 length.
-    function withdrawalQueueLength() external pure returns (uint256) {
-        WithdrawalQueueStorage memory $ = _getWithdrawalQueueStorage();
+    function withdrawalQueueLength() external view returns (uint256) {
+        WithdrawalQueueStorage storage $ = _getWithdrawalQueueStorage();
 
         return $.withdrawalQueue.length;
     }

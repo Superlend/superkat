@@ -4,11 +4,12 @@ pragma solidity ^0.8.0;
 // interfaces
 import {IERC4626} from "@openzeppelin-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IWithdrawalQueue} from "../interface/IWithdrawalQueue.sol";
+import {IAggregationLayerVault} from "../interface/IAggregationLayerVault.sol";
 // contracts
 import {Shared} from "../Shared.sol";
 // libs
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {StorageLib, AggregationVaultStorage, Strategy} from "../lib/StorageLib.sol";
+import {StorageLib, AggregationVaultStorage} from "../lib/StorageLib.sol";
 import {ErrorsLib} from "../lib/ErrorsLib.sol";
 import {EventsLib} from "../lib/EventsLib.sol";
 
@@ -22,7 +23,7 @@ abstract contract AllocationPointsModule is Shared {
     function adjustAllocationPoints(address _strategy, uint256 _newPoints) external virtual nonReentrant {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
-        Strategy memory strategyDataCache = $.strategies[_strategy];
+        IAggregationLayerVault.Strategy memory strategyDataCache = $.strategies[_strategy];
 
         if (!strategyDataCache.active) {
             revert ErrorsLib.InactiveStrategy();
@@ -67,8 +68,12 @@ abstract contract AllocationPointsModule is Shared {
 
         _callHooksTarget(ADD_STRATEGY, _msgSender());
 
-        $.strategies[_strategy] =
-            Strategy({allocated: 0, allocationPoints: _allocationPoints.toUint120(), active: true, cap: 0});
+        $.strategies[_strategy] = IAggregationLayerVault.Strategy({
+            allocated: 0,
+            allocationPoints: _allocationPoints.toUint120(),
+            active: true,
+            cap: 0
+        });
 
         $.totalAllocationPoints += _allocationPoints;
         IWithdrawalQueue($.withdrawalQueue).addStrategyToWithdrawalQueue(_strategy);
@@ -85,7 +90,7 @@ abstract contract AllocationPointsModule is Shared {
 
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
-        Strategy storage strategyStorage = $.strategies[_strategy];
+        IAggregationLayerVault.Strategy storage strategyStorage = $.strategies[_strategy];
 
         if (!strategyStorage.active) {
             revert ErrorsLib.AlreadyRemoved();

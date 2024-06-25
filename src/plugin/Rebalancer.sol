@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 // interfaces
-import {IAggregationLayerVault, Strategy} from "../interface/IAggregationLayerVault.sol";
+import {IAggregationLayerVault} from "../interface/IAggregationLayerVault.sol";
 import {IERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 
 contract Rebalancer {
@@ -36,7 +36,8 @@ contract Rebalancer {
             return; //nothing to rebalance as that's the cash reserve
         }
 
-        Strategy memory strategyData = IAggregationLayerVault(_curatedVault).getStrategy(_strategy);
+        IAggregationLayerVault.Strategy memory strategyData =
+            IAggregationLayerVault(_curatedVault).getStrategy(_strategy);
 
         uint256 totalAllocationPointsCache = IAggregationLayerVault(_curatedVault).totalAllocationPoints();
         uint256 totalAssetsAllocatableCache = IAggregationLayerVault(_curatedVault).totalAssetsAllocatable();

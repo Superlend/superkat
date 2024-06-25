@@ -9,7 +9,7 @@ import {
     IEVault,
     IRMTestDefault,
     TestERC20,
-    Strategy
+    IAggregationLayerVault
 } from "../common/AggregationLayerVaultBase.t.sol";
 
 contract PerformanceFeeE2ETest is AggregationLayerVaultBase {
@@ -77,7 +77,7 @@ contract PerformanceFeeE2ETest is AggregationLayerVaultBase {
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
         {
-            Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
+            IAggregationLayerVault.Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
 
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), strategyBefore.allocated);
 
@@ -109,7 +109,7 @@ contract PerformanceFeeE2ETest is AggregationLayerVaultBase {
         (, uint256 performanceFee) = aggregationLayerVault.performanceFeeConfig();
         uint256 expectedPerformanceFee = yield * performanceFee / 1e18;
 
-        Strategy memory strategyBeforeHarvest = aggregationLayerVault.getStrategy(address(eTST));
+        IAggregationLayerVault.Strategy memory strategyBeforeHarvest = aggregationLayerVault.getStrategy(address(eTST));
         uint256 totalAllocatedBefore = aggregationLayerVault.totalAllocated();
 
         // harvest

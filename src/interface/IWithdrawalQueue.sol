@@ -11,9 +11,8 @@ interface IWithdrawalQueue {
         address owner,
         uint256 assets,
         uint256 shares,
-        uint256 availableAssets,
-        bool _isRedeem
-    ) external returns (uint256, uint256);
+        uint256 availableAssets
+    ) external;
     function reorderWithdrawalQueue(uint8 _index1, uint8 _index2) external;
 
     function withdrawalQueueLength() external view returns (uint256);

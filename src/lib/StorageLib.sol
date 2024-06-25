@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
+// interfaces
+import {IAggregationLayerVault} from "../interface/IAggregationLayerVault.sol";
+
 /// @custom:storage-location erc7201:euler_aggregation_vault.storage.AggregationVault
 struct AggregationVaultStorage {
     /// @dev EVC address
@@ -18,7 +21,7 @@ struct AggregationVaultStorage {
     /// @dev Withdrawal queue contract's address
     address withdrawalQueue;
     /// @dev Mapping between strategy address and it's allocation config
-    mapping(address => Strategy) strategies;
+    mapping(address => IAggregationLayerVault.Strategy) strategies;
 
     
     /// lastInterestUpdate: last timestamo where interest was updated.
@@ -37,18 +40,6 @@ struct AggregationVaultStorage {
     
     /// @dev storing the hooks target and kooked functions.
     uint256 hooksConfig;
-}
-
-/// @dev A struct that hold a strategy allocation's config
-/// allocated: amount of asset deposited into strategy
-/// allocationPoints: number of points allocated to this strategy
-/// active: a boolean to indice if this strategy is active or not
-/// cap: an optional cap in terms of deposited underlying asset. By default, it is set to 0(not activated)
-struct Strategy {
-    uint120 allocated;
-    uint120 allocationPoints;
-    bool active;
-    uint120 cap;
 }
 
 library StorageLib {

@@ -21,9 +21,11 @@ import {ContextUpgradeable} from "@openzeppelin-upgradeable/utils/ContextUpgrade
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {StorageLib, AggregationVaultStorage, Strategy} from "./lib/StorageLib.sol";
+import {StorageLib, AggregationVaultStorage} from "./lib/StorageLib.sol";
 import {ErrorsLib} from "./lib/ErrorsLib.sol";
 import {EventsLib} from "./lib/EventsLib.sol";
+
+import {Test, console2, stdError} from "forge-std/Test.sol";
 
 /// @dev Do NOT use with fee on transfer tokens
 /// @dev Do NOT use with rebasing tokens
@@ -65,18 +67,6 @@ contract AggregationLayerVault is
         uint8 locked;
     }
 
-    struct InitParams {
-        address evc;
-        address balanceTracker;
-        address withdrawalQueuePeriphery;
-        address rebalancerPerihpery;
-        address aggregationVaultOwner;
-        address asset;
-        string name;
-        string symbol;
-        uint256 initialCashAllocationPoints;
-    }
-
     constructor(address _rewardsModule, address _hooksModule, address _feeModule, address _allocationPointsModule)
         Dispatch(_rewardsModule, _hooksModule, _feeModule, _allocationPointsModule)
     {}
@@ -90,7 +80,7 @@ contract AggregationLayerVault is
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
         $.locked = REENTRANCYLOCK__UNLOCKED;
         $.withdrawalQueue = _initParams.withdrawalQueuePeriphery;
-        $.strategies[address(0)] = Strategy({
+        $.strategies[address(0)] = IAggregationLayerVault.Strategy({
             allocated: 0,
             allocationPoints: _initParams.initialCashAllocationPoints.toUint120(),
             active: true,
@@ -209,7 +199,7 @@ contract AggregationLayerVault is
     {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
-        Strategy memory strategyData = $.strategies[_strategy];
+        IAggregationLayerVault.Strategy memory strategyData = $.strategies[_strategy];
 
         if (_isDeposit) {
             // Do required approval (safely) and deposit
@@ -289,7 +279,7 @@ contract AggregationLayerVault is
     /// @notice Get strategy params.
     /// @param _strategy strategy's address
     /// @return Strategy struct
-    function getStrategy(address _strategy) external view returns (Strategy memory) {
+    function getStrategy(address _strategy) external view returns (IAggregationLayerVault.Strategy memory) {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         return $.strategies[_strategy];
@@ -433,7 +423,7 @@ contract AggregationLayerVault is
         uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
 
         IWithdrawalQueue($.withdrawalQueue).callWithdrawalQueue(
-            _caller, _receiver, _owner, _assets, _shares, assetsRetrieved, false
+            _caller, _receiver, _owner, _assets, _shares, assetsRetrieved
         );
     }
 
@@ -458,7 +448,7 @@ contract AggregationLayerVault is
 
         if ($.totalAssetsDeposited == 0) return;
         uint256 toGulp = totalAssetsAllocatable() - $.totalAssetsDeposited - $.interestLeft;
-
+        console2.log("toGulp", toGulp);
         if (toGulp == 0) return;
 
         uint256 maxGulp = type(uint168).max - $.interestLeft;
@@ -483,23 +473,32 @@ contract AggregationLayerVault is
         for (uint256 i; i < length; ++i) {
             (uint256 yield, uint256 loss) = _executeHarvest(withdrawalQueueArray[i]);
 
+            console2.log("yield", yield);
+            console2.log("loss", loss);
+
             totalYield += yield;
             totalLoss += loss;
         }
 
         $.totalAllocated = $.totalAllocated + totalYield - totalLoss;
 
+        console2.log("totalLoss", totalLoss);
+        console2.log("totalYield", totalYield);
+
         if (totalLoss > totalYield) {
             uint256 netLoss = totalLoss - totalYield;
+            uint168 cachedInterestLeft = $.interestLeft;
 
-            if ($.interestLeft >= netLoss) {
+            if (cachedInterestLeft >= netLoss) {
+                console2.log("cutiing from left interest");
                 // cut loss from interest left only
-                $.interestLeft -= uint168(netLoss);
+                cachedInterestLeft -= uint168(netLoss);
             } else {
                 // cut the interest left and socialize the diff
-                $.totalAssetsDeposited -= netLoss - $.interestLeft;
-                $.interestLeft = 0;
+                $.totalAssetsDeposited -= netLoss - cachedInterestLeft;
+                cachedInterestLeft = 0;
             }
+            $.interestLeft = cachedInterestLeft;
         }
 
         _gulp();
@@ -518,6 +517,9 @@ contract AggregationLayerVault is
         if (strategyAllocatedAmount == 0) return (0, 0);
 
         uint256 underlyingBalance = IERC4626(_strategy).maxWithdraw(address(this));
+
+        console2.log("underlyingBalance", underlyingBalance);
+        console2.log("strategyAllocatedAmount", strategyAllocatedAmount);
 
         uint256 yield;
         uint256 loss;

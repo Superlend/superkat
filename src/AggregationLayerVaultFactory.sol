@@ -6,7 +6,7 @@ import {Rewards} from "./module/Rewards.sol";
 import {Hooks} from "./module/Hooks.sol";
 import {Fee} from "./module/Fee.sol";
 import {WithdrawalQueue} from "./plugin/WithdrawalQueue.sol";
-import {AggregationLayerVault} from "./AggregationLayerVault.sol";
+import {AggregationLayerVault, IAggregationLayerVault} from "./AggregationLayerVault.sol";
 // libs
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
@@ -67,7 +67,7 @@ contract AggregationLayerVaultFactory {
         AggregationLayerVault aggregationLayerVault =
             new AggregationLayerVault(rewardsModuleAddr, hooksModuleAddr, feeModuleAddr, allocationpointsModuleAddr);
 
-        AggregationLayerVault.InitParams memory aggregationVaultInitParams = AggregationLayerVault.InitParams({
+        IAggregationLayerVault.InitParams memory aggregationVaultInitParams = IAggregationLayerVault.InitParams({
             evc: evc,
             balanceTracker: balanceTracker,
             withdrawalQueuePeriphery: address(withdrawalQueue),

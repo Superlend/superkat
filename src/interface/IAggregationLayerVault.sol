@@ -1,9 +1,31 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {Strategy} from "../lib/StorageLib.sol";
-
 interface IAggregationLayerVault {
+    struct InitParams {
+        address evc;
+        address balanceTracker;
+        address withdrawalQueuePeriphery;
+        address rebalancerPerihpery;
+        address aggregationVaultOwner;
+        address asset;
+        string name;
+        string symbol;
+        uint256 initialCashAllocationPoints;
+    }
+
+    /// @dev A struct that hold a strategy allocation's config
+    /// allocated: amount of asset deposited into strategy
+    /// allocationPoints: number of points allocated to this strategy
+    /// active: a boolean to indice if this strategy is active or not
+    /// cap: an optional cap in terms of deposited underlying asset. By default, it is set to 0(not activated)
+    struct Strategy {
+        uint120 allocated;
+        uint120 allocationPoints;
+        bool active;
+        uint120 cap;
+    }
+
     function rebalance(address _strategy, uint256 _amountToRebalance, bool _isDeposit) external;
     function gulp() external;
     function harvest() external;
