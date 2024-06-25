@@ -489,7 +489,6 @@ contract AggregationLayerVault is
         _gulp();
     }
 
-    /// TODO: better events
     /// @dev Execute harvest on a single strategy.
     /// @param _strategy Strategy address.
     /// @return yiled Amount of yield if any, else 0.
