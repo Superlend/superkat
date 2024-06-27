@@ -3,8 +3,8 @@ pragma solidity ^0.8.0;
 
 // interfaces
 import {IERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
-import {IAggregationLayerVault} from "../interface/IAggregationLayerVault.sol";
-import {IWithdrawalQueue} from "../interface/IWithdrawalQueue.sol";
+import {IEulerAggregationLayer} from "../core/interface/IEulerAggregationLayer.sol";
+import {IWithdrawalQueue} from "../core/interface/IWithdrawalQueue.sol";
 // contracts
 import {AccessControlEnumerableUpgradeable} from
     "@openzeppelin-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
@@ -14,7 +14,7 @@ import {AccessControlEnumerableUpgradeable} from
 /// @author Euler Labs (https://www.eulerlabs.com/)
 /// @notice This contract manage the withdrawalQueue aray(add/remove strategy to the queue, re-order queue).
 /// Also it handles finishing the withdraw execution flow through the `callWithdrawalQueue()` function
-/// that will be called by the AggregationLayerVault.
+/// that will be called by the EulerAggregationLayer.
 contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue {
     error OutOfBounds();
     error SameIndexes();
@@ -132,7 +132,7 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue
                 uint256 desiredAssets = _assets - _availableAssets;
                 uint256 withdrawAmount = (underlyingBalance > desiredAssets) ? desiredAssets : underlyingBalance;
 
-                IAggregationLayerVault(eulerAggregationVaultCached).executeStrategyWithdraw(
+                IEulerAggregationLayer(eulerAggregationVaultCached).executeStrategyWithdraw(
                     address(strategy), withdrawAmount
                 );
 
@@ -149,7 +149,7 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue
             revert NotEnoughAssets();
         }
 
-        IAggregationLayerVault(eulerAggregationVaultCached).executeAggregationVaultWithdraw(
+        IEulerAggregationLayer(eulerAggregationVaultCached).executeAggregationVaultWithdraw(
             _caller, _receiver, _owner, _assets, _shares
         );
     }

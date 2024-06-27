@@ -5,9 +5,9 @@ pragma solidity ^0.8.0;
 import {IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
 // libs
-import {StorageLib, AggregationVaultStorage} from "./lib/StorageLib.sol";
-import {HooksLib} from "./lib/HooksLib.sol";
-import {ErrorsLib as Errors} from "./lib/ErrorsLib.sol";
+import {StorageLib, AggregationVaultStorage} from "../lib/StorageLib.sol";
+import {HooksLib} from "../lib/HooksLib.sol";
+import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 
 /// @title Shared contract
 /// @custom:security-contact security@euler.xyz

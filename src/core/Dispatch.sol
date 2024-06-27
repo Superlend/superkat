@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 //contracts
-import {Shared} from "./Shared.sol";
+import {Shared} from "./common/Shared.sol";
 import {HooksModule} from "./module/Hooks.sol";
 import {RewardsModule} from "./module/Rewards.sol";
 
@@ -17,6 +17,11 @@ abstract contract Dispatch is RewardsModule, HooksModule {
     address public immutable MODULE_FEE;
     address public immutable MODULE_ALLOCATION_POINTS;
 
+    /// @dev Constructor.
+    /// @param _rewardsModule Address of Rewards module.
+    /// @param _hooksModule Address of Hooks module.
+    /// @param _feeModule Address of Fee module.
+    /// @param _allocationPointsModule Address of AllocationPoints module.
     constructor(address _rewardsModule, address _hooksModule, address _feeModule, address _allocationPointsModule)
         Shared()
     {
@@ -29,10 +34,10 @@ abstract contract Dispatch is RewardsModule, HooksModule {
     // Modifier proxies the function call to a module and low-level returns the result
     modifier use(address module) {
         _; // when using the modifier, it is assumed the function body is empty.
-        delegateToModule(module);
+        _delegateToModule(module);
     }
 
-    function delegateToModule(address module) private {
+    function _delegateToModule(address module) private {
         assembly {
             calldatacopy(0, 0, calldatasize())
             let result := delegatecall(gas(), module, 0, calldatasize(), 0, 0)

@@ -2,18 +2,18 @@
 pragma solidity ^0.8.0;
 
 import {
-    AggregationLayerVaultBase,
-    AggregationLayerVault,
+    EulerAggregationLayerBase,
+    EulerAggregationLayer,
     console2,
     EVault,
     IEVault,
     IRMTestDefault,
     TestERC20,
     WithdrawalQueue,
-    IAggregationLayerVault
-} from "../common/AggregationLayerVaultBase.t.sol";
+    IEulerAggregationLayer
+} from "../common/EulerAggregationLayerBase.t.sol";
 
-contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
+contract DepositRebalanceHarvestWithdrawE2ETest is EulerAggregationLayerBase {
     uint256 user1InitialBalance = 100000e18;
 
     function setUp() public virtual override {
@@ -30,41 +30,41 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
 
         // deposit into aggregator
         {
-            uint256 balanceBefore = aggregationLayerVault.balanceOf(user1);
-            uint256 totalSupplyBefore = aggregationLayerVault.totalSupply();
-            uint256 totalAssetsDepositedBefore = aggregationLayerVault.totalAssetsDeposited();
+            uint256 balanceBefore = eulerAggregationLayer.balanceOf(user1);
+            uint256 totalSupplyBefore = eulerAggregationLayer.totalSupply();
+            uint256 totalAssetsDepositedBefore = eulerAggregationLayer.totalAssetsDeposited();
             uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
 
             vm.startPrank(user1);
-            assetTST.approve(address(aggregationLayerVault), amountToDeposit);
-            aggregationLayerVault.deposit(amountToDeposit, user1);
+            assetTST.approve(address(eulerAggregationLayer), amountToDeposit);
+            eulerAggregationLayer.deposit(amountToDeposit, user1);
             vm.stopPrank();
 
-            assertEq(aggregationLayerVault.balanceOf(user1), balanceBefore + amountToDeposit);
-            assertEq(aggregationLayerVault.totalSupply(), totalSupplyBefore + amountToDeposit);
-            assertEq(aggregationLayerVault.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
+            assertEq(eulerAggregationLayer.balanceOf(user1), balanceBefore + amountToDeposit);
+            assertEq(eulerAggregationLayer.totalSupply(), totalSupplyBefore + amountToDeposit);
+            assertEq(eulerAggregationLayer.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
             assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - amountToDeposit);
         }
 
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
         {
-            IAggregationLayerVault.Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
+            IEulerAggregationLayer.Strategy memory strategyBefore = eulerAggregationLayer.getStrategy(address(eTST));
 
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), strategyBefore.allocated);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationLayer))), strategyBefore.allocated);
 
-            uint256 expectedStrategyCash = aggregationLayerVault.totalAssetsAllocatable()
-                * strategyBefore.allocationPoints / aggregationLayerVault.totalAllocationPoints();
+            uint256 expectedStrategyCash = eulerAggregationLayer.totalAssetsAllocatable()
+                * strategyBefore.allocationPoints / eulerAggregationLayer.totalAllocationPoints();
 
             vm.prank(user1);
             address[] memory strategiesToRebalance = new address[](1);
             strategiesToRebalance[0] = address(eTST);
-            rebalancer.executeRebalance(address(aggregationLayerVault), strategiesToRebalance);
+            rebalancer.executeRebalance(address(eulerAggregationLayer), strategiesToRebalance);
 
-            assertEq(aggregationLayerVault.totalAllocated(), expectedStrategyCash);
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), expectedStrategyCash);
+            assertEq(eulerAggregationLayer.totalAllocated(), expectedStrategyCash);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationLayer))), expectedStrategyCash);
             assertEq(
-                (aggregationLayerVault.getStrategy(address(eTST))).allocated,
+                (eulerAggregationLayer.getStrategy(address(eTST))).allocated,
                 strategyBefore.allocated + expectedStrategyCash
             );
         }
@@ -73,37 +73,37 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
         // partial withdraw, no need to withdraw from strategy as cash reserve is enough
         uint256 amountToWithdraw = 6000e18;
         {
-            IAggregationLayerVault.Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
-            uint256 strategyShareBalanceBefore = eTST.balanceOf(address(aggregationLayerVault));
-            uint256 totalAssetsDepositedBefore = aggregationLayerVault.totalAssetsDeposited();
-            uint256 aggregatorTotalSupplyBefore = aggregationLayerVault.totalSupply();
+            IEulerAggregationLayer.Strategy memory strategyBefore = eulerAggregationLayer.getStrategy(address(eTST));
+            uint256 strategyShareBalanceBefore = eTST.balanceOf(address(eulerAggregationLayer));
+            uint256 totalAssetsDepositedBefore = eulerAggregationLayer.totalAssetsDeposited();
+            uint256 aggregatorTotalSupplyBefore = eulerAggregationLayer.totalSupply();
             uint256 user1AssetTSTBalanceBefore = assetTST.balanceOf(user1);
 
             vm.prank(user1);
-            aggregationLayerVault.withdraw(amountToWithdraw, user1, user1);
+            eulerAggregationLayer.withdraw(amountToWithdraw, user1, user1);
 
-            assertEq(eTST.balanceOf(address(aggregationLayerVault)), strategyShareBalanceBefore);
-            assertEq(aggregationLayerVault.totalAssetsDeposited(), totalAssetsDepositedBefore - amountToWithdraw);
-            assertEq(aggregationLayerVault.totalSupply(), aggregatorTotalSupplyBefore - amountToWithdraw);
+            assertEq(eTST.balanceOf(address(eulerAggregationLayer)), strategyShareBalanceBefore);
+            assertEq(eulerAggregationLayer.totalAssetsDeposited(), totalAssetsDepositedBefore - amountToWithdraw);
+            assertEq(eulerAggregationLayer.totalSupply(), aggregatorTotalSupplyBefore - amountToWithdraw);
             assertEq(assetTST.balanceOf(user1), user1AssetTSTBalanceBefore + amountToWithdraw);
-            assertEq((aggregationLayerVault.getStrategy(address(eTST))).allocated, strategyBefore.allocated);
+            assertEq((eulerAggregationLayer.getStrategy(address(eTST))).allocated, strategyBefore.allocated);
         }
 
         // full withdraw, will have to withdraw from strategy as cash reserve is not enough
         {
             amountToWithdraw = amountToDeposit - amountToWithdraw;
-            uint256 totalAssetsDepositedBefore = aggregationLayerVault.totalAssetsDeposited();
-            uint256 aggregatorTotalSupplyBefore = aggregationLayerVault.totalSupply();
+            uint256 totalAssetsDepositedBefore = eulerAggregationLayer.totalAssetsDeposited();
+            uint256 aggregatorTotalSupplyBefore = eulerAggregationLayer.totalSupply();
             uint256 user1AssetTSTBalanceBefore = assetTST.balanceOf(user1);
 
             vm.prank(user1);
-            aggregationLayerVault.withdraw(amountToWithdraw, user1, user1);
+            eulerAggregationLayer.withdraw(amountToWithdraw, user1, user1);
 
-            assertEq(eTST.balanceOf(address(aggregationLayerVault)), 0);
-            assertEq(aggregationLayerVault.totalAssetsDeposited(), totalAssetsDepositedBefore - amountToWithdraw);
-            assertEq(aggregationLayerVault.totalSupply(), aggregatorTotalSupplyBefore - amountToWithdraw);
+            assertEq(eTST.balanceOf(address(eulerAggregationLayer)), 0);
+            assertEq(eulerAggregationLayer.totalAssetsDeposited(), totalAssetsDepositedBefore - amountToWithdraw);
+            assertEq(eulerAggregationLayer.totalSupply(), aggregatorTotalSupplyBefore - amountToWithdraw);
             assertEq(assetTST.balanceOf(user1), user1AssetTSTBalanceBefore + amountToWithdraw);
-            assertEq((aggregationLayerVault.getStrategy(address(eTST))).allocated, 0);
+            assertEq((eulerAggregationLayer.getStrategy(address(eTST))).allocated, 0);
         }
     }
 
@@ -112,67 +112,67 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
 
         // deposit into aggregator
         {
-            uint256 balanceBefore = aggregationLayerVault.balanceOf(user1);
-            uint256 totalSupplyBefore = aggregationLayerVault.totalSupply();
-            uint256 totalAssetsDepositedBefore = aggregationLayerVault.totalAssetsDeposited();
+            uint256 balanceBefore = eulerAggregationLayer.balanceOf(user1);
+            uint256 totalSupplyBefore = eulerAggregationLayer.totalSupply();
+            uint256 totalAssetsDepositedBefore = eulerAggregationLayer.totalAssetsDeposited();
             uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
 
             vm.startPrank(user1);
-            assetTST.approve(address(aggregationLayerVault), amountToDeposit);
-            aggregationLayerVault.deposit(amountToDeposit, user1);
+            assetTST.approve(address(eulerAggregationLayer), amountToDeposit);
+            eulerAggregationLayer.deposit(amountToDeposit, user1);
             vm.stopPrank();
 
-            assertEq(aggregationLayerVault.balanceOf(user1), balanceBefore + amountToDeposit);
-            assertEq(aggregationLayerVault.totalSupply(), totalSupplyBefore + amountToDeposit);
-            assertEq(aggregationLayerVault.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
+            assertEq(eulerAggregationLayer.balanceOf(user1), balanceBefore + amountToDeposit);
+            assertEq(eulerAggregationLayer.totalSupply(), totalSupplyBefore + amountToDeposit);
+            assertEq(eulerAggregationLayer.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
             assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - amountToDeposit);
         }
 
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
         {
-            IAggregationLayerVault.Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
+            IEulerAggregationLayer.Strategy memory strategyBefore = eulerAggregationLayer.getStrategy(address(eTST));
 
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), strategyBefore.allocated);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationLayer))), strategyBefore.allocated);
 
-            uint256 expectedStrategyCash = aggregationLayerVault.totalAssetsAllocatable()
-                * strategyBefore.allocationPoints / aggregationLayerVault.totalAllocationPoints();
+            uint256 expectedStrategyCash = eulerAggregationLayer.totalAssetsAllocatable()
+                * strategyBefore.allocationPoints / eulerAggregationLayer.totalAllocationPoints();
 
             vm.prank(user1);
             address[] memory strategiesToRebalance = new address[](1);
             strategiesToRebalance[0] = address(eTST);
-            rebalancer.executeRebalance(address(aggregationLayerVault), strategiesToRebalance);
+            rebalancer.executeRebalance(address(eulerAggregationLayer), strategiesToRebalance);
 
-            assertEq(aggregationLayerVault.totalAllocated(), expectedStrategyCash);
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), expectedStrategyCash);
-            assertEq((aggregationLayerVault.getStrategy(address(eTST))).allocated, expectedStrategyCash);
+            assertEq(eulerAggregationLayer.totalAllocated(), expectedStrategyCash);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationLayer))), expectedStrategyCash);
+            assertEq((eulerAggregationLayer.getStrategy(address(eTST))).allocated, expectedStrategyCash);
         }
 
         vm.warp(block.timestamp + 86400);
         // mock an increase of strategy balance by 10%
-        uint256 aggrCurrentStrategyShareBalance = eTST.balanceOf(address(aggregationLayerVault));
+        uint256 aggrCurrentStrategyShareBalance = eTST.balanceOf(address(eulerAggregationLayer));
         uint256 aggrCurrentStrategyUnderlyingBalance = eTST.convertToAssets(aggrCurrentStrategyShareBalance);
         uint256 aggrNewStrategyUnderlyingBalance = aggrCurrentStrategyUnderlyingBalance * 11e17 / 1e18;
         uint256 yield = aggrNewStrategyUnderlyingBalance - aggrCurrentStrategyUnderlyingBalance;
         assetTST.mint(address(eTST), yield);
-        eTST.skim(type(uint256).max, address(aggregationLayerVault));
+        eTST.skim(type(uint256).max, address(eulerAggregationLayer));
 
         // full withdraw, will have to withdraw from strategy as cash reserve is not enough
         {
-            uint256 amountToWithdraw = aggregationLayerVault.balanceOf(user1);
-            uint256 totalAssetsDepositedBefore = aggregationLayerVault.totalAssetsDeposited();
-            uint256 aggregatorTotalSupplyBefore = aggregationLayerVault.totalSupply();
+            uint256 amountToWithdraw = eulerAggregationLayer.balanceOf(user1);
+            uint256 totalAssetsDepositedBefore = eulerAggregationLayer.totalAssetsDeposited();
+            uint256 aggregatorTotalSupplyBefore = eulerAggregationLayer.totalSupply();
             uint256 user1AssetTSTBalanceBefore = assetTST.balanceOf(user1);
 
             vm.prank(user1);
-            aggregationLayerVault.redeem(amountToWithdraw, user1, user1);
+            eulerAggregationLayer.redeem(amountToWithdraw, user1, user1);
 
-            assertEq(eTST.balanceOf(address(aggregationLayerVault)), yield);
-            assertEq(aggregationLayerVault.totalAssetsDeposited(), totalAssetsDepositedBefore - amountToWithdraw);
-            assertEq(aggregationLayerVault.totalSupply(), aggregatorTotalSupplyBefore - amountToWithdraw);
+            assertEq(eTST.balanceOf(address(eulerAggregationLayer)), yield);
+            assertEq(eulerAggregationLayer.totalAssetsDeposited(), totalAssetsDepositedBefore - amountToWithdraw);
+            assertEq(eulerAggregationLayer.totalSupply(), aggregatorTotalSupplyBefore - amountToWithdraw);
             assertEq(
                 assetTST.balanceOf(user1),
-                user1AssetTSTBalanceBefore + aggregationLayerVault.convertToAssets(amountToWithdraw)
+                user1AssetTSTBalanceBefore + eulerAggregationLayer.convertToAssets(amountToWithdraw)
             );
         }
     }
@@ -197,19 +197,19 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
 
         // deposit into aggregator
         {
-            uint256 balanceBefore = aggregationLayerVault.balanceOf(user1);
-            uint256 totalSupplyBefore = aggregationLayerVault.totalSupply();
-            uint256 totalAssetsDepositedBefore = aggregationLayerVault.totalAssetsDeposited();
+            uint256 balanceBefore = eulerAggregationLayer.balanceOf(user1);
+            uint256 totalSupplyBefore = eulerAggregationLayer.totalSupply();
+            uint256 totalAssetsDepositedBefore = eulerAggregationLayer.totalAssetsDeposited();
             uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
 
             vm.startPrank(user1);
-            assetTST.approve(address(aggregationLayerVault), amountToDeposit);
-            aggregationLayerVault.deposit(amountToDeposit, user1);
+            assetTST.approve(address(eulerAggregationLayer), amountToDeposit);
+            eulerAggregationLayer.deposit(amountToDeposit, user1);
             vm.stopPrank();
 
-            assertEq(aggregationLayerVault.balanceOf(user1), balanceBefore + amountToDeposit);
-            assertEq(aggregationLayerVault.totalSupply(), totalSupplyBefore + amountToDeposit);
-            assertEq(aggregationLayerVault.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
+            assertEq(eulerAggregationLayer.balanceOf(user1), balanceBefore + amountToDeposit);
+            assertEq(eulerAggregationLayer.totalSupply(), totalSupplyBefore + amountToDeposit);
+            assertEq(eulerAggregationLayer.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
             assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - amountToDeposit);
         }
 
@@ -218,20 +218,20 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
         // 10k deposited; 4000 for reserve, 2000 for eTST, 4000 for eTSTsecondary
         vm.warp(block.timestamp + 86400);
         {
-            IAggregationLayerVault.Strategy memory eTSTstrategyBefore = aggregationLayerVault.getStrategy(address(eTST));
-            IAggregationLayerVault.Strategy memory eTSTsecondarystrategyBefore =
-                aggregationLayerVault.getStrategy(address(eTSTsecondary));
+            IEulerAggregationLayer.Strategy memory eTSTstrategyBefore = eulerAggregationLayer.getStrategy(address(eTST));
+            IEulerAggregationLayer.Strategy memory eTSTsecondarystrategyBefore =
+                eulerAggregationLayer.getStrategy(address(eTSTsecondary));
 
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), eTSTstrategyBefore.allocated);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationLayer))), eTSTstrategyBefore.allocated);
             assertEq(
-                eTSTsecondary.convertToAssets(eTSTsecondary.balanceOf(address(aggregationLayerVault))),
+                eTSTsecondary.convertToAssets(eTSTsecondary.balanceOf(address(eulerAggregationLayer))),
                 eTSTsecondarystrategyBefore.allocated
             );
 
-            uint256 expectedeTSTStrategyCash = aggregationLayerVault.totalAssetsAllocatable()
-                * eTSTstrategyBefore.allocationPoints / aggregationLayerVault.totalAllocationPoints();
-            uint256 expectedeTSTsecondaryStrategyCash = aggregationLayerVault.totalAssetsAllocatable()
-                * eTSTsecondarystrategyBefore.allocationPoints / aggregationLayerVault.totalAllocationPoints();
+            uint256 expectedeTSTStrategyCash = eulerAggregationLayer.totalAssetsAllocatable()
+                * eTSTstrategyBefore.allocationPoints / eulerAggregationLayer.totalAllocationPoints();
+            uint256 expectedeTSTsecondaryStrategyCash = eulerAggregationLayer.totalAssetsAllocatable()
+                * eTSTsecondarystrategyBefore.allocationPoints / eulerAggregationLayer.totalAllocationPoints();
 
             assertTrue(expectedeTSTStrategyCash != 0);
             assertTrue(expectedeTSTsecondaryStrategyCash != 0);
@@ -240,31 +240,31 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
             strategiesToRebalance[0] = address(eTST);
             strategiesToRebalance[1] = address(eTSTsecondary);
             vm.prank(user1);
-            rebalancer.executeRebalance(address(aggregationLayerVault), strategiesToRebalance);
+            rebalancer.executeRebalance(address(eulerAggregationLayer), strategiesToRebalance);
 
             assertEq(
-                aggregationLayerVault.totalAllocated(), expectedeTSTStrategyCash + expectedeTSTsecondaryStrategyCash
+                eulerAggregationLayer.totalAllocated(), expectedeTSTStrategyCash + expectedeTSTsecondaryStrategyCash
             );
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), expectedeTSTStrategyCash);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationLayer))), expectedeTSTStrategyCash);
             assertEq(
-                eTSTsecondary.convertToAssets(eTSTsecondary.balanceOf(address(aggregationLayerVault))),
+                eTSTsecondary.convertToAssets(eTSTsecondary.balanceOf(address(eulerAggregationLayer))),
                 expectedeTSTsecondaryStrategyCash
             );
-            assertEq((aggregationLayerVault.getStrategy(address(eTST))).allocated, expectedeTSTStrategyCash);
+            assertEq((eulerAggregationLayer.getStrategy(address(eTST))).allocated, expectedeTSTStrategyCash);
             assertEq(
-                (aggregationLayerVault.getStrategy(address(eTSTsecondary))).allocated, expectedeTSTsecondaryStrategyCash
+                (eulerAggregationLayer.getStrategy(address(eTSTsecondary))).allocated, expectedeTSTsecondaryStrategyCash
             );
             assertEq(
-                assetTST.balanceOf(address(aggregationLayerVault)),
+                assetTST.balanceOf(address(eulerAggregationLayer)),
                 amountToDeposit - (expectedeTSTStrategyCash + expectedeTSTsecondaryStrategyCash)
             );
         }
 
         vm.warp(block.timestamp + 86400);
         // mock an increase of aggregator balance due to yield
-        uint256 aggrCurrenteTSTShareBalance = eTST.balanceOf(address(aggregationLayerVault));
+        uint256 aggrCurrenteTSTShareBalance = eTST.balanceOf(address(eulerAggregationLayer));
         uint256 aggrCurrenteTSTUnderlyingBalance = eTST.convertToAssets(aggrCurrenteTSTShareBalance);
-        uint256 aggrCurrenteTSTsecondaryShareBalance = eTSTsecondary.balanceOf(address(aggregationLayerVault));
+        uint256 aggrCurrenteTSTsecondaryShareBalance = eTSTsecondary.balanceOf(address(eulerAggregationLayer));
         uint256 aggrCurrenteTSTsecondaryUnderlyingBalance = eTST.convertToAssets(aggrCurrenteTSTsecondaryShareBalance);
         uint256 aggrNeweTSTUnderlyingBalance = aggrCurrenteTSTUnderlyingBalance * 11e17 / 1e18;
         uint256 aggrNeweTSTsecondaryUnderlyingBalance = aggrCurrenteTSTsecondaryUnderlyingBalance * 11e17 / 1e18;
@@ -273,25 +273,25 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
 
         assetTST.mint(address(eTST), eTSTYield);
         assetTST.mint(address(eTSTsecondary), eTSTsecondaryYield);
-        eTST.skim(type(uint256).max, address(aggregationLayerVault));
-        eTSTsecondary.skim(type(uint256).max, address(aggregationLayerVault));
+        eTST.skim(type(uint256).max, address(eulerAggregationLayer));
+        eTSTsecondary.skim(type(uint256).max, address(eulerAggregationLayer));
 
         // full withdraw, will have to withdraw from strategy as cash reserve is not enough
         {
-            uint256 amountToWithdraw = aggregationLayerVault.balanceOf(user1);
-            uint256 totalAssetsDepositedBefore = aggregationLayerVault.totalAssetsDeposited();
-            uint256 aggregatorTotalSupplyBefore = aggregationLayerVault.totalSupply();
+            uint256 amountToWithdraw = eulerAggregationLayer.balanceOf(user1);
+            uint256 totalAssetsDepositedBefore = eulerAggregationLayer.totalAssetsDeposited();
+            uint256 aggregatorTotalSupplyBefore = eulerAggregationLayer.totalSupply();
             uint256 user1AssetTSTBalanceBefore = assetTST.balanceOf(user1);
 
             vm.prank(user1);
-            aggregationLayerVault.redeem(amountToWithdraw, user1, user1);
+            eulerAggregationLayer.redeem(amountToWithdraw, user1, user1);
 
-            assertEq(eTST.balanceOf(address(aggregationLayerVault)), 0);
-            assertEq(aggregationLayerVault.totalAssetsDeposited(), totalAssetsDepositedBefore - amountToWithdraw);
-            assertEq(aggregationLayerVault.totalSupply(), aggregatorTotalSupplyBefore - amountToWithdraw);
+            assertEq(eTST.balanceOf(address(eulerAggregationLayer)), 0);
+            assertEq(eulerAggregationLayer.totalAssetsDeposited(), totalAssetsDepositedBefore - amountToWithdraw);
+            assertEq(eulerAggregationLayer.totalSupply(), aggregatorTotalSupplyBefore - amountToWithdraw);
             assertEq(
                 assetTST.balanceOf(user1),
-                user1AssetTSTBalanceBefore + aggregationLayerVault.convertToAssets(amountToWithdraw)
+                user1AssetTSTBalanceBefore + eulerAggregationLayer.convertToAssets(amountToWithdraw)
             );
         }
     }
@@ -301,72 +301,72 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
 
         // deposit into aggregator
         {
-            uint256 balanceBefore = aggregationLayerVault.balanceOf(user1);
-            uint256 totalSupplyBefore = aggregationLayerVault.totalSupply();
-            uint256 totalAssetsDepositedBefore = aggregationLayerVault.totalAssetsDeposited();
+            uint256 balanceBefore = eulerAggregationLayer.balanceOf(user1);
+            uint256 totalSupplyBefore = eulerAggregationLayer.totalSupply();
+            uint256 totalAssetsDepositedBefore = eulerAggregationLayer.totalAssetsDeposited();
             uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
 
             vm.startPrank(user1);
-            assetTST.approve(address(aggregationLayerVault), amountToDeposit);
-            aggregationLayerVault.deposit(amountToDeposit, user1);
+            assetTST.approve(address(eulerAggregationLayer), amountToDeposit);
+            eulerAggregationLayer.deposit(amountToDeposit, user1);
             vm.stopPrank();
 
-            assertEq(aggregationLayerVault.balanceOf(user1), balanceBefore + amountToDeposit);
-            assertEq(aggregationLayerVault.totalSupply(), totalSupplyBefore + amountToDeposit);
-            assertEq(aggregationLayerVault.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
+            assertEq(eulerAggregationLayer.balanceOf(user1), balanceBefore + amountToDeposit);
+            assertEq(eulerAggregationLayer.totalSupply(), totalSupplyBefore + amountToDeposit);
+            assertEq(eulerAggregationLayer.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
             assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - amountToDeposit);
         }
 
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
         {
-            IAggregationLayerVault.Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
+            IEulerAggregationLayer.Strategy memory strategyBefore = eulerAggregationLayer.getStrategy(address(eTST));
 
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), strategyBefore.allocated);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationLayer))), strategyBefore.allocated);
 
-            uint256 expectedStrategyCash = aggregationLayerVault.totalAssetsAllocatable()
-                * strategyBefore.allocationPoints / aggregationLayerVault.totalAllocationPoints();
+            uint256 expectedStrategyCash = eulerAggregationLayer.totalAssetsAllocatable()
+                * strategyBefore.allocationPoints / eulerAggregationLayer.totalAllocationPoints();
 
             vm.prank(user1);
             address[] memory strategiesToRebalance = new address[](1);
             strategiesToRebalance[0] = address(eTST);
-            rebalancer.executeRebalance(address(aggregationLayerVault), strategiesToRebalance);
+            rebalancer.executeRebalance(address(eulerAggregationLayer), strategiesToRebalance);
 
-            assertEq(aggregationLayerVault.totalAllocated(), expectedStrategyCash);
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), expectedStrategyCash);
-            assertEq((aggregationLayerVault.getStrategy(address(eTST))).allocated, expectedStrategyCash);
+            assertEq(eulerAggregationLayer.totalAllocated(), expectedStrategyCash);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationLayer))), expectedStrategyCash);
+            assertEq((eulerAggregationLayer.getStrategy(address(eTST))).allocated, expectedStrategyCash);
         }
 
         vm.warp(block.timestamp + 86400);
         // mock an increase of strategy balance by 10%
-        uint256 aggrCurrentStrategyShareBalance = eTST.balanceOf(address(aggregationLayerVault));
+        uint256 aggrCurrentStrategyShareBalance = eTST.balanceOf(address(eulerAggregationLayer));
         uint256 aggrCurrentStrategyUnderlyingBalance = eTST.convertToAssets(aggrCurrentStrategyShareBalance);
         uint256 aggrNewStrategyUnderlyingBalance = aggrCurrentStrategyUnderlyingBalance * 11e17 / 1e18;
         uint256 yield = aggrNewStrategyUnderlyingBalance - aggrCurrentStrategyUnderlyingBalance;
         assetTST.mint(address(eTST), yield);
-        eTST.skim(type(uint256).max, address(aggregationLayerVault));
+        eTST.skim(type(uint256).max, address(eulerAggregationLayer));
 
         // harvest
         vm.prank(user1);
-        aggregationLayerVault.harvest();
+        eulerAggregationLayer.harvest();
         vm.warp(block.timestamp + 2 weeks);
 
         // full withdraw, will have to withdraw from strategy as cash reserve is not enough
         {
-            uint256 amountToWithdraw = aggregationLayerVault.balanceOf(user1);
-            uint256 totalAssetsDepositedBefore = aggregationLayerVault.totalAssetsDeposited();
-            uint256 aggregatorTotalSupplyBefore = aggregationLayerVault.totalSupply();
+            uint256 amountToWithdraw = eulerAggregationLayer.balanceOf(user1);
+            uint256 totalAssetsDepositedBefore = eulerAggregationLayer.totalAssetsDeposited();
+            uint256 aggregatorTotalSupplyBefore = eulerAggregationLayer.totalSupply();
             uint256 user1AssetTSTBalanceBefore = assetTST.balanceOf(user1);
 
             vm.prank(user1);
-            aggregationLayerVault.redeem(amountToWithdraw, user1, user1);
+            eulerAggregationLayer.redeem(amountToWithdraw, user1, user1);
 
             // all yield is distributed
-            assertApproxEqAbs(eTST.balanceOf(address(aggregationLayerVault)), 0, 1);
+            assertApproxEqAbs(eTST.balanceOf(address(eulerAggregationLayer)), 0, 1);
             assertApproxEqAbs(
-                aggregationLayerVault.totalAssetsDeposited(), totalAssetsDepositedBefore - amountToWithdraw, 1
+                eulerAggregationLayer.totalAssetsDeposited(), totalAssetsDepositedBefore - amountToWithdraw, 1
             );
-            assertEq(aggregationLayerVault.totalSupply(), aggregatorTotalSupplyBefore - amountToWithdraw);
+            assertEq(eulerAggregationLayer.totalSupply(), aggregatorTotalSupplyBefore - amountToWithdraw);
             assertApproxEqAbs(assetTST.balanceOf(user1), user1AssetTSTBalanceBefore + amountToDeposit + yield, 1);
         }
     }
@@ -391,19 +391,19 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
 
         // deposit into aggregator
         {
-            uint256 balanceBefore = aggregationLayerVault.balanceOf(user1);
-            uint256 totalSupplyBefore = aggregationLayerVault.totalSupply();
-            uint256 totalAssetsDepositedBefore = aggregationLayerVault.totalAssetsDeposited();
+            uint256 balanceBefore = eulerAggregationLayer.balanceOf(user1);
+            uint256 totalSupplyBefore = eulerAggregationLayer.totalSupply();
+            uint256 totalAssetsDepositedBefore = eulerAggregationLayer.totalAssetsDeposited();
             uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
 
             vm.startPrank(user1);
-            assetTST.approve(address(aggregationLayerVault), amountToDeposit);
-            aggregationLayerVault.deposit(amountToDeposit, user1);
+            assetTST.approve(address(eulerAggregationLayer), amountToDeposit);
+            eulerAggregationLayer.deposit(amountToDeposit, user1);
             vm.stopPrank();
 
-            assertEq(aggregationLayerVault.balanceOf(user1), balanceBefore + amountToDeposit);
-            assertEq(aggregationLayerVault.totalSupply(), totalSupplyBefore + amountToDeposit);
-            assertEq(aggregationLayerVault.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
+            assertEq(eulerAggregationLayer.balanceOf(user1), balanceBefore + amountToDeposit);
+            assertEq(eulerAggregationLayer.totalSupply(), totalSupplyBefore + amountToDeposit);
+            assertEq(eulerAggregationLayer.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
             assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - amountToDeposit);
         }
 
@@ -412,20 +412,20 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
         // 10k deposited; 4000 for reserve, 2000 for eTST, 4000 for eTSTsecondary
         vm.warp(block.timestamp + 86400);
         {
-            IAggregationLayerVault.Strategy memory eTSTstrategyBefore = aggregationLayerVault.getStrategy(address(eTST));
-            IAggregationLayerVault.Strategy memory eTSTsecondarystrategyBefore =
-                aggregationLayerVault.getStrategy(address(eTSTsecondary));
+            IEulerAggregationLayer.Strategy memory eTSTstrategyBefore = eulerAggregationLayer.getStrategy(address(eTST));
+            IEulerAggregationLayer.Strategy memory eTSTsecondarystrategyBefore =
+                eulerAggregationLayer.getStrategy(address(eTSTsecondary));
 
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), eTSTstrategyBefore.allocated);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationLayer))), eTSTstrategyBefore.allocated);
             assertEq(
-                eTSTsecondary.convertToAssets(eTSTsecondary.balanceOf(address(aggregationLayerVault))),
+                eTSTsecondary.convertToAssets(eTSTsecondary.balanceOf(address(eulerAggregationLayer))),
                 eTSTsecondarystrategyBefore.allocated
             );
 
-            uint256 expectedeTSTStrategyCash = aggregationLayerVault.totalAssetsAllocatable()
-                * eTSTstrategyBefore.allocationPoints / aggregationLayerVault.totalAllocationPoints();
-            uint256 expectedeTSTsecondaryStrategyCash = aggregationLayerVault.totalAssetsAllocatable()
-                * eTSTsecondarystrategyBefore.allocationPoints / aggregationLayerVault.totalAllocationPoints();
+            uint256 expectedeTSTStrategyCash = eulerAggregationLayer.totalAssetsAllocatable()
+                * eTSTstrategyBefore.allocationPoints / eulerAggregationLayer.totalAllocationPoints();
+            uint256 expectedeTSTsecondaryStrategyCash = eulerAggregationLayer.totalAssetsAllocatable()
+                * eTSTsecondarystrategyBefore.allocationPoints / eulerAggregationLayer.totalAllocationPoints();
 
             assertTrue(expectedeTSTStrategyCash != 0);
             assertTrue(expectedeTSTsecondaryStrategyCash != 0);
@@ -434,22 +434,22 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
             strategiesToRebalance[0] = address(eTST);
             strategiesToRebalance[1] = address(eTSTsecondary);
             vm.prank(user1);
-            rebalancer.executeRebalance(address(aggregationLayerVault), strategiesToRebalance);
+            rebalancer.executeRebalance(address(eulerAggregationLayer), strategiesToRebalance);
 
             assertEq(
-                aggregationLayerVault.totalAllocated(), expectedeTSTStrategyCash + expectedeTSTsecondaryStrategyCash
+                eulerAggregationLayer.totalAllocated(), expectedeTSTStrategyCash + expectedeTSTsecondaryStrategyCash
             );
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), expectedeTSTStrategyCash);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationLayer))), expectedeTSTStrategyCash);
             assertEq(
-                eTSTsecondary.convertToAssets(eTSTsecondary.balanceOf(address(aggregationLayerVault))),
+                eTSTsecondary.convertToAssets(eTSTsecondary.balanceOf(address(eulerAggregationLayer))),
                 expectedeTSTsecondaryStrategyCash
             );
-            assertEq((aggregationLayerVault.getStrategy(address(eTST))).allocated, expectedeTSTStrategyCash);
+            assertEq((eulerAggregationLayer.getStrategy(address(eTST))).allocated, expectedeTSTStrategyCash);
             assertEq(
-                (aggregationLayerVault.getStrategy(address(eTSTsecondary))).allocated, expectedeTSTsecondaryStrategyCash
+                (eulerAggregationLayer.getStrategy(address(eTSTsecondary))).allocated, expectedeTSTsecondaryStrategyCash
             );
             assertEq(
-                assetTST.balanceOf(address(aggregationLayerVault)),
+                assetTST.balanceOf(address(eulerAggregationLayer)),
                 amountToDeposit - (expectedeTSTStrategyCash + expectedeTSTsecondaryStrategyCash)
             );
         }
@@ -459,9 +459,9 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
         uint256 eTSTsecondaryYield;
         {
             // mock an increase of aggregator balance due to yield
-            uint256 aggrCurrenteTSTShareBalance = eTST.balanceOf(address(aggregationLayerVault));
+            uint256 aggrCurrenteTSTShareBalance = eTST.balanceOf(address(eulerAggregationLayer));
             uint256 aggrCurrenteTSTUnderlyingBalance = eTST.convertToAssets(aggrCurrenteTSTShareBalance);
-            uint256 aggrCurrenteTSTsecondaryShareBalance = eTSTsecondary.balanceOf(address(aggregationLayerVault));
+            uint256 aggrCurrenteTSTsecondaryShareBalance = eTSTsecondary.balanceOf(address(eulerAggregationLayer));
             uint256 aggrCurrenteTSTsecondaryUnderlyingBalance =
                 eTST.convertToAssets(aggrCurrenteTSTsecondaryShareBalance);
             uint256 aggrNeweTSTUnderlyingBalance = aggrCurrenteTSTUnderlyingBalance * 11e17 / 1e18;
@@ -471,30 +471,30 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
 
             assetTST.mint(address(eTST), eTSTYield);
             assetTST.mint(address(eTSTsecondary), eTSTsecondaryYield);
-            eTST.skim(type(uint256).max, address(aggregationLayerVault));
-            eTSTsecondary.skim(type(uint256).max, address(aggregationLayerVault));
+            eTST.skim(type(uint256).max, address(eulerAggregationLayer));
+            eTSTsecondary.skim(type(uint256).max, address(eulerAggregationLayer));
         }
 
         // harvest
         vm.prank(user1);
-        aggregationLayerVault.harvest();
+        eulerAggregationLayer.harvest();
         vm.warp(block.timestamp + 2 weeks);
 
         // full withdraw, will have to withdraw from strategy as cash reserve is not enough
         {
-            uint256 amountToWithdraw = aggregationLayerVault.balanceOf(user1);
-            uint256 totalAssetsDepositedBefore = aggregationLayerVault.totalAssetsDeposited();
-            uint256 aggregatorTotalSupplyBefore = aggregationLayerVault.totalSupply();
+            uint256 amountToWithdraw = eulerAggregationLayer.balanceOf(user1);
+            uint256 totalAssetsDepositedBefore = eulerAggregationLayer.totalAssetsDeposited();
+            uint256 aggregatorTotalSupplyBefore = eulerAggregationLayer.totalSupply();
             uint256 user1AssetTSTBalanceBefore = assetTST.balanceOf(user1);
 
             vm.prank(user1);
-            aggregationLayerVault.redeem(amountToWithdraw, user1, user1);
+            eulerAggregationLayer.redeem(amountToWithdraw, user1, user1);
 
-            assertApproxEqAbs(eTST.balanceOf(address(aggregationLayerVault)), 0, 0);
+            assertApproxEqAbs(eTST.balanceOf(address(eulerAggregationLayer)), 0, 0);
             assertApproxEqAbs(
-                aggregationLayerVault.totalAssetsDeposited(), totalAssetsDepositedBefore - amountToWithdraw, 1
+                eulerAggregationLayer.totalAssetsDeposited(), totalAssetsDepositedBefore - amountToWithdraw, 1
             );
-            assertEq(aggregationLayerVault.totalSupply(), aggregatorTotalSupplyBefore - amountToWithdraw);
+            assertEq(eulerAggregationLayer.totalSupply(), aggregatorTotalSupplyBefore - amountToWithdraw);
             assertApproxEqAbs(
                 assetTST.balanceOf(user1),
                 user1AssetTSTBalanceBefore + amountToDeposit + eTSTYield + eTSTsecondaryYield,
@@ -523,19 +523,19 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
 
         // deposit into aggregator
         {
-            uint256 balanceBefore = aggregationLayerVault.balanceOf(user1);
-            uint256 totalSupplyBefore = aggregationLayerVault.totalSupply();
-            uint256 totalAssetsDepositedBefore = aggregationLayerVault.totalAssetsDeposited();
+            uint256 balanceBefore = eulerAggregationLayer.balanceOf(user1);
+            uint256 totalSupplyBefore = eulerAggregationLayer.totalSupply();
+            uint256 totalAssetsDepositedBefore = eulerAggregationLayer.totalAssetsDeposited();
             uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
 
             vm.startPrank(user1);
-            assetTST.approve(address(aggregationLayerVault), amountToDeposit);
-            aggregationLayerVault.deposit(amountToDeposit, user1);
+            assetTST.approve(address(eulerAggregationLayer), amountToDeposit);
+            eulerAggregationLayer.deposit(amountToDeposit, user1);
             vm.stopPrank();
 
-            assertEq(aggregationLayerVault.balanceOf(user1), balanceBefore + amountToDeposit);
-            assertEq(aggregationLayerVault.totalSupply(), totalSupplyBefore + amountToDeposit);
-            assertEq(aggregationLayerVault.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
+            assertEq(eulerAggregationLayer.balanceOf(user1), balanceBefore + amountToDeposit);
+            assertEq(eulerAggregationLayer.totalSupply(), totalSupplyBefore + amountToDeposit);
+            assertEq(eulerAggregationLayer.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
             assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - amountToDeposit);
         }
 
@@ -544,20 +544,20 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
         // 10k deposited; 4000 for reserve, 2000 for eTST, 4000 for eTSTsecondary
         vm.warp(block.timestamp + 86400);
         {
-            IAggregationLayerVault.Strategy memory eTSTstrategyBefore = aggregationLayerVault.getStrategy(address(eTST));
-            IAggregationLayerVault.Strategy memory eTSTsecondarystrategyBefore =
-                aggregationLayerVault.getStrategy(address(eTSTsecondary));
+            IEulerAggregationLayer.Strategy memory eTSTstrategyBefore = eulerAggregationLayer.getStrategy(address(eTST));
+            IEulerAggregationLayer.Strategy memory eTSTsecondarystrategyBefore =
+                eulerAggregationLayer.getStrategy(address(eTSTsecondary));
 
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), eTSTstrategyBefore.allocated);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationLayer))), eTSTstrategyBefore.allocated);
             assertEq(
-                eTSTsecondary.convertToAssets(eTSTsecondary.balanceOf(address(aggregationLayerVault))),
+                eTSTsecondary.convertToAssets(eTSTsecondary.balanceOf(address(eulerAggregationLayer))),
                 eTSTsecondarystrategyBefore.allocated
             );
 
-            uint256 expectedeTSTStrategyCash = aggregationLayerVault.totalAssetsAllocatable()
-                * eTSTstrategyBefore.allocationPoints / aggregationLayerVault.totalAllocationPoints();
-            uint256 expectedeTSTsecondaryStrategyCash = aggregationLayerVault.totalAssetsAllocatable()
-                * eTSTsecondarystrategyBefore.allocationPoints / aggregationLayerVault.totalAllocationPoints();
+            uint256 expectedeTSTStrategyCash = eulerAggregationLayer.totalAssetsAllocatable()
+                * eTSTstrategyBefore.allocationPoints / eulerAggregationLayer.totalAllocationPoints();
+            uint256 expectedeTSTsecondaryStrategyCash = eulerAggregationLayer.totalAssetsAllocatable()
+                * eTSTsecondarystrategyBefore.allocationPoints / eulerAggregationLayer.totalAllocationPoints();
 
             assertTrue(expectedeTSTStrategyCash != 0);
             assertTrue(expectedeTSTsecondaryStrategyCash != 0);
@@ -566,22 +566,22 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
             strategiesToRebalance[0] = address(eTST);
             strategiesToRebalance[1] = address(eTSTsecondary);
             vm.prank(user1);
-            rebalancer.executeRebalance(address(aggregationLayerVault), strategiesToRebalance);
+            rebalancer.executeRebalance(address(eulerAggregationLayer), strategiesToRebalance);
 
             assertEq(
-                aggregationLayerVault.totalAllocated(), expectedeTSTStrategyCash + expectedeTSTsecondaryStrategyCash
+                eulerAggregationLayer.totalAllocated(), expectedeTSTStrategyCash + expectedeTSTsecondaryStrategyCash
             );
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), expectedeTSTStrategyCash);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationLayer))), expectedeTSTStrategyCash);
             assertEq(
-                eTSTsecondary.convertToAssets(eTSTsecondary.balanceOf(address(aggregationLayerVault))),
+                eTSTsecondary.convertToAssets(eTSTsecondary.balanceOf(address(eulerAggregationLayer))),
                 expectedeTSTsecondaryStrategyCash
             );
-            assertEq((aggregationLayerVault.getStrategy(address(eTST))).allocated, expectedeTSTStrategyCash);
+            assertEq((eulerAggregationLayer.getStrategy(address(eTST))).allocated, expectedeTSTStrategyCash);
             assertEq(
-                (aggregationLayerVault.getStrategy(address(eTSTsecondary))).allocated, expectedeTSTsecondaryStrategyCash
+                (eulerAggregationLayer.getStrategy(address(eTSTsecondary))).allocated, expectedeTSTsecondaryStrategyCash
             );
             assertEq(
-                assetTST.balanceOf(address(aggregationLayerVault)),
+                assetTST.balanceOf(address(eulerAggregationLayer)),
                 amountToDeposit - (expectedeTSTStrategyCash + expectedeTSTsecondaryStrategyCash)
             );
         }
@@ -591,9 +591,9 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
         uint256 eTSTsecondaryYield;
         {
             // mock an increase of aggregator balance due to yield
-            uint256 aggrCurrenteTSTShareBalance = eTST.balanceOf(address(aggregationLayerVault));
+            uint256 aggrCurrenteTSTShareBalance = eTST.balanceOf(address(eulerAggregationLayer));
             uint256 aggrCurrenteTSTUnderlyingBalance = eTST.convertToAssets(aggrCurrenteTSTShareBalance);
-            uint256 aggrCurrenteTSTsecondaryShareBalance = eTSTsecondary.balanceOf(address(aggregationLayerVault));
+            uint256 aggrCurrenteTSTsecondaryShareBalance = eTSTsecondary.balanceOf(address(eulerAggregationLayer));
             uint256 aggrCurrenteTSTsecondaryUnderlyingBalance =
                 eTST.convertToAssets(aggrCurrenteTSTsecondaryShareBalance);
             uint256 aggrNeweTSTUnderlyingBalance = aggrCurrenteTSTUnderlyingBalance * 11e17 / 1e18;
@@ -603,24 +603,24 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
 
             assetTST.mint(address(eTST), eTSTYield);
             assetTST.mint(address(eTSTsecondary), eTSTsecondaryYield);
-            eTST.skim(type(uint256).max, address(aggregationLayerVault));
-            eTSTsecondary.skim(type(uint256).max, address(aggregationLayerVault));
+            eTST.skim(type(uint256).max, address(eulerAggregationLayer));
+            eTSTsecondary.skim(type(uint256).max, address(eulerAggregationLayer));
         }
 
         // harvest
         vm.prank(user1);
-        aggregationLayerVault.harvest();
+        eulerAggregationLayer.harvest();
         vm.warp(block.timestamp + 2 weeks);
 
         vm.prank(manager);
-        aggregationLayerVault.removeStrategy(address(eTSTsecondary));
+        eulerAggregationLayer.removeStrategy(address(eTSTsecondary));
 
         {
-            uint256 amountToWithdraw = aggregationLayerVault.balanceOf(user1);
+            uint256 amountToWithdraw = eulerAggregationLayer.balanceOf(user1);
 
             vm.prank(user1);
             vm.expectRevert(WithdrawalQueue.NotEnoughAssets.selector);
-            aggregationLayerVault.redeem(amountToWithdraw, user1, user1);
+            eulerAggregationLayer.redeem(amountToWithdraw, user1, user1);
         }
     }
 }

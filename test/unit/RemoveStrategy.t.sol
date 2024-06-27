@@ -2,13 +2,13 @@
 pragma solidity ^0.8.0;
 
 import {
-    AggregationLayerVaultBase,
-    AggregationLayerVault,
+    EulerAggregationLayerBase,
+    EulerAggregationLayer,
     IEVault,
-    IAggregationLayerVault
-} from "../common/AggregationLayerVaultBase.t.sol";
+    IEulerAggregationLayer
+} from "../common/EulerAggregationLayerBase.t.sol";
 
-contract RemoveStrategyTest is AggregationLayerVaultBase {
+contract RemoveStrategyTest is EulerAggregationLayerBase {
     uint256 strategyAllocationPoints;
 
     IEVault anotherStrategy;
@@ -21,17 +21,17 @@ contract RemoveStrategyTest is AggregationLayerVaultBase {
     }
 
     function testRemoveStrategy() public {
-        uint256 totalAllocationPointsBefore = aggregationLayerVault.totalAllocationPoints();
+        uint256 totalAllocationPointsBefore = eulerAggregationLayer.totalAllocationPoints();
         uint256 withdrawalQueueLengthBefore = _getWithdrawalQueueLength();
 
         vm.prank(manager);
-        aggregationLayerVault.removeStrategy(address(eTST));
+        eulerAggregationLayer.removeStrategy(address(eTST));
 
-        IAggregationLayerVault.Strategy memory strategyAfter = aggregationLayerVault.getStrategy(address(eTST));
+        IEulerAggregationLayer.Strategy memory strategyAfter = eulerAggregationLayer.getStrategy(address(eTST));
 
         assertEq(strategyAfter.active, false);
         assertEq(strategyAfter.allocationPoints, 0);
-        assertEq(aggregationLayerVault.totalAllocationPoints(), totalAllocationPointsBefore - strategyAllocationPoints);
+        assertEq(eulerAggregationLayer.totalAllocationPoints(), totalAllocationPointsBefore - strategyAllocationPoints);
         assertEq(_getWithdrawalQueueLength(), withdrawalQueueLengthBefore - 1);
     }
 
@@ -41,17 +41,17 @@ contract RemoveStrategyTest is AggregationLayerVaultBase {
         );
         _addStrategy(manager, address(anotherStrategy), strategyAllocationPoints);
 
-        uint256 totalAllocationPointsBefore = aggregationLayerVault.totalAllocationPoints();
+        uint256 totalAllocationPointsBefore = eulerAggregationLayer.totalAllocationPoints();
         uint256 withdrawalQueueLengthBefore = _getWithdrawalQueueLength();
 
         vm.prank(manager);
-        aggregationLayerVault.removeStrategy(address(eTST));
+        eulerAggregationLayer.removeStrategy(address(eTST));
 
-        IAggregationLayerVault.Strategy memory strategyAfter = aggregationLayerVault.getStrategy(address(eTST));
+        IEulerAggregationLayer.Strategy memory strategyAfter = eulerAggregationLayer.getStrategy(address(eTST));
 
         assertEq(strategyAfter.active, false);
         assertEq(strategyAfter.allocationPoints, 0);
-        assertEq(aggregationLayerVault.totalAllocationPoints(), totalAllocationPointsBefore - strategyAllocationPoints);
+        assertEq(eulerAggregationLayer.totalAllocationPoints(), totalAllocationPointsBefore - strategyAllocationPoints);
         assertEq(_getWithdrawalQueueLength(), withdrawalQueueLengthBefore - 1);
     }
 
@@ -75,7 +75,7 @@ contract RemoveStrategyTest is AggregationLayerVaultBase {
         assertEq(withdrawalQueue[3], strategy3);
 
         vm.prank(manager);
-        aggregationLayerVault.removeStrategy(strategy2);
+        eulerAggregationLayer.removeStrategy(strategy2);
 
         withdrawalQueue = _getWithdrawalQueue();
         assertEq(withdrawalQueue.length, 3);
@@ -84,7 +84,7 @@ contract RemoveStrategyTest is AggregationLayerVaultBase {
         assertEq(withdrawalQueue[2], strategy3);
 
         vm.prank(manager);
-        aggregationLayerVault.removeStrategy(strategy3);
+        eulerAggregationLayer.removeStrategy(strategy3);
 
         withdrawalQueue = _getWithdrawalQueue();
         assertEq(withdrawalQueue.length, 2);
@@ -92,14 +92,14 @@ contract RemoveStrategyTest is AggregationLayerVaultBase {
         assertEq(withdrawalQueue[1], strategy1);
 
         vm.prank(manager);
-        aggregationLayerVault.removeStrategy(address(eTST));
+        eulerAggregationLayer.removeStrategy(address(eTST));
 
         withdrawalQueue = _getWithdrawalQueue();
         assertEq(withdrawalQueue.length, 1);
         assertEq(withdrawalQueue[0], strategy1);
 
         vm.prank(manager);
-        aggregationLayerVault.removeStrategy(strategy1);
+        eulerAggregationLayer.removeStrategy(strategy1);
 
         withdrawalQueue = _getWithdrawalQueue();
         assertEq(withdrawalQueue.length, 0);
@@ -108,12 +108,12 @@ contract RemoveStrategyTest is AggregationLayerVaultBase {
     function testRemoveStrategy_fromUnauthorized() public {
         vm.prank(deployer);
         vm.expectRevert();
-        aggregationLayerVault.removeStrategy(address(eTST));
+        eulerAggregationLayer.removeStrategy(address(eTST));
     }
 
     function testRemoveStrategy_AlreadyRemoved() public {
         vm.prank(manager);
         vm.expectRevert();
-        aggregationLayerVault.removeStrategy(address(eTST2));
+        eulerAggregationLayer.removeStrategy(address(eTST2));
     }
 }

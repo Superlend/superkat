@@ -7,7 +7,7 @@ import {IBalanceTracker} from "reward-streams/interfaces/IBalanceTracker.sol";
 import {IRewardStreams} from "reward-streams/interfaces/IRewardStreams.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 // contracts
-import {Shared} from "../Shared.sol";
+import {Shared} from "../common/Shared.sol";
 // libs
 import {StorageLib, AggregationVaultStorage} from "../lib/StorageLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";

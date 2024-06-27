@@ -2,17 +2,17 @@
 pragma solidity ^0.8.0;
 
 import {
-    AggregationLayerVaultBase,
-    AggregationLayerVault,
+    EulerAggregationLayerBase,
+    EulerAggregationLayer,
     console2,
     EVault,
     IEVault,
     IRMTestDefault,
     TestERC20,
-    IAggregationLayerVault
-} from "../common/AggregationLayerVaultBase.t.sol";
+    IEulerAggregationLayer
+} from "../common/EulerAggregationLayerBase.t.sol";
 
-contract PerformanceFeeE2ETest is AggregationLayerVaultBase {
+contract PerformanceFeeE2ETest is EulerAggregationLayerBase {
     uint256 user1InitialBalance = 100000e18;
 
     address feeRecipient;
@@ -29,19 +29,18 @@ contract PerformanceFeeE2ETest is AggregationLayerVaultBase {
     }
 
     function testSetPerformanceFee() public {
-        {
-            (, uint256 fee) = aggregationLayerVault.performanceFeeConfig();
-            assertEq(fee, 0);
-        }
+        (address feeRecipientAddr, uint256 fee) = eulerAggregationLayer.performanceFeeConfig();
+        assertEq(fee, 0);
+        assertEq(feeRecipientAddr, address(0));
 
         uint256 newPerformanceFee = 3e17;
 
         vm.startPrank(manager);
-        aggregationLayerVault.setFeeRecipient(feeRecipient);
-        aggregationLayerVault.setPerformanceFee(newPerformanceFee);
+        eulerAggregationLayer.setFeeRecipient(feeRecipient);
+        eulerAggregationLayer.setPerformanceFee(newPerformanceFee);
         vm.stopPrank();
 
-        (address feeRecipientAddr, uint256 fee) = aggregationLayerVault.performanceFeeConfig();
+        (feeRecipientAddr, fee) = eulerAggregationLayer.performanceFeeConfig();
         assertEq(fee, newPerformanceFee);
         assertEq(feeRecipientAddr, feeRecipient);
     }
@@ -50,111 +49,111 @@ contract PerformanceFeeE2ETest is AggregationLayerVaultBase {
         uint256 newPerformanceFee = 3e17;
 
         vm.startPrank(manager);
-        aggregationLayerVault.setFeeRecipient(feeRecipient);
-        aggregationLayerVault.setPerformanceFee(newPerformanceFee);
+        eulerAggregationLayer.setFeeRecipient(feeRecipient);
+        eulerAggregationLayer.setPerformanceFee(newPerformanceFee);
         vm.stopPrank();
 
         uint256 amountToDeposit = 10000e18;
 
         // deposit into aggregator
         {
-            uint256 balanceBefore = aggregationLayerVault.balanceOf(user1);
-            uint256 totalSupplyBefore = aggregationLayerVault.totalSupply();
-            uint256 totalAssetsDepositedBefore = aggregationLayerVault.totalAssetsDeposited();
+            uint256 balanceBefore = eulerAggregationLayer.balanceOf(user1);
+            uint256 totalSupplyBefore = eulerAggregationLayer.totalSupply();
+            uint256 totalAssetsDepositedBefore = eulerAggregationLayer.totalAssetsDeposited();
             uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
 
             vm.startPrank(user1);
-            assetTST.approve(address(aggregationLayerVault), amountToDeposit);
-            aggregationLayerVault.deposit(amountToDeposit, user1);
+            assetTST.approve(address(eulerAggregationLayer), amountToDeposit);
+            eulerAggregationLayer.deposit(amountToDeposit, user1);
             vm.stopPrank();
 
-            assertEq(aggregationLayerVault.balanceOf(user1), balanceBefore + amountToDeposit);
-            assertEq(aggregationLayerVault.totalSupply(), totalSupplyBefore + amountToDeposit);
-            assertEq(aggregationLayerVault.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
+            assertEq(eulerAggregationLayer.balanceOf(user1), balanceBefore + amountToDeposit);
+            assertEq(eulerAggregationLayer.totalSupply(), totalSupplyBefore + amountToDeposit);
+            assertEq(eulerAggregationLayer.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
             assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - amountToDeposit);
         }
 
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
         {
-            IAggregationLayerVault.Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
+            IEulerAggregationLayer.Strategy memory strategyBefore = eulerAggregationLayer.getStrategy(address(eTST));
 
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), strategyBefore.allocated);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationLayer))), strategyBefore.allocated);
 
-            uint256 expectedStrategyCash = aggregationLayerVault.totalAssetsAllocatable()
-                * strategyBefore.allocationPoints / aggregationLayerVault.totalAllocationPoints();
+            uint256 expectedStrategyCash = eulerAggregationLayer.totalAssetsAllocatable()
+                * strategyBefore.allocationPoints / eulerAggregationLayer.totalAllocationPoints();
 
             vm.prank(user1);
             address[] memory strategiesToRebalance = new address[](1);
             strategiesToRebalance[0] = address(eTST);
-            rebalancer.executeRebalance(address(aggregationLayerVault), strategiesToRebalance);
+            rebalancer.executeRebalance(address(eulerAggregationLayer), strategiesToRebalance);
 
-            assertEq(aggregationLayerVault.totalAllocated(), expectedStrategyCash);
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), expectedStrategyCash);
-            assertEq((aggregationLayerVault.getStrategy(address(eTST))).allocated, expectedStrategyCash);
+            assertEq(eulerAggregationLayer.totalAllocated(), expectedStrategyCash);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationLayer))), expectedStrategyCash);
+            assertEq((eulerAggregationLayer.getStrategy(address(eTST))).allocated, expectedStrategyCash);
         }
 
         vm.warp(block.timestamp + 86400);
         // mock an increase of strategy balance by 10%
         uint256 yield;
         {
-            uint256 aggrCurrentStrategyShareBalance = eTST.balanceOf(address(aggregationLayerVault));
+            uint256 aggrCurrentStrategyShareBalance = eTST.balanceOf(address(eulerAggregationLayer));
             uint256 aggrCurrentStrategyUnderlyingBalance = eTST.convertToAssets(aggrCurrentStrategyShareBalance);
             uint256 aggrNewStrategyUnderlyingBalance = aggrCurrentStrategyUnderlyingBalance * 11e17 / 1e18;
             yield = aggrNewStrategyUnderlyingBalance - aggrCurrentStrategyUnderlyingBalance;
             assetTST.mint(address(eTST), yield);
-            eTST.skim(type(uint256).max, address(aggregationLayerVault));
+            eTST.skim(type(uint256).max, address(eulerAggregationLayer));
         }
 
-        (, uint256 performanceFee) = aggregationLayerVault.performanceFeeConfig();
+        (, uint256 performanceFee) = eulerAggregationLayer.performanceFeeConfig();
         uint256 expectedPerformanceFee = yield * performanceFee / 1e18;
 
-        IAggregationLayerVault.Strategy memory strategyBeforeHarvest = aggregationLayerVault.getStrategy(address(eTST));
-        uint256 totalAllocatedBefore = aggregationLayerVault.totalAllocated();
+        IEulerAggregationLayer.Strategy memory strategyBeforeHarvest = eulerAggregationLayer.getStrategy(address(eTST));
+        uint256 totalAllocatedBefore = eulerAggregationLayer.totalAllocated();
 
         // harvest
         vm.prank(user1);
-        aggregationLayerVault.harvest();
+        eulerAggregationLayer.harvest();
 
         assertEq(assetTST.balanceOf(feeRecipient), expectedPerformanceFee);
         assertEq(
-            aggregationLayerVault.getStrategy(address(eTST)).allocated,
+            eulerAggregationLayer.getStrategy(address(eTST)).allocated,
             strategyBeforeHarvest.allocated + yield - expectedPerformanceFee
         );
-        assertEq(aggregationLayerVault.totalAllocated(), totalAllocatedBefore + yield - expectedPerformanceFee);
+        assertEq(eulerAggregationLayer.totalAllocated(), totalAllocatedBefore + yield - expectedPerformanceFee);
 
         // full withdraw, will have to withdraw from strategy as cash reserve is not enough
         {
-            uint256 amountToWithdraw = aggregationLayerVault.balanceOf(user1);
-            uint256 totalAssetsDepositedBefore = aggregationLayerVault.totalAssetsDeposited();
-            uint256 aggregatorTotalSupplyBefore = aggregationLayerVault.totalSupply();
+            uint256 amountToWithdraw = eulerAggregationLayer.balanceOf(user1);
+            uint256 totalAssetsDepositedBefore = eulerAggregationLayer.totalAssetsDeposited();
+            uint256 aggregatorTotalSupplyBefore = eulerAggregationLayer.totalSupply();
             uint256 user1AssetTSTBalanceBefore = assetTST.balanceOf(user1);
-            uint256 expectedAssetTST = aggregationLayerVault.convertToAssets(aggregationLayerVault.balanceOf(user1));
+            uint256 expectedAssetTST = eulerAggregationLayer.convertToAssets(eulerAggregationLayer.balanceOf(user1));
 
             vm.prank(user1);
-            aggregationLayerVault.redeem(amountToWithdraw, user1, user1);
+            eulerAggregationLayer.redeem(amountToWithdraw, user1, user1);
 
             assertApproxEqAbs(
-                aggregationLayerVault.totalAssetsDeposited(), totalAssetsDepositedBefore - expectedAssetTST, 1
+                eulerAggregationLayer.totalAssetsDeposited(), totalAssetsDepositedBefore - expectedAssetTST, 1
             );
-            assertEq(aggregationLayerVault.totalSupply(), aggregatorTotalSupplyBefore - amountToWithdraw);
+            assertEq(eulerAggregationLayer.totalSupply(), aggregatorTotalSupplyBefore - amountToWithdraw);
             assertApproxEqAbs(assetTST.balanceOf(user1), user1AssetTSTBalanceBefore + expectedAssetTST, 1);
         }
 
         // full withdraw of recipient fees
         {
-            uint256 totalAssetsDepositedBefore = aggregationLayerVault.totalAssetsDeposited();
+            uint256 totalAssetsDepositedBefore = eulerAggregationLayer.totalAssetsDeposited();
             uint256 assetTSTBalanceBefore = assetTST.balanceOf(feeRecipient);
 
-            uint256 feeShares = aggregationLayerVault.balanceOf(feeRecipient);
-            uint256 expectedAssets = aggregationLayerVault.convertToAssets(feeShares);
+            uint256 feeShares = eulerAggregationLayer.balanceOf(feeRecipient);
+            uint256 expectedAssets = eulerAggregationLayer.convertToAssets(feeShares);
             vm.prank(feeRecipient);
-            aggregationLayerVault.redeem(feeShares, feeRecipient, feeRecipient);
+            eulerAggregationLayer.redeem(feeShares, feeRecipient, feeRecipient);
 
             assertApproxEqAbs(
-                aggregationLayerVault.totalAssetsDeposited(), totalAssetsDepositedBefore - expectedAssets, 1
+                eulerAggregationLayer.totalAssetsDeposited(), totalAssetsDepositedBefore - expectedAssets, 1
             );
-            assertEq(aggregationLayerVault.totalSupply(), 0);
+            assertEq(eulerAggregationLayer.totalSupply(), 0);
             assertApproxEqAbs(assetTST.balanceOf(feeRecipient), assetTSTBalanceBefore + expectedAssets, 1);
         }
     }
