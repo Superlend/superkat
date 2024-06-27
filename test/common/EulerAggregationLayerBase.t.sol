@@ -55,7 +55,6 @@ contract EulerAggregationLayerBase is EVaultTestBase {
         withdrawalQueueImpl = new WithdrawalQueue();
 
         EulerAggregationLayerFactory.FactoryParams memory factoryParams = EulerAggregationLayerFactory.FactoryParams({
-            evc: address(evc),
             balanceTracker: address(0),
             rewardsModuleImpl: address(rewardsImpl),
             hooksModuleImpl: address(hooksImpl),
@@ -91,7 +90,7 @@ contract EulerAggregationLayerBase is EVaultTestBase {
         vm.stopPrank();
     }
 
-    function testInitialParams() public {
+    function testInitialParams() public view {
         EulerAggregationLayer.Strategy memory cashReserve = eulerAggregationLayer.getStrategy(address(0));
 
         assertEq(cashReserve.allocated, 0);

@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 interface IEulerAggregationLayer {
     /// @dev Struct to pass init() call params.
     struct InitParams {
-        address evc;
         address balanceTracker;
         address withdrawalQueuePlugin;
         address rebalancerPlugin;

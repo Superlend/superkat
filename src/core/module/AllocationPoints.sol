@@ -69,7 +69,7 @@ abstract contract AllocationPointsModule is Shared {
             revert Errors.InvalidStrategyAsset();
         }
 
-        _callHooksTarget(ADD_STRATEGY, _msgSender());
+        _callHooksTarget(ADD_STRATEGY, msg.sender);
 
         $.strategies[_strategy] = IEulerAggregationLayer.Strategy({
             allocated: 0,
@@ -99,7 +99,7 @@ abstract contract AllocationPointsModule is Shared {
             revert Errors.AlreadyRemoved();
         }
 
-        _callHooksTarget(REMOVE_STRATEGY, _msgSender());
+        _callHooksTarget(REMOVE_STRATEGY, msg.sender);
 
         $.totalAllocationPoints -= strategyStorage.allocationPoints;
         strategyStorage.active = false;

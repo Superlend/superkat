@@ -26,7 +26,6 @@ contract BalanceForwarderE2ETest is EulerAggregationLayerBase {
         trackingReward = address(new TrackingRewardStreams(address(evc), 2 weeks));
 
         EulerAggregationLayerFactory.FactoryParams memory factoryParams = EulerAggregationLayerFactory.FactoryParams({
-            evc: address(evc),
             balanceTracker: trackingReward,
             rewardsModuleImpl: address(rewardsImpl),
             hooksModuleImpl: address(hooksImpl),

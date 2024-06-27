@@ -15,7 +15,6 @@ import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 /// @author Euler Labs (https://www.eulerlabs.com/)
 contract EulerAggregationLayerFactory {
     /// core dependencies
-    address public immutable evc;
     address public immutable balanceTracker;
     /// core modules implementations addresses
     address public immutable rewardsModuleImpl;
@@ -30,7 +29,6 @@ contract EulerAggregationLayerFactory {
 
     /// @dev Init params struct.
     struct FactoryParams {
-        address evc;
         address balanceTracker;
         address rewardsModuleImpl;
         address hooksModuleImpl;
@@ -43,7 +41,6 @@ contract EulerAggregationLayerFactory {
     /// @notice Constructor.
     /// @param _factoryParams FactoryParams struct.
     constructor(FactoryParams memory _factoryParams) {
-        evc = _factoryParams.evc;
         balanceTracker = _factoryParams.balanceTracker;
         rewardsModuleImpl = _factoryParams.rewardsModuleImpl;
         hooksModuleImpl = _factoryParams.hooksModuleImpl;
@@ -83,7 +80,6 @@ contract EulerAggregationLayerFactory {
             new EulerAggregationLayer(rewardsModuleAddr, hooksModuleAddr, feeModuleAddr, allocationpointsModuleAddr);
 
         IEulerAggregationLayer.InitParams memory aggregationVaultInitParams = IEulerAggregationLayer.InitParams({
-            evc: evc,
             balanceTracker: balanceTracker,
             withdrawalQueuePlugin: address(withdrawalQueue),
             rebalancerPlugin: rebalancer,

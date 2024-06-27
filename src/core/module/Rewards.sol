@@ -91,17 +91,16 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
     /// @dev Only the authenticated account can enable balance forwarding for itself
     /// @dev Should call the IBalanceTracker hook with the current account's balance
     function enableBalanceForwarder() external virtual nonReentrant {
-        address user = _msgSender();
-        uint256 userBalance = IERC20(address(this)).balanceOf(user);
+        uint256 userBalance = IERC20(address(this)).balanceOf(msg.sender);
 
-        _enableBalanceForwarder(user, userBalance);
+        _enableBalanceForwarder(msg.sender, userBalance);
     }
 
     /// @notice Disables balance forwarding for the authenticated account
     /// @dev Only the authenticated account can disable balance forwarding for itself
     /// @dev Should call the IBalanceTracker hook with the account's balance of 0
     function disableBalanceForwarder() external virtual nonReentrant {
-        _disableBalanceForwarder(_msgSender());
+        _disableBalanceForwarder(msg.sender);
     }
 
     /// @notice Retrieve the address of rewards contract, tracking changes in account's balances

@@ -38,17 +38,6 @@ contract Shared {
         $.locked = REENTRANCYLOCK__UNLOCKED;
     }
 
-    function _msgSender() internal view virtual returns (address) {
-        address sender = msg.sender;
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
-
-        if (sender == address($.evc)) {
-            (sender,) = IEVC($.evc).getCurrentOnBehalfOfAccount(address(0));
-        }
-
-        return sender;
-    }
-
     function _setHooksConfig(address _hooksTarget, uint32 _hookedFns) internal {
         if (_hooksTarget != address(0) && IHookTarget(_hooksTarget).isHookTarget() != IHookTarget.isHookTarget.selector)
         {

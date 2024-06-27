@@ -6,8 +6,6 @@ import {IEulerAggregationLayer} from "../interface/IEulerAggregationLayer.sol";
 
 /// @custom:storage-location erc7201:euler_aggregation_vault.storage.AggregationVault
 struct AggregationVaultStorage {
-    /// EVC address
-    address evc;
     /// Total amount of _asset deposited into EulerAggregationLayer contract
     uint256 totalAssetsDeposited;
     /// Total amount of _asset deposited across all strategies.

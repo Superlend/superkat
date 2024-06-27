@@ -77,7 +77,6 @@ contract EulerAggregationLayer is
             cap: 0
         });
         $.totalAllocationPoints = _initParams.initialCashAllocationPoints;
-        $.evc = _initParams.evc;
         $.balanceTracker = _initParams.balanceTracker;
 
         // Setup DEFAULT_ADMIN
@@ -437,7 +436,7 @@ contract EulerAggregationLayer is
 
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
-        if ($.totalAssetsDeposited == 0) return;
+        if (totalSupply() == 0) return;
 
         uint256 toGulp = totalAssetsAllocatable() - $.totalAssetsDeposited - $.interestLeft;
         if (toGulp == 0) return;
@@ -590,11 +589,6 @@ contract EulerAggregationLayer is
         uint256 timePassed = block.timestamp - $.lastInterestUpdate;
 
         return $.interestLeft * timePassed / totalDuration;
-    }
-
-    /// @dev Override for _msgSender() to be aware of the EVC forwarded calls.
-    function _msgSender() internal view override (ContextUpgradeable, Shared) returns (address) {
-        return Shared._msgSender();
     }
 
     /// @dev Check if caller is WithdrawalQueue address, if not revert.
