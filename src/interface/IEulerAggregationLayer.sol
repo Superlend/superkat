@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-interface IAggregationLayerVault {
+interface IEulerAggregationLayer {
     /// @dev Struct to pass init() call params.
     struct InitParams {
         address evc;
         address balanceTracker;
-        address withdrawalQueuePeriphery;
-        address rebalancerPerihpery;
+        address withdrawalQueuePlugin;
+        address rebalancerPlugin;
         address aggregationVaultOwner;
         address asset;
         string name;

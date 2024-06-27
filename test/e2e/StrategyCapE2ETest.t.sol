@@ -2,18 +2,18 @@
 pragma solidity ^0.8.0;
 
 import {
-    AggregationLayerVaultBase,
-    AggregationLayerVault,
+    EulerAggregationLayerBase,
+    EulerAggregationLayer,
     console2,
     EVault,
     IEVault,
     IRMTestDefault,
     TestERC20,
-    IAggregationLayerVault,
+    IEulerAggregationLayer,
     ErrorsLib
-} from "../common/AggregationLayerVaultBase.t.sol";
+} from "../common/EulerAggregationLayerBase.t.sol";
 
-contract StrategyCapE2ETest is AggregationLayerVaultBase {
+contract StrategyCapE2ETest is EulerAggregationLayerBase {
     uint256 user1InitialBalance = 100000e18;
 
     function setUp() public virtual override {
@@ -28,12 +28,12 @@ contract StrategyCapE2ETest is AggregationLayerVaultBase {
     function testSetCap() public {
         uint256 cap = 1000000e18;
 
-        assertEq((aggregationLayerVault.getStrategy(address(eTST))).cap, 0);
+        assertEq((eulerAggregationLayer.getStrategy(address(eTST))).cap, 0);
 
         vm.prank(manager);
-        aggregationLayerVault.setStrategyCap(address(eTST), cap);
+        eulerAggregationLayer.setStrategyCap(address(eTST), cap);
 
-        IAggregationLayerVault.Strategy memory strategy = aggregationLayerVault.getStrategy(address(eTST));
+        IEulerAggregationLayer.Strategy memory strategy = eulerAggregationLayer.getStrategy(address(eTST));
 
         assertEq(strategy.cap, cap);
     }
@@ -43,53 +43,53 @@ contract StrategyCapE2ETest is AggregationLayerVaultBase {
 
         vm.prank(manager);
         vm.expectRevert(ErrorsLib.InactiveStrategy.selector);
-        aggregationLayerVault.setStrategyCap(address(0x2), cap);
+        eulerAggregationLayer.setStrategyCap(address(0x2), cap);
     }
 
     function testRebalanceAfterHittingCap() public {
         uint256 cap = 3333333333333333333333;
         vm.prank(manager);
-        aggregationLayerVault.setStrategyCap(address(eTST), cap);
+        eulerAggregationLayer.setStrategyCap(address(eTST), cap);
 
         uint256 amountToDeposit = 10000e18;
 
         // deposit into aggregator
         {
-            uint256 balanceBefore = aggregationLayerVault.balanceOf(user1);
-            uint256 totalSupplyBefore = aggregationLayerVault.totalSupply();
-            uint256 totalAssetsDepositedBefore = aggregationLayerVault.totalAssetsDeposited();
+            uint256 balanceBefore = eulerAggregationLayer.balanceOf(user1);
+            uint256 totalSupplyBefore = eulerAggregationLayer.totalSupply();
+            uint256 totalAssetsDepositedBefore = eulerAggregationLayer.totalAssetsDeposited();
             uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
 
             vm.startPrank(user1);
-            assetTST.approve(address(aggregationLayerVault), amountToDeposit);
-            aggregationLayerVault.deposit(amountToDeposit, user1);
+            assetTST.approve(address(eulerAggregationLayer), amountToDeposit);
+            eulerAggregationLayer.deposit(amountToDeposit, user1);
             vm.stopPrank();
 
-            assertEq(aggregationLayerVault.balanceOf(user1), balanceBefore + amountToDeposit);
-            assertEq(aggregationLayerVault.totalSupply(), totalSupplyBefore + amountToDeposit);
-            assertEq(aggregationLayerVault.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
+            assertEq(eulerAggregationLayer.balanceOf(user1), balanceBefore + amountToDeposit);
+            assertEq(eulerAggregationLayer.totalSupply(), totalSupplyBefore + amountToDeposit);
+            assertEq(eulerAggregationLayer.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
             assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - amountToDeposit);
         }
 
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
         {
-            IAggregationLayerVault.Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
+            IEulerAggregationLayer.Strategy memory strategyBefore = eulerAggregationLayer.getStrategy(address(eTST));
 
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), strategyBefore.allocated);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationLayer))), strategyBefore.allocated);
 
-            uint256 expectedStrategyCash = aggregationLayerVault.totalAssetsAllocatable()
-                * strategyBefore.allocationPoints / aggregationLayerVault.totalAllocationPoints();
+            uint256 expectedStrategyCash = eulerAggregationLayer.totalAssetsAllocatable()
+                * strategyBefore.allocationPoints / eulerAggregationLayer.totalAllocationPoints();
 
             vm.prank(user1);
             address[] memory strategiesToRebalance = new address[](1);
             strategiesToRebalance[0] = address(eTST);
-            rebalancer.executeRebalance(address(aggregationLayerVault), strategiesToRebalance);
+            rebalancer.executeRebalance(address(eulerAggregationLayer), strategiesToRebalance);
 
-            assertEq(aggregationLayerVault.totalAllocated(), expectedStrategyCash);
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), expectedStrategyCash);
+            assertEq(eulerAggregationLayer.totalAllocated(), expectedStrategyCash);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationLayer))), expectedStrategyCash);
             assertEq(
-                (aggregationLayerVault.getStrategy(address(eTST))).allocated,
+                (eulerAggregationLayer.getStrategy(address(eTST))).allocated,
                 strategyBefore.allocated + expectedStrategyCash
             );
         }
@@ -98,17 +98,17 @@ contract StrategyCapE2ETest is AggregationLayerVaultBase {
         vm.warp(block.timestamp + 86400);
         vm.startPrank(user1);
 
-        assetTST.approve(address(aggregationLayerVault), amountToDeposit);
-        aggregationLayerVault.deposit(amountToDeposit, user1);
+        assetTST.approve(address(eulerAggregationLayer), amountToDeposit);
+        eulerAggregationLayer.deposit(amountToDeposit, user1);
 
-        uint256 strategyAllocatedBefore = (aggregationLayerVault.getStrategy(address(eTST))).allocated;
+        uint256 strategyAllocatedBefore = (eulerAggregationLayer.getStrategy(address(eTST))).allocated;
 
         address[] memory strategiesToRebalance = new address[](1);
         strategiesToRebalance[0] = address(eTST);
-        rebalancer.executeRebalance(address(aggregationLayerVault), strategiesToRebalance);
+        rebalancer.executeRebalance(address(eulerAggregationLayer), strategiesToRebalance);
         vm.stopPrank();
 
-        assertEq(strategyAllocatedBefore, (aggregationLayerVault.getStrategy(address(eTST))).allocated);
+        assertEq(strategyAllocatedBefore, (eulerAggregationLayer.getStrategy(address(eTST))).allocated);
     }
 
     function testRebalanceWhentargetAllocationGreaterThanCap() public {
@@ -116,45 +116,45 @@ contract StrategyCapE2ETest is AggregationLayerVaultBase {
 
         // deposit into aggregator
         {
-            uint256 balanceBefore = aggregationLayerVault.balanceOf(user1);
-            uint256 totalSupplyBefore = aggregationLayerVault.totalSupply();
-            uint256 totalAssetsDepositedBefore = aggregationLayerVault.totalAssetsDeposited();
+            uint256 balanceBefore = eulerAggregationLayer.balanceOf(user1);
+            uint256 totalSupplyBefore = eulerAggregationLayer.totalSupply();
+            uint256 totalAssetsDepositedBefore = eulerAggregationLayer.totalAssetsDeposited();
             uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
 
             vm.startPrank(user1);
-            assetTST.approve(address(aggregationLayerVault), amountToDeposit);
-            aggregationLayerVault.deposit(amountToDeposit, user1);
+            assetTST.approve(address(eulerAggregationLayer), amountToDeposit);
+            eulerAggregationLayer.deposit(amountToDeposit, user1);
             vm.stopPrank();
 
-            assertEq(aggregationLayerVault.balanceOf(user1), balanceBefore + amountToDeposit);
-            assertEq(aggregationLayerVault.totalSupply(), totalSupplyBefore + amountToDeposit);
-            assertEq(aggregationLayerVault.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
+            assertEq(eulerAggregationLayer.balanceOf(user1), balanceBefore + amountToDeposit);
+            assertEq(eulerAggregationLayer.totalSupply(), totalSupplyBefore + amountToDeposit);
+            assertEq(eulerAggregationLayer.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
             assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - amountToDeposit);
         }
 
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
         {
-            IAggregationLayerVault.Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
+            IEulerAggregationLayer.Strategy memory strategyBefore = eulerAggregationLayer.getStrategy(address(eTST));
 
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), strategyBefore.allocated);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationLayer))), strategyBefore.allocated);
 
-            uint256 expectedStrategyCash = aggregationLayerVault.totalAssetsAllocatable()
-                * strategyBefore.allocationPoints / aggregationLayerVault.totalAllocationPoints();
+            uint256 expectedStrategyCash = eulerAggregationLayer.totalAssetsAllocatable()
+                * strategyBefore.allocationPoints / eulerAggregationLayer.totalAllocationPoints();
 
             // set cap 10% less than target allocation
             uint256 cap = expectedStrategyCash * 9e17 / 1e18;
             vm.prank(manager);
-            aggregationLayerVault.setStrategyCap(address(eTST), cap);
+            eulerAggregationLayer.setStrategyCap(address(eTST), cap);
 
             vm.prank(user1);
             address[] memory strategiesToRebalance = new address[](1);
             strategiesToRebalance[0] = address(eTST);
-            rebalancer.executeRebalance(address(aggregationLayerVault), strategiesToRebalance);
+            rebalancer.executeRebalance(address(eulerAggregationLayer), strategiesToRebalance);
 
-            assertEq(aggregationLayerVault.totalAllocated(), cap);
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), cap);
-            assertEq((aggregationLayerVault.getStrategy(address(eTST))).allocated, strategyBefore.allocated + cap);
+            assertEq(eulerAggregationLayer.totalAllocated(), cap);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationLayer))), cap);
+            assertEq((eulerAggregationLayer.getStrategy(address(eTST))).allocated, strategyBefore.allocated + cap);
         }
     }
 }

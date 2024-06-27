@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IBalanceTracker} from "reward-streams/interfaces/IBalanceTracker.sol";
-import {IAggregationLayerVault} from "./interface/IAggregationLayerVault.sol";
+import {IEulerAggregationLayer} from "./interface/IEulerAggregationLayer.sol";
 import {IWithdrawalQueue} from "./interface/IWithdrawalQueue.sol";
 // contracts
 import {Dispatch} from "./Dispatch.sol";
@@ -25,17 +25,17 @@ import {StorageLib, AggregationVaultStorage} from "./lib/StorageLib.sol";
 import {ErrorsLib as Errors} from "./lib/ErrorsLib.sol";
 import {EventsLib as Events} from "./lib/EventsLib.sol";
 
-/// @title AggregationLayerVault contract
+/// @title EulerAggregationLayer contract
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
 /// @dev Do NOT use with fee on transfer tokens
 /// @dev Do NOT use with rebasing tokens
 /// @dev inspired by Yearn v3 ❤️
-contract AggregationLayerVault is
+contract EulerAggregationLayer is
     ERC4626Upgradeable,
     AccessControlEnumerableUpgradeable,
     Dispatch,
-    IAggregationLayerVault
+    IEulerAggregationLayer
 {
     using SafeERC20 for IERC20;
     using SafeCast for uint256;
@@ -59,7 +59,7 @@ contract AggregationLayerVault is
         Dispatch(_rewardsModule, _hooksModule, _feeModule, _allocationPointsModule)
     {}
 
-    /// @notice Initialize the AggregationLayerVault.
+    /// @notice Initialize the EulerAggregationLayer.
     /// @param _initParams InitParams struct.
     function init(InitParams calldata _initParams) external initializer {
         __ERC4626_init_unchained(IERC20(_initParams.asset));
@@ -69,8 +69,8 @@ contract AggregationLayerVault is
 
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
         $.locked = REENTRANCYLOCK__UNLOCKED;
-        $.withdrawalQueue = _initParams.withdrawalQueuePeriphery;
-        $.strategies[address(0)] = IAggregationLayerVault.Strategy({
+        $.withdrawalQueue = _initParams.withdrawalQueuePlugin;
+        $.strategies[address(0)] = IEulerAggregationLayer.Strategy({
             allocated: 0,
             allocationPoints: _initParams.initialCashAllocationPoints.toUint120(),
             active: true,
@@ -82,8 +82,6 @@ contract AggregationLayerVault is
 
         // Setup DEFAULT_ADMIN
         _grantRole(DEFAULT_ADMIN_ROLE, _initParams.aggregationVaultOwner);
-        // By default, the Rebalancer contract is assigned the REBALANCER role
-        _grantRole(REBALANCER, _initParams.rebalancerPerihpery);
 
         // Setup role admins
         _setRoleAdmin(ALLOCATIONS_MANAGER, ALLOCATIONS_MANAGER_ADMIN);
@@ -91,6 +89,9 @@ contract AggregationLayerVault is
         _setRoleAdmin(STRATEGY_REMOVER, STRATEGY_REMOVER_ADMIN);
         _setRoleAdmin(AGGREGATION_VAULT_MANAGER, AGGREGATION_VAULT_MANAGER_ADMIN);
         _setRoleAdmin(REBALANCER, REBALANCER_ADMIN);
+
+        // By default, the Rebalancer contract is assigned the REBALANCER role
+        _grantRole(REBALANCER, _initParams.rebalancerPlugin);
     }
 
     /// @dev See {FeeModule-setFeeRecipient}.
@@ -189,7 +190,7 @@ contract AggregationLayerVault is
     {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
-        IAggregationLayerVault.Strategy memory strategyData = $.strategies[_strategy];
+        IEulerAggregationLayer.Strategy memory strategyData = $.strategies[_strategy];
 
         if (_isDeposit) {
             // Do required approval (safely) and deposit
@@ -269,7 +270,7 @@ contract AggregationLayerVault is
     /// @notice Get strategy params.
     /// @param _strategy strategy's address
     /// @return Strategy struct
-    function getStrategy(address _strategy) external view returns (IAggregationLayerVault.Strategy memory) {
+    function getStrategy(address _strategy) external view returns (IEulerAggregationLayer.Strategy memory) {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         return $.strategies[_strategy];

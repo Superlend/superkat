@@ -2,13 +2,13 @@
 pragma solidity ^0.8.0;
 
 // interfaces
-import {IAggregationLayerVault} from "../interface/IAggregationLayerVault.sol";
+import {IEulerAggregationLayer} from "../interface/IEulerAggregationLayer.sol";
 
 /// @custom:storage-location erc7201:euler_aggregation_vault.storage.AggregationVault
 struct AggregationVaultStorage {
     /// EVC address
     address evc;
-    /// Total amount of _asset deposited into AggregationLayerVault contract
+    /// Total amount of _asset deposited into EulerAggregationLayer contract
     uint256 totalAssetsDeposited;
     /// Total amount of _asset deposited across all strategies.
     uint256 totalAllocated;
@@ -21,7 +21,7 @@ struct AggregationVaultStorage {
     /// Withdrawal queue contract's address
     address withdrawalQueue;
     /// Mapping between strategy address and it's allocation config
-    mapping(address => IAggregationLayerVault.Strategy) strategies;
+    mapping(address => IEulerAggregationLayer.Strategy) strategies;
 
     
     /// lastInterestUpdate: last timestamo where interest was updated.

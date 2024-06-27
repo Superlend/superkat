@@ -2,17 +2,17 @@
 pragma solidity ^0.8.0;
 
 import {
-    AggregationLayerVaultBase,
-    AggregationLayerVault,
+    EulerAggregationLayerBase,
+    EulerAggregationLayer,
     console2,
     EVault,
     IEVault,
     IRMTestDefault,
     TestERC20
-} from "../common/AggregationLayerVaultBase.t.sol";
+} from "../common/EulerAggregationLayerBase.t.sol";
 import {TrackingRewardStreams} from "reward-streams/TrackingRewardStreams.sol";
 
-contract StrategyRewardsE2ETest is AggregationLayerVaultBase {
+contract StrategyRewardsE2ETest is EulerAggregationLayerBase {
     uint256 user1InitialBalance = 100000e18;
 
     function setUp() public virtual override {
@@ -26,19 +26,19 @@ contract StrategyRewardsE2ETest is AggregationLayerVaultBase {
 
     function testOptInStrategyRewards() public {
         vm.prank(manager);
-        aggregationLayerVault.optInStrategyRewards(address(eTST));
+        eulerAggregationLayer.optInStrategyRewards(address(eTST));
 
-        assertTrue(eTST.balanceForwarderEnabled(address(aggregationLayerVault)));
+        assertTrue(eTST.balanceForwarderEnabled(address(eulerAggregationLayer)));
     }
 
     function testOptOutStrategyRewards() public {
         vm.prank(manager);
-        aggregationLayerVault.optInStrategyRewards(address(eTST));
-        assertTrue(eTST.balanceForwarderEnabled(address(aggregationLayerVault)));
+        eulerAggregationLayer.optInStrategyRewards(address(eTST));
+        assertTrue(eTST.balanceForwarderEnabled(address(eulerAggregationLayer)));
 
         vm.prank(manager);
-        aggregationLayerVault.optOutStrategyRewards(address(eTST));
+        eulerAggregationLayer.optOutStrategyRewards(address(eTST));
 
-        assertFalse(eTST.balanceForwarderEnabled(address(aggregationLayerVault)));
+        assertFalse(eTST.balanceForwarderEnabled(address(eulerAggregationLayer)));
     }
 }
