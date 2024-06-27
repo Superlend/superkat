@@ -9,7 +9,7 @@ import {
     IEVault,
     IRMTestDefault,
     TestERC20,
-    Strategy,
+    IAggregationLayerVault,
     ErrorsLib
 } from "../common/AggregationLayerVaultBase.t.sol";
 
@@ -33,7 +33,7 @@ contract StrategyCapE2ETest is AggregationLayerVaultBase {
         vm.prank(manager);
         aggregationLayerVault.setStrategyCap(address(eTST), cap);
 
-        Strategy memory strategy = aggregationLayerVault.getStrategy(address(eTST));
+        IAggregationLayerVault.Strategy memory strategy = aggregationLayerVault.getStrategy(address(eTST));
 
         assertEq(strategy.cap, cap);
     }
@@ -74,7 +74,7 @@ contract StrategyCapE2ETest is AggregationLayerVaultBase {
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
         {
-            Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
+            IAggregationLayerVault.Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
 
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), strategyBefore.allocated);
 
@@ -135,7 +135,7 @@ contract StrategyCapE2ETest is AggregationLayerVaultBase {
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
         {
-            Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
+            IAggregationLayerVault.Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
 
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), strategyBefore.allocated);
 

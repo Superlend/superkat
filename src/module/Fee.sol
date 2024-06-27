@@ -10,9 +10,12 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Shared} from "../Shared.sol";
 // libs
 import {StorageLib, AggregationVaultStorage} from "../lib/StorageLib.sol";
-import {ErrorsLib} from "../lib/ErrorsLib.sol";
-import {EventsLib} from "../lib/EventsLib.sol";
+import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
+import {EventsLib as Events} from "../lib/EventsLib.sol";
 
+/// @title FeeModule contract
+/// @custom:security-contact security@euler.xyz
+/// @author Euler Labs (https://www.eulerlabs.com/)
 abstract contract FeeModule is Shared {
     /// @dev The maximum performanceFee the vault can have is 50%
     uint256 internal constant MAX_PERFORMANCE_FEE = 0.5e18;
@@ -23,9 +26,9 @@ abstract contract FeeModule is Shared {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
         address feeRecipientCached = $.feeRecipient;
 
-        if (_newFeeRecipient == feeRecipientCached) revert ErrorsLib.FeeRecipientAlreadySet();
+        if (_newFeeRecipient == feeRecipientCached) revert Errors.FeeRecipientAlreadySet();
 
-        emit EventsLib.SetFeeRecipient(feeRecipientCached, _newFeeRecipient);
+        emit Events.SetFeeRecipient(feeRecipientCached, _newFeeRecipient);
 
         $.feeRecipient = _newFeeRecipient;
     }
@@ -37,11 +40,11 @@ abstract contract FeeModule is Shared {
 
         uint256 performanceFeeCached = $.performanceFee;
 
-        if (_newFee > MAX_PERFORMANCE_FEE) revert ErrorsLib.MaxPerformanceFeeExceeded();
-        if ($.feeRecipient == address(0)) revert ErrorsLib.FeeRecipientNotSet();
-        if (_newFee == performanceFeeCached) revert ErrorsLib.PerformanceFeeAlreadySet();
+        if (_newFee > MAX_PERFORMANCE_FEE) revert Errors.MaxPerformanceFeeExceeded();
+        if ($.feeRecipient == address(0)) revert Errors.FeeRecipientNotSet();
+        if (_newFee == performanceFeeCached) revert Errors.PerformanceFeeAlreadySet();
 
-        emit EventsLib.SetPerformanceFee(performanceFeeCached, _newFee);
+        emit Events.SetPerformanceFee(performanceFeeCached, _newFee);
 
         $.performanceFee = _newFee;
     }

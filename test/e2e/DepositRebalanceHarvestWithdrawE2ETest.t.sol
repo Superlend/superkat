@@ -10,7 +10,7 @@ import {
     IRMTestDefault,
     TestERC20,
     WithdrawalQueue,
-    Strategy
+    IAggregationLayerVault
 } from "../common/AggregationLayerVaultBase.t.sol";
 
 contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
@@ -49,7 +49,7 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
         {
-            Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
+            IAggregationLayerVault.Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
 
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), strategyBefore.allocated);
 
@@ -73,7 +73,7 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
         // partial withdraw, no need to withdraw from strategy as cash reserve is enough
         uint256 amountToWithdraw = 6000e18;
         {
-            Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
+            IAggregationLayerVault.Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
             uint256 strategyShareBalanceBefore = eTST.balanceOf(address(aggregationLayerVault));
             uint256 totalAssetsDepositedBefore = aggregationLayerVault.totalAssetsDeposited();
             uint256 aggregatorTotalSupplyBefore = aggregationLayerVault.totalSupply();
@@ -131,7 +131,7 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
         {
-            Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
+            IAggregationLayerVault.Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
 
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), strategyBefore.allocated);
 
@@ -218,8 +218,9 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
         // 10k deposited; 4000 for reserve, 2000 for eTST, 4000 for eTSTsecondary
         vm.warp(block.timestamp + 86400);
         {
-            Strategy memory eTSTstrategyBefore = aggregationLayerVault.getStrategy(address(eTST));
-            Strategy memory eTSTsecondarystrategyBefore = aggregationLayerVault.getStrategy(address(eTSTsecondary));
+            IAggregationLayerVault.Strategy memory eTSTstrategyBefore = aggregationLayerVault.getStrategy(address(eTST));
+            IAggregationLayerVault.Strategy memory eTSTsecondarystrategyBefore =
+                aggregationLayerVault.getStrategy(address(eTSTsecondary));
 
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), eTSTstrategyBefore.allocated);
             assertEq(
@@ -319,7 +320,7 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
         {
-            Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
+            IAggregationLayerVault.Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
 
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), strategyBefore.allocated);
 
@@ -347,7 +348,7 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
 
         // harvest
         vm.prank(user1);
-        aggregationLayerVault.harvest(address(eTST));
+        aggregationLayerVault.harvest();
         vm.warp(block.timestamp + 2 weeks);
 
         // full withdraw, will have to withdraw from strategy as cash reserve is not enough
@@ -411,8 +412,9 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
         // 10k deposited; 4000 for reserve, 2000 for eTST, 4000 for eTSTsecondary
         vm.warp(block.timestamp + 86400);
         {
-            Strategy memory eTSTstrategyBefore = aggregationLayerVault.getStrategy(address(eTST));
-            Strategy memory eTSTsecondarystrategyBefore = aggregationLayerVault.getStrategy(address(eTSTsecondary));
+            IAggregationLayerVault.Strategy memory eTSTstrategyBefore = aggregationLayerVault.getStrategy(address(eTST));
+            IAggregationLayerVault.Strategy memory eTSTsecondarystrategyBefore =
+                aggregationLayerVault.getStrategy(address(eTSTsecondary));
 
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), eTSTstrategyBefore.allocated);
             assertEq(
@@ -474,11 +476,8 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
         }
 
         // harvest
-        address[] memory strategiesToHarvest = new address[](2);
-        strategiesToHarvest[0] = address(eTST);
-        strategiesToHarvest[1] = address(eTSTsecondary);
         vm.prank(user1);
-        aggregationLayerVault.harvestMultipleStrategies(strategiesToHarvest);
+        aggregationLayerVault.harvest();
         vm.warp(block.timestamp + 2 weeks);
 
         // full withdraw, will have to withdraw from strategy as cash reserve is not enough
@@ -545,8 +544,9 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
         // 10k deposited; 4000 for reserve, 2000 for eTST, 4000 for eTSTsecondary
         vm.warp(block.timestamp + 86400);
         {
-            Strategy memory eTSTstrategyBefore = aggregationLayerVault.getStrategy(address(eTST));
-            Strategy memory eTSTsecondarystrategyBefore = aggregationLayerVault.getStrategy(address(eTSTsecondary));
+            IAggregationLayerVault.Strategy memory eTSTstrategyBefore = aggregationLayerVault.getStrategy(address(eTST));
+            IAggregationLayerVault.Strategy memory eTSTsecondarystrategyBefore =
+                aggregationLayerVault.getStrategy(address(eTSTsecondary));
 
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), eTSTstrategyBefore.allocated);
             assertEq(
@@ -608,10 +608,8 @@ contract DepositRebalanceHarvestWithdrawE2ETest is AggregationLayerVaultBase {
         }
 
         // harvest
-        address[] memory strategiesToHarvest = new address[](1);
-        strategiesToHarvest[0] = address(eTST);
         vm.prank(user1);
-        aggregationLayerVault.harvestMultipleStrategies(strategiesToHarvest);
+        aggregationLayerVault.harvest();
         vm.warp(block.timestamp + 2 weeks);
 
         vm.prank(manager);

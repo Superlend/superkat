@@ -8,8 +8,11 @@ import {Shared} from "../Shared.sol";
 // libs
 import {StorageLib, AggregationVaultStorage} from "../lib/StorageLib.sol";
 import {HooksLib} from "../lib/HooksLib.sol";
-import {EventsLib} from "../lib/EventsLib.sol";
+import {EventsLib as Events} from "../lib/EventsLib.sol";
 
+/// @title HooksModule contract
+/// @custom:security-contact security@euler.xyz
+/// @author Euler Labs (https://www.eulerlabs.com/)
 abstract contract HooksModule is Shared {
     using HooksLib for uint32;
 
@@ -19,7 +22,7 @@ abstract contract HooksModule is Shared {
     function setHooksConfig(address _hooksTarget, uint32 _hookedFns) external virtual nonReentrant {
         _setHooksConfig(_hooksTarget, _hookedFns);
 
-        emit EventsLib.SetHooksConfig(_hooksTarget, _hookedFns);
+        emit Events.SetHooksConfig(_hooksTarget, _hookedFns);
     }
 
     /// @notice Get the hooks contract and the hooked functions.

@@ -5,7 +5,7 @@ import {
     AggregationLayerVaultBase,
     AggregationLayerVault,
     IEVault,
-    Strategy
+    IAggregationLayerVault
 } from "../common/AggregationLayerVaultBase.t.sol";
 
 contract RemoveStrategyTest is AggregationLayerVaultBase {
@@ -27,7 +27,7 @@ contract RemoveStrategyTest is AggregationLayerVaultBase {
         vm.prank(manager);
         aggregationLayerVault.removeStrategy(address(eTST));
 
-        Strategy memory strategyAfter = aggregationLayerVault.getStrategy(address(eTST));
+        IAggregationLayerVault.Strategy memory strategyAfter = aggregationLayerVault.getStrategy(address(eTST));
 
         assertEq(strategyAfter.active, false);
         assertEq(strategyAfter.allocationPoints, 0);
@@ -47,7 +47,7 @@ contract RemoveStrategyTest is AggregationLayerVaultBase {
         vm.prank(manager);
         aggregationLayerVault.removeStrategy(address(eTST));
 
-        Strategy memory strategyAfter = aggregationLayerVault.getStrategy(address(eTST));
+        IAggregationLayerVault.Strategy memory strategyAfter = aggregationLayerVault.getStrategy(address(eTST));
 
         assertEq(strategyAfter.active, false);
         assertEq(strategyAfter.allocationPoints, 0);

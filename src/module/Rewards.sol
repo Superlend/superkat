@@ -10,13 +10,13 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Shared} from "../Shared.sol";
 // libs
 import {StorageLib, AggregationVaultStorage} from "../lib/StorageLib.sol";
-import {ErrorsLib} from "../lib/ErrorsLib.sol";
-import {EventsLib} from "../lib/EventsLib.sol";
+import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
+import {EventsLib as Events} from "../lib/EventsLib.sol";
 
 /// @title Rewards module
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
-/// @notice A module to provide balancer tracking for reward streats and to integrate with strategies rewards.
+/// @notice A module to provide balancer tracking for reward streams and to integrate with strategies rewards.
 /// @dev See https://github.com/euler-xyz/reward-streams.
 abstract contract RewardsModule is IBalanceForwarder, Shared {
     /// @notice Opt in to strategy rewards
@@ -24,11 +24,11 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
     function optInStrategyRewards(address _strategy) external virtual nonReentrant {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
-        if (!$.strategies[_strategy].active) revert ErrorsLib.InactiveStrategy();
+        if (!$.strategies[_strategy].active) revert Errors.InactiveStrategy();
 
         IBalanceForwarder(_strategy).enableBalanceForwarder();
 
-        emit EventsLib.OptInStrategyRewards(_strategy);
+        emit Events.OptInStrategyRewards(_strategy);
     }
 
     /// @notice Opt out of strategy rewards
@@ -36,7 +36,7 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
     function optOutStrategyRewards(address _strategy) external virtual nonReentrant {
         IBalanceForwarder(_strategy).disableBalanceForwarder();
 
-        emit EventsLib.OptOutStrategyRewards(_strategy);
+        emit Events.OptOutStrategyRewards(_strategy);
     }
 
     /// @notice Enable aggregation layer vault rewards for specific strategy's reward token.
@@ -45,11 +45,11 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
     function enableRewardForStrategy(address _strategy, address _reward) external virtual nonReentrant {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
-        if (!$.strategies[_strategy].active) revert ErrorsLib.InactiveStrategy();
+        if (!$.strategies[_strategy].active) revert Errors.InactiveStrategy();
 
         IRewardStreams(IBalanceForwarder(_strategy).balanceTrackerAddress()).enableReward(_strategy, _reward);
 
-        emit EventsLib.EnableRewardForStrategy(_strategy, _reward);
+        emit Events.EnableRewardForStrategy(_strategy, _reward);
     }
 
     /// @notice Disable aggregation layer vault rewards for specific strategy's reward token.
@@ -63,13 +63,13 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
     {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
-        if (!$.strategies[_strategy].active) revert ErrorsLib.InactiveStrategy();
+        if (!$.strategies[_strategy].active) revert Errors.InactiveStrategy();
 
         IRewardStreams(IBalanceForwarder(_strategy).balanceTrackerAddress()).disableReward(
             _strategy, _reward, _forfeitRecentReward
         );
 
-        emit EventsLib.DisableRewardForStrategy(_strategy, _reward, _forfeitRecentReward);
+        emit Events.DisableRewardForStrategy(_strategy, _reward, _forfeitRecentReward);
     }
 
     /// @notice Claim a specific strategy rewards
@@ -123,13 +123,13 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
         IBalanceTracker balanceTrackerCached = IBalanceTracker($.balanceTracker);
 
-        if (address(balanceTrackerCached) == address(0)) revert ErrorsLib.NotSupported();
-        if ($.isBalanceForwarderEnabled[_sender]) revert ErrorsLib.AlreadyEnabled();
+        if (address(balanceTrackerCached) == address(0)) revert Errors.NotSupported();
+        if ($.isBalanceForwarderEnabled[_sender]) revert Errors.AlreadyEnabled();
 
         $.isBalanceForwarderEnabled[_sender] = true;
         balanceTrackerCached.balanceTrackerHook(_sender, _senderBalance, false);
 
-        emit EventsLib.EnableBalanceForwarder(_sender);
+        emit Events.EnableBalanceForwarder(_sender);
     }
 
     /// @notice Disables balance forwarding for the authenticated account
@@ -139,13 +139,13 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
         IBalanceTracker balanceTrackerCached = IBalanceTracker($.balanceTracker);
 
-        if (address(balanceTrackerCached) == address(0)) revert ErrorsLib.NotSupported();
-        if (!$.isBalanceForwarderEnabled[_sender]) revert ErrorsLib.AlreadyDisabled();
+        if (address(balanceTrackerCached) == address(0)) revert Errors.NotSupported();
+        if (!$.isBalanceForwarderEnabled[_sender]) revert Errors.AlreadyDisabled();
 
         $.isBalanceForwarderEnabled[_sender] = false;
         balanceTrackerCached.balanceTrackerHook(_sender, 0, false);
 
-        emit EventsLib.DisableBalanceForwarder(_sender);
+        emit Events.DisableBalanceForwarder(_sender);
     }
 
     /// @notice Retrieves boolean indicating if the account opted in to forward balance changes to the rewards contract

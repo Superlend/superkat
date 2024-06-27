@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {AggregationLayerVaultBase, AggregationLayerVault, Strategy} from "../common/AggregationLayerVaultBase.t.sol";
+import {
+    AggregationLayerVaultBase,
+    AggregationLayerVault,
+    IAggregationLayerVault
+} from "../common/AggregationLayerVaultBase.t.sol";
 
 contract AdjustAllocationsPointsFuzzTest is AggregationLayerVaultBase {
     function setUp() public virtual override {
@@ -21,7 +25,7 @@ contract AdjustAllocationsPointsFuzzTest is AggregationLayerVaultBase {
         vm.prank(manager);
         aggregationLayerVault.adjustAllocationPoints(address(eTST), _newAllocationPoints);
 
-        Strategy memory strategy = aggregationLayerVault.getStrategy(address(eTST));
+        IAggregationLayerVault.Strategy memory strategy = aggregationLayerVault.getStrategy(address(eTST));
 
         if (_newAllocationPoints < strategyAllocationPoints) {
             assertEq(

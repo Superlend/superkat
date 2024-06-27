@@ -9,7 +9,7 @@ import {
     IEVault,
     IRMTestDefault,
     TestERC20,
-    Strategy
+    IAggregationLayerVault
 } from "../common/AggregationLayerVaultBase.t.sol";
 
 contract RebalanceTest is AggregationLayerVaultBase {
@@ -47,7 +47,7 @@ contract RebalanceTest is AggregationLayerVaultBase {
 
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
-        Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
+        IAggregationLayerVault.Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
 
         assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), strategyBefore.allocated);
 
@@ -90,7 +90,7 @@ contract RebalanceTest is AggregationLayerVaultBase {
 
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
-        Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
+        IAggregationLayerVault.Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
 
         assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), strategyBefore.allocated);
 
@@ -158,7 +158,8 @@ contract RebalanceTest is AggregationLayerVaultBase {
         // rebalance into eTSTsecondary
         vm.warp(block.timestamp + 86400);
         {
-            Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTSTsecondary));
+            IAggregationLayerVault.Strategy memory strategyBefore =
+                aggregationLayerVault.getStrategy(address(eTSTsecondary));
 
             assertEq(
                 eTSTsecondary.convertToAssets(eTSTsecondary.balanceOf(address(aggregationLayerVault))),
@@ -212,7 +213,7 @@ contract RebalanceTest is AggregationLayerVaultBase {
 
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
-        Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
+        IAggregationLayerVault.Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
 
         assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), strategyBefore.allocated);
 
@@ -267,7 +268,7 @@ contract RebalanceTest is AggregationLayerVaultBase {
 
         vm.warp(block.timestamp + 86400);
 
-        Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
+        IAggregationLayerVault.Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
 
         assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), strategyBefore.allocated);
 
@@ -321,7 +322,7 @@ contract RebalanceTest is AggregationLayerVaultBase {
 
         vm.warp(block.timestamp + 86400);
 
-        Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
+        IAggregationLayerVault.Strategy memory strategyBefore = aggregationLayerVault.getStrategy(address(eTST));
 
         assertEq(eTST.convertToAssets(eTST.balanceOf(address(aggregationLayerVault))), strategyBefore.allocated);
 

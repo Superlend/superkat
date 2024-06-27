@@ -6,9 +6,12 @@ import {IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
 // libs
 import {StorageLib, AggregationVaultStorage} from "./lib/StorageLib.sol";
-import {ErrorsLib} from "./lib/ErrorsLib.sol";
 import {HooksLib} from "./lib/HooksLib.sol";
+import {ErrorsLib as Errors} from "./lib/ErrorsLib.sol";
 
+/// @title Shared contract
+/// @custom:security-contact security@euler.xyz
+/// @author Euler Labs (https://www.eulerlabs.com/)
 contract Shared {
     using HooksLib for uint32;
 
@@ -28,7 +31,7 @@ contract Shared {
     modifier nonReentrant() {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
-        if ($.locked == REENTRANCYLOCK__LOCKED) revert ErrorsLib.Reentrancy();
+        if ($.locked == REENTRANCYLOCK__LOCKED) revert Errors.Reentrancy();
 
         $.locked = REENTRANCYLOCK__LOCKED;
         _;
@@ -49,12 +52,12 @@ contract Shared {
     function _setHooksConfig(address _hooksTarget, uint32 _hookedFns) internal {
         if (_hooksTarget != address(0) && IHookTarget(_hooksTarget).isHookTarget() != IHookTarget.isHookTarget.selector)
         {
-            revert ErrorsLib.NotHooksContract();
+            revert Errors.NotHooksContract();
         }
         if (_hookedFns != 0 && _hooksTarget == address(0)) {
-            revert ErrorsLib.InvalidHooksTarget();
+            revert Errors.InvalidHooksTarget();
         }
-        if (_hookedFns >= ACTIONS_COUNTER) revert ErrorsLib.InvalidHookedFns();
+        if (_hookedFns >= ACTIONS_COUNTER) revert Errors.InvalidHookedFns();
 
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
         $.hooksConfig = (uint256(uint160(_hooksTarget)) << 32) | uint256(_hookedFns);
@@ -91,6 +94,6 @@ contract Shared {
             }
         }
 
-        revert ErrorsLib.EmptyError();
+        revert Errors.EmptyError();
     }
 }

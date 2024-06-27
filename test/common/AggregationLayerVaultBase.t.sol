@@ -6,7 +6,7 @@ import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
 import {IWithdrawalQueue} from "../../src/interface/IWithdrawalQueue.sol";
 // contracts
 import "evk/test/unit/evault/EVaultTestBase.t.sol";
-import {AggregationLayerVault, Strategy} from "../../src/AggregationLayerVault.sol";
+import {AggregationLayerVault, IAggregationLayerVault} from "../../src/AggregationLayerVault.sol";
 import {Rebalancer} from "../../src/plugin/Rebalancer.sol";
 import {Hooks, HooksModule} from "../../src/module/Hooks.sol";
 import {Rewards} from "../../src/module/Rewards.sol";
@@ -92,7 +92,7 @@ contract AggregationLayerVaultBase is EVaultTestBase {
     }
 
     function testInitialParams() public {
-        Strategy memory cashReserve = aggregationLayerVault.getStrategy(address(0));
+        AggregationLayerVault.Strategy memory cashReserve = aggregationLayerVault.getStrategy(address(0));
 
         assertEq(cashReserve.allocated, 0);
         assertEq(cashReserve.allocationPoints, CASH_RESERVE_ALLOCATION_POINTS);

@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IBalanceTracker} from "reward-streams/interfaces/IBalanceTracker.sol";
-import {IFourSixTwoSixAgg} from "./interface/IFourSixTwoSixAgg.sol";
+import {IAggregationLayerVault} from "./interface/IAggregationLayerVault.sol";
 import {IWithdrawalQueue} from "./interface/IWithdrawalQueue.sol";
 // contracts
 import {Dispatch} from "./Dispatch.sol";
@@ -21,10 +21,13 @@ import {ContextUpgradeable} from "@openzeppelin-upgradeable/utils/ContextUpgrade
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {StorageLib, AggregationVaultStorage, Strategy} from "./lib/StorageLib.sol";
-import {ErrorsLib} from "./lib/ErrorsLib.sol";
-import {EventsLib} from "./lib/EventsLib.sol";
+import {StorageLib, AggregationVaultStorage} from "./lib/StorageLib.sol";
+import {ErrorsLib as Errors} from "./lib/ErrorsLib.sol";
+import {EventsLib as Events} from "./lib/EventsLib.sol";
 
+/// @title AggregationLayerVault contract
+/// @custom:security-contact security@euler.xyz
+/// @author Euler Labs (https://www.eulerlabs.com/)
 /// @dev Do NOT use with fee on transfer tokens
 /// @dev Do NOT use with rebasing tokens
 /// @dev inspired by Yearn v3 ❤️
@@ -32,7 +35,7 @@ contract AggregationLayerVault is
     ERC4626Upgradeable,
     AccessControlEnumerableUpgradeable,
     Dispatch,
-    IFourSixTwoSixAgg
+    IAggregationLayerVault
 {
     using SafeERC20 for IERC20;
     using SafeCast for uint256;
@@ -52,45 +55,22 @@ contract AggregationLayerVault is
     /// @dev interest rate smearing period
     uint256 public constant INTEREST_SMEAR = 2 weeks;
 
-    /// @dev Euler saving rate struct
-    /// @dev Based on https://github.com/euler-xyz/euler-vault-kit/blob/master/src/Synths/EulerSavingsRate.sol
-    /// lastInterestUpdate: last timestamo where interest was updated.
-    /// interestSmearEnd: timestamp when the smearing of interest end.
-    /// interestLeft: amount of interest left to smear.
-    /// locked: if locked or not for update.
-    struct AggregationVaultSavingRate {
-        uint40 lastInterestUpdate;
-        uint40 interestSmearEnd;
-        uint168 interestLeft;
-        uint8 locked;
-    }
-
-    struct InitParams {
-        address evc;
-        address balanceTracker;
-        address withdrawalQueuePeriphery;
-        address rebalancerPerihpery;
-        address aggregationVaultOwner;
-        address asset;
-        string name;
-        string symbol;
-        uint256 initialCashAllocationPoints;
-    }
-
     constructor(address _rewardsModule, address _hooksModule, address _feeModule, address _allocationPointsModule)
         Dispatch(_rewardsModule, _hooksModule, _feeModule, _allocationPointsModule)
     {}
 
+    /// @notice Initialize the AggregationLayerVault.
+    /// @param _initParams InitParams struct.
     function init(InitParams calldata _initParams) external initializer {
         __ERC4626_init_unchained(IERC20(_initParams.asset));
         __ERC20_init_unchained(_initParams.name, _initParams.symbol);
 
-        if (_initParams.initialCashAllocationPoints == 0) revert ErrorsLib.InitialAllocationPointsZero();
+        if (_initParams.initialCashAllocationPoints == 0) revert Errors.InitialAllocationPointsZero();
 
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
         $.locked = REENTRANCYLOCK__UNLOCKED;
         $.withdrawalQueue = _initParams.withdrawalQueuePeriphery;
-        $.strategies[address(0)] = Strategy({
+        $.strategies[address(0)] = IAggregationLayerVault.Strategy({
             allocated: 0,
             allocationPoints: _initParams.initialCashAllocationPoints.toUint120(),
             active: true,
@@ -197,23 +177,11 @@ contract AggregationLayerVault is
         use(MODULE_HOOKS)
     {}
 
-    /// @notice Harvest strategy.
-    /// @param strategy address of strategy
-    function harvest(address strategy) external {
-        _harvest(strategy);
-
-        _gulp();
-    }
-
-    /// @notice Harvest multiple strategies.
-    /// @param _strategies an array of strategy addresses.
-    function harvestMultipleStrategies(address[] calldata _strategies) external nonReentrant {
-        for (uint256 i; i < _strategies.length; ++i) {
-            _harvest(_strategies[i]);
-        }
-        _gulp();
-    }
-
+    /// @notice Rebalance strategy by depositing or withdrawing the amount to rebalance to hit target allocation.
+    /// @dev Can only be called by an address that hold the REBALANCER role.
+    /// @param _strategy Strategy address.
+    /// @param _amountToRebalance Amount to deposit or withdraw.
+    /// @param _isDeposit bool to indicate if it is a deposit or a withdraw.
     function rebalance(address _strategy, uint256 _amountToRebalance, bool _isDeposit)
         external
         nonReentrant
@@ -221,7 +189,7 @@ contract AggregationLayerVault is
     {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
-        Strategy memory strategyData = $.strategies[_strategy];
+        IAggregationLayerVault.Strategy memory strategyData = $.strategies[_strategy];
 
         if (_isDeposit) {
             // Do required approval (safely) and deposit
@@ -235,7 +203,16 @@ contract AggregationLayerVault is
             $.totalAllocated -= _amountToRebalance;
         }
 
-        emit EventsLib.Rebalance(_strategy, _amountToRebalance, _isDeposit);
+        emit Events.Rebalance(_strategy, _amountToRebalance, _isDeposit);
+    }
+
+    /// @notice Harvest all the strategies.
+    /// @dev This function will loop through the strategies following the withdrawal queue order and harvest all.
+    /// @dev Harvest yield and losses will be aggregated and only net yield/loss will be accounted.
+    function harvest() external nonReentrant {
+        _updateInterestAccrued();
+
+        _harvest();
     }
 
     /// @notice update accrued interest
@@ -292,7 +269,7 @@ contract AggregationLayerVault is
     /// @notice Get strategy params.
     /// @param _strategy strategy's address
     /// @return Strategy struct
-    function getStrategy(address _strategy) external view returns (Strategy memory) {
+    function getStrategy(address _strategy) external view returns (IAggregationLayerVault.Strategy memory) {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         return $.strategies[_strategy];
@@ -304,6 +281,8 @@ contract AggregationLayerVault is
         return _interestAccruedFromCache();
     }
 
+    /// @notice Get saving rate data.
+    /// @return avsr AggregationVaultSavingRate struct.
     function getAggregationVaultSavingRate() external view returns (AggregationVaultSavingRate memory) {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
         AggregationVaultSavingRate memory avsr = AggregationVaultSavingRate({
@@ -347,48 +326,24 @@ contract AggregationLayerVault is
     }
 
     /// @dev See {IERC4626-deposit}.
-    /// @dev Increate the total assets deposited.
-    function deposit(uint256 assets, address receiver) public override nonReentrant returns (uint256) {
-        uint256 maxAssets = maxDeposit(receiver);
-        if (assets > maxAssets) {
-            revert ERC4626ExceededMaxDeposit(receiver, assets, maxAssets);
-        }
+    /// @dev Call DEPOSIT hook if enabled.
+    function deposit(uint256 _assets, address _receiver) public override nonReentrant returns (uint256) {
+        _callHooksTarget(DEPOSIT, _msgSender());
 
-        address caller = _msgSender();
-        _callHooksTarget(DEPOSIT, caller);
-
-        uint256 shares = previewDeposit(assets);
-        super._deposit(caller, receiver, assets, shares);
-
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
-        $.totalAssetsDeposited += assets;
-
-        return shares;
+        return super.deposit(_assets, _receiver);
     }
 
     /// @dev See {IERC4626-mint}.
-    /// @dev Increate the total assets deposited.
-    function mint(uint256 shares, address receiver) public override nonReentrant returns (uint256) {
-        uint256 maxShares = maxMint(receiver);
-        if (shares > maxShares) {
-            revert ERC4626ExceededMaxMint(receiver, shares, maxShares);
-        }
+    /// @dev Call MINT hook if enabled.
+    function mint(uint256 _shares, address _receiver) public override nonReentrant returns (uint256) {
+        _callHooksTarget(MINT, _msgSender());
 
-        address caller = _msgSender();
-        _callHooksTarget(DEPOSIT, caller);
-
-        uint256 assets = previewMint(shares);
-        super._deposit(caller, receiver, assets, shares);
-
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
-        $.totalAssetsDeposited += assets;
-
-        return assets;
+        return super.mint(_shares, _receiver);
     }
 
     /// @dev See {IERC4626-withdraw}.
-    /// @dev this function update the accrued interest
-    function withdraw(uint256 assets, address receiver, address owner)
+    /// @dev this function update the accrued interest and call WITHDRAW hook.
+    function withdraw(uint256 _assets, address _receiver, address _owner)
         public
         override
         nonReentrant
@@ -397,29 +352,16 @@ contract AggregationLayerVault is
         // Move interest to totalAssetsDeposited
         _updateInterestAccrued();
 
-        uint256 maxAssets = _convertToAssets(balanceOf(owner), Math.Rounding.Floor);
-        if (assets > maxAssets) {
-            revert ERC4626ExceededMaxWithdraw(owner, assets, maxAssets);
-        }
+        _callHooksTarget(WITHDRAW, _msgSender());
 
-        address caller = _msgSender();
-        _callHooksTarget(WITHDRAW, caller);
+        _harvest();
 
-        shares = _convertToShares(assets, Math.Rounding.Ceil);
-
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
-        uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
-
-        (, shares) = IWithdrawalQueue($.withdrawalQueue).callWithdrawalQueue(
-            caller, receiver, owner, assets, shares, assetsRetrieved, false
-        );
-
-        return shares;
+        return super.withdraw(_assets, _receiver, _owner);
     }
 
     /// @dev See {IERC4626-redeem}.
-    /// @dev this function update the accrued interest
-    function redeem(uint256 shares, address receiver, address owner)
+    /// @dev this function update the accrued interest and call WITHDRAW hook.
+    function redeem(uint256 _shares, address _receiver, address _owner)
         public
         override
         nonReentrant
@@ -428,24 +370,11 @@ contract AggregationLayerVault is
         // Move interest to totalAssetsDeposited
         _updateInterestAccrued();
 
-        uint256 maxShares = balanceOf(owner);
-        if (shares > maxShares) {
-            revert ERC4626ExceededMaxRedeem(owner, shares, maxShares);
-        }
+        _callHooksTarget(REDEEM, _msgSender());
 
-        address caller = _msgSender();
-        _callHooksTarget(REDEEM, caller);
+        _harvest();
 
-        assets = _convertToAssets(shares, Math.Rounding.Floor);
-
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
-        uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
-
-        (assets,) = IWithdrawalQueue($.withdrawalQueue).callWithdrawalQueue(
-            caller, receiver, owner, assets, shares, assetsRetrieved, true
-        );
-
-        return assets;
+        return super.redeem(_shares, _receiver, _owner);
     }
 
     /// @notice Return the total amount of assets deposited, plus the accrued interest.
@@ -465,6 +394,29 @@ contract AggregationLayerVault is
         return IERC20(asset()).balanceOf(address(this)) + $.totalAllocated;
     }
 
+    /// @dev See {IERC4626-_deposit}.
+    /// @dev Increate the total assets deposited.
+    function _deposit(address _caller, address _receiver, uint256 _assets, uint256 _shares) internal override {
+        super._deposit(_caller, _receiver, _assets, _shares);
+
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+        $.totalAssetsDeposited += _assets;
+    }
+
+    /// @dev See {IERC4626-_withdraw}.
+    /// @dev This function do not withdraw assets, it makes call to WithdrawalQueue to finish the withdraw request.
+    function _withdraw(address _caller, address _receiver, address _owner, uint256 _assets, uint256 _shares)
+        internal
+        override
+    {
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+        uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
+
+        IWithdrawalQueue($.withdrawalQueue).callWithdrawalQueue(
+            _caller, _receiver, _owner, _assets, _shares, assetsRetrieved
+        );
+    }
+
     /// @notice update accrued interest.
     function _updateInterestAccrued() internal {
         uint256 accruedInterest = _interestAccruedFromCache();
@@ -478,15 +430,15 @@ contract AggregationLayerVault is
         $.totalAssetsDeposited += accruedInterest;
     }
 
-    /// @dev gulp positive yield and increment the left interest
+    /// @dev gulp positive yield into interest left amd update accrued interest.
     function _gulp() internal {
         _updateInterestAccrued();
 
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         if ($.totalAssetsDeposited == 0) return;
-        uint256 toGulp = totalAssetsAllocatable() - $.totalAssetsDeposited - $.interestLeft;
 
+        uint256 toGulp = totalAssetsAllocatable() - $.totalAssetsDeposited - $.interestLeft;
         if (toGulp == 0) return;
 
         uint256 maxGulp = type(uint168).max - $.interestLeft;
@@ -495,23 +447,66 @@ contract AggregationLayerVault is
         $.interestSmearEnd = uint40(block.timestamp + INTEREST_SMEAR);
         $.interestLeft += uint168(toGulp); // toGulp <= maxGulp <= max uint168
 
-        emit EventsLib.Gulp($.interestLeft, $.interestSmearEnd);
+        emit Events.Gulp($.interestLeft, $.interestSmearEnd);
     }
 
-    function _harvest(address _strategy) internal {
+    /// @dev Loop through stratgies, aggregated yield and lossm and account for net amount.
+    /// @dev Loss socialization will be taken out from interest left first, if not enough, sozialize on deposits.
+    function _harvest() internal {
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+
+        (address[] memory withdrawalQueueArray, uint256 length) =
+            IWithdrawalQueue($.withdrawalQueue).getWithdrawalQueueArray();
+
+        uint256 totalYield;
+        uint256 totalLoss;
+        for (uint256 i; i < length; ++i) {
+            (uint256 yield, uint256 loss) = _executeHarvest(withdrawalQueueArray[i]);
+
+            totalYield += yield;
+            totalLoss += loss;
+        }
+
+        $.totalAllocated = $.totalAllocated + totalYield - totalLoss;
+
+        if (totalLoss > totalYield) {
+            uint256 netLoss = totalLoss - totalYield;
+            uint168 cachedInterestLeft = $.interestLeft;
+
+            if (cachedInterestLeft >= netLoss) {
+                // cut loss from interest left only
+                cachedInterestLeft -= uint168(netLoss);
+            } else {
+                // cut the interest left and socialize the diff
+                $.totalAssetsDeposited -= netLoss - cachedInterestLeft;
+                cachedInterestLeft = 0;
+            }
+            $.interestLeft = cachedInterestLeft;
+        }
+
+        emit Events.Harvest($.totalAllocated, totalYield, totalLoss);
+
+        _gulp();
+    }
+
+    /// @dev Execute harvest on a single strategy.
+    /// @param _strategy Strategy address.
+    /// @return yiled Amount of yield if any, else 0.
+    /// @return loss Amount of loss if any, else 0.
+    function _executeHarvest(address _strategy) internal returns (uint256, uint256) {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         uint120 strategyAllocatedAmount = $.strategies[_strategy].allocated;
 
-        if (strategyAllocatedAmount == 0) return;
+        if (strategyAllocatedAmount == 0) return (0, 0);
 
         uint256 underlyingBalance = IERC4626(_strategy).maxWithdraw(address(this));
-
+        uint256 yield;
+        uint256 loss;
         if (underlyingBalance == strategyAllocatedAmount) {
-            return;
+            return (yield, loss);
         } else if (underlyingBalance > strategyAllocatedAmount) {
-            // There's yield!
-            uint256 yield = underlyingBalance - strategyAllocatedAmount;
+            yield = underlyingBalance - strategyAllocatedAmount;
             uint120 accruedPerformanceFee = _accruePerformanceFee(_strategy, yield);
 
             if (accruedPerformanceFee > 0) {
@@ -520,24 +515,20 @@ contract AggregationLayerVault is
             }
 
             $.strategies[_strategy].allocated = uint120(underlyingBalance);
-            $.totalAllocated += yield;
         } else {
-            uint256 loss = strategyAllocatedAmount - underlyingBalance;
+            loss = strategyAllocatedAmount - underlyingBalance;
 
             $.strategies[_strategy].allocated = uint120(underlyingBalance);
-            $.totalAllocated -= loss;
-
-            if ($.interestLeft >= loss) {
-                $.interestLeft -= uint168(loss);
-            } else {
-                $.totalAssetsDeposited -= loss - $.interestLeft;
-                $.interestLeft = 0;
-            }
         }
+        emit Events.ExecuteHarvest(_strategy, underlyingBalance, strategyAllocatedAmount);
 
-        emit EventsLib.Harvest(_strategy, underlyingBalance, strategyAllocatedAmount);
+        return (yield, loss);
     }
 
+    /// @dev Accrue performace fee on harvested yield.
+    /// @param _strategy Strategy that the yield is harvested from.
+    /// @param _yield Amount of yield harvested.
+    /// @return feeAssets Amount of performance fee taken.
     function _accruePerformanceFee(address _strategy, uint256 _yield) internal returns (uint120) {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
@@ -553,7 +544,7 @@ contract AggregationLayerVault is
             IERC4626(_strategy).withdraw(feeAssets, cachedFeeRecipient, address(this));
         }
 
-        emit EventsLib.AccruePerformanceFee(cachedFeeRecipient, _yield, feeAssets);
+        emit Events.AccruePerformanceFee(cachedFeeRecipient, _yield, feeAssets);
 
         return feeAssets.toUint120();
     }
@@ -579,7 +570,7 @@ contract AggregationLayerVault is
     }
 
     /// @dev Get accrued interest without updating it.
-    /// @return uint256 accrued interest
+    /// @return uint256 Accrued interest.
     function _interestAccruedFromCache() internal view returns (uint256) {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
@@ -600,13 +591,15 @@ contract AggregationLayerVault is
         return $.interestLeft * timePassed / totalDuration;
     }
 
+    /// @dev Override for _msgSender() to be aware of the EVC forwarded calls.
     function _msgSender() internal view override (ContextUpgradeable, Shared) returns (address) {
         return Shared._msgSender();
     }
 
+    /// @dev Check if caller is WithdrawalQueue address, if not revert.
     function _isCallerWithdrawalQueue() internal view {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
-        if (_msgSender() != $.withdrawalQueue) revert ErrorsLib.NotWithdrawaQueue();
+        if (_msgSender() != $.withdrawalQueue) revert Errors.NotWithdrawaQueue();
     }
 }

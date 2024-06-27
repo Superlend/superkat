@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {
     AggregationLayerVaultBase,
     AggregationLayerVault,
-    Strategy,
+    IAggregationLayerVault,
     ErrorsLib
 } from "../common/AggregationLayerVaultBase.t.sol";
 
@@ -25,7 +25,7 @@ contract AdjustAllocationsPointsTest is AggregationLayerVaultBase {
         vm.prank(manager);
         aggregationLayerVault.adjustAllocationPoints(address(eTST), newAllocationPoints);
 
-        Strategy memory strategy = aggregationLayerVault.getStrategy(address(eTST));
+        IAggregationLayerVault.Strategy memory strategy = aggregationLayerVault.getStrategy(address(eTST));
 
         assertEq(
             aggregationLayerVault.totalAllocationPoints(),
