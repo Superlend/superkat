@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 // interfaces
 import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
 // contracts
-import {Shared} from "../Shared.sol";
+import {Shared} from "../common/Shared.sol";
 // libs
 import {StorageLib, AggregationVaultStorage} from "../lib/StorageLib.sol";
 import {HooksLib} from "../lib/HooksLib.sol";

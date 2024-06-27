@@ -47,6 +47,8 @@ contract StrategyCapE2ETest is EulerAggregationLayerBase {
     }
 
     function testRebalanceAfterHittingCap() public {
+        address[] memory strategiesToRebalance = new address[](1);
+
         uint256 cap = 3333333333333333333333;
         vm.prank(manager);
         eulerAggregationLayer.setStrategyCap(address(eTST), cap);
@@ -82,7 +84,6 @@ contract StrategyCapE2ETest is EulerAggregationLayerBase {
                 * strategyBefore.allocationPoints / eulerAggregationLayer.totalAllocationPoints();
 
             vm.prank(user1);
-            address[] memory strategiesToRebalance = new address[](1);
             strategiesToRebalance[0] = address(eTST);
             rebalancer.executeRebalance(address(eulerAggregationLayer), strategiesToRebalance);
 
@@ -103,7 +104,6 @@ contract StrategyCapE2ETest is EulerAggregationLayerBase {
 
         uint256 strategyAllocatedBefore = (eulerAggregationLayer.getStrategy(address(eTST))).allocated;
 
-        address[] memory strategiesToRebalance = new address[](1);
         strategiesToRebalance[0] = address(eTST);
         rebalancer.executeRebalance(address(eulerAggregationLayer), strategiesToRebalance);
         vm.stopPrank();

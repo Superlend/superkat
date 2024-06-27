@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 import {Rewards} from "./module/Rewards.sol";
 import {Hooks} from "./module/Hooks.sol";
 import {Fee} from "./module/Fee.sol";
-import {WithdrawalQueue} from "./plugin/WithdrawalQueue.sol";
+import {WithdrawalQueue} from "../plugin/WithdrawalQueue.sol";
 import {EulerAggregationLayer, IEulerAggregationLayer} from "./EulerAggregationLayer.sol";
 // libs
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 // interfaces
-import {IEulerAggregationLayer} from "../interface/IEulerAggregationLayer.sol";
+import {IEulerAggregationLayer} from "../core/interface/IEulerAggregationLayer.sol";
 import {IERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 
 /// @title Rebalancer plugin

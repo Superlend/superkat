@@ -3,19 +3,19 @@ pragma solidity ^0.8.0;
 
 // interfaces
 import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
-import {IWithdrawalQueue} from "../../src/interface/IWithdrawalQueue.sol";
+import {IWithdrawalQueue} from "../../src/core/interface/IWithdrawalQueue.sol";
 // contracts
 import "evk/test/unit/evault/EVaultTestBase.t.sol";
-import {EulerAggregationLayer, IEulerAggregationLayer} from "../../src/EulerAggregationLayer.sol";
+import {EulerAggregationLayer, IEulerAggregationLayer} from "../../src/core/EulerAggregationLayer.sol";
 import {Rebalancer} from "../../src/plugin/Rebalancer.sol";
-import {Hooks, HooksModule} from "../../src/module/Hooks.sol";
-import {Rewards} from "../../src/module/Rewards.sol";
-import {Fee} from "../../src/module/Fee.sol";
-import {EulerAggregationLayerFactory} from "../../src/EulerAggregationLayerFactory.sol";
+import {Hooks, HooksModule} from "../../src/core/module/Hooks.sol";
+import {Rewards} from "../../src/core/module/Rewards.sol";
+import {Fee} from "../../src/core/module/Fee.sol";
+import {EulerAggregationLayerFactory} from "../../src/core/EulerAggregationLayerFactory.sol";
 import {WithdrawalQueue} from "../../src/plugin/WithdrawalQueue.sol";
-import {AllocationPoints} from "../../src/module/AllocationPoints.sol";
+import {AllocationPoints} from "../../src/core/module/AllocationPoints.sol";
 // libs
-import {ErrorsLib} from "../../src/lib/ErrorsLib.sol";
+import {ErrorsLib} from "../../src/core/lib/ErrorsLib.sol";
 
 contract EulerAggregationLayerBase is EVaultTestBase {
     uint256 public constant CASH_RESERVE_ALLOCATION_POINTS = 1000e18;

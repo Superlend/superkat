@@ -29,10 +29,9 @@ contract PerformanceFeeE2ETest is EulerAggregationLayerBase {
     }
 
     function testSetPerformanceFee() public {
-        {
-            (, uint256 fee) = eulerAggregationLayer.performanceFeeConfig();
-            assertEq(fee, 0);
-        }
+        (address feeRecipientAddr, uint256 fee) = eulerAggregationLayer.performanceFeeConfig();
+        assertEq(fee, 0);
+        assertEq(feeRecipientAddr, address(0));
 
         uint256 newPerformanceFee = 3e17;
 
@@ -41,7 +40,7 @@ contract PerformanceFeeE2ETest is EulerAggregationLayerBase {
         eulerAggregationLayer.setPerformanceFee(newPerformanceFee);
         vm.stopPrank();
 
-        (address feeRecipientAddr, uint256 fee) = eulerAggregationLayer.performanceFeeConfig();
+        (feeRecipientAddr, fee) = eulerAggregationLayer.performanceFeeConfig();
         assertEq(fee, newPerformanceFee);
         assertEq(feeRecipientAddr, feeRecipient);
     }

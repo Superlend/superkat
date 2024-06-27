@@ -22,8 +22,6 @@ struct AggregationVaultStorage {
     address withdrawalQueue;
     /// Mapping between strategy address and it's allocation config
     mapping(address => IEulerAggregationLayer.Strategy) strategies;
-
-    
     /// lastInterestUpdate: last timestamo where interest was updated.
     uint40 lastInterestUpdate;
     /// interestSmearEnd: timestamp when the smearing of interest end.
@@ -32,13 +30,10 @@ struct AggregationVaultStorage {
     uint168 interestLeft;
     /// locked: if locked or not for update.
     uint8 locked;
-
     /// Address of balance tracker contract for reward streams integration.
     address balanceTracker;
     /// A mapping to check if a user address enabled balance forwarding for reward streams integration.
     mapping(address => bool) isBalanceForwarderEnabled;
-
-    
     /// @dev storing the hooks target and kooked functions.
     uint256 hooksConfig;
 }

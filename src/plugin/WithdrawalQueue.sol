@@ -3,8 +3,8 @@ pragma solidity ^0.8.0;
 
 // interfaces
 import {IERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
-import {IEulerAggregationLayer} from "../interface/IEulerAggregationLayer.sol";
-import {IWithdrawalQueue} from "../interface/IWithdrawalQueue.sol";
+import {IEulerAggregationLayer} from "../core/interface/IEulerAggregationLayer.sol";
+import {IWithdrawalQueue} from "../core/interface/IWithdrawalQueue.sol";
 // contracts
 import {AccessControlEnumerableUpgradeable} from
     "@openzeppelin-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";

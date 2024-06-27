@@ -6,7 +6,7 @@ import {IERC4626} from "@openzeppelin-upgradeable/token/ERC20/extensions/ERC4626
 import {IWithdrawalQueue} from "../interface/IWithdrawalQueue.sol";
 import {IEulerAggregationLayer} from "../interface/IEulerAggregationLayer.sol";
 // contracts
-import {Shared} from "../Shared.sol";
+import {Shared} from "../common/Shared.sol";
 // libs
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {StorageLib, AggregationVaultStorage} from "../lib/StorageLib.sol";

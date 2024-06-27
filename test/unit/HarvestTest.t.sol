@@ -143,7 +143,6 @@ contract HarvestTest is EulerAggregationLayerBase {
         uint256 user1SocializedLoss = user1SharesBefore * negativeYield / eulerAggregationLayer.totalSupply();
         uint256 expectedUser1Assets =
             user1SharesBefore * amountToDeposit / eulerAggregationLayer.totalSupply() - user1SocializedLoss;
-        uint256 user1AssetTSTBalanceBefore = assetTST.balanceOf(user1);
 
         vm.startPrank(user1);
         eulerAggregationLayer.harvest();

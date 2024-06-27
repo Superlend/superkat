@@ -116,6 +116,7 @@ contract RebalanceTest is EulerAggregationLayerBase {
     }
 
     function testRebalanceByDepositingWhenToDepositIsGreaterThanCashAvailable() public {
+        address[] memory strategiesToRebalance = new address[](1);
         uint256 amountToDeposit = 10000e18;
 
         // deposit into aggregator
@@ -139,7 +140,6 @@ contract RebalanceTest is EulerAggregationLayerBase {
         // rebalance into first strategy
         vm.warp(block.timestamp + 86400);
         vm.prank(user1);
-        address[] memory strategiesToRebalance = new address[](1);
         strategiesToRebalance[0] = address(eTST);
         rebalancer.executeRebalance(address(eulerAggregationLayer), strategiesToRebalance);
 
@@ -174,7 +174,6 @@ contract RebalanceTest is EulerAggregationLayerBase {
             uint256 expectedStrategyCash = currentCash - targetCash;
 
             vm.prank(user1);
-            address[] memory strategiesToRebalance = new address[](1);
             strategiesToRebalance[0] = address(eTSTsecondary);
             rebalancer.executeRebalance(address(eulerAggregationLayer), strategiesToRebalance);
 
