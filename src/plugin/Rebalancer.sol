@@ -9,7 +9,6 @@ import {IERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.s
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
 /// @notice A contract to execute rebalance() on the EulerAggregationLayer.
-/// @dev Usually this contract will hold the `REBALANCER` role.
 contract Rebalancer {
     event ExecuteRebalance(
         address indexed curatedVault,

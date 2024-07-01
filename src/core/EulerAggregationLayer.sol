@@ -47,10 +47,8 @@ contract EulerAggregationLayer is
     bytes32 public constant STRATEGY_ADDER_ADMIN = keccak256("STRATEGY_ADDER_ADMIN");
     bytes32 public constant STRATEGY_REMOVER = keccak256("STRATEGY_REMOVER");
     bytes32 public constant STRATEGY_REMOVER_ADMIN = keccak256("STRATEGY_REMOVER_ADMIN");
-    bytes32 public constant AGGREGATION_VAULT_MANAGER = keccak256("AGGREGATION_VAULT_MANAGER");
-    bytes32 public constant AGGREGATION_VAULT_MANAGER_ADMIN = keccak256("AGGREGATION_VAULT_MANAGER_ADMIN");
-    bytes32 public constant REBALANCER = keccak256("REBALANCER");
-    bytes32 public constant REBALANCER_ADMIN = keccak256("REBALANCER_ADMIN");
+    bytes32 public constant AGGREGATION_LAYER_MANAGER = keccak256("AGGREGATION_LAYER_MANAGER");
+    bytes32 public constant AGGREGATION_LAYER_MANAGER_ADMIN = keccak256("AGGREGATION_LAYER_MANAGER_ADMIN");
 
     /// @dev interest rate smearing period
     uint256 public constant INTEREST_SMEAR = 2 weeks;
@@ -70,6 +68,7 @@ contract EulerAggregationLayer is
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
         $.locked = REENTRANCYLOCK__UNLOCKED;
         $.withdrawalQueue = _initParams.withdrawalQueuePlugin;
+        $.rebalancer = _initParams.rebalancerPlugin;
         $.strategies[address(0)] = IEulerAggregationLayer.Strategy({
             allocated: 0,
             allocationPoints: _initParams.initialCashAllocationPoints.toUint120(),
@@ -80,30 +79,26 @@ contract EulerAggregationLayer is
         $.balanceTracker = _initParams.balanceTracker;
 
         // Setup DEFAULT_ADMIN
-        _grantRole(DEFAULT_ADMIN_ROLE, _initParams.aggregationVaultOwner);
+        _grantRole(DEFAULT_ADMIN_ROLE, _initParams.aggregationLayerOwner);
 
         // Setup role admins
         _setRoleAdmin(ALLOCATIONS_MANAGER, ALLOCATIONS_MANAGER_ADMIN);
         _setRoleAdmin(STRATEGY_ADDER, STRATEGY_ADDER_ADMIN);
         _setRoleAdmin(STRATEGY_REMOVER, STRATEGY_REMOVER_ADMIN);
-        _setRoleAdmin(AGGREGATION_VAULT_MANAGER, AGGREGATION_VAULT_MANAGER_ADMIN);
-        _setRoleAdmin(REBALANCER, REBALANCER_ADMIN);
-
-        // By default, the Rebalancer contract is assigned the REBALANCER role
-        _grantRole(REBALANCER, _initParams.rebalancerPlugin);
+        _setRoleAdmin(AGGREGATION_LAYER_MANAGER, AGGREGATION_LAYER_MANAGER_ADMIN);
     }
 
     /// @dev See {FeeModule-setFeeRecipient}.
-    function setFeeRecipient(address _newFeeRecipient) external onlyRole(AGGREGATION_VAULT_MANAGER) use(MODULE_FEE) {}
+    function setFeeRecipient(address _newFeeRecipient) external onlyRole(AGGREGATION_LAYER_MANAGER) use(MODULE_FEE) {}
 
     /// @dev See {FeeModule-setPerformanceFee}.
-    function setPerformanceFee(uint256 _newFee) external onlyRole(AGGREGATION_VAULT_MANAGER) use(MODULE_FEE) {}
+    function setPerformanceFee(uint256 _newFee) external onlyRole(AGGREGATION_LAYER_MANAGER) use(MODULE_FEE) {}
 
     /// @dev See {RewardsModule-optInStrategyRewards}.
     function optInStrategyRewards(address _strategy)
         external
         override
-        onlyRole(AGGREGATION_VAULT_MANAGER)
+        onlyRole(AGGREGATION_LAYER_MANAGER)
         use(MODULE_REWARDS)
     {}
 
@@ -111,7 +106,7 @@ contract EulerAggregationLayer is
     function optOutStrategyRewards(address _strategy)
         external
         override
-        onlyRole(AGGREGATION_VAULT_MANAGER)
+        onlyRole(AGGREGATION_LAYER_MANAGER)
         use(MODULE_REWARDS)
     {}
 
@@ -119,7 +114,7 @@ contract EulerAggregationLayer is
     function enableRewardForStrategy(address _strategy, address _reward)
         external
         override
-        onlyRole(AGGREGATION_VAULT_MANAGER)
+        onlyRole(AGGREGATION_LAYER_MANAGER)
         use(MODULE_REWARDS)
     {}
 
@@ -127,7 +122,7 @@ contract EulerAggregationLayer is
     function disableRewardForStrategy(address _strategy, address _reward, bool _forfeitRecentReward)
         external
         override
-        onlyRole(AGGREGATION_VAULT_MANAGER)
+        onlyRole(AGGREGATION_LAYER_MANAGER)
         use(MODULE_REWARDS)
     {}
 
@@ -135,15 +130,17 @@ contract EulerAggregationLayer is
     function claimStrategyReward(address _strategy, address _reward, address _recipient, bool _forfeitRecentReward)
         external
         override
-        onlyRole(AGGREGATION_VAULT_MANAGER)
+        onlyRole(AGGREGATION_LAYER_MANAGER)
         use(MODULE_REWARDS)
     {}
 
-    /// @dev See {RewardsModule-enableBalanceForwarder}.
-    function enableBalanceForwarder() external override use(MODULE_REWARDS) {}
-
-    /// @dev See {RewardsModule-disableBalanceForwarder}.
-    function disableBalanceForwarder() external override use(MODULE_REWARDS) {}
+    /// @dev See {HooksModule-setHooksConfig}.
+    function setHooksConfig(address _hooksTarget, uint32 _hookedFns)
+        external
+        override
+        onlyRole(AGGREGATION_LAYER_MANAGER)
+        use(MODULE_HOOKS)
+    {}
 
     /// @dev See {AllocationPointsModule-adjustAllocationPoints}.
     function adjustAllocationPoints(address _strategy, uint256 _newPoints)
@@ -169,25 +166,47 @@ contract EulerAggregationLayer is
     /// @dev See {AllocationPointsModule-removeStrategy}.
     function removeStrategy(address _strategy) external use(MODULE_ALLOCATION_POINTS) onlyRole(STRATEGY_REMOVER) {}
 
-    /// @dev See {HooksModule-setHooksConfig}.
-    function setHooksConfig(address _hooksTarget, uint32 _hookedFns)
-        external
-        override
-        onlyRole(AGGREGATION_VAULT_MANAGER)
-        use(MODULE_HOOKS)
-    {}
+    /// @dev See {RewardsModule-enableBalanceForwarder}.
+    function enableBalanceForwarder() external override use(MODULE_REWARDS) {}
+
+    /// @dev See {RewardsModule-disableBalanceForwarder}.
+    function disableBalanceForwarder() external override use(MODULE_REWARDS) {}
+
+    /// @notice Set a new address for WithdrawalQueue plugin.
+    /// @dev Can only be called by an address with the `AGGREGATION_LAYER_MANAGER` role.
+    /// @param _withdrawalQueue New WithdrawalQueue contract address.
+    function setWithdrawalQueue(address _withdrawalQueue) external onlyRole(AGGREGATION_LAYER_MANAGER) {
+        if (_withdrawalQueue == address(0)) revert Errors.InvalidPlugin();
+
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+
+        emit Events.SetWithdrawalQueue($.withdrawalQueue, _withdrawalQueue);
+
+        $.withdrawalQueue = _withdrawalQueue;
+    }
+
+    /// @notice Set a new address for Rebalancer plugin.
+    /// @dev Can only be called by an address with the `AGGREGATION_LAYER_MANAGER` role.
+    /// @param _rebalancer New Rebalancer contract address.
+    function setRebalancer(address _rebalancer) external onlyRole(AGGREGATION_LAYER_MANAGER) {
+        if (_rebalancer == address(0)) revert Errors.InvalidPlugin();
+
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+
+        emit Events.SetRebalancer($.rebalancer, _rebalancer);
+
+        $.rebalancer = _rebalancer;
+    }
 
     /// @notice Rebalance strategy by depositing or withdrawing the amount to rebalance to hit target allocation.
-    /// @dev Can only be called by an address that hold the REBALANCER role.
+    /// @dev Can only be called only by the WithdrawalQueue plugin.
     /// @param _strategy Strategy address.
     /// @param _amountToRebalance Amount to deposit or withdraw.
     /// @param _isDeposit bool to indicate if it is a deposit or a withdraw.
-    function rebalance(address _strategy, uint256 _amountToRebalance, bool _isDeposit)
-        external
-        nonReentrant
-        onlyRole(REBALANCER)
-    {
+    function rebalance(address _strategy, uint256 _amountToRebalance, bool _isDeposit) external nonReentrant {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+
+        if (_msgSender() != $.rebalancer) revert Errors.NotRebalancer();
 
         IEulerAggregationLayer.Strategy memory strategyData = $.strategies[_strategy];
 
@@ -295,30 +314,49 @@ contract EulerAggregationLayer is
         return avsr;
     }
 
+    /// @notice Get the total allocated amount.
+    /// @return uint256 Total allocated.
     function totalAllocated() external view returns (uint256) {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         return $.totalAllocated;
     }
 
+    /// @notice Get the total allocation points.
+    /// @return uint256 Total allocation points.
     function totalAllocationPoints() external view returns (uint256) {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         return $.totalAllocationPoints;
     }
 
+    /// @notice Get the total assets deposited into the aggregation layer.
+    /// @return uint256 Total assets deposited.
     function totalAssetsDeposited() external view returns (uint256) {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         return $.totalAssetsDeposited;
     }
 
+    /// @notice Get the WithdrawalQueue plugin address.
+    /// @return address Withdrawal queue address.
     function withdrawalQueue() external view returns (address) {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         return $.withdrawalQueue;
     }
 
+    /// @notice Get the Rebalancer plugin address.
+    /// @return address Rebalancer address.
+    function rebalancer() external view returns (address) {
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+
+        return $.rebalancer;
+    }
+
+    /// @notice Get the performance fee config.
+    /// @return adddress Fee recipient.
+    /// @return uint256 Fee percentage.
     function performanceFeeConfig() external view returns (address, uint256) {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 

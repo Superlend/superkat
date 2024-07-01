@@ -16,8 +16,10 @@ struct AggregationVaultStorage {
     uint256 performanceFee;
     /// fee recipient address
     address feeRecipient;
-    /// Withdrawal queue contract's address
+    /// WithdrawalQueue plugin address
     address withdrawalQueue;
+    /// Rebalancer plugin address
+    address rebalancer;
     /// Mapping between strategy address and it's allocation config
     mapping(address => IEulerAggregationLayer.Strategy) strategies;
     /// lastInterestUpdate: last timestamo where interest was updated.
@@ -28,10 +30,14 @@ struct AggregationVaultStorage {
     uint168 interestLeft;
     /// locked: if locked or not for update.
     uint8 locked;
+    
+    
     /// Address of balance tracker contract for reward streams integration.
     address balanceTracker;
     /// A mapping to check if a user address enabled balance forwarding for reward streams integration.
     mapping(address => bool) isBalanceForwarderEnabled;
+    
+    
     /// @dev storing the hooks target and kooked functions.
     uint256 hooksConfig;
 }

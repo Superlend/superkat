@@ -8,6 +8,8 @@ library EventsLib {
     event Rebalance(address indexed strategy, uint256 amountToRebalance, bool isDeposit);
     event ExecuteHarvest(address indexed strategy, uint256 strategyBalanceAmount, uint256 strategyAllocatedAmount);
     event Harvest(uint256 totalAllocated, uint256 totlaYield, uint256 totalLoss);
+    event SetWithdrawalQueue(address _oldWithdrawalQueuePlugin, address _newWithdrawalQueuePlugin);
+    event SetRebalancer(address _oldRebalancer, address _newRebalancer);
 
     /// @dev Allocationpoints events
     event AdjustAllocationPoints(address indexed strategy, uint256 oldPoints, uint256 newPoints);
