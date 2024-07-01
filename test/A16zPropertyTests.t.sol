@@ -29,7 +29,6 @@ contract A16zPropertyTests is ERC4626Test {
 
     EulerAggregationLayerFactory eulerAggregationLayerFactory;
     EulerAggregationLayer eulerAggregationLayer;
-    WithdrawalQueue withdrawalQueue;
 
     function setUp() public override {
         rewardsImpl = new Rewards();
