@@ -9,7 +9,8 @@ import {
     IEVault,
     IRMTestDefault,
     TestERC20,
-    IEulerAggregationLayer
+    IEulerAggregationLayer,
+    ErrorsLib
 } from "../common/EulerAggregationLayerBase.t.sol";
 
 contract RebalanceTest is EulerAggregationLayerBase {
@@ -345,5 +346,12 @@ contract RebalanceTest is EulerAggregationLayerBase {
         //     eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationLayer))), strategyBefore.allocated - eTSTMaxWithdraw
         // );
         // assertEq((eulerAggregationLayer.getStrategy(address(eTST))).allocated, strategyBefore.allocated - eTSTMaxWithdraw);
+    }
+
+    function testRebalanceFromRandomSender() public {
+        vm.startPrank(user1);
+        vm.expectRevert(ErrorsLib.NotRebalancer.selector);
+        eulerAggregationLayer.rebalance(address(eTST), 1, true);
+        vm.stopPrank();
     }
 }

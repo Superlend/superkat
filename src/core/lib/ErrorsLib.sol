@@ -24,4 +24,6 @@ library ErrorsLib {
     error InvalidHookedFns();
     error EmptyError();
     error NotWithdrawaQueue();
+    error InvalidPlugin();
+    error NotRebalancer();
 }

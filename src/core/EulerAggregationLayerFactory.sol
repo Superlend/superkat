@@ -83,7 +83,7 @@ contract EulerAggregationLayerFactory {
             balanceTracker: balanceTracker,
             withdrawalQueuePlugin: address(withdrawalQueue),
             rebalancerPlugin: rebalancer,
-            aggregationVaultOwner: msg.sender,
+            aggregationLayerOwner: msg.sender,
             asset: _asset,
             name: _name,
             symbol: _symbol,

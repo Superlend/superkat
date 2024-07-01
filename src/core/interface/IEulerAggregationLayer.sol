@@ -7,7 +7,7 @@ interface IEulerAggregationLayer {
         address balanceTracker;
         address withdrawalQueuePlugin;
         address rebalancerPlugin;
-        address aggregationVaultOwner;
+        address aggregationLayerOwner;
         address asset;
         string name;
         string symbol;

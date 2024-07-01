@@ -76,15 +76,14 @@ contract EulerAggregationLayerBase is EVaultTestBase {
         eulerAggregationLayer.grantRole(eulerAggregationLayer.ALLOCATIONS_MANAGER_ADMIN(), deployer);
         eulerAggregationLayer.grantRole(eulerAggregationLayer.STRATEGY_ADDER_ADMIN(), deployer);
         eulerAggregationLayer.grantRole(eulerAggregationLayer.STRATEGY_REMOVER_ADMIN(), deployer);
-        eulerAggregationLayer.grantRole(eulerAggregationLayer.AGGREGATION_VAULT_MANAGER_ADMIN(), deployer);
-        eulerAggregationLayer.grantRole(eulerAggregationLayer.REBALANCER_ADMIN(), deployer);
+        eulerAggregationLayer.grantRole(eulerAggregationLayer.AGGREGATION_LAYER_MANAGER_ADMIN(), deployer);
         withdrawalQueue.grantRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER_ADMIN(), deployer);
 
         // grant roles to manager
         eulerAggregationLayer.grantRole(eulerAggregationLayer.ALLOCATIONS_MANAGER(), manager);
         eulerAggregationLayer.grantRole(eulerAggregationLayer.STRATEGY_ADDER(), manager);
         eulerAggregationLayer.grantRole(eulerAggregationLayer.STRATEGY_REMOVER(), manager);
-        eulerAggregationLayer.grantRole(eulerAggregationLayer.AGGREGATION_VAULT_MANAGER(), manager);
+        eulerAggregationLayer.grantRole(eulerAggregationLayer.AGGREGATION_LAYER_MANAGER(), manager);
         withdrawalQueue.grantRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER(), manager);
 
         vm.stopPrank();
@@ -110,8 +109,8 @@ contract EulerAggregationLayerBase is EVaultTestBase {
             eulerAggregationLayer.STRATEGY_REMOVER_ADMIN()
         );
         assertEq(
-            eulerAggregationLayer.getRoleAdmin(eulerAggregationLayer.AGGREGATION_VAULT_MANAGER()),
-            eulerAggregationLayer.AGGREGATION_VAULT_MANAGER_ADMIN()
+            eulerAggregationLayer.getRoleAdmin(eulerAggregationLayer.AGGREGATION_LAYER_MANAGER()),
+            eulerAggregationLayer.AGGREGATION_LAYER_MANAGER_ADMIN()
         );
         assertEq(
             withdrawalQueue.getRoleAdmin(withdrawalQueue.WITHDRAW_QUEUE_MANAGER()),
@@ -121,13 +120,13 @@ contract EulerAggregationLayerBase is EVaultTestBase {
         assertTrue(eulerAggregationLayer.hasRole(eulerAggregationLayer.ALLOCATIONS_MANAGER_ADMIN(), deployer));
         assertTrue(eulerAggregationLayer.hasRole(eulerAggregationLayer.STRATEGY_ADDER_ADMIN(), deployer));
         assertTrue(eulerAggregationLayer.hasRole(eulerAggregationLayer.STRATEGY_REMOVER_ADMIN(), deployer));
-        assertTrue(eulerAggregationLayer.hasRole(eulerAggregationLayer.AGGREGATION_VAULT_MANAGER_ADMIN(), deployer));
+        assertTrue(eulerAggregationLayer.hasRole(eulerAggregationLayer.AGGREGATION_LAYER_MANAGER_ADMIN(), deployer));
         assertTrue(withdrawalQueue.hasRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER_ADMIN(), deployer));
 
         assertTrue(eulerAggregationLayer.hasRole(eulerAggregationLayer.ALLOCATIONS_MANAGER(), manager));
         assertTrue(eulerAggregationLayer.hasRole(eulerAggregationLayer.STRATEGY_ADDER(), manager));
         assertTrue(eulerAggregationLayer.hasRole(eulerAggregationLayer.STRATEGY_REMOVER(), manager));
-        assertTrue(eulerAggregationLayer.hasRole(eulerAggregationLayer.AGGREGATION_VAULT_MANAGER(), manager));
+        assertTrue(eulerAggregationLayer.hasRole(eulerAggregationLayer.AGGREGATION_LAYER_MANAGER(), manager));
         assertTrue(withdrawalQueue.hasRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER(), manager));
     }
 
