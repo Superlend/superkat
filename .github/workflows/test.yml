@@ -37,3 +37,6 @@ jobs:
 
             - name: Run foundry coverage
               run: FOUNDRY_PROFILE=coverage forge coverage --report summary
+
+            - name: Run foundry invariants
+              run: forge clean && FOUNDRY_PROFILE=invariant forge test
