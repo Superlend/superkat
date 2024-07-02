@@ -58,4 +58,8 @@ contract A16zPropertyTests is ERC4626Test {
         _vaultMayBeEmpty = false;
         _unlimitedAmount = false;
     }
+
+    function testToAvoidCoverage() public pure {
+        return;
+    }
 }

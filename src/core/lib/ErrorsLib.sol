@@ -26,4 +26,5 @@ library ErrorsLib {
     error NotWithdrawaQueue();
     error InvalidPlugin();
     error NotRebalancer();
+    error InvalidAllocationPoints();
 }

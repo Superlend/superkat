@@ -44,6 +44,7 @@ contract EulerAggregationLayerBase is EVaultTestBase {
         deployer = makeAddr("Deployer");
         user1 = makeAddr("User_1");
         user2 = makeAddr("User_2");
+        manager = makeAddr("Manager");
 
         vm.startPrank(deployer);
         rewardsImpl = new Rewards();
@@ -87,6 +88,14 @@ contract EulerAggregationLayerBase is EVaultTestBase {
         withdrawalQueue.grantRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER(), manager);
 
         vm.stopPrank();
+
+        vm.label(address(eulerAggregationLayerFactory), "eulerAggregationLayerFactory");
+        vm.label(address(eulerAggregationLayer), "eulerAggregationLayer");
+        vm.label(eulerAggregationLayer.MODULE_REWARDS(), "MODULE_REWARDS");
+        vm.label(eulerAggregationLayer.MODULE_HOOKS(), "MODULE_HOOKS");
+        vm.label(eulerAggregationLayer.MODULE_FEE(), "MODULE_FEE");
+        vm.label(eulerAggregationLayer.MODULE_ALLOCATION_POINTS(), "MODULE_ALLOCATION_POINTS");
+        vm.label(address(assetTST), "assetTST");
     }
 
     function testInitialParams() public view {

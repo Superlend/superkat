@@ -50,6 +50,9 @@ interface IEulerAggregationLayer {
         uint256 assets,
         uint256 shares
     ) external;
+    function adjustAllocationPoints(address _strategy, uint256 _newPoints) external;
+    function addStrategy(address _strategy, uint256 _allocationPoints) external;
+    function removeStrategy(address _strategy) external;
     function getStrategy(address _strategy) external view returns (Strategy memory);
     function totalAllocationPoints() external view returns (uint256);
     function totalAllocated() external view returns (uint256);

@@ -104,10 +104,20 @@ contract HooksContract is IHookTarget {
     }
 
     fallback() external payable {}
+
+    receive() external payable {}
+
+    function testToAvoidCoverage() public pure {
+        return;
+    }
 }
 
 contract NotHooksContract is IHookTarget {
     function isHookTarget() external pure returns (bytes4) {
         return 0x0;
+    }
+
+    function testToAvoidCoverage() public pure {
+        return;
     }
 }

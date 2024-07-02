@@ -26,6 +26,7 @@ abstract contract AllocationPointsModule is Shared {
     function adjustAllocationPoints(address _strategy, uint256 _newPoints) external virtual nonReentrant {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
+        if (_newPoints == 0) revert Errors.InvalidAllocationPoints();
         IEulerAggregationLayer.Strategy memory strategyDataCache = $.strategies[_strategy];
 
         if (!strategyDataCache.active) {
@@ -68,6 +69,8 @@ abstract contract AllocationPointsModule is Shared {
         if (IERC4626(_strategy).asset() != IERC4626(address(this)).asset()) {
             revert Errors.InvalidStrategyAsset();
         }
+
+        if (_allocationPoints == 0) revert Errors.InvalidAllocationPoints();
 
         _callHooksTarget(ADD_STRATEGY, msg.sender);
 
