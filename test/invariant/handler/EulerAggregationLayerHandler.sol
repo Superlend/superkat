@@ -129,7 +129,9 @@ contract EulerAggregationLayerHandler is Test {
 
     function updateInterestAccrued(uint256 _actorIndexSeed) external {
         (, success, returnData) = actorUtil.initiateActorCall(
-            _actorIndexSeed, address(eulerAggLayer), abi.encodeWithSelector(EulerAggregationLayer.updateInterestAccrued.selector)
+            _actorIndexSeed,
+            address(eulerAggLayer),
+            abi.encodeWithSelector(EulerAggregationLayer.updateInterestAccrued.selector)
         );
     }
 
