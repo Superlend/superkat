@@ -101,6 +101,7 @@ abstract contract AllocationPointsModule is Shared {
         if (!strategyStorage.active) {
             revert Errors.AlreadyRemoved();
         }
+        if(strategyStorage.allocated > 0) revert Errors.CanNotRemoveStartegyWithAllocatedAmount();
 
         _callHooksTarget(REMOVE_STRATEGY, msg.sender);
 

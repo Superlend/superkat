@@ -10,12 +10,14 @@ import {
 import {Actor} from "./util/Actor.sol";
 import {Strategy} from "./util/Strategy.sol";
 import {EulerAggregationLayerHandler} from "./handler/EulerAggregationLayerHandler.sol";
+import {RebalancerHandler} from "./handler/RebalancerHandler.sol";
 
 contract EulerAggregationLayerInvariants is EulerAggregationLayerBase {
     Actor internal actorUtil;
     Strategy internal strategyUtil;
 
     EulerAggregationLayerHandler internal eulerAggregationLayerHandler;
+    RebalancerHandler internal rebalancerHandler;
 
     function setUp() public override {
         super.setUp();
@@ -30,7 +32,11 @@ contract EulerAggregationLayerInvariants is EulerAggregationLayerBase {
         strategyUtil.includeStrategy(address(eTST));
 
         eulerAggregationLayerHandler = new EulerAggregationLayerHandler(eulerAggregationLayer, actorUtil, strategyUtil);
+        rebalancerHandler =
+            new RebalancerHandler(eulerAggregationLayer, rebalancer, actorUtil, strategyUtil, withdrawalQueue);
+
         targetContract(address(eulerAggregationLayerHandler));
+        targetContract(address(rebalancerHandler));
     }
 
     function invariant_totalAllocationPoints() public view {
@@ -63,16 +69,17 @@ contract EulerAggregationLayerInvariants is EulerAggregationLayerBase {
         }
     }
 
-    // function invariant_totalAssetsDeposited() public view {
-    //     address withdrawalQueueAddr = eulerAggregationLayer.withdrawalQueue();
+    function invariant_totalAllocated() public view {
+        address withdrawalQueueAddr = eulerAggregationLayer.withdrawalQueue();
 
-    //     (address[] memory withdrawalQueueArray, uint256 withdrawalQueueLength) =
-    //         IWithdrawalQueue(withdrawalQueueAddr).getWithdrawalQueueArray();
+        (address[] memory withdrawalQueueArray, uint256 withdrawalQueueLength) =
+            IWithdrawalQueue(withdrawalQueueAddr).getWithdrawalQueueArray();
 
-    //     uint256 aggregatedAllocatedAmount;
-    //     for (uint256 i; i < withdrawalQueueLength; i++) {
-    //         aggregatedAllocatedAmount +=
-    //             (eulerAggregationLayer.getStrategy(withdrawalQueueArray[i])).allocated;
-    //     }
-    // }
+        uint256 aggregatedAllocatedAmount;
+        for (uint256 i; i < withdrawalQueueLength; i++) {
+            aggregatedAllocatedAmount += (eulerAggregationLayer.getStrategy(withdrawalQueueArray[i])).allocated;
+        }
+
+        assertEq(eulerAggregationLayer.totalAllocated(), aggregatedAllocatedAmount);
+    }
 }

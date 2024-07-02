@@ -27,4 +27,5 @@ library ErrorsLib {
     error InvalidPlugin();
     error NotRebalancer();
     error InvalidAllocationPoints();
+    error CanNotRemoveStartegyWithAllocatedAmount();
 }

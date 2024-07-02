@@ -101,7 +101,7 @@ contract EulerAggregationLayerHandler is Test {
         assertEq(strategyAfter.allocationPoints, 0);
     }
 
-    function deposit(uint256 _actorIndexSeed, uint256 _assets, address _receiver) public {
+    function deposit(uint256 _actorIndexSeed, uint256 _assets, address _receiver) external {
         vm.assume(_receiver != address(0));
 
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
@@ -120,7 +120,7 @@ contract EulerAggregationLayerHandler is Test {
         assertEq(eulerAggLayer.totalAssetsDeposited(), ghost_totalAssetsDeposited);
     }
 
-    function mint(uint256 _actorIndexSeed, uint256 _shares, address _receiver) public {
+    function mint(uint256 _actorIndexSeed, uint256 _shares, address _receiver) external {
         vm.assume(_receiver != address(0));
 
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
@@ -138,6 +138,12 @@ contract EulerAggregationLayerHandler is Test {
             ghost_totalAssetsDeposited += assets;
         }
         assertEq(eulerAggLayer.totalAssetsDeposited(), ghost_totalAssetsDeposited);
+    }
+
+    function harvest(uint256 _actorIndexSeed) external {
+        (, success, returnData) = actorUtil.initiateActorCall(
+            _actorIndexSeed, address(eulerAggLayer), abi.encodeWithSelector(IEulerAggregationLayer.harvest.selector)
+        );
     }
 
     function _fillBalance(address _actor, address _asset, uint256 _amount) internal {
