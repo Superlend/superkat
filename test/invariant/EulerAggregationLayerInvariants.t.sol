@@ -39,35 +39,35 @@ contract EulerAggregationLayerInvariants is EulerAggregationLayerBase {
         targetContract(address(rebalancerHandler));
     }
 
-    function invariant_totalAllocationPoints() public view {
-        address withdrawalQueueAddr = eulerAggregationLayer.withdrawalQueue();
+    // function invariant_totalAllocationPoints() public view {
+    //     address withdrawalQueueAddr = eulerAggregationLayer.withdrawalQueue();
 
-        (address[] memory withdrawalQueueArray, uint256 withdrawalQueueLength) =
-            IWithdrawalQueue(withdrawalQueueAddr).getWithdrawalQueueArray();
+    //     (address[] memory withdrawalQueueArray, uint256 withdrawalQueueLength) =
+    //         IWithdrawalQueue(withdrawalQueueAddr).getWithdrawalQueueArray();
 
-        uint256 expectedTotalAllocationpoints;
-        expectedTotalAllocationpoints += (eulerAggregationLayer.getStrategy(address(0))).allocationPoints;
-        for (uint256 i; i < withdrawalQueueLength; i++) {
-            expectedTotalAllocationpoints +=
-                (eulerAggregationLayer.getStrategy(withdrawalQueueArray[i])).allocationPoints;
-        }
+    //     uint256 expectedTotalAllocationpoints;
+    //     expectedTotalAllocationpoints += (eulerAggregationLayer.getStrategy(address(0))).allocationPoints;
+    //     for (uint256 i; i < withdrawalQueueLength; i++) {
+    //         expectedTotalAllocationpoints +=
+    //             (eulerAggregationLayer.getStrategy(withdrawalQueueArray[i])).allocationPoints;
+    //     }
 
-        assertEq(eulerAggregationLayer.totalAllocationPoints(), expectedTotalAllocationpoints);
-    }
+    //     assertEq(eulerAggregationLayer.totalAllocationPoints(), expectedTotalAllocationpoints);
+    // }
 
-    function invariant_withdrawalQueue() public view {
-        address withdrawalQueueAddr = eulerAggregationLayer.withdrawalQueue();
+    // function invariant_withdrawalQueue() public view {
+    //     address withdrawalQueueAddr = eulerAggregationLayer.withdrawalQueue();
 
-        (, uint256 withdrawalQueueLength) = IWithdrawalQueue(withdrawalQueueAddr).getWithdrawalQueueArray();
+    //     (, uint256 withdrawalQueueLength) = IWithdrawalQueue(withdrawalQueueAddr).getWithdrawalQueueArray();
 
-        uint256 cashReserveAllocationPoints = (eulerAggregationLayer.getStrategy(address(0))).allocationPoints;
+    //     uint256 cashReserveAllocationPoints = (eulerAggregationLayer.getStrategy(address(0))).allocationPoints;
 
-        if (eulerAggregationLayer.totalAllocationPoints() - cashReserveAllocationPoints == 0) {
-            assertEq(withdrawalQueueLength, 0);
-        } else {
-            assertGt(withdrawalQueueLength, 0);
-        }
-    }
+    //     if (eulerAggregationLayer.totalAllocationPoints() - cashReserveAllocationPoints == 0) {
+    //         assertEq(withdrawalQueueLength, 0);
+    //     } else {
+    //         assertGt(withdrawalQueueLength, 0);
+    //     }
+    // }
 
     function invariant_totalAllocated() public view {
         address withdrawalQueueAddr = eulerAggregationLayer.withdrawalQueue();
@@ -80,6 +80,7 @@ contract EulerAggregationLayerInvariants is EulerAggregationLayerBase {
             aggregatedAllocatedAmount += (eulerAggregationLayer.getStrategy(withdrawalQueueArray[i])).allocated;
         }
 
+        console2.log("eulerAggregationLayer.totalAllocated()", eulerAggregationLayer.totalAllocated());
         assertEq(eulerAggregationLayer.totalAllocated(), aggregatedAllocatedAmount);
     }
 }

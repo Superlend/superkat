@@ -108,6 +108,7 @@ abstract contract AllocationPointsModule is Shared {
         $.totalAllocationPoints -= strategyStorage.allocationPoints;
         strategyStorage.active = false;
         strategyStorage.allocationPoints = 0;
+        strategyStorage.cap = 0;
 
         // remove from withdrawalQueue
         IWithdrawalQueue($.withdrawalQueue).removeStrategyFromWithdrawalQueue(_strategy);

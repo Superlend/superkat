@@ -63,6 +63,25 @@ contract EulerAggregationLayerHandler is Test {
         assertEq(strategyAfter.allocationPoints, ghost_allocationPoints[strategyAddr]);
     }
 
+    function setStrategyCap(uint256 _strategyIndexSeed, uint256 _cap) external {
+        address strategyAddr = strategyUtil.fetchStrategy(_strategyIndexSeed);
+
+        IEulerAggregationLayer.Strategy memory strategyBefore = eulerAggLayer.getStrategy(strategyAddr);
+
+        (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
+            0,
+            address(eulerAggLayer),
+            abi.encodeWithSelector(EulerAggregationLayer.setStrategyCap.selector, strategyAddr, _cap)
+        );
+
+        IEulerAggregationLayer.Strategy memory strategyAfter = eulerAggLayer.getStrategy(strategyAddr);
+        if (success) {
+            assertEq(strategyAfter.cap, _cap);
+        } else {
+            assertEq(strategyAfter.cap, strategyBefore.cap);
+        }
+    }
+
     function addStrategy(uint256 _strategyIndexSeed, uint256 _allocationPoints) external {
         address strategyAddr = strategyUtil.fetchStrategy(_strategyIndexSeed);
 
@@ -96,9 +115,22 @@ contract EulerAggregationLayerHandler is Test {
             ghost_totalAllocationPoints -= strategyBefore.allocationPoints;
             ghost_allocationPoints[strategyAddr] = 0;
         }
+
         IEulerAggregationLayer.Strategy memory strategyAfter = eulerAggLayer.getStrategy(strategyAddr);
+        assertEq(strategyAfter.allocationPoints, ghost_allocationPoints[strategyAddr]);
         assertEq(eulerAggLayer.totalAllocationPoints(), ghost_totalAllocationPoints);
-        assertEq(strategyAfter.allocationPoints, 0);
+    }
+
+    function harvest(uint256 _actorIndexSeed) external {
+        (, success, returnData) = actorUtil.initiateActorCall(
+            _actorIndexSeed, address(eulerAggLayer), abi.encodeWithSelector(IEulerAggregationLayer.harvest.selector)
+        );
+    }
+
+    function updateInterestAccrued(uint256 _actorIndexSeed) external {
+        (, success, returnData) = actorUtil.initiateActorCall(
+            _actorIndexSeed, address(eulerAggLayer), abi.encodeWithSelector(EulerAggregationLayer.updateInterestAccrued.selector)
+        );
     }
 
     function deposit(uint256 _actorIndexSeed, uint256 _assets, address _receiver) external {
@@ -140,10 +172,39 @@ contract EulerAggregationLayerHandler is Test {
         assertEq(eulerAggLayer.totalAssetsDeposited(), ghost_totalAssetsDeposited);
     }
 
-    function harvest(uint256 _actorIndexSeed) external {
-        (, success, returnData) = actorUtil.initiateActorCall(
-            _actorIndexSeed, address(eulerAggLayer), abi.encodeWithSelector(IEulerAggregationLayer.harvest.selector)
+    function withdraw(uint256 _actorIndexSeed, uint256 _assets, address _receiver) external {
+        vm.assume(_receiver != address(0));
+
+        (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
+
+        (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
+            currentActorIndex,
+            address(eulerAggLayer),
+            abi.encodeWithSelector(IERC4626.withdraw.selector, _assets, _receiver, currentActor)
         );
+
+        if (success) {
+            ghost_totalAssetsDeposited -= _assets;
+        }
+        assertEq(eulerAggLayer.totalAssetsDeposited(), ghost_totalAssetsDeposited);
+    }
+
+    function redeem(uint256 _actorIndexSeed, uint256 _shares, address _receiver) external {
+        vm.assume(_receiver != address(0));
+
+        (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
+
+        (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
+            currentActorIndex,
+            address(eulerAggLayer),
+            abi.encodeWithSelector(IERC4626.redeem.selector, _shares, _receiver, currentActor)
+        );
+
+        if (success) {
+            uint256 assets = abi.decode(returnData, (uint256));
+            ghost_totalAssetsDeposited -= assets;
+        }
+        assertEq(eulerAggLayer.totalAssetsDeposited(), ghost_totalAssetsDeposited);
     }
 
     function _fillBalance(address _actor, address _asset, uint256 _amount) internal {
