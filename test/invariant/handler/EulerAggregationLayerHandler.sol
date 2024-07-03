@@ -43,6 +43,28 @@ contract EulerAggregationLayerHandler is Test {
         ghost_allocationPoints[address(0)] = ghost_totalAllocationPoints;
     }
 
+    function setFeeRecipient(address _newFeeRecipient) external {
+        (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
+            0,
+            address(eulerAggLayer),
+            abi.encodeWithSelector(EulerAggregationLayer.setFeeRecipient.selector, _newFeeRecipient)
+        );
+
+        (address feeRecipient,) = eulerAggLayer.performanceFeeConfig();
+
+        assertEq(feeRecipient, _newFeeRecipient);
+    }
+
+    function setPerformanceFee(uint256 _newFee) external {
+        (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
+            0, address(eulerAggLayer), abi.encodeWithSelector(EulerAggregationLayer.setPerformanceFee.selector, _newFee)
+        );
+
+        (, uint256 fee) = eulerAggLayer.performanceFeeConfig();
+
+        assertEq(_newFee, fee);
+    }
+
     function adjustAllocationPoints(uint256 _strategyIndexSeed, uint256 _newPoints) external {
         address strategyAddr = strategyUtil.fetchStrategy(_strategyIndexSeed);
 

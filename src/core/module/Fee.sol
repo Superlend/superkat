@@ -21,7 +21,7 @@ abstract contract FeeModule is Shared {
     uint256 internal constant MAX_PERFORMANCE_FEE = 0.5e18;
 
     /// @notice Set performance fee recipient address
-    /// @notice @param _newFeeRecipient Recipient address
+    /// @param _newFeeRecipient Recipient address
     function setFeeRecipient(address _newFeeRecipient) external {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
         address feeRecipientCached = $.feeRecipient;
@@ -34,7 +34,7 @@ abstract contract FeeModule is Shared {
     }
 
     /// @notice Set performance fee (1e18 == 100%)
-    /// @notice @param _newFee Fee rate
+    /// @param _newFee Fee rate
     function setPerformanceFee(uint256 _newFee) external {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
