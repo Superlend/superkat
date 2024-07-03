@@ -195,6 +195,19 @@ contract EulerAggregationLayerHandler is Test {
         );
     }
 
+    function gulp(uint256 _actorIndexSeed) external {
+        (, success, returnData) = actorUtil.initiateActorCall(
+            _actorIndexSeed, address(eulerAggLayer), abi.encodeWithSelector(EulerAggregationLayer.gulp.selector)
+        );
+
+        if (success) {
+            assertEq(
+                eulerAggLayer.totalAssetsAllocatable(),
+                eulerAggLayer.totalAssetsDeposited() + (eulerAggLayer.getAggregationVaultSavingRate()).interestLeft
+            );
+        }
+    }
+
     function deposit(uint256 _actorIndexSeed, uint256 _assets, address _receiver) external {
         vm.assume(_receiver != address(0));
 
