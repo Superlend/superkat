@@ -37,3 +37,4 @@ jobs:
         files: test/echidna/CryticERC4626Harness.t.sol
         contract: CryticERC4626Harness
         config: test/echidna/config/echidna.config.yaml
+        crytic-args: --ignore-compile
