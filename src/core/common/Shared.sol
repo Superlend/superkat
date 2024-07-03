@@ -12,7 +12,7 @@ import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 /// @title Shared contract
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
-contract Shared {
+abstract contract Shared {
     using HooksLib for uint32;
 
     uint8 internal constant REENTRANCYLOCK__UNLOCKED = 1;

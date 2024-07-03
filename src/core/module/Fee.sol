@@ -6,8 +6,6 @@ import {IBalanceForwarder} from "../interface/IBalanceForwarder.sol";
 import {IBalanceTracker} from "reward-streams/interfaces/IBalanceTracker.sol";
 import {IRewardStreams} from "reward-streams/interfaces/IRewardStreams.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-// contracts
-import {Shared} from "../common/Shared.sol";
 // libs
 import {StorageLib, AggregationVaultStorage} from "../lib/StorageLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
@@ -16,7 +14,7 @@ import {EventsLib as Events} from "../lib/EventsLib.sol";
 /// @title FeeModule contract
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
-abstract contract FeeModule is Shared {
+abstract contract FeeModule {
     /// @dev The maximum performanceFee the vault can have is 50%
     uint256 internal constant MAX_PERFORMANCE_FEE = 0.5e18;
 

@@ -22,9 +22,7 @@ abstract contract Dispatch is RewardsModule, HooksModule {
     /// @param _hooksModule Address of Hooks module.
     /// @param _feeModule Address of Fee module.
     /// @param _allocationPointsModule Address of AllocationPoints module.
-    constructor(address _rewardsModule, address _hooksModule, address _feeModule, address _allocationPointsModule)
-        Shared()
-    {
+    constructor(address _rewardsModule, address _hooksModule, address _feeModule, address _allocationPointsModule) {
         MODULE_REWARDS = _rewardsModule;
         MODULE_HOOKS = _hooksModule;
         MODULE_FEE = _feeModule;

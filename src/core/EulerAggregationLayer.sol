@@ -62,6 +62,7 @@ contract EulerAggregationLayer is
     function init(InitParams calldata _initParams) external initializer {
         __ERC4626_init_unchained(IERC20(_initParams.asset));
         __ERC20_init_unchained(_initParams.name, _initParams.symbol);
+        __AccessControlEnumerable_init();
 
         if (_initParams.initialCashAllocationPoints == 0) revert Errors.InitialAllocationPointsZero();
 
@@ -214,7 +215,7 @@ contract EulerAggregationLayer is
             // Do required approval (safely) and deposit
             IERC20(asset()).safeIncreaseAllowance(_strategy, _amountToRebalance);
             IERC4626(_strategy).deposit(_amountToRebalance, address(this));
-            $.strategies[_strategy].allocated = uint120(strategyData.allocated + _amountToRebalance);
+            $.strategies[_strategy].allocated = (strategyData.allocated + _amountToRebalance).toUint120();
             $.totalAllocated += _amountToRebalance;
         } else {
             IERC4626(_strategy).withdraw(_amountToRebalance, address(this), address(this));
