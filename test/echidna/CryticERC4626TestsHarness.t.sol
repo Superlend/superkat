@@ -14,7 +14,7 @@ import {WithdrawalQueue} from "../../src/plugin/WithdrawalQueue.sol";
 import {AllocationPoints} from "../../src/core/module/AllocationPoints.sol";
 import {TestERC20Token} from "crytic-properties/ERC4626/util/TestERC20Token.sol";
 
-contract CryticERC4626Harness is CryticERC4626PropertyTests {
+contract CryticERC4626TestsHarness is CryticERC4626PropertyTests {
     uint256 public constant CASH_RESERVE_ALLOCATION_POINTS = 1000e18;
 
     // core modules
