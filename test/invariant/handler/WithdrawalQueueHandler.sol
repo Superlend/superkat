@@ -5,6 +5,7 @@ import {
     Test,
     EulerAggregationLayerBase,
     EulerAggregationLayer,
+    console2,
     EVault,
     IEVault,
     IRMTestDefault,
@@ -18,11 +19,10 @@ import {
 import {Actor} from "../util/Actor.sol";
 import {Strategy} from "../util/Strategy.sol";
 
-contract RebalancerHandler is Test {
+contract WithdrawalQueueHandler is Test {
     Actor internal actorUtil;
     Strategy internal strategyUtil;
     EulerAggregationLayer internal eulerAggLayer;
-    Rebalancer internal rebalancer;
     WithdrawalQueue internal withdrawalQueue;
 
     // last function call state
@@ -33,7 +33,6 @@ contract RebalancerHandler is Test {
 
     constructor(
         EulerAggregationLayer _eulerAggLayer,
-        Rebalancer _rebalancer,
         Actor _actor,
         Strategy _strategy,
         WithdrawalQueue _withdrawalQueue
@@ -41,18 +40,14 @@ contract RebalancerHandler is Test {
         eulerAggLayer = _eulerAggLayer;
         actorUtil = _actor;
         strategyUtil = _strategy;
-        rebalancer = _rebalancer;
         withdrawalQueue = _withdrawalQueue;
     }
 
-    function executeRebalance(uint256 _actorIndexSeed) external {
-        (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
-
-        (address[] memory strategiesToRebalance,) = withdrawalQueue.getWithdrawalQueueArray();
-        (currentActor, success, returnData) = actorUtil.initiateActorCall(
-            _actorIndexSeed,
-            address(rebalancer),
-            abi.encodeWithSelector(Rebalancer.executeRebalance.selector, address(eulerAggLayer), strategiesToRebalance)
+    function reorderWithdrawalQueue(uint8 _index1, uint8 _index2) external {
+        (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
+            0,
+            address(withdrawalQueue),
+            abi.encodeWithSelector(WithdrawalQueue.reorderWithdrawalQueue.selector, _index1, _index2)
         );
     }
 }

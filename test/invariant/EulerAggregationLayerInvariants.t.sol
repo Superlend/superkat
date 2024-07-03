@@ -5,12 +5,14 @@ import {
     EulerAggregationLayerBase,
     EulerAggregationLayer,
     IWithdrawalQueue,
-    console2
+    IEVault,
+    TestERC20
 } from "../common/EulerAggregationLayerBase.t.sol";
 import {Actor} from "./util/Actor.sol";
 import {Strategy} from "./util/Strategy.sol";
 import {EulerAggregationLayerHandler} from "./handler/EulerAggregationLayerHandler.sol";
 import {RebalancerHandler} from "./handler/RebalancerHandler.sol";
+import {WithdrawalQueueHandler} from "./handler/WithdrawalQueueHandler.sol";
 
 contract EulerAggregationLayerInvariants is EulerAggregationLayerBase {
     Actor internal actorUtil;
@@ -18,25 +20,43 @@ contract EulerAggregationLayerInvariants is EulerAggregationLayerBase {
 
     EulerAggregationLayerHandler internal eulerAggregationLayerHandler;
     RebalancerHandler internal rebalancerHandler;
+    WithdrawalQueueHandler internal withdrawalQueueHandler;
+
+    // other strategies
+    IEVault eTSTsecond;
+    IEVault eTSTthird;
+    IEVault eTSTforth;
+    IEVault eTSTfifth;
+    IEVault eTSTsixth;
 
     function setUp() public override {
         super.setUp();
 
         actorUtil = new Actor();
-        actorUtil.addActor(manager);
-        actorUtil.addActor(deployer);
-        actorUtil.addActor(user1);
-        actorUtil.addActor(user2);
+        actorUtil.includeActor(manager);
+        actorUtil.includeActor(deployer);
+        actorUtil.includeActor(user1);
+        actorUtil.includeActor(user2);
 
         strategyUtil = new Strategy();
         strategyUtil.includeStrategy(address(eTST));
+        _deployOtherStrategies();
+        strategyUtil.includeStrategy(address(eTSTsecond));
+        strategyUtil.includeStrategy(address(eTSTthird));
+        strategyUtil.includeStrategy(address(eTSTforth));
+        strategyUtil.includeStrategy(address(eTSTfifth));
+        strategyUtil.includeStrategy(address(eTSTsixth));
 
-        eulerAggregationLayerHandler = new EulerAggregationLayerHandler(eulerAggregationLayer, actorUtil, strategyUtil);
+        eulerAggregationLayerHandler =
+            new EulerAggregationLayerHandler(eulerAggregationLayer, actorUtil, strategyUtil, withdrawalQueue);
         rebalancerHandler =
             new RebalancerHandler(eulerAggregationLayer, rebalancer, actorUtil, strategyUtil, withdrawalQueue);
+        withdrawalQueueHandler =
+            new WithdrawalQueueHandler(eulerAggregationLayer, actorUtil, strategyUtil, withdrawalQueue);
 
         targetContract(address(eulerAggregationLayerHandler));
         targetContract(address(rebalancerHandler));
+        targetContract(address(withdrawalQueueHandler));
     }
 
     function invariant_totalAllocationPoints() public view {
@@ -80,7 +100,35 @@ contract EulerAggregationLayerInvariants is EulerAggregationLayerBase {
             aggregatedAllocatedAmount += (eulerAggregationLayer.getStrategy(withdrawalQueueArray[i])).allocated;
         }
 
-        console2.log("eulerAggregationLayer.totalAllocated()", eulerAggregationLayer.totalAllocated());
         assertEq(eulerAggregationLayer.totalAllocated(), aggregatedAllocatedAmount);
+    }
+
+    function invariant_performanceFee() public view {
+        for (uint256 i; i < eulerAggregationLayerHandler.ghostFeeRecipientsLength(); i++) {
+            address feeRecipient = eulerAggregationLayerHandler.ghost_feeRecipients(i);
+
+            assertEq(
+                assetTST.balanceOf(feeRecipient),
+                eulerAggregationLayerHandler.ghost_accumulatedPerformanceFeePerRecipient(feeRecipient)
+            );
+        }
+    }
+
+    function _deployOtherStrategies() private {
+        eTSTsecond = IEVault(
+            factory.createProxy(address(0), true, abi.encodePacked(address(assetTST), address(oracle), unitOfAccount))
+        );
+        eTSTthird = IEVault(
+            factory.createProxy(address(0), true, abi.encodePacked(address(assetTST), address(oracle), unitOfAccount))
+        );
+        eTSTforth = IEVault(
+            factory.createProxy(address(0), true, abi.encodePacked(address(assetTST), address(oracle), unitOfAccount))
+        );
+        eTSTfifth = IEVault(
+            factory.createProxy(address(0), true, abi.encodePacked(address(assetTST), address(oracle), unitOfAccount))
+        );
+        eTSTsixth = IEVault(
+            factory.createProxy(address(0), true, abi.encodePacked(address(assetTST), address(oracle), unitOfAccount))
+        );
     }
 }

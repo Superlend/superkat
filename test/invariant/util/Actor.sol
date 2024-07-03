@@ -7,7 +7,7 @@ contract Actor is Test {
     /// @dev actor[0] will always be a manager address that have access to all EulerAggregationLayer roles.
     address[] public actors;
 
-    function addActor(address _actor) external {
+    function includeActor(address _actor) external {
         actors.push(_actor);
     }
 
