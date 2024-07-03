@@ -1,0 +1,28 @@
+corpusDir: "test/echidna/_corpus/"
+
+testMode: assertion
+
+#testLimit is the number of test sequences to run
+testLimit: 20000000
+
+#codeSize max code size for deployed contratcs (default 24576, per EIP-170)
+codeSize: 224576
+
+deployer: "0x10000"
+
+sender: ["0x10000"]
+
+#stopOnFail makes echidna terminate as soon as any property fails and has been shrunk
+stopOnFail: false
+
+#coverage controls coverage guided testing
+coverage: true
+
+# list of file formats to save coverage reports in; default is all possible formats
+coverageFormats: ["lcov", "html"]
+
+#quiet produces (much) less verbose output
+quiet: false
+
+# concurrent workers
+workers: 10

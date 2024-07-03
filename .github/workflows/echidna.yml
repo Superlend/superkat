@@ -1,0 +1,40 @@
+name: Echidna Test
+
+on:
+    push:
+        branches:
+            - main
+    pull_request:
+
+env:
+  FOUNDRY_PROFILE: ci
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:      
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: nightly
+
+    - name: Compile contracts
+      run: |
+        forge build --build-info
+
+    - name: Run Echidna
+      uses: crytic/echidna-action@v2
+      with:
+        files: test/echidna/CryticERC4626Harness.t.sol
+        contract: CryticERC4626Harness
+        crytic-args: --ignore-compile
+        config: test/echidna/config/echidna.config.yaml
