@@ -31,9 +31,9 @@ jobs:
       run: |
         forge build --build-info
 
-    - name: Install Echidna docker
-      uses: docker://ghcr.io/crytic/echidna/echidna:latest
-    
-    - name: Run Echidna tests
-      run: |
-        echidna test/echidna/CryticERC4626Harness.t.sol --contract CryticERC4626Harness --config test/echidna/config/echidna.config.yaml
+    - name: Run Echidna
+      uses: crytic/echidna-action@v2
+      with:
+        files: test/echidna/CryticERC4626Harness.t.sol
+        contract: CryticERC4626Harness
+        config: test/echidna/config/echidna.config.yaml
