@@ -27,4 +27,4 @@ quiet: false
 # concurrent workers
 workers: 10
 
-cryticArgs: ["--ignore-compile"]
+cryticArgs: ["---foundry-ignore-compile"]
