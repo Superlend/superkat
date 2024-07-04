@@ -48,11 +48,18 @@ contract RebalancerHandler is Test {
     function executeRebalance(uint256 _actorIndexSeed) external {
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
 
-        (address[] memory strategiesToRebalance,) = withdrawalQueue.getWithdrawalQueueArray();
+        (address[] memory strategiesToRebalance, uint256 strategiesCounter) = withdrawalQueue.getWithdrawalQueueArray();
         (currentActor, success, returnData) = actorUtil.initiateActorCall(
             _actorIndexSeed,
             address(rebalancer),
             abi.encodeWithSelector(Rebalancer.executeRebalance.selector, address(eulerAggLayer), strategiesToRebalance)
         );
+
+        for (uint256 i; i < strategiesCounter; i++) {
+            assertEq(
+                IERC4626(strategiesToRebalance[i]).maxWithdraw(address(eulerAggLayer)),
+                (eulerAggLayer.getStrategy(strategiesToRebalance[i])).allocated
+            );
+        }
     }
 }

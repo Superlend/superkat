@@ -489,7 +489,7 @@ contract EulerAggregationLayer is
         emit Events.Gulp($.interestLeft, $.interestSmearEnd);
     }
 
-    /// @dev Loop through stratgies, aggregated yield and lossm and account for net amount.
+    /// @dev Loop through stratgies, aggregate positive yield and loss and account for net amount.
     /// @dev Loss socialization will be taken out from interest left first, if not enough, sozialize on deposits.
     function _harvest() internal {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();

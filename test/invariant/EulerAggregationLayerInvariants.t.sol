@@ -59,6 +59,16 @@ contract EulerAggregationLayerInvariants is EulerAggregationLayerBase {
         targetContract(address(withdrawalQueueHandler));
     }
 
+    function invariant_gulp() public {
+        eulerAggregationLayer.gulp();
+
+        assertEq(
+            eulerAggregationLayer.totalAssetsAllocatable(),
+            eulerAggregationLayer.totalAssetsDeposited()
+                + (eulerAggregationLayer.getAggregationVaultSavingRate()).interestLeft
+        );
+    }
+
     function invariant_totalAllocationPoints() public view {
         address withdrawalQueueAddr = eulerAggregationLayer.withdrawalQueue();
 
