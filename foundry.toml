@@ -22,8 +22,8 @@ ignore = [
 ]
 
 [profile.test]
-no_match_test = "Fuzz"
-no_match_contract = "Fuzz"
+no_match_test = "(Fuzz|invariant_)"
+no_match_contract = "(Fuzz|CryticERC4626TestsHarness)"
 gas_reports = ["*"]
 
 [profile.fuzz]
@@ -60,7 +60,9 @@ match_test = "invariant_"
 
 [profile.coverage]
 via_ir = true
-no_match_contract = "Script"
+no_match_test = "(invariant_)"
+no_match_contract = "(Script|CryticERC4626TestsHarness)"
+no_match_coverage= "(script|test|fuzz|e2e)"
 
 [profile.coverage.optimizer_details]
 constantOptimizer = true
