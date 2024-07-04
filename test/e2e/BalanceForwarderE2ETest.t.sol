@@ -3,18 +3,18 @@ pragma solidity ^0.8.0;
 
 import {TrackingRewardStreams} from "reward-streams/TrackingRewardStreams.sol";
 import {
-    EulerAggregationLayerBase,
-    EulerAggregationLayer,
+    EulerAggregationVaultBase,
+    EulerAggregationVault,
     console2,
     EVault,
     IEVault,
     IRMTestDefault,
     TestERC20,
-    EulerAggregationLayerFactory,
+    EulerAggregationVaultFactory,
     Rewards
-} from "../common/EulerAggregationLayerBase.t.sol";
+} from "../common/EulerAggregationVaultBase.t.sol";
 
-contract BalanceForwarderE2ETest is EulerAggregationLayerBase {
+contract BalanceForwarderE2ETest is EulerAggregationVaultBase {
     uint256 user1InitialBalance = 100000e18;
 
     address trackingReward;
@@ -25,7 +25,7 @@ contract BalanceForwarderE2ETest is EulerAggregationLayerBase {
         vm.startPrank(deployer);
         trackingReward = address(new TrackingRewardStreams(address(evc), 2 weeks));
 
-        EulerAggregationLayerFactory.FactoryParams memory factoryParams = EulerAggregationLayerFactory.FactoryParams({
+        EulerAggregationVaultFactory.FactoryParams memory factoryParams = EulerAggregationVaultFactory.FactoryParams({
             balanceTracker: trackingReward,
             rewardsModuleImpl: address(rewardsImpl),
             hooksModuleImpl: address(hooksImpl),
@@ -34,26 +34,26 @@ contract BalanceForwarderE2ETest is EulerAggregationLayerBase {
             rebalancer: address(rebalancer),
             withdrawalQueueImpl: address(withdrawalQueueImpl)
         });
-        eulerAggregationLayerFactory = new EulerAggregationLayerFactory(factoryParams);
-        eulerAggregationLayer = EulerAggregationLayer(
-            eulerAggregationLayerFactory.deployEulerAggregationLayer(
+        eulerAggregationVaultFactory = new EulerAggregationVaultFactory(factoryParams);
+        eulerAggregationVault = EulerAggregationVault(
+            eulerAggregationVaultFactory.deployEulerAggregationVault(
                 address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS
             )
         );
 
         // grant admin roles to deployer
-        eulerAggregationLayer.grantRole(eulerAggregationLayer.ALLOCATIONS_MANAGER_ADMIN(), deployer);
-        // eulerAggregationLayer.grantRole(eulerAggregationLayer.WITHDRAW_QUEUE_MANAGER_ADMIN(), deployer);
-        eulerAggregationLayer.grantRole(eulerAggregationLayer.STRATEGY_ADDER_ADMIN(), deployer);
-        eulerAggregationLayer.grantRole(eulerAggregationLayer.STRATEGY_REMOVER_ADMIN(), deployer);
-        eulerAggregationLayer.grantRole(eulerAggregationLayer.AGGREGATION_LAYER_MANAGER_ADMIN(), deployer);
+        eulerAggregationVault.grantRole(eulerAggregationVault.ALLOCATIONS_MANAGER_ADMIN(), deployer);
+        // eulerAggregationVault.grantRole(eulerAggregationVault.WITHDRAW_QUEUE_MANAGER_ADMIN(), deployer);
+        eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_ADDER_ADMIN(), deployer);
+        eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_REMOVER_ADMIN(), deployer);
+        eulerAggregationVault.grantRole(eulerAggregationVault.AGGREGATION_LAYER_MANAGER_ADMIN(), deployer);
 
         // grant roles to manager
-        eulerAggregationLayer.grantRole(eulerAggregationLayer.ALLOCATIONS_MANAGER(), manager);
-        // eulerAggregationLayer.grantRole(eulerAggregationLayer.WITHDRAW_QUEUE_MANAGER(), manager);
-        eulerAggregationLayer.grantRole(eulerAggregationLayer.STRATEGY_ADDER(), manager);
-        eulerAggregationLayer.grantRole(eulerAggregationLayer.STRATEGY_REMOVER(), manager);
-        eulerAggregationLayer.grantRole(eulerAggregationLayer.AGGREGATION_LAYER_MANAGER(), manager);
+        eulerAggregationVault.grantRole(eulerAggregationVault.ALLOCATIONS_MANAGER(), manager);
+        // eulerAggregationVault.grantRole(eulerAggregationVault.WITHDRAW_QUEUE_MANAGER(), manager);
+        eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_ADDER(), manager);
+        eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_REMOVER(), manager);
+        eulerAggregationVault.grantRole(eulerAggregationVault.AGGREGATION_LAYER_MANAGER(), manager);
         vm.stopPrank();
 
         uint256 initialStrategyAllocationPoints = 500e18;
@@ -63,125 +63,125 @@ contract BalanceForwarderE2ETest is EulerAggregationLayerBase {
         // deposit into aggregator
         uint256 amountToDeposit = 10000e18;
         {
-            uint256 balanceBefore = eulerAggregationLayer.balanceOf(user1);
-            uint256 totalSupplyBefore = eulerAggregationLayer.totalSupply();
-            uint256 totalAssetsDepositedBefore = eulerAggregationLayer.totalAssetsDeposited();
+            uint256 balanceBefore = eulerAggregationVault.balanceOf(user1);
+            uint256 totalSupplyBefore = eulerAggregationVault.totalSupply();
+            uint256 totalAssetsDepositedBefore = eulerAggregationVault.totalAssetsDeposited();
             uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
 
             vm.startPrank(user1);
-            assetTST.approve(address(eulerAggregationLayer), amountToDeposit);
-            eulerAggregationLayer.deposit(amountToDeposit, user1);
+            assetTST.approve(address(eulerAggregationVault), amountToDeposit);
+            eulerAggregationVault.deposit(amountToDeposit, user1);
             vm.stopPrank();
 
-            assertEq(eulerAggregationLayer.balanceOf(user1), balanceBefore + amountToDeposit);
-            assertEq(eulerAggregationLayer.totalSupply(), totalSupplyBefore + amountToDeposit);
-            assertEq(eulerAggregationLayer.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
+            assertEq(eulerAggregationVault.balanceOf(user1), balanceBefore + amountToDeposit);
+            assertEq(eulerAggregationVault.totalSupply(), totalSupplyBefore + amountToDeposit);
+            assertEq(eulerAggregationVault.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
             assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - amountToDeposit);
         }
     }
 
     function testBalanceForwarderrAddress_Integrity() public view {
-        assertEq(eulerAggregationLayer.balanceTrackerAddress(), trackingReward);
+        assertEq(eulerAggregationVault.balanceTrackerAddress(), trackingReward);
     }
 
     function testEnableBalanceForwarder() public {
         vm.prank(user1);
-        eulerAggregationLayer.enableBalanceForwarder();
+        eulerAggregationVault.enableBalanceForwarder();
 
-        assertTrue(eulerAggregationLayer.balanceForwarderEnabled(user1));
+        assertTrue(eulerAggregationVault.balanceForwarderEnabled(user1));
         assertEq(
-            TrackingRewardStreams(trackingReward).balanceOf(user1, address(eulerAggregationLayer)),
-            eulerAggregationLayer.balanceOf(user1)
+            TrackingRewardStreams(trackingReward).balanceOf(user1, address(eulerAggregationVault)),
+            eulerAggregationVault.balanceOf(user1)
         );
     }
 
     function testDisableBalanceForwarder() public {
         vm.prank(user1);
-        eulerAggregationLayer.enableBalanceForwarder();
+        eulerAggregationVault.enableBalanceForwarder();
 
-        assertTrue(eulerAggregationLayer.balanceForwarderEnabled(user1));
+        assertTrue(eulerAggregationVault.balanceForwarderEnabled(user1));
 
         vm.prank(user1);
-        eulerAggregationLayer.disableBalanceForwarder();
+        eulerAggregationVault.disableBalanceForwarder();
 
-        assertFalse(eulerAggregationLayer.balanceForwarderEnabled(user1));
-        assertEq(TrackingRewardStreams(trackingReward).balanceOf(user1, address(eulerAggregationLayer)), 0);
+        assertFalse(eulerAggregationVault.balanceForwarderEnabled(user1));
+        assertEq(TrackingRewardStreams(trackingReward).balanceOf(user1, address(eulerAggregationVault)), 0);
     }
 
     function testHookWhenReceiverEnabled() public {
         vm.prank(user1);
-        eulerAggregationLayer.enableBalanceForwarder();
+        eulerAggregationVault.enableBalanceForwarder();
 
         // deposit into aggregator
         uint256 amountToDeposit = 10000e18;
         {
-            uint256 balanceBefore = eulerAggregationLayer.balanceOf(user1);
-            uint256 totalSupplyBefore = eulerAggregationLayer.totalSupply();
-            uint256 totalAssetsDepositedBefore = eulerAggregationLayer.totalAssetsDeposited();
+            uint256 balanceBefore = eulerAggregationVault.balanceOf(user1);
+            uint256 totalSupplyBefore = eulerAggregationVault.totalSupply();
+            uint256 totalAssetsDepositedBefore = eulerAggregationVault.totalAssetsDeposited();
             uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
 
             vm.startPrank(user1);
-            assetTST.approve(address(eulerAggregationLayer), amountToDeposit);
-            eulerAggregationLayer.deposit(amountToDeposit, user1);
+            assetTST.approve(address(eulerAggregationVault), amountToDeposit);
+            eulerAggregationVault.deposit(amountToDeposit, user1);
             vm.stopPrank();
 
-            assertEq(eulerAggregationLayer.balanceOf(user1), balanceBefore + amountToDeposit);
-            assertEq(eulerAggregationLayer.totalSupply(), totalSupplyBefore + amountToDeposit);
-            assertEq(eulerAggregationLayer.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
+            assertEq(eulerAggregationVault.balanceOf(user1), balanceBefore + amountToDeposit);
+            assertEq(eulerAggregationVault.totalSupply(), totalSupplyBefore + amountToDeposit);
+            assertEq(eulerAggregationVault.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
             assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - amountToDeposit);
 
             assertEq(
-                TrackingRewardStreams(trackingReward).balanceOf(user1, address(eulerAggregationLayer)),
-                eulerAggregationLayer.balanceOf(user1)
+                TrackingRewardStreams(trackingReward).balanceOf(user1, address(eulerAggregationVault)),
+                eulerAggregationVault.balanceOf(user1)
             );
         }
     }
 
     function testHookWhenSenderEnabled() public {
         vm.prank(user1);
-        eulerAggregationLayer.enableBalanceForwarder();
+        eulerAggregationVault.enableBalanceForwarder();
 
         // deposit into aggregator
         uint256 amountToDeposit = 10000e18;
         {
-            uint256 balanceBefore = eulerAggregationLayer.balanceOf(user1);
-            uint256 totalSupplyBefore = eulerAggregationLayer.totalSupply();
-            uint256 totalAssetsDepositedBefore = eulerAggregationLayer.totalAssetsDeposited();
+            uint256 balanceBefore = eulerAggregationVault.balanceOf(user1);
+            uint256 totalSupplyBefore = eulerAggregationVault.totalSupply();
+            uint256 totalAssetsDepositedBefore = eulerAggregationVault.totalAssetsDeposited();
             uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
 
             vm.startPrank(user1);
-            assetTST.approve(address(eulerAggregationLayer), amountToDeposit);
-            eulerAggregationLayer.deposit(amountToDeposit, user1);
+            assetTST.approve(address(eulerAggregationVault), amountToDeposit);
+            eulerAggregationVault.deposit(amountToDeposit, user1);
             vm.stopPrank();
 
-            assertEq(eulerAggregationLayer.balanceOf(user1), balanceBefore + amountToDeposit);
-            assertEq(eulerAggregationLayer.totalSupply(), totalSupplyBefore + amountToDeposit);
-            assertEq(eulerAggregationLayer.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
+            assertEq(eulerAggregationVault.balanceOf(user1), balanceBefore + amountToDeposit);
+            assertEq(eulerAggregationVault.totalSupply(), totalSupplyBefore + amountToDeposit);
+            assertEq(eulerAggregationVault.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
             assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - amountToDeposit);
 
             assertEq(
-                TrackingRewardStreams(trackingReward).balanceOf(user1, address(eulerAggregationLayer)),
-                eulerAggregationLayer.balanceOf(user1)
+                TrackingRewardStreams(trackingReward).balanceOf(user1, address(eulerAggregationVault)),
+                eulerAggregationVault.balanceOf(user1)
             );
         }
 
         {
-            uint256 amountToWithdraw = eulerAggregationLayer.balanceOf(user1);
-            uint256 totalAssetsDepositedBefore = eulerAggregationLayer.totalAssetsDeposited();
-            uint256 aggregatorTotalSupplyBefore = eulerAggregationLayer.totalSupply();
+            uint256 amountToWithdraw = eulerAggregationVault.balanceOf(user1);
+            uint256 totalAssetsDepositedBefore = eulerAggregationVault.totalAssetsDeposited();
+            uint256 aggregatorTotalSupplyBefore = eulerAggregationVault.totalSupply();
             uint256 user1AssetTSTBalanceBefore = assetTST.balanceOf(user1);
 
             vm.prank(user1);
-            eulerAggregationLayer.redeem(amountToWithdraw, user1, user1);
+            eulerAggregationVault.redeem(amountToWithdraw, user1, user1);
 
-            assertEq(eTST.balanceOf(address(eulerAggregationLayer)), 0);
-            assertEq(eulerAggregationLayer.totalAssetsDeposited(), totalAssetsDepositedBefore - amountToWithdraw);
-            assertEq(eulerAggregationLayer.totalSupply(), aggregatorTotalSupplyBefore - amountToWithdraw);
+            assertEq(eTST.balanceOf(address(eulerAggregationVault)), 0);
+            assertEq(eulerAggregationVault.totalAssetsDeposited(), totalAssetsDepositedBefore - amountToWithdraw);
+            assertEq(eulerAggregationVault.totalSupply(), aggregatorTotalSupplyBefore - amountToWithdraw);
             assertEq(
                 assetTST.balanceOf(user1),
-                user1AssetTSTBalanceBefore + eulerAggregationLayer.convertToAssets(amountToWithdraw)
+                user1AssetTSTBalanceBefore + eulerAggregationVault.convertToAssets(amountToWithdraw)
             );
-            assertEq(TrackingRewardStreams(trackingReward).balanceOf(user1, address(eulerAggregationLayer)), 0);
+            assertEq(TrackingRewardStreams(trackingReward).balanceOf(user1, address(eulerAggregationVault)), 0);
         }
     }
 }

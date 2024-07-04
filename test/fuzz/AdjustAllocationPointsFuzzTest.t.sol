@@ -2,12 +2,12 @@
 pragma solidity ^0.8.0;
 
 import {
-    EulerAggregationLayerBase,
-    EulerAggregationLayer,
-    IEulerAggregationLayer
-} from "../common/EulerAggregationLayerBase.t.sol";
+    EulerAggregationVaultBase,
+    EulerAggregationVault,
+    IEulerAggregationVault
+} from "../common/EulerAggregationVaultBase.t.sol";
 
-contract AdjustAllocationsPointsFuzzTest is EulerAggregationLayerBase {
+contract AdjustAllocationsPointsFuzzTest is EulerAggregationVaultBase {
     function setUp() public virtual override {
         super.setUp();
 
@@ -18,23 +18,23 @@ contract AdjustAllocationsPointsFuzzTest is EulerAggregationLayerBase {
     function testFuzzAdjustAllocationPoints(uint256 _newAllocationPoints) public {
         _newAllocationPoints = bound(_newAllocationPoints, 1, type(uint120).max);
 
-        uint256 strategyAllocationPoints = (eulerAggregationLayer.getStrategy(address(eTST))).allocationPoints;
-        uint256 totalAllocationPointsBefore = eulerAggregationLayer.totalAllocationPoints();
+        uint256 strategyAllocationPoints = (eulerAggregationVault.getStrategy(address(eTST))).allocationPoints;
+        uint256 totalAllocationPointsBefore = eulerAggregationVault.totalAllocationPoints();
         uint256 withdrawalQueueLengthBefore = _getWithdrawalQueueLength();
 
         vm.prank(manager);
-        eulerAggregationLayer.adjustAllocationPoints(address(eTST), _newAllocationPoints);
+        eulerAggregationVault.adjustAllocationPoints(address(eTST), _newAllocationPoints);
 
-        IEulerAggregationLayer.Strategy memory strategy = eulerAggregationLayer.getStrategy(address(eTST));
+        IEulerAggregationVault.Strategy memory strategy = eulerAggregationVault.getStrategy(address(eTST));
 
         if (_newAllocationPoints < strategyAllocationPoints) {
             assertEq(
-                eulerAggregationLayer.totalAllocationPoints(),
+                eulerAggregationVault.totalAllocationPoints(),
                 totalAllocationPointsBefore - (strategyAllocationPoints - _newAllocationPoints)
             );
         } else {
             assertEq(
-                eulerAggregationLayer.totalAllocationPoints(),
+                eulerAggregationVault.totalAllocationPoints(),
                 totalAllocationPointsBefore + (_newAllocationPoints - strategyAllocationPoints)
             );
         }

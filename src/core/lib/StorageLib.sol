@@ -2,11 +2,11 @@
 pragma solidity ^0.8.0;
 
 // interfaces
-import {IEulerAggregationLayer} from "../interface/IEulerAggregationLayer.sol";
+import {IEulerAggregationVault} from "../interface/IEulerAggregationVault.sol";
 
 /// @custom:storage-location erc7201:euler_aggregation_vault.storage.AggregationVault
 struct AggregationVaultStorage {
-    /// Total amount of _asset deposited into EulerAggregationLayer contract
+    /// Total amount of _asset deposited into EulerAggregationVault contract
     uint256 totalAssetsDeposited;
     /// Total amount of _asset deposited across all strategies.
     uint256 totalAllocated;
@@ -21,7 +21,7 @@ struct AggregationVaultStorage {
     /// Rebalancer plugin address
     address rebalancer;
     /// Mapping between strategy address and it's allocation config
-    mapping(address => IEulerAggregationLayer.Strategy) strategies;
+    mapping(address => IEulerAggregationVault.Strategy) strategies;
     /// lastInterestUpdate: last timestamo where interest was updated.
     uint40 lastInterestUpdate;
     /// interestSmearEnd: timestamp when the smearing of interest end.

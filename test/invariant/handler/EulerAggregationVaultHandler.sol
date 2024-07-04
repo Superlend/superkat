@@ -3,26 +3,26 @@ pragma solidity ^0.8.0;
 
 import {
     Test,
-    EulerAggregationLayerBase,
-    EulerAggregationLayer,
+    EulerAggregationVaultBase,
+    EulerAggregationVault,
     console2,
     EVault,
     IEVault,
     IRMTestDefault,
     TestERC20,
-    IEulerAggregationLayer,
+    IEulerAggregationVault,
     ErrorsLib,
     IERC4626,
     WithdrawalQueue
-} from "../../common/EulerAggregationLayerBase.t.sol";
+} from "../../common/EulerAggregationVaultBase.t.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Actor} from "../util/Actor.sol";
 import {Strategy} from "../util/Strategy.sol";
 
-contract EulerAggregationLayerHandler is Test {
+contract EulerAggregationVaultHandler is Test {
     Actor internal actorUtil;
     Strategy internal strategyUtil;
-    EulerAggregationLayer internal eulerAggLayer;
+    EulerAggregationVault internal eulerAggVault;
     WithdrawalQueue internal withdrawalQueue;
 
     // ghost vars
@@ -39,18 +39,18 @@ contract EulerAggregationLayerHandler is Test {
     bytes returnData;
 
     constructor(
-        EulerAggregationLayer _eulerAggLayer,
+        EulerAggregationVault _eulerAggVault,
         Actor _actor,
         Strategy _strategy,
         WithdrawalQueue _withdrawalQueue
     ) {
-        eulerAggLayer = _eulerAggLayer;
+        eulerAggVault = _eulerAggVault;
         actorUtil = _actor;
         strategyUtil = _strategy;
         withdrawalQueue = _withdrawalQueue;
 
         // initiating ghost total allocation points to match count cash reserve.
-        ghost_totalAllocationPoints += eulerAggLayer.totalAllocationPoints();
+        ghost_totalAllocationPoints += eulerAggVault.totalAllocationPoints();
         ghost_allocationPoints[address(0)] = ghost_totalAllocationPoints;
     }
 
@@ -60,23 +60,23 @@ contract EulerAggregationLayerHandler is Test {
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             0,
-            address(eulerAggLayer),
-            abi.encodeWithSelector(EulerAggregationLayer.setFeeRecipient.selector, feeRecipientAddr)
+            address(eulerAggVault),
+            abi.encodeWithSelector(EulerAggregationVault.setFeeRecipient.selector, feeRecipientAddr)
         );
 
         if (success) {
             ghost_feeRecipients.push(feeRecipientAddr);
         }
-        (address feeRecipient,) = eulerAggLayer.performanceFeeConfig();
+        (address feeRecipient,) = eulerAggVault.performanceFeeConfig();
         assertEq(feeRecipient, feeRecipientAddr);
     }
 
     function setPerformanceFee(uint256 _newFee) external {
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
-            0, address(eulerAggLayer), abi.encodeWithSelector(EulerAggregationLayer.setPerformanceFee.selector, _newFee)
+            0, address(eulerAggVault), abi.encodeWithSelector(EulerAggregationVault.setPerformanceFee.selector, _newFee)
         );
 
-        (, uint256 fee) = eulerAggLayer.performanceFeeConfig();
+        (, uint256 fee) = eulerAggVault.performanceFeeConfig();
 
         assertEq(_newFee, fee);
     }
@@ -84,35 +84,35 @@ contract EulerAggregationLayerHandler is Test {
     function adjustAllocationPoints(uint256 _strategyIndexSeed, uint256 _newPoints) external {
         address strategyAddr = strategyUtil.fetchStrategy(_strategyIndexSeed);
 
-        IEulerAggregationLayer.Strategy memory strategyBefore = eulerAggLayer.getStrategy(strategyAddr);
+        IEulerAggregationVault.Strategy memory strategyBefore = eulerAggVault.getStrategy(strategyAddr);
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             0,
-            address(eulerAggLayer),
-            abi.encodeWithSelector(IEulerAggregationLayer.adjustAllocationPoints.selector, strategyAddr, _newPoints)
+            address(eulerAggVault),
+            abi.encodeWithSelector(IEulerAggregationVault.adjustAllocationPoints.selector, strategyAddr, _newPoints)
         );
 
         if (success) {
             ghost_totalAllocationPoints = ghost_totalAllocationPoints + _newPoints - strategyBefore.allocationPoints;
             ghost_allocationPoints[strategyAddr] = _newPoints;
         }
-        IEulerAggregationLayer.Strategy memory strategyAfter = eulerAggLayer.getStrategy(strategyAddr);
-        assertEq(eulerAggLayer.totalAllocationPoints(), ghost_totalAllocationPoints);
+        IEulerAggregationVault.Strategy memory strategyAfter = eulerAggVault.getStrategy(strategyAddr);
+        assertEq(eulerAggVault.totalAllocationPoints(), ghost_totalAllocationPoints);
         assertEq(strategyAfter.allocationPoints, ghost_allocationPoints[strategyAddr]);
     }
 
     function setStrategyCap(uint256 _strategyIndexSeed, uint256 _cap) external {
         address strategyAddr = strategyUtil.fetchStrategy(_strategyIndexSeed);
 
-        IEulerAggregationLayer.Strategy memory strategyBefore = eulerAggLayer.getStrategy(strategyAddr);
+        IEulerAggregationVault.Strategy memory strategyBefore = eulerAggVault.getStrategy(strategyAddr);
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             0,
-            address(eulerAggLayer),
-            abi.encodeWithSelector(EulerAggregationLayer.setStrategyCap.selector, strategyAddr, _cap)
+            address(eulerAggVault),
+            abi.encodeWithSelector(EulerAggregationVault.setStrategyCap.selector, strategyAddr, _cap)
         );
 
-        IEulerAggregationLayer.Strategy memory strategyAfter = eulerAggLayer.getStrategy(strategyAddr);
+        IEulerAggregationVault.Strategy memory strategyAfter = eulerAggVault.getStrategy(strategyAddr);
         if (success) {
             assertEq(strategyAfter.cap, _cap);
         } else {
@@ -125,28 +125,28 @@ contract EulerAggregationLayerHandler is Test {
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             0,
-            address(eulerAggLayer),
-            abi.encodeWithSelector(IEulerAggregationLayer.addStrategy.selector, strategyAddr, _allocationPoints)
+            address(eulerAggVault),
+            abi.encodeWithSelector(IEulerAggregationVault.addStrategy.selector, strategyAddr, _allocationPoints)
         );
 
         if (success) {
             ghost_totalAllocationPoints += _allocationPoints;
             ghost_allocationPoints[strategyAddr] = _allocationPoints;
         }
-        IEulerAggregationLayer.Strategy memory strategyAfter = eulerAggLayer.getStrategy(strategyAddr);
-        assertEq(eulerAggLayer.totalAllocationPoints(), ghost_totalAllocationPoints);
+        IEulerAggregationVault.Strategy memory strategyAfter = eulerAggVault.getStrategy(strategyAddr);
+        assertEq(eulerAggVault.totalAllocationPoints(), ghost_totalAllocationPoints);
         assertEq(strategyAfter.allocationPoints, ghost_allocationPoints[strategyAddr]);
     }
 
     function removeStrategy(uint256 _strategyIndexSeed) external {
         address strategyAddr = strategyUtil.fetchStrategy(_strategyIndexSeed);
 
-        IEulerAggregationLayer.Strategy memory strategyBefore = eulerAggLayer.getStrategy(strategyAddr);
+        IEulerAggregationVault.Strategy memory strategyBefore = eulerAggVault.getStrategy(strategyAddr);
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             0,
-            address(eulerAggLayer),
-            abi.encodeWithSelector(IEulerAggregationLayer.removeStrategy.selector, strategyAddr)
+            address(eulerAggVault),
+            abi.encodeWithSelector(IEulerAggregationVault.removeStrategy.selector, strategyAddr)
         );
 
         if (success) {
@@ -154,14 +154,14 @@ contract EulerAggregationLayerHandler is Test {
             ghost_allocationPoints[strategyAddr] = 0;
         }
 
-        IEulerAggregationLayer.Strategy memory strategyAfter = eulerAggLayer.getStrategy(strategyAddr);
+        IEulerAggregationVault.Strategy memory strategyAfter = eulerAggVault.getStrategy(strategyAddr);
         assertEq(strategyAfter.allocationPoints, ghost_allocationPoints[strategyAddr]);
-        assertEq(eulerAggLayer.totalAllocationPoints(), ghost_totalAllocationPoints);
+        assertEq(eulerAggVault.totalAllocationPoints(), ghost_totalAllocationPoints);
     }
 
     function harvest(uint256 _actorIndexSeed) external {
         // check if performance fee is on; store received fee per recipient if call is succesfull
-        (address feeRecipient, uint256 performanceFee) = eulerAggLayer.performanceFeeConfig();
+        (address feeRecipient, uint256 performanceFee) = eulerAggVault.performanceFeeConfig();
         uint256 accumulatedPerformanceFee;
         if (feeRecipient != address(0) && performanceFee > 0) {
             accumulatedPerformanceFee = ghost_accumulatedPerformanceFeePerRecipient[feeRecipient];
@@ -169,8 +169,8 @@ contract EulerAggregationLayerHandler is Test {
                 withdrawalQueue.getWithdrawalQueueArray();
 
             for (uint256 i; i < withdrawalQueueLength; i++) {
-                uint256 allocated = (eulerAggLayer.getStrategy(withdrawalQueueArray[i])).allocated;
-                uint256 underlying = IERC4626(withdrawalQueueArray[i]).maxWithdraw(address(eulerAggLayer));
+                uint256 allocated = (eulerAggVault.getStrategy(withdrawalQueueArray[i])).allocated;
+                uint256 underlying = IERC4626(withdrawalQueueArray[i]).maxWithdraw(address(eulerAggVault));
                 if (underlying > allocated) {
                     uint256 yield = underlying - allocated;
                     accumulatedPerformanceFee += Math.mulDiv(yield, performanceFee, 1e18, Math.Rounding.Floor);
@@ -179,7 +179,7 @@ contract EulerAggregationLayerHandler is Test {
         }
 
         (, success, returnData) = actorUtil.initiateActorCall(
-            _actorIndexSeed, address(eulerAggLayer), abi.encodeWithSelector(IEulerAggregationLayer.harvest.selector)
+            _actorIndexSeed, address(eulerAggVault), abi.encodeWithSelector(IEulerAggregationVault.harvest.selector)
         );
 
         if (success) {
@@ -190,20 +190,20 @@ contract EulerAggregationLayerHandler is Test {
     function updateInterestAccrued(uint256 _actorIndexSeed) external {
         (, success, returnData) = actorUtil.initiateActorCall(
             _actorIndexSeed,
-            address(eulerAggLayer),
-            abi.encodeWithSelector(EulerAggregationLayer.updateInterestAccrued.selector)
+            address(eulerAggVault),
+            abi.encodeWithSelector(EulerAggregationVault.updateInterestAccrued.selector)
         );
     }
 
     function gulp(uint256 _actorIndexSeed) external {
         (, success, returnData) = actorUtil.initiateActorCall(
-            _actorIndexSeed, address(eulerAggLayer), abi.encodeWithSelector(EulerAggregationLayer.gulp.selector)
+            _actorIndexSeed, address(eulerAggVault), abi.encodeWithSelector(EulerAggregationVault.gulp.selector)
         );
 
         if (success) {
             assertEq(
-                eulerAggLayer.totalAssetsAllocatable(),
-                eulerAggLayer.totalAssetsDeposited() + (eulerAggLayer.getAggregationVaultSavingRate()).interestLeft
+                eulerAggVault.totalAssetsAllocatable(),
+                eulerAggVault.totalAssetsDeposited() + (eulerAggVault.getAggregationVaultSavingRate()).interestLeft
             );
         }
     }
@@ -213,18 +213,18 @@ contract EulerAggregationLayerHandler is Test {
 
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
 
-        _fillBalance(currentActor, eulerAggLayer.asset(), _assets);
+        _fillBalance(currentActor, eulerAggVault.asset(), _assets);
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             currentActorIndex,
-            address(eulerAggLayer),
+            address(eulerAggVault),
             abi.encodeWithSelector(IERC4626.deposit.selector, _assets, _receiver)
         );
 
         if (success) {
             ghost_totalAssetsDeposited += _assets;
         }
-        assertEq(eulerAggLayer.totalAssetsDeposited(), ghost_totalAssetsDeposited);
+        assertEq(eulerAggVault.totalAssetsDeposited(), ghost_totalAssetsDeposited);
     }
 
     function mint(uint256 _actorIndexSeed, uint256 _shares, address _receiver) external {
@@ -232,19 +232,19 @@ contract EulerAggregationLayerHandler is Test {
 
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
 
-        uint256 assets = eulerAggLayer.previewMint(_shares);
-        _fillBalance(currentActor, eulerAggLayer.asset(), assets);
+        uint256 assets = eulerAggVault.previewMint(_shares);
+        _fillBalance(currentActor, eulerAggVault.asset(), assets);
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             currentActorIndex,
-            address(eulerAggLayer),
+            address(eulerAggVault),
             abi.encodeWithSelector(IERC4626.mint.selector, _shares, _receiver)
         );
 
         if (success) {
             ghost_totalAssetsDeposited += assets;
         }
-        assertEq(eulerAggLayer.totalAssetsDeposited(), ghost_totalAssetsDeposited);
+        assertEq(eulerAggVault.totalAssetsDeposited(), ghost_totalAssetsDeposited);
     }
 
     function withdraw(uint256 _actorIndexSeed, uint256 _assets, address _receiver) external {
@@ -254,14 +254,14 @@ contract EulerAggregationLayerHandler is Test {
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             currentActorIndex,
-            address(eulerAggLayer),
+            address(eulerAggVault),
             abi.encodeWithSelector(IERC4626.withdraw.selector, _assets, _receiver, currentActor)
         );
 
         if (success) {
             ghost_totalAssetsDeposited -= _assets;
         }
-        assertEq(eulerAggLayer.totalAssetsDeposited(), ghost_totalAssetsDeposited);
+        assertEq(eulerAggVault.totalAssetsDeposited(), ghost_totalAssetsDeposited);
     }
 
     function redeem(uint256 _actorIndexSeed, uint256 _shares, address _receiver) external {
@@ -271,7 +271,7 @@ contract EulerAggregationLayerHandler is Test {
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             currentActorIndex,
-            address(eulerAggLayer),
+            address(eulerAggVault),
             abi.encodeWithSelector(IERC4626.redeem.selector, _shares, _receiver, currentActor)
         );
 
@@ -279,7 +279,7 @@ contract EulerAggregationLayerHandler is Test {
             uint256 assets = abi.decode(returnData, (uint256));
             ghost_totalAssetsDeposited -= assets;
         }
-        assertEq(eulerAggLayer.totalAssetsDeposited(), ghost_totalAssetsDeposited);
+        assertEq(eulerAggVault.totalAssetsDeposited(), ghost_totalAssetsDeposited);
     }
 
     function ghostFeeRecipientsLength() external view returns (uint256) {
@@ -294,6 +294,6 @@ contract EulerAggregationLayerHandler is Test {
             asset.mint(currentActor, _amount - actorCurrentBalance);
         }
         vm.prank(_actor);
-        asset.approve(address(eulerAggLayer), _amount);
+        asset.approve(address(eulerAggVault), _amount);
     }
 }

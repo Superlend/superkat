@@ -4,12 +4,12 @@ pragma solidity ^0.8.0;
 // a16z properties tests
 import {ERC4626Test} from "erc4626-tests/ERC4626.test.sol";
 // contracts
-import {EulerAggregationLayer} from "../src/core/EulerAggregationLayer.sol";
+import {EulerAggregationVault} from "../src/core/EulerAggregationVault.sol";
 import {Rebalancer} from "../src/plugin/Rebalancer.sol";
 import {Hooks} from "../src/core/module/Hooks.sol";
 import {Rewards} from "../src/core/module/Rewards.sol";
 import {Fee} from "../src/core/module/Fee.sol";
-import {EulerAggregationLayerFactory} from "../src/core/EulerAggregationLayerFactory.sol";
+import {EulerAggregationVaultFactory} from "../src/core/EulerAggregationVaultFactory.sol";
 import {WithdrawalQueue} from "../src/plugin/WithdrawalQueue.sol";
 import {AllocationPoints} from "../src/core/module/AllocationPoints.sol";
 // mocks
@@ -27,8 +27,8 @@ contract A16zPropertyTests is ERC4626Test {
     Rebalancer rebalancerPlugin;
     WithdrawalQueue withdrawalQueuePluginImpl;
 
-    EulerAggregationLayerFactory eulerAggregationLayerFactory;
-    EulerAggregationLayer eulerAggregationLayer;
+    EulerAggregationVaultFactory eulerAggregationVaultFactory;
+    EulerAggregationVault eulerAggregationVault;
 
     function setUp() public override {
         rewardsImpl = new Rewards();
@@ -39,7 +39,7 @@ contract A16zPropertyTests is ERC4626Test {
         rebalancerPlugin = new Rebalancer();
         withdrawalQueuePluginImpl = new WithdrawalQueue();
 
-        EulerAggregationLayerFactory.FactoryParams memory factoryParams = EulerAggregationLayerFactory.FactoryParams({
+        EulerAggregationVaultFactory.FactoryParams memory factoryParams = EulerAggregationVaultFactory.FactoryParams({
             balanceTracker: address(0),
             rewardsModuleImpl: address(rewardsImpl),
             hooksModuleImpl: address(hooksImpl),
@@ -48,10 +48,10 @@ contract A16zPropertyTests is ERC4626Test {
             rebalancer: address(rebalancerPlugin),
             withdrawalQueueImpl: address(withdrawalQueuePluginImpl)
         });
-        eulerAggregationLayerFactory = new EulerAggregationLayerFactory(factoryParams);
+        eulerAggregationVaultFactory = new EulerAggregationVaultFactory(factoryParams);
 
         _underlying_ = address(new ERC20Mock());
-        _vault_ = eulerAggregationLayerFactory.deployEulerAggregationLayer(
+        _vault_ = eulerAggregationVaultFactory.deployEulerAggregationVault(
             _underlying_, "E20M_Agg", "E20M_Agg", CASH_RESERVE_ALLOCATION_POINTS
         );
         _delta_ = 0;

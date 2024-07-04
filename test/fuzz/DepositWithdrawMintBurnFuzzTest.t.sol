@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {console2, EulerAggregationLayerBase, EulerAggregationLayer} from "../common/EulerAggregationLayerBase.t.sol";
+import {console2, EulerAggregationVaultBase, EulerAggregationVault} from "../common/EulerAggregationVaultBase.t.sol";
 
-contract DepositWithdrawMintBurnFuzzTest is EulerAggregationLayerBase {
+contract DepositWithdrawMintBurnFuzzTest is EulerAggregationVaultBase {
     uint256 constant MAX_ALLOWED = type(uint256).max;
 
     function setUp() public virtual override {
@@ -14,16 +14,16 @@ contract DepositWithdrawMintBurnFuzzTest is EulerAggregationLayerBase {
         // moch the scenario of _assets ownership
         assetTST.mint(user1, _assets);
 
-        uint256 balanceBefore = eulerAggregationLayer.balanceOf(user1);
-        uint256 totalSupplyBefore = eulerAggregationLayer.totalSupply();
-        uint256 totalAssetsDepositedBefore = eulerAggregationLayer.totalAssetsDeposited();
+        uint256 balanceBefore = eulerAggregationVault.balanceOf(user1);
+        uint256 totalSupplyBefore = eulerAggregationVault.totalSupply();
+        uint256 totalAssetsDepositedBefore = eulerAggregationVault.totalAssetsDeposited();
         uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
 
         _deposit(user1, _assets);
 
-        assertEq(eulerAggregationLayer.balanceOf(user1), balanceBefore + _assets);
-        assertEq(eulerAggregationLayer.totalSupply(), totalSupplyBefore + _assets);
-        assertEq(eulerAggregationLayer.totalAssetsDeposited(), totalAssetsDepositedBefore + _assets);
+        assertEq(eulerAggregationVault.balanceOf(user1), balanceBefore + _assets);
+        assertEq(eulerAggregationVault.totalSupply(), totalSupplyBefore + _assets);
+        assertEq(eulerAggregationVault.totalAssetsDeposited(), totalAssetsDepositedBefore + _assets);
         assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - _assets);
     }
 
@@ -45,36 +45,36 @@ contract DepositWithdrawMintBurnFuzzTest is EulerAggregationLayerBase {
         vm.warp(block.timestamp + _timestampAfterDeposit);
 
         // fuzz partial & full withdraws
-        uint256 balanceBefore = eulerAggregationLayer.balanceOf(user1);
-        uint256 totalSupplyBefore = eulerAggregationLayer.totalSupply();
-        uint256 totalAssetsDepositedBefore = eulerAggregationLayer.totalAssetsDeposited();
+        uint256 balanceBefore = eulerAggregationVault.balanceOf(user1);
+        uint256 totalSupplyBefore = eulerAggregationVault.totalSupply();
+        uint256 totalAssetsDepositedBefore = eulerAggregationVault.totalAssetsDeposited();
         uint256 receiverAssetBalanceBefore = assetTST.balanceOf(_receiver);
 
         vm.startPrank(user1);
-        eulerAggregationLayer.withdraw(_assetsToWithdraw, _receiver, user1);
+        eulerAggregationVault.withdraw(_assetsToWithdraw, _receiver, user1);
         vm.stopPrank();
 
-        assertEq(eulerAggregationLayer.balanceOf(user1), balanceBefore - _assetsToWithdraw);
-        assertEq(eulerAggregationLayer.totalSupply(), totalSupplyBefore - _assetsToWithdraw);
-        assertEq(eulerAggregationLayer.totalAssetsDeposited(), totalAssetsDepositedBefore - _assetsToWithdraw);
+        assertEq(eulerAggregationVault.balanceOf(user1), balanceBefore - _assetsToWithdraw);
+        assertEq(eulerAggregationVault.totalSupply(), totalSupplyBefore - _assetsToWithdraw);
+        assertEq(eulerAggregationVault.totalAssetsDeposited(), totalAssetsDepositedBefore - _assetsToWithdraw);
         assertEq(assetTST.balanceOf(_receiver), receiverAssetBalanceBefore + _assetsToWithdraw);
     }
 
     function testFuzzMint(uint256 _shares) public {
         // moch the scenario of _assets ownership
-        uint256 assets = eulerAggregationLayer.previewMint(_shares);
+        uint256 assets = eulerAggregationVault.previewMint(_shares);
         assetTST.mint(user1, assets);
 
-        uint256 balanceBefore = eulerAggregationLayer.balanceOf(user1);
-        uint256 totalSupplyBefore = eulerAggregationLayer.totalSupply();
-        uint256 totalAssetsDepositedBefore = eulerAggregationLayer.totalAssetsDeposited();
+        uint256 balanceBefore = eulerAggregationVault.balanceOf(user1);
+        uint256 totalSupplyBefore = eulerAggregationVault.totalSupply();
+        uint256 totalAssetsDepositedBefore = eulerAggregationVault.totalAssetsDeposited();
         uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
 
         _mint(user1, assets, _shares);
 
-        assertEq(eulerAggregationLayer.balanceOf(user1), balanceBefore + _shares);
-        assertEq(eulerAggregationLayer.totalSupply(), totalSupplyBefore + _shares);
-        assertEq(eulerAggregationLayer.totalAssetsDeposited(), totalAssetsDepositedBefore + assets);
+        assertEq(eulerAggregationVault.balanceOf(user1), balanceBefore + _shares);
+        assertEq(eulerAggregationVault.totalSupply(), totalSupplyBefore + _shares);
+        assertEq(eulerAggregationVault.totalAssetsDeposited(), totalAssetsDepositedBefore + assets);
         assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - assets);
     }
 
@@ -91,38 +91,38 @@ contract DepositWithdrawMintBurnFuzzTest is EulerAggregationLayerBase {
         _timestampAfterDeposit = bound(_timestampAfterDeposit, 0, 86400);
 
         // deposit
-        uint256 assetsToDeposit = eulerAggregationLayer.previewMint(_sharesToMint);
+        uint256 assetsToDeposit = eulerAggregationVault.previewMint(_sharesToMint);
         assetTST.mint(user1, assetsToDeposit);
         _mint(user1, assetsToDeposit, _sharesToMint);
         vm.warp(block.timestamp + _timestampAfterDeposit);
 
         // fuzz partial & full redeem
-        uint256 balanceBefore = eulerAggregationLayer.balanceOf(user1);
-        uint256 totalSupplyBefore = eulerAggregationLayer.totalSupply();
-        uint256 totalAssetsDepositedBefore = eulerAggregationLayer.totalAssetsDeposited();
+        uint256 balanceBefore = eulerAggregationVault.balanceOf(user1);
+        uint256 totalSupplyBefore = eulerAggregationVault.totalSupply();
+        uint256 totalAssetsDepositedBefore = eulerAggregationVault.totalAssetsDeposited();
         uint256 receiverAssetBalanceBefore = assetTST.balanceOf(_receiver);
 
         vm.startPrank(user1);
-        uint256 assetsToWithdraw = eulerAggregationLayer.redeem(_sharesToRedeem, _receiver, user1);
+        uint256 assetsToWithdraw = eulerAggregationVault.redeem(_sharesToRedeem, _receiver, user1);
         vm.stopPrank();
 
-        assertEq(eulerAggregationLayer.balanceOf(user1), balanceBefore - _sharesToRedeem);
-        assertEq(eulerAggregationLayer.totalSupply(), totalSupplyBefore - _sharesToRedeem);
-        assertEq(eulerAggregationLayer.totalAssetsDeposited(), totalAssetsDepositedBefore - assetsToWithdraw);
+        assertEq(eulerAggregationVault.balanceOf(user1), balanceBefore - _sharesToRedeem);
+        assertEq(eulerAggregationVault.totalSupply(), totalSupplyBefore - _sharesToRedeem);
+        assertEq(eulerAggregationVault.totalAssetsDeposited(), totalAssetsDepositedBefore - assetsToWithdraw);
         assertEq(assetTST.balanceOf(_receiver), receiverAssetBalanceBefore + assetsToWithdraw);
     }
 
     function _deposit(address _from, uint256 _assets) private {
         vm.startPrank(_from);
-        assetTST.approve(address(eulerAggregationLayer), _assets);
-        eulerAggregationLayer.deposit(_assets, _from);
+        assetTST.approve(address(eulerAggregationVault), _assets);
+        eulerAggregationVault.deposit(_assets, _from);
         vm.stopPrank();
     }
 
     function _mint(address _from, uint256 _assets, uint256 _shares) private {
         vm.startPrank(_from);
-        assetTST.approve(address(eulerAggregationLayer), _assets);
-        eulerAggregationLayer.mint(_shares, _from);
+        assetTST.approve(address(eulerAggregationVault), _assets);
+        eulerAggregationVault.mint(_shares, _from);
         vm.stopPrank();
     }
 }

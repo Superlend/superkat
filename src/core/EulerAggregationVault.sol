@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IBalanceTracker} from "reward-streams/interfaces/IBalanceTracker.sol";
-import {IEulerAggregationLayer} from "./interface/IEulerAggregationLayer.sol";
+import {IEulerAggregationVault} from "./interface/IEulerAggregationVault.sol";
 import {IWithdrawalQueue} from "./interface/IWithdrawalQueue.sol";
 // contracts
 import {Dispatch} from "./Dispatch.sol";
@@ -25,17 +25,17 @@ import {StorageLib, AggregationVaultStorage} from "./lib/StorageLib.sol";
 import {ErrorsLib as Errors} from "./lib/ErrorsLib.sol";
 import {EventsLib as Events} from "./lib/EventsLib.sol";
 
-/// @title EulerAggregationLayer contract
+/// @title EulerAggregationVault contract
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
 /// @dev Do NOT use with fee on transfer tokens
 /// @dev Do NOT use with rebasing tokens
 /// @dev inspired by Yearn v3 ❤️
-contract EulerAggregationLayer is
+contract EulerAggregationVault is
     ERC4626Upgradeable,
     AccessControlEnumerableUpgradeable,
     Dispatch,
-    IEulerAggregationLayer
+    IEulerAggregationVault
 {
     using SafeERC20 for IERC20;
     using SafeCast for uint256;
@@ -57,7 +57,7 @@ contract EulerAggregationLayer is
         Dispatch(_rewardsModule, _hooksModule, _feeModule, _allocationPointsModule)
     {}
 
-    /// @notice Initialize the EulerAggregationLayer.
+    /// @notice Initialize the EulerAggregationVault.
     /// @param _initParams InitParams struct.
     function init(InitParams calldata _initParams) external initializer {
         __ERC4626_init_unchained(IERC20(_initParams.asset));
@@ -70,7 +70,7 @@ contract EulerAggregationLayer is
         $.locked = REENTRANCYLOCK__UNLOCKED;
         $.withdrawalQueue = _initParams.withdrawalQueuePlugin;
         $.rebalancer = _initParams.rebalancerPlugin;
-        $.strategies[address(0)] = IEulerAggregationLayer.Strategy({
+        $.strategies[address(0)] = IEulerAggregationVault.Strategy({
             allocated: 0,
             allocationPoints: _initParams.initialCashAllocationPoints.toUint120(),
             active: true,
@@ -80,7 +80,7 @@ contract EulerAggregationLayer is
         $.balanceTracker = _initParams.balanceTracker;
 
         // Setup DEFAULT_ADMIN
-        _grantRole(DEFAULT_ADMIN_ROLE, _initParams.aggregationLayerOwner);
+        _grantRole(DEFAULT_ADMIN_ROLE, _initParams.aggregationVaultOwner);
 
         // Setup role admins
         _setRoleAdmin(ALLOCATIONS_MANAGER, ALLOCATIONS_MANAGER_ADMIN);
@@ -209,7 +209,7 @@ contract EulerAggregationLayer is
 
         if (_msgSender() != $.rebalancer) revert Errors.NotRebalancer();
 
-        IEulerAggregationLayer.Strategy memory strategyData = $.strategies[_strategy];
+        IEulerAggregationVault.Strategy memory strategyData = $.strategies[_strategy];
 
         if (_isDeposit) {
             // Do required approval (safely) and deposit
@@ -289,7 +289,7 @@ contract EulerAggregationLayer is
     /// @notice Get strategy params.
     /// @param _strategy strategy's address
     /// @return Strategy struct
-    function getStrategy(address _strategy) external view returns (IEulerAggregationLayer.Strategy memory) {
+    function getStrategy(address _strategy) external view returns (IEulerAggregationVault.Strategy memory) {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         return $.strategies[_strategy];

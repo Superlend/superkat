@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 // interfaces
 import {IERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
-import {IEulerAggregationLayer} from "../core/interface/IEulerAggregationLayer.sol";
+import {IEulerAggregationVault} from "../core/interface/IEulerAggregationVault.sol";
 import {IWithdrawalQueue} from "../core/interface/IWithdrawalQueue.sol";
 // contracts
 import {AccessControlEnumerableUpgradeable} from
@@ -14,7 +14,7 @@ import {AccessControlEnumerableUpgradeable} from
 /// @author Euler Labs (https://www.eulerlabs.com/)
 /// @notice This contract manage the withdrawalQueue aray(add/remove strategy to the queue, re-order queue).
 /// Also it handles finishing the withdraw execution flow through the `callWithdrawalQueue()` function
-/// that will be called by the EulerAggregationLayer.
+/// that will be called by the EulerAggregationVault.
 contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue {
     error OutOfBounds();
     error SameIndexes();
@@ -132,7 +132,7 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue
                 uint256 desiredAssets = _assets - _availableAssets;
                 uint256 withdrawAmount = (underlyingBalance > desiredAssets) ? desiredAssets : underlyingBalance;
 
-                IEulerAggregationLayer(eulerAggregationVaultCached).executeStrategyWithdraw(
+                IEulerAggregationVault(eulerAggregationVaultCached).executeStrategyWithdraw(
                     address(strategy), withdrawAmount
                 );
 
@@ -150,7 +150,7 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue
             revert NotEnoughAssets();
         }
 
-        IEulerAggregationLayer(eulerAggregationVaultCached).executeAggregationVaultWithdraw(
+        IEulerAggregationVault(eulerAggregationVaultCached).executeAggregationVaultWithdraw(
             _caller, _receiver, _owner, _assets, _shares
         );
     }

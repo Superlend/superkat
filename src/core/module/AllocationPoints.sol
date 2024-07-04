@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 // interfaces
 import {IERC4626} from "@openzeppelin-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IWithdrawalQueue} from "../interface/IWithdrawalQueue.sol";
-import {IEulerAggregationLayer} from "../interface/IEulerAggregationLayer.sol";
+import {IEulerAggregationVault} from "../interface/IEulerAggregationVault.sol";
 // contracts
 import {Shared} from "../common/Shared.sol";
 // libs
@@ -27,7 +27,7 @@ abstract contract AllocationPointsModule is Shared {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         if (_newPoints == 0) revert Errors.InvalidAllocationPoints();
-        IEulerAggregationLayer.Strategy memory strategyDataCache = $.strategies[_strategy];
+        IEulerAggregationVault.Strategy memory strategyDataCache = $.strategies[_strategy];
 
         if (!strategyDataCache.active) {
             revert Errors.InactiveStrategy();
@@ -74,7 +74,7 @@ abstract contract AllocationPointsModule is Shared {
 
         _callHooksTarget(ADD_STRATEGY, msg.sender);
 
-        $.strategies[_strategy] = IEulerAggregationLayer.Strategy({
+        $.strategies[_strategy] = IEulerAggregationVault.Strategy({
             allocated: 0,
             allocationPoints: _allocationPoints.toUint120(),
             active: true,
@@ -96,7 +96,7 @@ abstract contract AllocationPointsModule is Shared {
 
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
-        IEulerAggregationLayer.Strategy storage strategyStorage = $.strategies[_strategy];
+        IEulerAggregationVault.Strategy storage strategyStorage = $.strategies[_strategy];
 
         if (!strategyStorage.active) {
             revert Errors.AlreadyRemoved();

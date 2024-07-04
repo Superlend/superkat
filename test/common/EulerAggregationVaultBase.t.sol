@@ -6,18 +6,18 @@ import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
 import {IWithdrawalQueue} from "../../src/core/interface/IWithdrawalQueue.sol";
 // contracts
 import "evk/test/unit/evault/EVaultTestBase.t.sol";
-import {EulerAggregationLayer, IEulerAggregationLayer} from "../../src/core/EulerAggregationLayer.sol";
+import {EulerAggregationVault, IEulerAggregationVault} from "../../src/core/EulerAggregationVault.sol";
 import {Rebalancer} from "../../src/plugin/Rebalancer.sol";
 import {Hooks, HooksModule} from "../../src/core/module/Hooks.sol";
 import {Rewards} from "../../src/core/module/Rewards.sol";
 import {Fee} from "../../src/core/module/Fee.sol";
-import {EulerAggregationLayerFactory} from "../../src/core/EulerAggregationLayerFactory.sol";
+import {EulerAggregationVaultFactory} from "../../src/core/EulerAggregationVaultFactory.sol";
 import {WithdrawalQueue} from "../../src/plugin/WithdrawalQueue.sol";
 import {AllocationPoints} from "../../src/core/module/AllocationPoints.sol";
 // libs
 import {ErrorsLib} from "../../src/core/lib/ErrorsLib.sol";
 
-contract EulerAggregationLayerBase is EVaultTestBase {
+contract EulerAggregationVaultBase is EVaultTestBase {
     uint256 public constant CASH_RESERVE_ALLOCATION_POINTS = 1000e18;
 
     address deployer;
@@ -34,8 +34,8 @@ contract EulerAggregationLayerBase is EVaultTestBase {
     Rebalancer rebalancer;
     WithdrawalQueue withdrawalQueueImpl;
 
-    EulerAggregationLayerFactory eulerAggregationLayerFactory;
-    EulerAggregationLayer eulerAggregationLayer;
+    EulerAggregationVaultFactory eulerAggregationVaultFactory;
+    EulerAggregationVault eulerAggregationVault;
     WithdrawalQueue withdrawalQueue;
 
     function setUp() public virtual override {
@@ -55,7 +55,7 @@ contract EulerAggregationLayerBase is EVaultTestBase {
         rebalancer = new Rebalancer();
         withdrawalQueueImpl = new WithdrawalQueue();
 
-        EulerAggregationLayerFactory.FactoryParams memory factoryParams = EulerAggregationLayerFactory.FactoryParams({
+        EulerAggregationVaultFactory.FactoryParams memory factoryParams = EulerAggregationVaultFactory.FactoryParams({
             balanceTracker: address(0),
             rewardsModuleImpl: address(rewardsImpl),
             hooksModuleImpl: address(hooksImpl),
@@ -64,84 +64,84 @@ contract EulerAggregationLayerBase is EVaultTestBase {
             rebalancer: address(rebalancer),
             withdrawalQueueImpl: address(withdrawalQueueImpl)
         });
-        eulerAggregationLayerFactory = new EulerAggregationLayerFactory(factoryParams);
+        eulerAggregationVaultFactory = new EulerAggregationVaultFactory(factoryParams);
 
-        eulerAggregationLayer = EulerAggregationLayer(
-            eulerAggregationLayerFactory.deployEulerAggregationLayer(
+        eulerAggregationVault = EulerAggregationVault(
+            eulerAggregationVaultFactory.deployEulerAggregationVault(
                 address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS
             )
         );
-        withdrawalQueue = WithdrawalQueue(eulerAggregationLayer.withdrawalQueue());
+        withdrawalQueue = WithdrawalQueue(eulerAggregationVault.withdrawalQueue());
 
         // grant admin roles to deployer
-        eulerAggregationLayer.grantRole(eulerAggregationLayer.ALLOCATIONS_MANAGER_ADMIN(), deployer);
-        eulerAggregationLayer.grantRole(eulerAggregationLayer.STRATEGY_ADDER_ADMIN(), deployer);
-        eulerAggregationLayer.grantRole(eulerAggregationLayer.STRATEGY_REMOVER_ADMIN(), deployer);
-        eulerAggregationLayer.grantRole(eulerAggregationLayer.AGGREGATION_LAYER_MANAGER_ADMIN(), deployer);
+        eulerAggregationVault.grantRole(eulerAggregationVault.ALLOCATIONS_MANAGER_ADMIN(), deployer);
+        eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_ADDER_ADMIN(), deployer);
+        eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_REMOVER_ADMIN(), deployer);
+        eulerAggregationVault.grantRole(eulerAggregationVault.AGGREGATION_LAYER_MANAGER_ADMIN(), deployer);
         withdrawalQueue.grantRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER_ADMIN(), deployer);
 
         // grant roles to manager
-        eulerAggregationLayer.grantRole(eulerAggregationLayer.ALLOCATIONS_MANAGER(), manager);
-        eulerAggregationLayer.grantRole(eulerAggregationLayer.STRATEGY_ADDER(), manager);
-        eulerAggregationLayer.grantRole(eulerAggregationLayer.STRATEGY_REMOVER(), manager);
-        eulerAggregationLayer.grantRole(eulerAggregationLayer.AGGREGATION_LAYER_MANAGER(), manager);
+        eulerAggregationVault.grantRole(eulerAggregationVault.ALLOCATIONS_MANAGER(), manager);
+        eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_ADDER(), manager);
+        eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_REMOVER(), manager);
+        eulerAggregationVault.grantRole(eulerAggregationVault.AGGREGATION_LAYER_MANAGER(), manager);
         withdrawalQueue.grantRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER(), manager);
 
         vm.stopPrank();
 
-        vm.label(address(eulerAggregationLayerFactory), "eulerAggregationLayerFactory");
-        vm.label(address(eulerAggregationLayer), "eulerAggregationLayer");
-        vm.label(eulerAggregationLayer.MODULE_REWARDS(), "MODULE_REWARDS");
-        vm.label(eulerAggregationLayer.MODULE_HOOKS(), "MODULE_HOOKS");
-        vm.label(eulerAggregationLayer.MODULE_FEE(), "MODULE_FEE");
-        vm.label(eulerAggregationLayer.MODULE_ALLOCATION_POINTS(), "MODULE_ALLOCATION_POINTS");
+        vm.label(address(eulerAggregationVaultFactory), "eulerAggregationVaultFactory");
+        vm.label(address(eulerAggregationVault), "eulerAggregationVault");
+        vm.label(eulerAggregationVault.MODULE_REWARDS(), "MODULE_REWARDS");
+        vm.label(eulerAggregationVault.MODULE_HOOKS(), "MODULE_HOOKS");
+        vm.label(eulerAggregationVault.MODULE_FEE(), "MODULE_FEE");
+        vm.label(eulerAggregationVault.MODULE_ALLOCATION_POINTS(), "MODULE_ALLOCATION_POINTS");
         vm.label(address(assetTST), "assetTST");
     }
 
     function testInitialParams() public view {
-        EulerAggregationLayer.Strategy memory cashReserve = eulerAggregationLayer.getStrategy(address(0));
+        EulerAggregationVault.Strategy memory cashReserve = eulerAggregationVault.getStrategy(address(0));
 
         assertEq(cashReserve.allocated, 0);
         assertEq(cashReserve.allocationPoints, CASH_RESERVE_ALLOCATION_POINTS);
         assertEq(cashReserve.active, true);
 
         assertEq(
-            eulerAggregationLayer.getRoleAdmin(eulerAggregationLayer.ALLOCATIONS_MANAGER()),
-            eulerAggregationLayer.ALLOCATIONS_MANAGER_ADMIN()
+            eulerAggregationVault.getRoleAdmin(eulerAggregationVault.ALLOCATIONS_MANAGER()),
+            eulerAggregationVault.ALLOCATIONS_MANAGER_ADMIN()
         );
         assertEq(
-            eulerAggregationLayer.getRoleAdmin(eulerAggregationLayer.STRATEGY_ADDER()),
-            eulerAggregationLayer.STRATEGY_ADDER_ADMIN()
+            eulerAggregationVault.getRoleAdmin(eulerAggregationVault.STRATEGY_ADDER()),
+            eulerAggregationVault.STRATEGY_ADDER_ADMIN()
         );
         assertEq(
-            eulerAggregationLayer.getRoleAdmin(eulerAggregationLayer.STRATEGY_REMOVER()),
-            eulerAggregationLayer.STRATEGY_REMOVER_ADMIN()
+            eulerAggregationVault.getRoleAdmin(eulerAggregationVault.STRATEGY_REMOVER()),
+            eulerAggregationVault.STRATEGY_REMOVER_ADMIN()
         );
         assertEq(
-            eulerAggregationLayer.getRoleAdmin(eulerAggregationLayer.AGGREGATION_LAYER_MANAGER()),
-            eulerAggregationLayer.AGGREGATION_LAYER_MANAGER_ADMIN()
+            eulerAggregationVault.getRoleAdmin(eulerAggregationVault.AGGREGATION_LAYER_MANAGER()),
+            eulerAggregationVault.AGGREGATION_LAYER_MANAGER_ADMIN()
         );
         assertEq(
             withdrawalQueue.getRoleAdmin(withdrawalQueue.WITHDRAW_QUEUE_MANAGER()),
             withdrawalQueue.WITHDRAW_QUEUE_MANAGER_ADMIN()
         );
 
-        assertTrue(eulerAggregationLayer.hasRole(eulerAggregationLayer.ALLOCATIONS_MANAGER_ADMIN(), deployer));
-        assertTrue(eulerAggregationLayer.hasRole(eulerAggregationLayer.STRATEGY_ADDER_ADMIN(), deployer));
-        assertTrue(eulerAggregationLayer.hasRole(eulerAggregationLayer.STRATEGY_REMOVER_ADMIN(), deployer));
-        assertTrue(eulerAggregationLayer.hasRole(eulerAggregationLayer.AGGREGATION_LAYER_MANAGER_ADMIN(), deployer));
+        assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.ALLOCATIONS_MANAGER_ADMIN(), deployer));
+        assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.STRATEGY_ADDER_ADMIN(), deployer));
+        assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.STRATEGY_REMOVER_ADMIN(), deployer));
+        assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.AGGREGATION_LAYER_MANAGER_ADMIN(), deployer));
         assertTrue(withdrawalQueue.hasRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER_ADMIN(), deployer));
 
-        assertTrue(eulerAggregationLayer.hasRole(eulerAggregationLayer.ALLOCATIONS_MANAGER(), manager));
-        assertTrue(eulerAggregationLayer.hasRole(eulerAggregationLayer.STRATEGY_ADDER(), manager));
-        assertTrue(eulerAggregationLayer.hasRole(eulerAggregationLayer.STRATEGY_REMOVER(), manager));
-        assertTrue(eulerAggregationLayer.hasRole(eulerAggregationLayer.AGGREGATION_LAYER_MANAGER(), manager));
+        assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.ALLOCATIONS_MANAGER(), manager));
+        assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.STRATEGY_ADDER(), manager));
+        assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.STRATEGY_REMOVER(), manager));
+        assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.AGGREGATION_LAYER_MANAGER(), manager));
         assertTrue(withdrawalQueue.hasRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER(), manager));
     }
 
     function _addStrategy(address from, address strategy, uint256 allocationPoints) internal {
         vm.prank(from);
-        eulerAggregationLayer.addStrategy(strategy, allocationPoints);
+        eulerAggregationVault.addStrategy(strategy, allocationPoints);
     }
 
     function _getWithdrawalQueueLength() internal view returns (uint256) {
