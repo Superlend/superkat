@@ -24,16 +24,19 @@ jobs:
                   version: nightly
 
             - name: Run foundry build
-              run: forge build --force --sizes
+              run: forge build --force --sizes --skip test
 
             - name: Run foundry fmt check
               run: forge fmt --check    
 
             - name: Run foundry tests
-              run: FOUNDRY_PROFILE=test forge test -vv --gas-report --ast 
+              run: FOUNDRY_PROFILE=test forge test
 
             - name: Run foundry fuzzing
-              run: FOUNDRY_PROFILE=ci_fuzz forge test -vv
+              run: FOUNDRY_PROFILE=ci_fuzz forge test
 
             - name: Run foundry coverage
               run: FOUNDRY_PROFILE=coverage forge coverage --report summary
+
+            - name: Run foundry invariants
+              run: forge clean && FOUNDRY_PROFILE=invariant forge test

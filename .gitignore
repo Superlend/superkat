@@ -19,3 +19,7 @@ coverage
 
 # gas
 .gas-snapshot
+
+# echidna
+crytic-export/
+/test/echidna/_corpus/

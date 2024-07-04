@@ -16,7 +16,7 @@ contract AdjustAllocationsPointsFuzzTest is EulerAggregationLayerBase {
     }
 
     function testFuzzAdjustAllocationPoints(uint256 _newAllocationPoints) public {
-        _newAllocationPoints = bound(_newAllocationPoints, 0, type(uint120).max);
+        _newAllocationPoints = bound(_newAllocationPoints, 1, type(uint120).max);
 
         uint256 strategyAllocationPoints = (eulerAggregationLayer.getStrategy(address(eTST))).allocationPoints;
         uint256 totalAllocationPointsBefore = eulerAggregationLayer.totalAllocationPoints();

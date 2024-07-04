@@ -19,13 +19,13 @@ contract Rebalancer {
     );
 
     /// @notice Rebalance strategies allocation for a specific curated vault.
-    /// @param _curatedVault Curated vault address.
+    /// @param _aggregationLayer Aggregation layer vault address.
     /// @param _strategies Strategies addresses.
-    function executeRebalance(address _curatedVault, address[] calldata _strategies) external {
-        IEulerAggregationLayer(_curatedVault).gulp();
+    function executeRebalance(address _aggregationLayer, address[] calldata _strategies) external {
+        IEulerAggregationLayer(_aggregationLayer).gulp();
 
         for (uint256 i; i < _strategies.length; ++i) {
-            _rebalance(_curatedVault, _strategies[i]);
+            _rebalance(_aggregationLayer, _strategies[i]);
         }
     }
 
@@ -33,18 +33,18 @@ contract Rebalancer {
     ///      If current allocation is less than target allocation, the aggregator will:
     ///         - Try to deposit the delta, if the cash is not sufficient, deposit all the available cash
     ///         - If all the available cash is greater than the max deposit, deposit the max deposit
-    /// @param _curatedVault Curated vault address.
+    /// @param _aggregationLayer Aggregation layer vault address.
     /// @param _strategy Strategy address.
-    function _rebalance(address _curatedVault, address _strategy) private {
+    function _rebalance(address _aggregationLayer, address _strategy) private {
         if (_strategy == address(0)) {
             return; //nothing to rebalance as that's the cash reserve
         }
 
         IEulerAggregationLayer.Strategy memory strategyData =
-            IEulerAggregationLayer(_curatedVault).getStrategy(_strategy);
+            IEulerAggregationLayer(_aggregationLayer).getStrategy(_strategy);
 
-        uint256 totalAllocationPointsCache = IEulerAggregationLayer(_curatedVault).totalAllocationPoints();
-        uint256 totalAssetsAllocatableCache = IEulerAggregationLayer(_curatedVault).totalAssetsAllocatable();
+        uint256 totalAllocationPointsCache = IEulerAggregationLayer(_aggregationLayer).totalAllocationPoints();
+        uint256 totalAssetsAllocatableCache = IEulerAggregationLayer(_aggregationLayer).totalAssetsAllocatable();
         uint256 targetAllocation =
             totalAssetsAllocatableCache * strategyData.allocationPoints / totalAllocationPointsCache;
 
@@ -56,7 +56,7 @@ contract Rebalancer {
             // Withdraw
             amountToRebalance = strategyData.allocated - targetAllocation;
 
-            uint256 maxWithdraw = IERC4626(_strategy).maxWithdraw(_curatedVault);
+            uint256 maxWithdraw = IERC4626(_strategy).maxWithdraw(_aggregationLayer);
             if (amountToRebalance > maxWithdraw) {
                 amountToRebalance = maxWithdraw;
             }
@@ -65,9 +65,10 @@ contract Rebalancer {
         } else if (strategyData.allocated < targetAllocation) {
             // Deposit
             uint256 targetCash = totalAssetsAllocatableCache
-                * IEulerAggregationLayer(_curatedVault).getStrategy(address(0)).allocationPoints
+                * IEulerAggregationLayer(_aggregationLayer).getStrategy(address(0)).allocationPoints
                 / totalAllocationPointsCache;
-            uint256 currentCash = totalAssetsAllocatableCache - IEulerAggregationLayer(_curatedVault).totalAllocated();
+            uint256 currentCash =
+                totalAssetsAllocatableCache - IEulerAggregationLayer(_aggregationLayer).totalAllocated();
 
             // Calculate available cash to put in strategies
             uint256 cashAvailable = (currentCash > targetCash) ? currentCash - targetCash : 0;
@@ -77,7 +78,7 @@ contract Rebalancer {
                 amountToRebalance = cashAvailable;
             }
 
-            uint256 maxDeposit = IERC4626(_strategy).maxDeposit(_curatedVault);
+            uint256 maxDeposit = IERC4626(_strategy).maxDeposit(_aggregationLayer);
             if (amountToRebalance > maxDeposit) {
                 amountToRebalance = maxDeposit;
             }
@@ -89,8 +90,8 @@ contract Rebalancer {
             isDeposit = true;
         }
 
-        IEulerAggregationLayer(_curatedVault).rebalance(_strategy, amountToRebalance, isDeposit);
+        IEulerAggregationLayer(_aggregationLayer).rebalance(_strategy, amountToRebalance, isDeposit);
 
-        emit ExecuteRebalance(_curatedVault, _strategy, strategyData.allocated, targetAllocation, amountToRebalance);
+        emit ExecuteRebalance(_aggregationLayer, _strategy, strategyData.allocated, targetAllocation, amountToRebalance);
     }
 }

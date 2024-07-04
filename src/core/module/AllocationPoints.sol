@@ -26,6 +26,7 @@ abstract contract AllocationPointsModule is Shared {
     function adjustAllocationPoints(address _strategy, uint256 _newPoints) external virtual nonReentrant {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
+        if (_newPoints == 0) revert Errors.InvalidAllocationPoints();
         IEulerAggregationLayer.Strategy memory strategyDataCache = $.strategies[_strategy];
 
         if (!strategyDataCache.active) {
@@ -69,6 +70,8 @@ abstract contract AllocationPointsModule is Shared {
             revert Errors.InvalidStrategyAsset();
         }
 
+        if (_allocationPoints == 0) revert Errors.InvalidAllocationPoints();
+
         _callHooksTarget(ADD_STRATEGY, msg.sender);
 
         $.strategies[_strategy] = IEulerAggregationLayer.Strategy({
@@ -98,12 +101,14 @@ abstract contract AllocationPointsModule is Shared {
         if (!strategyStorage.active) {
             revert Errors.AlreadyRemoved();
         }
+        if (strategyStorage.allocated > 0) revert Errors.CanNotRemoveStartegyWithAllocatedAmount();
 
         _callHooksTarget(REMOVE_STRATEGY, msg.sender);
 
         $.totalAllocationPoints -= strategyStorage.allocationPoints;
         strategyStorage.active = false;
         strategyStorage.allocationPoints = 0;
+        strategyStorage.cap = 0;
 
         // remove from withdrawalQueue
         IWithdrawalQueue($.withdrawalQueue).removeStrategyFromWithdrawalQueue(_strategy);

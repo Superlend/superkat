@@ -5,7 +5,7 @@ libs = ["lib"]
 test = 'test'
 optimizer = true
 optimizer_runs = 500
-# solc = "0.8.0"
+solc = "0.8.24"
 gas_reports = ["*"]
 fs_permissions = [{ access = "read", path = "./"}]
 
@@ -22,8 +22,8 @@ ignore = [
 ]
 
 [profile.test]
-no_match_test = "Fuzz"
-no_match_contract = "Fuzz"
+no_match_test = "(Fuzz|invariant_)"
+no_match_contract = "(Fuzz|CryticERC4626TestsHarness)"
 gas_reports = ["*"]
 
 [profile.fuzz]
@@ -50,16 +50,19 @@ match_contract = "Fuzz"
 
 [profile.invariant]
 runs = 256
-depth = 15
+depth = 500
 fail_on_revert = false
 call_override = false
 dictionary_weight = 80
 include_storage = true
 include_push_bytes = true
+match_test = "invariant_"
 
 [profile.coverage]
 via_ir = true
-no_match_contract = "Script"
+no_match_test = "(invariant_)"
+no_match_contract = "(Script|CryticERC4626TestsHarness)"
+no_match_coverage= "(script|test|fuzz|e2e)"
 
 [profile.coverage.optimizer_details]
 constantOptimizer = true
