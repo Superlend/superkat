@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 library EventsLib {
-    /// @dev EulerAggregationLayer events
+    /// @dev EulerAggregationVault events
     event Gulp(uint256 interestLeft, uint256 interestSmearEnd);
     event AccruePerformanceFee(address indexed feeRecipient, uint256 yield, uint256 feeAssets);
     event Rebalance(address indexed strategy, uint256 amountToRebalance, bool isDeposit);

@@ -3,25 +3,25 @@ pragma solidity ^0.8.0;
 
 import {
     Test,
-    EulerAggregationLayerBase,
-    EulerAggregationLayer,
+    EulerAggregationVaultBase,
+    EulerAggregationVault,
     EVault,
     IEVault,
     IRMTestDefault,
     TestERC20,
-    IEulerAggregationLayer,
+    IEulerAggregationVault,
     ErrorsLib,
     IERC4626,
     Rebalancer,
     WithdrawalQueue
-} from "../../common/EulerAggregationLayerBase.t.sol";
+} from "../../common/EulerAggregationVaultBase.t.sol";
 import {Actor} from "../util/Actor.sol";
 import {Strategy} from "../util/Strategy.sol";
 
 contract RebalancerHandler is Test {
     Actor internal actorUtil;
     Strategy internal strategyUtil;
-    EulerAggregationLayer internal eulerAggLayer;
+    EulerAggregationVault internal eulerAggVault;
     Rebalancer internal rebalancer;
     WithdrawalQueue internal withdrawalQueue;
 
@@ -32,13 +32,13 @@ contract RebalancerHandler is Test {
     bytes returnData;
 
     constructor(
-        EulerAggregationLayer _eulerAggLayer,
+        EulerAggregationVault _eulerAggVault,
         Rebalancer _rebalancer,
         Actor _actor,
         Strategy _strategy,
         WithdrawalQueue _withdrawalQueue
     ) {
-        eulerAggLayer = _eulerAggLayer;
+        eulerAggVault = _eulerAggVault;
         actorUtil = _actor;
         strategyUtil = _strategy;
         rebalancer = _rebalancer;
@@ -52,13 +52,13 @@ contract RebalancerHandler is Test {
         (currentActor, success, returnData) = actorUtil.initiateActorCall(
             _actorIndexSeed,
             address(rebalancer),
-            abi.encodeWithSelector(Rebalancer.executeRebalance.selector, address(eulerAggLayer), strategiesToRebalance)
+            abi.encodeWithSelector(Rebalancer.executeRebalance.selector, address(eulerAggVault), strategiesToRebalance)
         );
 
         for (uint256 i; i < strategiesCounter; i++) {
             assertEq(
-                IERC4626(strategiesToRebalance[i]).maxWithdraw(address(eulerAggLayer)),
-                (eulerAggLayer.getStrategy(strategiesToRebalance[i])).allocated
+                IERC4626(strategiesToRebalance[i]).maxWithdraw(address(eulerAggVault)),
+                (eulerAggVault.getStrategy(strategiesToRebalance[i])).allocated
             );
         }
     }

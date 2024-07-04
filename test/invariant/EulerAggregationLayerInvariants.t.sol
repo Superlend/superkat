@@ -2,23 +2,23 @@
 pragma solidity ^0.8.0;
 
 import {
-    EulerAggregationLayerBase,
-    EulerAggregationLayer,
+    EulerAggregationVaultBase,
+    EulerAggregationVault,
     IWithdrawalQueue,
     IEVault,
     TestERC20
-} from "../common/EulerAggregationLayerBase.t.sol";
+} from "../common/EulerAggregationVaultBase.t.sol";
 import {Actor} from "./util/Actor.sol";
 import {Strategy} from "./util/Strategy.sol";
-import {EulerAggregationLayerHandler} from "./handler/EulerAggregationLayerHandler.sol";
+import {EulerAggregationVaultHandler} from "./handler/EulerAggregationVaultHandler.sol";
 import {RebalancerHandler} from "./handler/RebalancerHandler.sol";
 import {WithdrawalQueueHandler} from "./handler/WithdrawalQueueHandler.sol";
 
-contract EulerAggregationLayerInvariants is EulerAggregationLayerBase {
+contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
     Actor internal actorUtil;
     Strategy internal strategyUtil;
 
-    EulerAggregationLayerHandler internal eulerAggregationLayerHandler;
+    EulerAggregationVaultHandler internal eulerAggregationVaultHandler;
     RebalancerHandler internal rebalancerHandler;
     WithdrawalQueueHandler internal withdrawalQueueHandler;
 
@@ -47,52 +47,52 @@ contract EulerAggregationLayerInvariants is EulerAggregationLayerBase {
         strategyUtil.includeStrategy(address(eTSTfifth));
         strategyUtil.includeStrategy(address(eTSTsixth));
 
-        eulerAggregationLayerHandler =
-            new EulerAggregationLayerHandler(eulerAggregationLayer, actorUtil, strategyUtil, withdrawalQueue);
+        eulerAggregationVaultHandler =
+            new EulerAggregationVaultHandler(eulerAggregationVault, actorUtil, strategyUtil, withdrawalQueue);
         rebalancerHandler =
-            new RebalancerHandler(eulerAggregationLayer, rebalancer, actorUtil, strategyUtil, withdrawalQueue);
+            new RebalancerHandler(eulerAggregationVault, rebalancer, actorUtil, strategyUtil, withdrawalQueue);
         withdrawalQueueHandler =
-            new WithdrawalQueueHandler(eulerAggregationLayer, actorUtil, strategyUtil, withdrawalQueue);
+            new WithdrawalQueueHandler(eulerAggregationVault, actorUtil, strategyUtil, withdrawalQueue);
 
-        targetContract(address(eulerAggregationLayerHandler));
+        targetContract(address(eulerAggregationVaultHandler));
         targetContract(address(rebalancerHandler));
         targetContract(address(withdrawalQueueHandler));
     }
 
     function invariant_gulp() public {
-        eulerAggregationLayer.gulp();
+        eulerAggregationVault.gulp();
 
         assertEq(
-            eulerAggregationLayer.totalAssetsAllocatable(),
-            eulerAggregationLayer.totalAssetsDeposited()
-                + (eulerAggregationLayer.getAggregationVaultSavingRate()).interestLeft
+            eulerAggregationVault.totalAssetsAllocatable(),
+            eulerAggregationVault.totalAssetsDeposited()
+                + (eulerAggregationVault.getAggregationVaultSavingRate()).interestLeft
         );
     }
 
     function invariant_totalAllocationPoints() public view {
-        address withdrawalQueueAddr = eulerAggregationLayer.withdrawalQueue();
+        address withdrawalQueueAddr = eulerAggregationVault.withdrawalQueue();
 
         (address[] memory withdrawalQueueArray, uint256 withdrawalQueueLength) =
             IWithdrawalQueue(withdrawalQueueAddr).getWithdrawalQueueArray();
 
         uint256 expectedTotalAllocationpoints;
-        expectedTotalAllocationpoints += (eulerAggregationLayer.getStrategy(address(0))).allocationPoints;
+        expectedTotalAllocationpoints += (eulerAggregationVault.getStrategy(address(0))).allocationPoints;
         for (uint256 i; i < withdrawalQueueLength; i++) {
             expectedTotalAllocationpoints +=
-                (eulerAggregationLayer.getStrategy(withdrawalQueueArray[i])).allocationPoints;
+                (eulerAggregationVault.getStrategy(withdrawalQueueArray[i])).allocationPoints;
         }
 
-        assertEq(eulerAggregationLayer.totalAllocationPoints(), expectedTotalAllocationpoints);
+        assertEq(eulerAggregationVault.totalAllocationPoints(), expectedTotalAllocationpoints);
     }
 
     function invariant_withdrawalQueue() public view {
-        address withdrawalQueueAddr = eulerAggregationLayer.withdrawalQueue();
+        address withdrawalQueueAddr = eulerAggregationVault.withdrawalQueue();
 
         (, uint256 withdrawalQueueLength) = IWithdrawalQueue(withdrawalQueueAddr).getWithdrawalQueueArray();
 
-        uint256 cashReserveAllocationPoints = (eulerAggregationLayer.getStrategy(address(0))).allocationPoints;
+        uint256 cashReserveAllocationPoints = (eulerAggregationVault.getStrategy(address(0))).allocationPoints;
 
-        if (eulerAggregationLayer.totalAllocationPoints() - cashReserveAllocationPoints == 0) {
+        if (eulerAggregationVault.totalAllocationPoints() - cashReserveAllocationPoints == 0) {
             assertEq(withdrawalQueueLength, 0);
         } else {
             assertGt(withdrawalQueueLength, 0);
@@ -100,26 +100,26 @@ contract EulerAggregationLayerInvariants is EulerAggregationLayerBase {
     }
 
     function invariant_totalAllocated() public view {
-        address withdrawalQueueAddr = eulerAggregationLayer.withdrawalQueue();
+        address withdrawalQueueAddr = eulerAggregationVault.withdrawalQueue();
 
         (address[] memory withdrawalQueueArray, uint256 withdrawalQueueLength) =
             IWithdrawalQueue(withdrawalQueueAddr).getWithdrawalQueueArray();
 
         uint256 aggregatedAllocatedAmount;
         for (uint256 i; i < withdrawalQueueLength; i++) {
-            aggregatedAllocatedAmount += (eulerAggregationLayer.getStrategy(withdrawalQueueArray[i])).allocated;
+            aggregatedAllocatedAmount += (eulerAggregationVault.getStrategy(withdrawalQueueArray[i])).allocated;
         }
 
-        assertEq(eulerAggregationLayer.totalAllocated(), aggregatedAllocatedAmount);
+        assertEq(eulerAggregationVault.totalAllocated(), aggregatedAllocatedAmount);
     }
 
     function invariant_performanceFee() public view {
-        for (uint256 i; i < eulerAggregationLayerHandler.ghostFeeRecipientsLength(); i++) {
-            address feeRecipient = eulerAggregationLayerHandler.ghost_feeRecipients(i);
+        for (uint256 i; i < eulerAggregationVaultHandler.ghostFeeRecipientsLength(); i++) {
+            address feeRecipient = eulerAggregationVaultHandler.ghost_feeRecipients(i);
 
             assertEq(
                 assetTST.balanceOf(feeRecipient),
-                eulerAggregationLayerHandler.ghost_accumulatedPerformanceFeePerRecipient(feeRecipient)
+                eulerAggregationVaultHandler.ghost_accumulatedPerformanceFeePerRecipient(feeRecipient)
             );
         }
     }

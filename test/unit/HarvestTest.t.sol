@@ -2,14 +2,14 @@
 pragma solidity ^0.8.0;
 
 import {
-    EulerAggregationLayerBase,
-    EulerAggregationLayer,
+    EulerAggregationVaultBase,
+    EulerAggregationVault,
     console2,
     EVault,
-    IEulerAggregationLayer
-} from "../common/EulerAggregationLayerBase.t.sol";
+    IEulerAggregationVault
+} from "../common/EulerAggregationVaultBase.t.sol";
 
-contract HarvestTest is EulerAggregationLayerBase {
+contract HarvestTest is EulerAggregationVaultBase {
     uint256 user1InitialBalance = 100000e18;
     uint256 amountToDeposit = 10000e18;
 
@@ -23,74 +23,74 @@ contract HarvestTest is EulerAggregationLayerBase {
 
         // deposit into aggregator
         {
-            uint256 balanceBefore = eulerAggregationLayer.balanceOf(user1);
-            uint256 totalSupplyBefore = eulerAggregationLayer.totalSupply();
-            uint256 totalAssetsDepositedBefore = eulerAggregationLayer.totalAssetsDeposited();
+            uint256 balanceBefore = eulerAggregationVault.balanceOf(user1);
+            uint256 totalSupplyBefore = eulerAggregationVault.totalSupply();
+            uint256 totalAssetsDepositedBefore = eulerAggregationVault.totalAssetsDeposited();
             uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
 
             vm.startPrank(user1);
-            assetTST.approve(address(eulerAggregationLayer), amountToDeposit);
-            eulerAggregationLayer.deposit(amountToDeposit, user1);
+            assetTST.approve(address(eulerAggregationVault), amountToDeposit);
+            eulerAggregationVault.deposit(amountToDeposit, user1);
             vm.stopPrank();
 
-            assertEq(eulerAggregationLayer.balanceOf(user1), balanceBefore + amountToDeposit);
-            assertEq(eulerAggregationLayer.totalSupply(), totalSupplyBefore + amountToDeposit);
-            assertEq(eulerAggregationLayer.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
+            assertEq(eulerAggregationVault.balanceOf(user1), balanceBefore + amountToDeposit);
+            assertEq(eulerAggregationVault.totalSupply(), totalSupplyBefore + amountToDeposit);
+            assertEq(eulerAggregationVault.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
             assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - amountToDeposit);
         }
 
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
         {
-            IEulerAggregationLayer.Strategy memory strategyBefore = eulerAggregationLayer.getStrategy(address(eTST));
+            IEulerAggregationVault.Strategy memory strategyBefore = eulerAggregationVault.getStrategy(address(eTST));
 
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationLayer))), strategyBefore.allocated);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationVault))), strategyBefore.allocated);
 
-            uint256 expectedStrategyCash = eulerAggregationLayer.totalAssetsAllocatable()
-                * strategyBefore.allocationPoints / eulerAggregationLayer.totalAllocationPoints();
+            uint256 expectedStrategyCash = eulerAggregationVault.totalAssetsAllocatable()
+                * strategyBefore.allocationPoints / eulerAggregationVault.totalAllocationPoints();
 
             vm.prank(user1);
             address[] memory strategiesToRebalance = new address[](1);
             strategiesToRebalance[0] = address(eTST);
-            rebalancer.executeRebalance(address(eulerAggregationLayer), strategiesToRebalance);
+            rebalancer.executeRebalance(address(eulerAggregationVault), strategiesToRebalance);
 
-            assertEq(eulerAggregationLayer.totalAllocated(), expectedStrategyCash);
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationLayer))), expectedStrategyCash);
-            assertEq((eulerAggregationLayer.getStrategy(address(eTST))).allocated, expectedStrategyCash);
+            assertEq(eulerAggregationVault.totalAllocated(), expectedStrategyCash);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationVault))), expectedStrategyCash);
+            assertEq((eulerAggregationVault.getStrategy(address(eTST))).allocated, expectedStrategyCash);
         }
     }
 
     function testHarvestWithPositiveYield() public {
         // no yield increase
-        IEulerAggregationLayer.Strategy memory strategyBefore = eulerAggregationLayer.getStrategy(address(eTST));
-        uint256 totalAllocatedBefore = eulerAggregationLayer.totalAllocated();
+        IEulerAggregationVault.Strategy memory strategyBefore = eulerAggregationVault.getStrategy(address(eTST));
+        uint256 totalAllocatedBefore = eulerAggregationVault.totalAllocated();
 
-        assertTrue(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationLayer))) == strategyBefore.allocated);
+        assertTrue(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationVault))) == strategyBefore.allocated);
 
         vm.prank(user1);
-        eulerAggregationLayer.harvest();
+        eulerAggregationVault.harvest();
 
-        assertEq((eulerAggregationLayer.getStrategy(address(eTST))).allocated, strategyBefore.allocated);
-        assertEq(eulerAggregationLayer.totalAllocated(), totalAllocatedBefore);
+        assertEq((eulerAggregationVault.getStrategy(address(eTST))).allocated, strategyBefore.allocated);
+        assertEq(eulerAggregationVault.totalAllocated(), totalAllocatedBefore);
 
         vm.warp(block.timestamp + 86400);
         // mock an increase of strategy balance by 10%
-        uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(eulerAggregationLayer));
+        uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(eulerAggregationVault));
         vm.mockCall(
             address(eTST),
-            abi.encodeWithSelector(EVault.maxWithdraw.selector, address(eulerAggregationLayer)),
+            abi.encodeWithSelector(EVault.maxWithdraw.selector, address(eulerAggregationVault)),
             abi.encode(aggrCurrentStrategyBalance * 11e17 / 1e18)
         );
 
-        uint256 expectedAllocated = eTST.maxWithdraw(address(eulerAggregationLayer));
+        uint256 expectedAllocated = eTST.maxWithdraw(address(eulerAggregationVault));
         assertTrue(expectedAllocated > strategyBefore.allocated);
 
         vm.prank(user1);
-        eulerAggregationLayer.harvest();
+        eulerAggregationVault.harvest();
 
-        assertEq((eulerAggregationLayer.getStrategy(address(eTST))).allocated, expectedAllocated);
+        assertEq((eulerAggregationVault.getStrategy(address(eTST))).allocated, expectedAllocated);
         assertEq(
-            eulerAggregationLayer.totalAllocated(),
+            eulerAggregationVault.totalAllocated(),
             totalAllocatedBefore + (expectedAllocated - strategyBefore.allocated)
         );
     }
@@ -99,57 +99,57 @@ contract HarvestTest is EulerAggregationLayerBase {
         vm.warp(block.timestamp + 86400);
 
         // mock a decrease of strategy balance by 10%
-        uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(eulerAggregationLayer));
+        uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(eulerAggregationVault));
         vm.mockCall(
             address(eTST),
-            abi.encodeWithSelector(EVault.maxWithdraw.selector, address(eulerAggregationLayer)),
+            abi.encodeWithSelector(EVault.maxWithdraw.selector, address(eulerAggregationVault)),
             abi.encode(aggrCurrentStrategyBalance * 9e17 / 1e18)
         );
 
-        IEulerAggregationLayer.Strategy memory strategyBefore = eulerAggregationLayer.getStrategy(address(eTST));
+        IEulerAggregationVault.Strategy memory strategyBefore = eulerAggregationVault.getStrategy(address(eTST));
 
-        uint256 expectedAllocated = eTST.maxWithdraw(address(eulerAggregationLayer));
+        uint256 expectedAllocated = eTST.maxWithdraw(address(eulerAggregationVault));
         assertTrue(expectedAllocated < strategyBefore.allocated);
 
         uint256 expectedLoss = strategyBefore.allocated - expectedAllocated;
-        uint256 totalAssetsDepositedBefore = eulerAggregationLayer.totalAssetsDeposited();
+        uint256 totalAssetsDepositedBefore = eulerAggregationVault.totalAssetsDeposited();
 
         vm.prank(user1);
-        eulerAggregationLayer.harvest();
+        eulerAggregationVault.harvest();
 
         // check that loss socialized from the deposits
-        assertEq(eulerAggregationLayer.totalAssetsDeposited(), totalAssetsDepositedBefore - expectedLoss);
+        assertEq(eulerAggregationVault.totalAssetsDeposited(), totalAssetsDepositedBefore - expectedLoss);
     }
 
     function testHarvestNegativeYieldSingleUser() public {
         vm.warp(block.timestamp + 86400);
 
         // mock a decrease of strategy balance by 10%
-        uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(eulerAggregationLayer));
+        uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(eulerAggregationVault));
         uint256 aggrCurrentStrategyBalanceAfterNegYield = aggrCurrentStrategyBalance * 9e17 / 1e18;
         vm.mockCall(
             address(eTST),
-            abi.encodeWithSelector(EVault.maxWithdraw.selector, address(eulerAggregationLayer)),
+            abi.encodeWithSelector(EVault.maxWithdraw.selector, address(eulerAggregationVault)),
             abi.encode(aggrCurrentStrategyBalanceAfterNegYield)
         );
 
-        uint256 expectedAllocated = eTST.maxWithdraw(address(eulerAggregationLayer));
-        IEulerAggregationLayer.Strategy memory strategyBefore = eulerAggregationLayer.getStrategy(address(eTST));
+        uint256 expectedAllocated = eTST.maxWithdraw(address(eulerAggregationVault));
+        IEulerAggregationVault.Strategy memory strategyBefore = eulerAggregationVault.getStrategy(address(eTST));
         assertTrue(expectedAllocated < strategyBefore.allocated);
 
-        uint256 negativeYield = strategyBefore.allocated - eTST.maxWithdraw(address(eulerAggregationLayer));
+        uint256 negativeYield = strategyBefore.allocated - eTST.maxWithdraw(address(eulerAggregationVault));
 
-        uint256 user1SharesBefore = eulerAggregationLayer.balanceOf(user1);
-        uint256 user1SocializedLoss = user1SharesBefore * negativeYield / eulerAggregationLayer.totalSupply();
+        uint256 user1SharesBefore = eulerAggregationVault.balanceOf(user1);
+        uint256 user1SocializedLoss = user1SharesBefore * negativeYield / eulerAggregationVault.totalSupply();
         uint256 expectedUser1Assets =
-            user1SharesBefore * amountToDeposit / eulerAggregationLayer.totalSupply() - user1SocializedLoss;
+            user1SharesBefore * amountToDeposit / eulerAggregationVault.totalSupply() - user1SocializedLoss;
 
         vm.startPrank(user1);
-        eulerAggregationLayer.harvest();
+        eulerAggregationVault.harvest();
         vm.stopPrank();
 
-        uint256 user1SharesAfter = eulerAggregationLayer.balanceOf(user1);
-        uint256 user1AssetsAfter = eulerAggregationLayer.convertToAssets(user1SharesAfter);
+        uint256 user1SharesAfter = eulerAggregationVault.balanceOf(user1);
+        uint256 user1AssetsAfter = eulerAggregationVault.convertToAssets(user1SharesAfter);
 
         assertApproxEqAbs(user1AssetsAfter, expectedUser1Assets, 1);
     }
@@ -160,71 +160,71 @@ contract HarvestTest is EulerAggregationLayerBase {
         // deposit into aggregator
         {
             vm.startPrank(user2);
-            assetTST.approve(address(eulerAggregationLayer), user2InitialBalance);
-            eulerAggregationLayer.deposit(user2InitialBalance, user2);
+            assetTST.approve(address(eulerAggregationVault), user2InitialBalance);
+            eulerAggregationVault.deposit(user2InitialBalance, user2);
             vm.stopPrank();
         }
 
         vm.warp(block.timestamp + 86400);
 
         // mock a decrease of strategy balance by 10%
-        uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(eulerAggregationLayer));
+        uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(eulerAggregationVault));
         uint256 aggrCurrentStrategyBalanceAfterNegYield = aggrCurrentStrategyBalance * 9e17 / 1e18;
         vm.mockCall(
             address(eTST),
-            abi.encodeWithSelector(EVault.maxWithdraw.selector, address(eulerAggregationLayer)),
+            abi.encodeWithSelector(EVault.maxWithdraw.selector, address(eulerAggregationVault)),
             abi.encode(aggrCurrentStrategyBalanceAfterNegYield)
         );
 
-        IEulerAggregationLayer.Strategy memory strategyBefore = eulerAggregationLayer.getStrategy(address(eTST));
-        uint256 expectedAllocated = eTST.maxWithdraw(address(eulerAggregationLayer));
+        IEulerAggregationVault.Strategy memory strategyBefore = eulerAggregationVault.getStrategy(address(eTST));
+        uint256 expectedAllocated = eTST.maxWithdraw(address(eulerAggregationVault));
         assertTrue(expectedAllocated < strategyBefore.allocated);
 
-        uint256 negativeYield = strategyBefore.allocated - eTST.maxWithdraw(address(eulerAggregationLayer));
-        uint256 user1SharesBefore = eulerAggregationLayer.balanceOf(user1);
-        uint256 user1SocializedLoss = user1SharesBefore * negativeYield / eulerAggregationLayer.totalSupply();
-        uint256 user2SharesBefore = eulerAggregationLayer.balanceOf(user2);
-        uint256 user2SocializedLoss = user2SharesBefore * negativeYield / eulerAggregationLayer.totalSupply();
+        uint256 negativeYield = strategyBefore.allocated - eTST.maxWithdraw(address(eulerAggregationVault));
+        uint256 user1SharesBefore = eulerAggregationVault.balanceOf(user1);
+        uint256 user1SocializedLoss = user1SharesBefore * negativeYield / eulerAggregationVault.totalSupply();
+        uint256 user2SharesBefore = eulerAggregationVault.balanceOf(user2);
+        uint256 user2SocializedLoss = user2SharesBefore * negativeYield / eulerAggregationVault.totalSupply();
 
         uint256 expectedUser1Assets = user1SharesBefore * (amountToDeposit + user2InitialBalance)
-            / eulerAggregationLayer.totalSupply() - user1SocializedLoss;
+            / eulerAggregationVault.totalSupply() - user1SocializedLoss;
         uint256 expectedUser2Assets = user2SharesBefore * (amountToDeposit + user2InitialBalance)
-            / eulerAggregationLayer.totalSupply() - user2SocializedLoss;
+            / eulerAggregationVault.totalSupply() - user2SocializedLoss;
 
         vm.prank(user1);
-        eulerAggregationLayer.harvest();
+        eulerAggregationVault.harvest();
 
-        uint256 user1SharesAfter = eulerAggregationLayer.balanceOf(user1);
-        uint256 user1AssetsAfter = eulerAggregationLayer.convertToAssets(user1SharesAfter);
-        uint256 user2SharesAfter = eulerAggregationLayer.balanceOf(user2);
-        uint256 user2AssetsAfter = eulerAggregationLayer.convertToAssets(user2SharesAfter);
+        uint256 user1SharesAfter = eulerAggregationVault.balanceOf(user1);
+        uint256 user1AssetsAfter = eulerAggregationVault.convertToAssets(user1SharesAfter);
+        uint256 user2SharesAfter = eulerAggregationVault.balanceOf(user2);
+        uint256 user2AssetsAfter = eulerAggregationVault.convertToAssets(user2SharesAfter);
 
         assertApproxEqAbs(user1AssetsAfter, expectedUser1Assets, 1);
         assertApproxEqAbs(user2AssetsAfter, expectedUser2Assets, 1);
     }
 
     function testHarvestWhenInteresetLeftGreaterThanLoss() public {
-        IEulerAggregationLayer.Strategy memory strategyBefore = eulerAggregationLayer.getStrategy(address(eTST));
-        uint256 totalAllocatedBefore = eulerAggregationLayer.totalAllocated();
+        IEulerAggregationVault.Strategy memory strategyBefore = eulerAggregationVault.getStrategy(address(eTST));
+        uint256 totalAllocatedBefore = eulerAggregationVault.totalAllocated();
 
         vm.warp(block.timestamp + 86400);
         // mock an increase of strategy balance by 10%
-        uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(eulerAggregationLayer));
+        uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(eulerAggregationVault));
         vm.mockCall(
             address(eTST),
-            abi.encodeWithSelector(EVault.maxWithdraw.selector, address(eulerAggregationLayer)),
+            abi.encodeWithSelector(EVault.maxWithdraw.selector, address(eulerAggregationVault)),
             abi.encode(aggrCurrentStrategyBalance * 11e17 / 1e18)
         );
 
-        uint256 expectedAllocated = eTST.maxWithdraw(address(eulerAggregationLayer));
+        uint256 expectedAllocated = eTST.maxWithdraw(address(eulerAggregationVault));
         assertTrue(expectedAllocated > strategyBefore.allocated);
 
         vm.prank(user1);
-        eulerAggregationLayer.harvest();
+        eulerAggregationVault.harvest();
 
-        assertEq((eulerAggregationLayer.getStrategy(address(eTST))).allocated, expectedAllocated);
+        assertEq((eulerAggregationVault.getStrategy(address(eTST))).allocated, expectedAllocated);
         assertEq(
-            eulerAggregationLayer.totalAllocated(),
+            eulerAggregationVault.totalAllocated(),
             totalAllocatedBefore + (expectedAllocated - strategyBefore.allocated)
         );
 
@@ -234,27 +234,27 @@ contract HarvestTest is EulerAggregationLayerBase {
         uint256 aggrCurrentStrategyBalanceAfterNegYield = expectedAllocated * 98e16 / 1e18;
         vm.mockCall(
             address(eTST),
-            abi.encodeWithSelector(EVault.maxWithdraw.selector, address(eulerAggregationLayer)),
+            abi.encodeWithSelector(EVault.maxWithdraw.selector, address(eulerAggregationVault)),
             abi.encode(aggrCurrentStrategyBalanceAfterNegYield)
         );
 
-        strategyBefore = eulerAggregationLayer.getStrategy(address(eTST));
-        expectedAllocated = eTST.maxWithdraw(address(eulerAggregationLayer));
+        strategyBefore = eulerAggregationVault.getStrategy(address(eTST));
+        expectedAllocated = eTST.maxWithdraw(address(eulerAggregationVault));
         assertTrue(expectedAllocated < strategyBefore.allocated);
 
-        uint256 user1SharesBefore = eulerAggregationLayer.balanceOf(user1);
-        uint256 expectedUser1Assets = user1SharesBefore * amountToDeposit / eulerAggregationLayer.totalSupply();
-        uint256 totalAssetsDepositedBefore = eulerAggregationLayer.totalAssetsDeposited();
-        uint256 interestToBeAccrued = eulerAggregationLayer.interestAccrued();
+        uint256 user1SharesBefore = eulerAggregationVault.balanceOf(user1);
+        uint256 expectedUser1Assets = user1SharesBefore * amountToDeposit / eulerAggregationVault.totalSupply();
+        uint256 totalAssetsDepositedBefore = eulerAggregationVault.totalAssetsDeposited();
+        uint256 interestToBeAccrued = eulerAggregationVault.interestAccrued();
 
         vm.startPrank(user1);
-        eulerAggregationLayer.harvest();
+        eulerAggregationVault.harvest();
         vm.stopPrank();
 
-        uint256 user1SharesAfter = eulerAggregationLayer.balanceOf(user1);
-        uint256 user1AssetsAfter = eulerAggregationLayer.convertToAssets(user1SharesAfter);
+        uint256 user1SharesAfter = eulerAggregationVault.balanceOf(user1);
+        uint256 user1AssetsAfter = eulerAggregationVault.convertToAssets(user1SharesAfter);
 
         assertApproxEqAbs(user1AssetsAfter, expectedUser1Assets + interestToBeAccrued, 1);
-        assertEq(eulerAggregationLayer.totalAssetsDeposited(), totalAssetsDepositedBefore + interestToBeAccrued);
+        assertEq(eulerAggregationVault.totalAssetsDeposited(), totalAssetsDepositedBefore + interestToBeAccrued);
     }
 }

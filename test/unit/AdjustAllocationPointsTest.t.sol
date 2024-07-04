@@ -2,13 +2,13 @@
 pragma solidity ^0.8.0;
 
 import {
-    EulerAggregationLayerBase,
-    EulerAggregationLayer,
-    IEulerAggregationLayer,
+    EulerAggregationVaultBase,
+    EulerAggregationVault,
+    IEulerAggregationVault,
     ErrorsLib
-} from "../common/EulerAggregationLayerBase.t.sol";
+} from "../common/EulerAggregationVaultBase.t.sol";
 
-contract AdjustAllocationsPointsTest is EulerAggregationLayerBase {
+contract AdjustAllocationsPointsTest is EulerAggregationVaultBase {
     uint256 initialStrategyAllocationPoints = 500e18;
 
     function setUp() public virtual override {
@@ -19,16 +19,16 @@ contract AdjustAllocationsPointsTest is EulerAggregationLayerBase {
 
     function testAdjustAllocationPoints() public {
         uint256 newAllocationPoints = 859e18;
-        uint256 totalAllocationPointsBefore = eulerAggregationLayer.totalAllocationPoints();
+        uint256 totalAllocationPointsBefore = eulerAggregationVault.totalAllocationPoints();
         uint256 withdrawalQueueLengthBefore = _getWithdrawalQueueLength();
 
         vm.prank(manager);
-        eulerAggregationLayer.adjustAllocationPoints(address(eTST), newAllocationPoints);
+        eulerAggregationVault.adjustAllocationPoints(address(eTST), newAllocationPoints);
 
-        IEulerAggregationLayer.Strategy memory strategy = eulerAggregationLayer.getStrategy(address(eTST));
+        IEulerAggregationVault.Strategy memory strategy = eulerAggregationVault.getStrategy(address(eTST));
 
         assertEq(
-            eulerAggregationLayer.totalAllocationPoints(),
+            eulerAggregationVault.totalAllocationPoints(),
             totalAllocationPointsBefore + (newAllocationPoints - initialStrategyAllocationPoints)
         );
         assertEq(_getWithdrawalQueueLength(), withdrawalQueueLengthBefore);
@@ -40,7 +40,7 @@ contract AdjustAllocationsPointsTest is EulerAggregationLayerBase {
 
         vm.startPrank(deployer);
         vm.expectRevert();
-        eulerAggregationLayer.adjustAllocationPoints(address(eTST), newAllocationPoints);
+        eulerAggregationVault.adjustAllocationPoints(address(eTST), newAllocationPoints);
         vm.stopPrank();
     }
 
@@ -49,7 +49,7 @@ contract AdjustAllocationsPointsTest is EulerAggregationLayerBase {
 
         vm.startPrank(manager);
         vm.expectRevert(ErrorsLib.InactiveStrategy.selector);
-        eulerAggregationLayer.adjustAllocationPoints(address(eTST2), newAllocationPoints);
+        eulerAggregationVault.adjustAllocationPoints(address(eTST2), newAllocationPoints);
         vm.stopPrank();
     }
 }

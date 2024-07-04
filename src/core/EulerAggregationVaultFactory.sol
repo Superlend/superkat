@@ -6,14 +6,14 @@ import {Rewards} from "./module/Rewards.sol";
 import {Hooks} from "./module/Hooks.sol";
 import {Fee} from "./module/Fee.sol";
 import {WithdrawalQueue} from "../plugin/WithdrawalQueue.sol";
-import {EulerAggregationLayer, IEulerAggregationLayer} from "./EulerAggregationLayer.sol";
+import {EulerAggregationVault, IEulerAggregationVault} from "./EulerAggregationVault.sol";
 // libs
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
-/// @title EulerAggregationLayerFactory contract
+/// @title EulerAggregationVaultFactory contract
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
-contract EulerAggregationLayerFactory {
+contract EulerAggregationVaultFactory {
     /// core dependencies
     address public immutable balanceTracker;
     /// core modules implementations addresses
@@ -59,8 +59,8 @@ contract EulerAggregationLayerFactory {
     /// @param _name Vaut name.
     /// @param _symbol Vault symbol.
     /// @param _initialCashAllocationPoints The amount of points to initally allocate for cash reserve.
-    /// @return eulerAggregationLayer The address of the new deployed aggregation layer vault.
-    function deployEulerAggregationLayer(
+    /// @return eulerAggregationVault The address of the new deployed aggregation layer vault.
+    function deployEulerAggregationVault(
         address _asset,
         string memory _name,
         string memory _symbol,
@@ -76,23 +76,23 @@ contract EulerAggregationLayerFactory {
         WithdrawalQueue withdrawalQueue = WithdrawalQueue(Clones.clone(withdrawalQueueImpl));
 
         // deploy new aggregation vault
-        EulerAggregationLayer eulerAggregationLayer =
-            new EulerAggregationLayer(rewardsModuleAddr, hooksModuleAddr, feeModuleAddr, allocationpointsModuleAddr);
+        EulerAggregationVault eulerAggregationVault =
+            new EulerAggregationVault(rewardsModuleAddr, hooksModuleAddr, feeModuleAddr, allocationpointsModuleAddr);
 
-        IEulerAggregationLayer.InitParams memory aggregationVaultInitParams = IEulerAggregationLayer.InitParams({
+        IEulerAggregationVault.InitParams memory aggregationVaultInitParams = IEulerAggregationVault.InitParams({
             balanceTracker: balanceTracker,
             withdrawalQueuePlugin: address(withdrawalQueue),
             rebalancerPlugin: rebalancer,
-            aggregationLayerOwner: msg.sender,
+            aggregationVaultOwner: msg.sender,
             asset: _asset,
             name: _name,
             symbol: _symbol,
             initialCashAllocationPoints: _initialCashAllocationPoints
         });
 
-        withdrawalQueue.init(msg.sender, address(eulerAggregationLayer));
-        eulerAggregationLayer.init(aggregationVaultInitParams);
+        withdrawalQueue.init(msg.sender, address(eulerAggregationVault));
+        eulerAggregationVault.init(aggregationVaultInitParams);
 
-        return address(eulerAggregationLayer);
+        return address(eulerAggregationVault);
     }
 }

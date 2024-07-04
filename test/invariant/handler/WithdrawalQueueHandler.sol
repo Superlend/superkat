@@ -3,26 +3,26 @@ pragma solidity ^0.8.0;
 
 import {
     Test,
-    EulerAggregationLayerBase,
-    EulerAggregationLayer,
+    EulerAggregationVaultBase,
+    EulerAggregationVault,
     console2,
     EVault,
     IEVault,
     IRMTestDefault,
     TestERC20,
-    IEulerAggregationLayer,
+    IEulerAggregationVault,
     ErrorsLib,
     IERC4626,
     Rebalancer,
     WithdrawalQueue
-} from "../../common/EulerAggregationLayerBase.t.sol";
+} from "../../common/EulerAggregationVaultBase.t.sol";
 import {Actor} from "../util/Actor.sol";
 import {Strategy} from "../util/Strategy.sol";
 
 contract WithdrawalQueueHandler is Test {
     Actor internal actorUtil;
     Strategy internal strategyUtil;
-    EulerAggregationLayer internal eulerAggLayer;
+    EulerAggregationVault internal eulerAggVault;
     WithdrawalQueue internal withdrawalQueue;
 
     // last function call state
@@ -32,12 +32,12 @@ contract WithdrawalQueueHandler is Test {
     bytes returnData;
 
     constructor(
-        EulerAggregationLayer _eulerAggLayer,
+        EulerAggregationVault _eulerAggVault,
         Actor _actor,
         Strategy _strategy,
         WithdrawalQueue _withdrawalQueue
     ) {
-        eulerAggLayer = _eulerAggLayer;
+        eulerAggVault = _eulerAggVault;
         actorUtil = _actor;
         strategyUtil = _strategy;
         withdrawalQueue = _withdrawalQueue;

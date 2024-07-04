@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {Test} from "forge-std/Test.sol";
 
 contract Actor is Test {
-    /// @dev actor[0] will always be a manager address that have access to all EulerAggregationLayer roles.
+    /// @dev actor[0] will always be a manager address that have access to all EulerAggregationVault roles.
     address[] public actors;
 
     function includeActor(address _actor) external {

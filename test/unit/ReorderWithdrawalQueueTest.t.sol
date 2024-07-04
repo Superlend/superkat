@@ -2,13 +2,13 @@
 pragma solidity ^0.8.0;
 
 import {
-    EulerAggregationLayerBase,
-    EulerAggregationLayer,
+    EulerAggregationVaultBase,
+    EulerAggregationVault,
     IEVault,
     WithdrawalQueue
-} from "../common/EulerAggregationLayerBase.t.sol";
+} from "../common/EulerAggregationVaultBase.t.sol";
 
-contract ReorderWithdrawalQueueTest is EulerAggregationLayerBase {
+contract ReorderWithdrawalQueueTest is EulerAggregationVaultBase {
     uint256 eTSTAllocationPoints = 500e18;
     uint256 eTSTsecondaryAllocationPoints = 700e18;
 
@@ -30,18 +30,18 @@ contract ReorderWithdrawalQueueTest is EulerAggregationLayerBase {
     }
 
     function testReorderWithdrawalQueue() public {
-        assertEq(eulerAggregationLayer.getStrategy(_getWithdrawalQueue()[0]).allocationPoints, eTSTAllocationPoints);
+        assertEq(eulerAggregationVault.getStrategy(_getWithdrawalQueue()[0]).allocationPoints, eTSTAllocationPoints);
         assertEq(
-            eulerAggregationLayer.getStrategy(_getWithdrawalQueue()[1]).allocationPoints, eTSTsecondaryAllocationPoints
+            eulerAggregationVault.getStrategy(_getWithdrawalQueue()[1]).allocationPoints, eTSTsecondaryAllocationPoints
         );
 
         vm.prank(manager);
         withdrawalQueue.reorderWithdrawalQueue(0, 1);
 
         assertEq(
-            eulerAggregationLayer.getStrategy(_getWithdrawalQueue()[0]).allocationPoints, eTSTsecondaryAllocationPoints
+            eulerAggregationVault.getStrategy(_getWithdrawalQueue()[0]).allocationPoints, eTSTsecondaryAllocationPoints
         );
-        assertEq(eulerAggregationLayer.getStrategy(_getWithdrawalQueue()[1]).allocationPoints, eTSTAllocationPoints);
+        assertEq(eulerAggregationVault.getStrategy(_getWithdrawalQueue()[1]).allocationPoints, eTSTAllocationPoints);
     }
 
     function testReorderWithdrawalQueueWhenOutOfBounds() public {
