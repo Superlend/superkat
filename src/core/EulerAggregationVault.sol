@@ -50,8 +50,10 @@ contract EulerAggregationVault is
     bytes32 public constant AGGREGATION_LAYER_MANAGER = keccak256("AGGREGATION_LAYER_MANAGER");
     bytes32 public constant AGGREGATION_LAYER_MANAGER_ADMIN = keccak256("AGGREGATION_LAYER_MANAGER_ADMIN");
 
-    /// @dev interest rate smearing period
+    /// @dev Interest rate smearing period
     uint256 public constant INTEREST_SMEAR = 2 weeks;
+    /// @dev Minimum amount of shares to exist for gulp to be enabled
+    uint256 public constant MIN_SHARES_FOR_GULP = 1e7;
 
     constructor(address _rewardsModule, address _hooksModule, address _feeModule, address _allocationPointsModule)
         Dispatch(_rewardsModule, _hooksModule, _feeModule, _allocationPointsModule)
@@ -475,7 +477,8 @@ contract EulerAggregationVault is
 
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
-        if (totalSupply() == 0) return;
+        // Do not gulp if total supply is too low
+        if (totalSupply() < MIN_SHARES_FOR_GULP) return;
 
         uint256 toGulp = totalAssetsAllocatable() - $.totalAssetsDeposited - $.interestLeft;
         if (toGulp == 0) return;

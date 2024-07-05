@@ -124,6 +124,13 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
         }
     }
 
+    function invariant_interestLeft() public view {
+        EulerAggregationVault.AggregationVaultSavingRate memory aggregationVaultSavingRate =
+            eulerAggregationVault.getAggregationVaultSavingRate();
+        uint256 accruedInterest = eulerAggregationVault.interestAccrued();
+        assertGe(aggregationVaultSavingRate.interestLeft, accruedInterest);
+    }
+
     function _deployOtherStrategies() private {
         eTSTsecond = IEVault(
             factory.createProxy(address(0), true, abi.encodePacked(address(assetTST), address(oracle), unitOfAccount))
