@@ -59,6 +59,7 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
         targetContract(address(withdrawalQueueHandler));
     }
 
+    // Right after gulp, total assets allocatable should be always equal to total assets deposited + interest left.
     function invariant_gulp() public {
         eulerAggregationVault.gulp();
 
@@ -69,6 +70,16 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
         );
     }
 
+    // totalAssetsDeposited should be equal to the totalAssetsAllocatable after SMEAR has passed.
+    function invariant_totalAssets() public {
+        eulerAggregationVault.gulp();
+        skip(eulerAggregationVault.INTEREST_SMEAR()); // make sure smear has passed
+        eulerAggregationVault.updateInterestAccrued();
+
+        assertEq(eulerAggregationVault.totalAssets(), eulerAggregationVault.totalAssetsAllocatable());
+    }
+
+    // total allocation points should be equal to the sum of the allocation points of all strategies.
     function invariant_totalAllocationPoints() public view {
         address withdrawalQueueAddr = eulerAggregationVault.withdrawalQueue();
 
@@ -85,6 +96,8 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
         assertEq(eulerAggregationVault.totalAllocationPoints(), expectedTotalAllocationpoints);
     }
 
+    // If `total allocation points - cash reserve allocation points == 0`(no strategy added), the withdrawal queue length should be zero.
+    // Else, the length should be greater than zero.
     function invariant_withdrawalQueue() public view {
         address withdrawalQueueAddr = eulerAggregationVault.withdrawalQueue();
 
@@ -99,6 +112,7 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
         }
     }
 
+    // total allocated amount should always be equal the sum of allocated amount in all the strategies.
     function invariant_totalAllocated() public view {
         address withdrawalQueueAddr = eulerAggregationVault.withdrawalQueue();
 
@@ -113,6 +127,7 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
         assertEq(eulerAggregationVault.totalAllocated(), aggregatedAllocatedAmount);
     }
 
+    // Balance of a certain fee recipient should always be equal to the ghost tracking variable.
     function invariant_performanceFee() public view {
         for (uint256 i; i < eulerAggregationVaultHandler.ghostFeeRecipientsLength(); i++) {
             address feeRecipient = eulerAggregationVaultHandler.ghost_feeRecipients(i);
@@ -124,6 +139,7 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
         }
     }
 
+    // the interest left should always be greater or equal current interest accrued value.
     function invariant_interestLeft() public view {
         EulerAggregationVault.AggregationVaultSavingRate memory aggregationVaultSavingRate =
             eulerAggregationVault.getAggregationVaultSavingRate();
