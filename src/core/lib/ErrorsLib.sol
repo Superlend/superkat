@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 library ErrorsLib {
     error Reentrancy();
-    error ArrayLengthMismatch();
     error InitialAllocationPointsZero();
     error NegativeYield();
     error InactiveStrategy();
