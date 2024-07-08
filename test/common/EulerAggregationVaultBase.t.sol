@@ -61,14 +61,18 @@ contract EulerAggregationVaultBase is EVaultTestBase {
             hooksModuleImpl: address(hooksImpl),
             feeModuleImpl: address(feeModuleImpl),
             allocationPointsModuleImpl: address(allocationPointsModuleImpl),
-            rebalancer: address(rebalancer),
-            withdrawalQueueImpl: address(withdrawalQueueImpl)
+            rebalancer: address(rebalancer)
         });
-        eulerAggregationVaultFactory = new EulerAggregationVaultFactory(factoryParams);
+        eulerAggregationVaultFactory = new EulerAggregationVaultFactory(deployer, factoryParams);
+        eulerAggregationVaultFactory.whitelistWithdrawalQueueImpl(address(withdrawalQueueImpl));
 
         eulerAggregationVault = EulerAggregationVault(
             eulerAggregationVaultFactory.deployEulerAggregationVault(
-                address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS
+                address(withdrawalQueueImpl),
+                address(assetTST),
+                "assetTST_Agg",
+                "assetTST_Agg",
+                CASH_RESERVE_ALLOCATION_POINTS
             )
         );
         withdrawalQueue = WithdrawalQueue(eulerAggregationVault.withdrawalQueue());

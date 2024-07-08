@@ -17,6 +17,8 @@ import {TestERC20Token} from "crytic-properties/ERC4626/util/TestERC20Token.sol"
 contract CryticERC4626TestsHarness is CryticERC4626PropertyTests {
     uint256 public constant CASH_RESERVE_ALLOCATION_POINTS = 1000e18;
 
+    address factoryDeployer;
+
     // core modules
     Rewards rewardsImpl;
     Hooks hooksImpl;
@@ -44,14 +46,14 @@ contract CryticERC4626TestsHarness is CryticERC4626PropertyTests {
             hooksModuleImpl: address(hooksImpl),
             feeModuleImpl: address(feeModuleImpl),
             allocationPointsModuleImpl: address(allocationPointsModuleImpl),
-            rebalancer: address(rebalancerPlugin),
-            withdrawalQueueImpl: address(withdrawalQueuePluginImpl)
+            rebalancer: address(rebalancerPlugin)
         });
-        eulerAggregationVaultFactory = new EulerAggregationVaultFactory(factoryParams);
+        eulerAggregationVaultFactory = new EulerAggregationVaultFactory(address(this), factoryParams);
+        eulerAggregationVaultFactory.whitelistWithdrawalQueueImpl(address(withdrawalQueuePluginImpl));
 
         TestERC20Token _asset = new TestERC20Token("Test Token", "TT", 18);
         address _vault = eulerAggregationVaultFactory.deployEulerAggregationVault(
-            address(_asset), "TT_Agg", "TT_Agg", CASH_RESERVE_ALLOCATION_POINTS
+            address(withdrawalQueuePluginImpl), address(_asset), "TT_Agg", "TT_Agg", CASH_RESERVE_ALLOCATION_POINTS
         );
 
         initialize(address(_vault), address(_asset), false);
