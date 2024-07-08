@@ -18,6 +18,7 @@ import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 contract EulerAggregationVaultFactory is Ownable {
     error WithdrawalQueueAlreadyWhitelisted();
     error NotWhitelistedWithdrawalQueueImpl();
+    error InvalidQuery();
 
     /// core dependencies
     address public immutable balanceTracker;
@@ -33,6 +34,8 @@ contract EulerAggregationVaultFactory is Ownable {
     mapping(address => bool) public isWhitelistedWithdrawalQueueImpl;
     /// @dev An array of the whitelisted WithdrawalQueue plugin implementations.
     address[] public withdrawalQueueImpls;
+    /// @dev Array to store the addresses of all deployed aggregation vaults.
+    address[] public aggregationVaults;
 
     /// @dev Init params struct.
     struct FactoryParams {
@@ -43,6 +46,11 @@ contract EulerAggregationVaultFactory is Ownable {
         address allocationPointsModuleImpl;
         address rebalancer;
     }
+
+    event WhitelistWithdrawalQueueImpl(address withdrawalQueueImpl);
+    event DeployEulerAggregationVault(
+        address indexed _owner, address _aggregationVault, address indexed _withdrawalQueueImpl, address indexed _asset
+    );
 
     /// @notice Constructor.
     /// @param _owner Factory owner.
@@ -57,12 +65,17 @@ contract EulerAggregationVaultFactory is Ownable {
         rebalancer = _factoryParams.rebalancer;
     }
 
+    /// @notice Whitelist a new WithdrawalQueue implementation.
+    /// @dev Can only be called by factory owner.
+    /// @param _withdrawalQueuImpl WithdrawalQueue plugin implementation.
     function whitelistWithdrawalQueueImpl(address _withdrawalQueuImpl) external onlyOwner {
         if (isWhitelistedWithdrawalQueueImpl[_withdrawalQueuImpl]) revert WithdrawalQueueAlreadyWhitelisted();
 
         isWhitelistedWithdrawalQueueImpl[_withdrawalQueuImpl] = true;
 
         withdrawalQueueImpls.push(_withdrawalQueuImpl);
+
+        emit WhitelistWithdrawalQueueImpl(_withdrawalQueuImpl);
     }
 
     /// @notice Deploy a new aggregation layer vault.
@@ -110,6 +123,52 @@ contract EulerAggregationVaultFactory is Ownable {
         withdrawalQueue.init(msg.sender, address(eulerAggregationVault));
         eulerAggregationVault.init(aggregationVaultInitParams);
 
+        aggregationVaults.push(address(eulerAggregationVault));
+
+        emit DeployEulerAggregationVault(msg.sender, address(eulerAggregationVault), _withdrawalQueueImpl, _asset);
+
         return address(eulerAggregationVault);
+    }
+
+    /// @notice Fetch the length of the whitelisted WithdrawalQueue implementations list
+    /// @return The length of the proxy list array
+    function getWithdrawalQueueImplsListLength() external view returns (uint256) {
+        return withdrawalQueueImpls.length;
+    }
+
+    /// @notice Return the WithdrawalQueue implementations list.
+    /// @return withdrawalQueueImplsList An array of addresses.
+    function getWithdrawalQueueImplsList() external view returns (address[] memory) {
+        uint256 length = withdrawalQueueImpls.length;
+        address[] memory withdrawalQueueImplsList = new address[](length);
+
+        for (uint256 i; i < length; ++i) {
+            withdrawalQueueImplsList[i] = withdrawalQueueImpls[i];
+        }
+
+        return withdrawalQueueImplsList;
+    }
+
+    /// @notice Fetch the length of the deployed aggregation vaults list.
+    /// @return The length of the aggregation vaults list array.
+    function getAggregationVaultsListLength() external view returns (uint256) {
+        return aggregationVaults.length;
+    }
+
+    /// @notice Get a slice of the deployed aggregation vaults array.
+    /// @param _start Start index of the slice.
+    /// @param _end End index of the slice.
+    /// @return aggregationVaultsList An array containing the slice of the deployed aggregation vaults list.
+    function getAggregationVaultsListSlice(uint256 _start, uint256 _end) external view returns (address[] memory) {
+        uint256 length = aggregationVaults.length;
+        if (_end == type(uint256).max) _end = length;
+        if (_end < _start || _end > length) revert InvalidQuery();
+
+        address[] memory aggregationVaultsList = new address[](_end - _start);
+        for (uint256 i; i < _end - _start; ++i) {
+            aggregationVaultsList[i] = aggregationVaults[_start + i];
+        }
+
+        return aggregationVaultsList;
     }
 }
