@@ -20,7 +20,7 @@ abstract contract FeeModule {
 
     /// @notice Set performance fee recipient address
     /// @param _newFeeRecipient Recipient address
-    function setFeeRecipient(address _newFeeRecipient) external {
+    function setFeeRecipient(address _newFeeRecipient) external virtual {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
         address feeRecipientCached = $.feeRecipient;
 
@@ -33,7 +33,7 @@ abstract contract FeeModule {
 
     /// @notice Set performance fee (1e18 == 100%)
     /// @param _newFee Fee rate
-    function setPerformanceFee(uint256 _newFee) external {
+    function setPerformanceFee(uint256 _newFee) external virtual {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         uint256 performanceFeeCached = $.performanceFee;

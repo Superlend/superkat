@@ -7,13 +7,18 @@ import {Hooks} from "./module/Hooks.sol";
 import {Fee} from "./module/Fee.sol";
 import {WithdrawalQueue} from "../plugin/WithdrawalQueue.sol";
 import {EulerAggregationVault, IEulerAggregationVault} from "./EulerAggregationVault.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+
 // libs
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
 /// @title EulerAggregationVaultFactory contract
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
-contract EulerAggregationVaultFactory {
+contract EulerAggregationVaultFactory is Ownable {
+    error WithdrawalQueueAlreadyWhitelisted();
+    error NotWhitelistedWithdrawalQueueImpl();
+
     /// core dependencies
     address public immutable balanceTracker;
     /// core modules implementations addresses
@@ -24,8 +29,10 @@ contract EulerAggregationVaultFactory {
     /// plugins
     /// @dev Rebalancer plugin contract address, one instance can serve different aggregation vaults
     address public immutable rebalancer;
-    /// @dev WithdrawalQueue plugin implementation address, need to be deployed per aggregation vault
-    address public immutable withdrawalQueueImpl;
+    /// @dev Mapping to set whitelisted WhithdrawalQueue plugin implementation.
+    mapping(address => bool) public isWhitelistedWithdrawalQueueImpl;
+    /// @dev An array of the whitelisted WithdrawalQueue plugin implementations.
+    address[] public withdrawalQueueImpls;
 
     /// @dev Init params struct.
     struct FactoryParams {
@@ -35,12 +42,12 @@ contract EulerAggregationVaultFactory {
         address feeModuleImpl;
         address allocationPointsModuleImpl;
         address rebalancer;
-        address withdrawalQueueImpl;
     }
 
     /// @notice Constructor.
+    /// @param _owner Factory owner.
     /// @param _factoryParams FactoryParams struct.
-    constructor(FactoryParams memory _factoryParams) {
+    constructor(address _owner, FactoryParams memory _factoryParams) Ownable(_owner) {
         balanceTracker = _factoryParams.balanceTracker;
         rewardsModuleImpl = _factoryParams.rewardsModuleImpl;
         hooksModuleImpl = _factoryParams.hooksModuleImpl;
@@ -48,7 +55,14 @@ contract EulerAggregationVaultFactory {
         allocationPointsModuleImpl = _factoryParams.allocationPointsModuleImpl;
 
         rebalancer = _factoryParams.rebalancer;
-        withdrawalQueueImpl = _factoryParams.withdrawalQueueImpl;
+    }
+
+    function whitelistWithdrawalQueueImpl(address _withdrawalQueuImpl) external onlyOwner {
+        if (isWhitelistedWithdrawalQueueImpl[_withdrawalQueuImpl]) revert WithdrawalQueueAlreadyWhitelisted();
+
+        isWhitelistedWithdrawalQueueImpl[_withdrawalQueuImpl] = true;
+
+        withdrawalQueueImpls.push(_withdrawalQueuImpl);
     }
 
     /// @notice Deploy a new aggregation layer vault.
@@ -61,11 +75,14 @@ contract EulerAggregationVaultFactory {
     /// @param _initialCashAllocationPoints The amount of points to initally allocate for cash reserve.
     /// @return eulerAggregationVault The address of the new deployed aggregation layer vault.
     function deployEulerAggregationVault(
+        address _withdrawalQueueImpl,
         address _asset,
         string memory _name,
         string memory _symbol,
         uint256 _initialCashAllocationPoints
     ) external returns (address) {
+        if (!isWhitelistedWithdrawalQueueImpl[_withdrawalQueueImpl]) revert NotWhitelistedWithdrawalQueueImpl();
+
         // cloning core modules
         address rewardsModuleAddr = Clones.clone(rewardsModuleImpl);
         address hooksModuleAddr = Clones.clone(hooksModuleImpl);
@@ -73,7 +90,7 @@ contract EulerAggregationVaultFactory {
         address allocationpointsModuleAddr = Clones.clone(allocationPointsModuleImpl);
 
         // cloning plugins
-        WithdrawalQueue withdrawalQueue = WithdrawalQueue(Clones.clone(withdrawalQueueImpl));
+        WithdrawalQueue withdrawalQueue = WithdrawalQueue(Clones.clone(_withdrawalQueueImpl));
 
         // deploy new aggregation vault
         EulerAggregationVault eulerAggregationVault =

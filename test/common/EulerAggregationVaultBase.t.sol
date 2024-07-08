@@ -91,10 +91,10 @@ contract EulerAggregationVaultBase is EVaultTestBase {
 
         vm.label(address(eulerAggregationVaultFactory), "eulerAggregationVaultFactory");
         vm.label(address(eulerAggregationVault), "eulerAggregationVault");
-        vm.label(eulerAggregationVault.MODULE_REWARDS(), "MODULE_REWARDS");
-        vm.label(eulerAggregationVault.MODULE_HOOKS(), "MODULE_HOOKS");
-        vm.label(eulerAggregationVault.MODULE_FEE(), "MODULE_FEE");
-        vm.label(eulerAggregationVault.MODULE_ALLOCATION_POINTS(), "MODULE_ALLOCATION_POINTS");
+        vm.label(eulerAggregationVault.rewardsModule(), "rewardsModule");
+        vm.label(eulerAggregationVault.hooksModule(), "hooksModule");
+        vm.label(eulerAggregationVault.feeModule(), "feeModule");
+        vm.label(eulerAggregationVault.allocationPointsModule(), "allocationPointsModule");
         vm.label(address(assetTST), "assetTST");
     }
 

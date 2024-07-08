@@ -5,17 +5,19 @@ pragma solidity ^0.8.0;
 import {Shared} from "./common/Shared.sol";
 import {HooksModule} from "./module/Hooks.sol";
 import {RewardsModule} from "./module/Rewards.sol";
+import {AllocationPointsModule} from "./module/AllocationPoints.sol";
+import {FeeModule} from "./module/Fee.sol";
 
 /// @title Dispatch contract
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
 /// @dev This contract implement the modifier to use for forwarding calls to a specific module using delegateCall.
 /// @dev Copied from https://github.com/euler-xyz/euler-vault-kit/blob/55d1a1fd7d572372f1c8b9f58aba0604bda3ca4f/src/EVault/Dispatch.sol.
-abstract contract Dispatch is RewardsModule, HooksModule {
-    address public immutable MODULE_REWARDS;
-    address public immutable MODULE_HOOKS;
-    address public immutable MODULE_FEE;
-    address public immutable MODULE_ALLOCATION_POINTS;
+abstract contract Dispatch is RewardsModule, HooksModule, FeeModule, AllocationPointsModule {
+    address public immutable rewardsModule;
+    address public immutable hooksModule;
+    address public immutable feeModule;
+    address public immutable allocationPointsModule;
 
     /// @dev Constructor.
     /// @param _rewardsModule Address of Rewards module.
@@ -23,10 +25,10 @@ abstract contract Dispatch is RewardsModule, HooksModule {
     /// @param _feeModule Address of Fee module.
     /// @param _allocationPointsModule Address of AllocationPoints module.
     constructor(address _rewardsModule, address _hooksModule, address _feeModule, address _allocationPointsModule) {
-        MODULE_REWARDS = _rewardsModule;
-        MODULE_HOOKS = _hooksModule;
-        MODULE_FEE = _feeModule;
-        MODULE_ALLOCATION_POINTS = _allocationPointsModule;
+        rewardsModule = _rewardsModule;
+        hooksModule = _hooksModule;
+        feeModule = _feeModule;
+        allocationPointsModule = _allocationPointsModule;
     }
 
     // Modifier proxies the function call to a module and low-level returns the result

@@ -55,6 +55,11 @@ contract EulerAggregationVault is
     /// @dev Minimum amount of shares to exist for gulp to be enabled
     uint256 public constant MIN_SHARES_FOR_GULP = 1e7;
 
+    /// @dev Constructor.
+    /// @param _rewardsModule Address of Rewards module.
+    /// @param _hooksModule Address of Hooks module.
+    /// @param _feeModule Address of Fee module.
+    /// @param _allocationPointsModule Address of AllocationPoints module.
     constructor(address _rewardsModule, address _hooksModule, address _feeModule, address _allocationPointsModule)
         Dispatch(_rewardsModule, _hooksModule, _feeModule, _allocationPointsModule)
     {}
@@ -92,17 +97,22 @@ contract EulerAggregationVault is
     }
 
     /// @dev See {FeeModule-setFeeRecipient}.
-    function setFeeRecipient(address _newFeeRecipient) external onlyRole(AGGREGATION_LAYER_MANAGER) use(MODULE_FEE) {}
+    function setFeeRecipient(address _newFeeRecipient)
+        external
+        override
+        onlyRole(AGGREGATION_LAYER_MANAGER)
+        use(feeModule)
+    {}
 
     /// @dev See {FeeModule-setPerformanceFee}.
-    function setPerformanceFee(uint256 _newFee) external onlyRole(AGGREGATION_LAYER_MANAGER) use(MODULE_FEE) {}
+    function setPerformanceFee(uint256 _newFee) external override onlyRole(AGGREGATION_LAYER_MANAGER) use(feeModule) {}
 
     /// @dev See {RewardsModule-optInStrategyRewards}.
     function optInStrategyRewards(address _strategy)
         external
         override
         onlyRole(AGGREGATION_LAYER_MANAGER)
-        use(MODULE_REWARDS)
+        use(rewardsModule)
     {}
 
     /// @dev See {RewardsModule-optOutStrategyRewards}.
@@ -110,7 +120,7 @@ contract EulerAggregationVault is
         external
         override
         onlyRole(AGGREGATION_LAYER_MANAGER)
-        use(MODULE_REWARDS)
+        use(rewardsModule)
     {}
 
     /// @dev See {RewardsModule-optOutStrategyRewards}.
@@ -118,7 +128,7 @@ contract EulerAggregationVault is
         external
         override
         onlyRole(AGGREGATION_LAYER_MANAGER)
-        use(MODULE_REWARDS)
+        use(rewardsModule)
     {}
 
     /// @dev See {RewardsModule-disableRewardForStrategy}.
@@ -126,7 +136,7 @@ contract EulerAggregationVault is
         external
         override
         onlyRole(AGGREGATION_LAYER_MANAGER)
-        use(MODULE_REWARDS)
+        use(rewardsModule)
     {}
 
     /// @dev See {RewardsModule-claimStrategyReward}.
@@ -134,7 +144,7 @@ contract EulerAggregationVault is
         external
         override
         onlyRole(AGGREGATION_LAYER_MANAGER)
-        use(MODULE_REWARDS)
+        use(rewardsModule)
     {}
 
     /// @dev See {HooksModule-setHooksConfig}.
@@ -142,51 +152,46 @@ contract EulerAggregationVault is
         external
         override
         onlyRole(AGGREGATION_LAYER_MANAGER)
-        use(MODULE_HOOKS)
+        use(hooksModule)
     {}
 
     /// @dev See {AllocationPointsModule-adjustAllocationPoints}.
     function adjustAllocationPoints(address _strategy, uint256 _newPoints)
         external
-        use(MODULE_ALLOCATION_POINTS)
+        override
+        use(allocationPointsModule)
         onlyRole(ALLOCATIONS_MANAGER)
     {}
 
     /// @dev See {AllocationPointsModule-setStrategyCap}.
     function setStrategyCap(address _strategy, uint256 _cap)
         external
-        use(MODULE_ALLOCATION_POINTS)
+        override
+        use(allocationPointsModule)
         onlyRole(ALLOCATIONS_MANAGER)
     {}
 
     /// @dev See {AllocationPointsModule-addStrategy}.
     function addStrategy(address _strategy, uint256 _allocationPoints)
         external
-        use(MODULE_ALLOCATION_POINTS)
+        override
+        use(allocationPointsModule)
         onlyRole(STRATEGY_ADDER)
     {}
 
     /// @dev See {AllocationPointsModule-removeStrategy}.
-    function removeStrategy(address _strategy) external use(MODULE_ALLOCATION_POINTS) onlyRole(STRATEGY_REMOVER) {}
+    function removeStrategy(address _strategy)
+        external
+        override
+        use(allocationPointsModule)
+        onlyRole(STRATEGY_REMOVER)
+    {}
 
     /// @dev See {RewardsModule-enableBalanceForwarder}.
-    function enableBalanceForwarder() external override use(MODULE_REWARDS) {}
+    function enableBalanceForwarder() external override use(rewardsModule) {}
 
     /// @dev See {RewardsModule-disableBalanceForwarder}.
-    function disableBalanceForwarder() external override use(MODULE_REWARDS) {}
-
-    /// @notice Set a new address for WithdrawalQueue plugin.
-    /// @dev Can only be called by an address with the `AGGREGATION_LAYER_MANAGER` role.
-    /// @param _withdrawalQueue New WithdrawalQueue contract address.
-    function setWithdrawalQueue(address _withdrawalQueue) external onlyRole(AGGREGATION_LAYER_MANAGER) {
-        if (_withdrawalQueue == address(0)) revert Errors.InvalidPlugin();
-
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
-
-        emit Events.SetWithdrawalQueue($.withdrawalQueue, _withdrawalQueue);
-
-        $.withdrawalQueue = _withdrawalQueue;
-    }
+    function disableBalanceForwarder() external override use(rewardsModule) {}
 
     /// @notice Set a new address for Rebalancer plugin.
     /// @dev Can only be called by an address with the `AGGREGATION_LAYER_MANAGER` role.
