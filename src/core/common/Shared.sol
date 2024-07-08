@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 // interfaces
-import {IEVC} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
 // libs
 import {StorageLib, AggregationVaultStorage} from "../lib/StorageLib.sol";
