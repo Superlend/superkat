@@ -8,7 +8,6 @@ import {Fee} from "./module/Fee.sol";
 import {WithdrawalQueue} from "../plugin/WithdrawalQueue.sol";
 import {EulerAggregationVault, IEulerAggregationVault} from "./EulerAggregationVault.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-
 // libs
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 

@@ -27,6 +27,7 @@ contract GulpFuzzTest is EulerAggregationVaultBase {
 
         assetTST.mint(address(eulerAggregationVault), _interestAmount);
         eulerAggregationVault.gulp();
+        eulerAggregationVault.updateInterestAccrued();
 
         vm.warp(_timePassed);
         uint256 interestAccrued = eulerAggregationVault.interestAccrued();

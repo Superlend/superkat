@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 library ErrorsLib {
     error Reentrancy();
     error InitialAllocationPointsZero();
-    error NegativeYield();
     error InactiveStrategy();
     error InvalidStrategyAsset();
     error StrategyAlreadyExist();
@@ -12,9 +11,7 @@ library ErrorsLib {
     error PerformanceFeeAlreadySet();
     error MaxPerformanceFeeExceeded();
     error FeeRecipientNotSet();
-    error FeeRecipientAlreadySet();
     error CanNotRemoveCashReserve();
-    error DuplicateInitialStrategy();
     error NotSupported();
     error AlreadyEnabled();
     error AlreadyDisabled();
@@ -23,7 +20,7 @@ library ErrorsLib {
     error InvalidHookedFns();
     error EmptyError();
     error NotWithdrawaQueue();
-    error InvalidPlugin();
+    error InvalidRebalancerPlugin();
     error NotRebalancer();
     error InvalidAllocationPoints();
     error CanNotRemoveStartegyWithAllocatedAmount();

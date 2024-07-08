@@ -22,11 +22,8 @@ abstract contract FeeModule {
     /// @param _newFeeRecipient Recipient address
     function setFeeRecipient(address _newFeeRecipient) external virtual {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
-        address feeRecipientCached = $.feeRecipient;
 
-        if (_newFeeRecipient == feeRecipientCached) revert Errors.FeeRecipientAlreadySet();
-
-        emit Events.SetFeeRecipient(feeRecipientCached, _newFeeRecipient);
+        emit Events.SetFeeRecipient($.feeRecipient, _newFeeRecipient);
 
         $.feeRecipient = _newFeeRecipient;
     }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {EulerAggregationVaultBase, EulerAggregationVault} from "../common/EulerAggregationVaultBase.t.sol";
+import {EulerAggregationVaultBase, EulerAggregationVault, ErrorsLib} from "../common/EulerAggregationVaultBase.t.sol";
 
 contract AddStrategyTest is EulerAggregationVaultBase {
     function setUp() public virtual override {
@@ -34,7 +34,7 @@ contract AddStrategyTest is EulerAggregationVaultBase {
 
         assertEq(_getWithdrawalQueueLength(), 0);
 
-        vm.expectRevert();
+        vm.expectRevert(ErrorsLib.InvalidStrategyAsset.selector);
         _addStrategy(manager, address(eTST2), allocationPoints);
     }
 
@@ -49,7 +49,14 @@ contract AddStrategyTest is EulerAggregationVaultBase {
         assertEq(eulerAggregationVault.totalAllocationPoints(), allocationPoints + totalAllocationPointsBefore);
         assertEq(_getWithdrawalQueueLength(), 1);
 
-        vm.expectRevert();
+        vm.expectRevert(ErrorsLib.StrategyAlreadyExist.selector);
+        _addStrategy(manager, address(eTST), allocationPoints);
+    }
+
+    function testAddStrategy_WithInvalidPoints() public {
+        uint256 allocationPoints = 0;
+
+        vm.expectRevert(ErrorsLib.InvalidAllocationPoints.selector);
         _addStrategy(manager, address(eTST), allocationPoints);
     }
 }

@@ -10,7 +10,7 @@ contract SetRebalancerTest is EulerAggregationVaultBase {
 
     function testSetInvalidRebalancer() public {
         vm.startPrank(manager);
-        vm.expectRevert(ErrorsLib.InvalidPlugin.selector);
+        vm.expectRevert(ErrorsLib.InvalidRebalancerPlugin.selector);
         eulerAggregationVault.setRebalancer(address(0));
     }
 

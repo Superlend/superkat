@@ -197,7 +197,7 @@ contract EulerAggregationVault is
     /// @dev Can only be called by an address with the `AGGREGATION_LAYER_MANAGER` role.
     /// @param _rebalancer New Rebalancer contract address.
     function setRebalancer(address _rebalancer) external onlyRole(AGGREGATION_LAYER_MANAGER) {
-        if (_rebalancer == address(0)) revert Errors.InvalidPlugin();
+        if (_rebalancer == address(0)) revert Errors.InvalidRebalancerPlugin();
 
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 

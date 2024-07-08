@@ -115,6 +115,7 @@ contract PerformanceFeeE2ETest is EulerAggregationVaultBase {
         vm.prank(user1);
         eulerAggregationVault.harvest();
 
+        assertGt(expectedPerformanceFee, 0);
         assertEq(assetTST.balanceOf(feeRecipient), expectedPerformanceFee);
         assertEq(
             eulerAggregationVault.getStrategy(address(eTST)).allocated,
