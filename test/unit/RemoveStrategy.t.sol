@@ -5,7 +5,8 @@ import {
     EulerAggregationVaultBase,
     EulerAggregationVault,
     IEVault,
-    IEulerAggregationVault
+    IEulerAggregationVault,
+    ErrorsLib
 } from "../common/EulerAggregationVaultBase.t.sol";
 
 contract RemoveStrategyTest is EulerAggregationVaultBase {
@@ -113,7 +114,13 @@ contract RemoveStrategyTest is EulerAggregationVaultBase {
 
     function testRemoveStrategy_AlreadyRemoved() public {
         vm.prank(manager);
-        vm.expectRevert();
+        vm.expectRevert(ErrorsLib.AlreadyRemoved.selector);
         eulerAggregationVault.removeStrategy(address(eTST2));
+    }
+
+    function testRemoveCashReserveStrategy() public {
+        vm.prank(manager);
+        vm.expectRevert(ErrorsLib.CanNotRemoveCashReserve.selector);
+        eulerAggregationVault.removeStrategy(address(0));
     }
 }

@@ -6,7 +6,8 @@ import {
     EulerAggregationVault,
     console2,
     EVault,
-    IEulerAggregationVault
+    IEulerAggregationVault,
+    ErrorsLib
 } from "../common/EulerAggregationVaultBase.t.sol";
 
 contract HarvestTest is EulerAggregationVaultBase {
@@ -256,5 +257,12 @@ contract HarvestTest is EulerAggregationVaultBase {
 
         assertApproxEqAbs(user1AssetsAfter, expectedUser1Assets + interestToBeAccrued, 1);
         assertEq(eulerAggregationVault.totalAssetsDeposited(), totalAssetsDepositedBefore + interestToBeAccrued);
+    }
+
+    function testCallingHarvestMethodsFromRandomSender() public {
+        vm.startPrank(user1);
+        vm.expectRevert(ErrorsLib.NotWithdrawaQueue.selector);
+        eulerAggregationVault.executeStrategyWithdraw(address(eTST), 1);
+        vm.stopPrank();
     }
 }

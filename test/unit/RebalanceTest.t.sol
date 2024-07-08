@@ -341,6 +341,7 @@ contract RebalanceTest is EulerAggregationVaultBase {
         strategiesToRebalance[0] = address(eTST);
         rebalancer.executeRebalance(address(eulerAggregationVault), strategiesToRebalance);
 
+        // TODO: check this
         // assertEq(eulerAggregationVault.totalAllocated(), strategyBefore.allocated - eTSTMaxWithdraw);
         // assertEq(
         //     eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationVault))), strategyBefore.allocated - eTSTMaxWithdraw

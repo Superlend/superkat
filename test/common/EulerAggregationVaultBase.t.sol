@@ -61,14 +61,18 @@ contract EulerAggregationVaultBase is EVaultTestBase {
             hooksModuleImpl: address(hooksImpl),
             feeModuleImpl: address(feeModuleImpl),
             allocationPointsModuleImpl: address(allocationPointsModuleImpl),
-            rebalancer: address(rebalancer),
-            withdrawalQueueImpl: address(withdrawalQueueImpl)
+            rebalancer: address(rebalancer)
         });
-        eulerAggregationVaultFactory = new EulerAggregationVaultFactory(factoryParams);
+        eulerAggregationVaultFactory = new EulerAggregationVaultFactory(deployer, factoryParams);
+        eulerAggregationVaultFactory.whitelistWithdrawalQueueImpl(address(withdrawalQueueImpl));
 
         eulerAggregationVault = EulerAggregationVault(
             eulerAggregationVaultFactory.deployEulerAggregationVault(
-                address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS
+                address(withdrawalQueueImpl),
+                address(assetTST),
+                "assetTST_Agg",
+                "assetTST_Agg",
+                CASH_RESERVE_ALLOCATION_POINTS
             )
         );
         withdrawalQueue = WithdrawalQueue(eulerAggregationVault.withdrawalQueue());
@@ -91,10 +95,10 @@ contract EulerAggregationVaultBase is EVaultTestBase {
 
         vm.label(address(eulerAggregationVaultFactory), "eulerAggregationVaultFactory");
         vm.label(address(eulerAggregationVault), "eulerAggregationVault");
-        vm.label(eulerAggregationVault.MODULE_REWARDS(), "MODULE_REWARDS");
-        vm.label(eulerAggregationVault.MODULE_HOOKS(), "MODULE_HOOKS");
-        vm.label(eulerAggregationVault.MODULE_FEE(), "MODULE_FEE");
-        vm.label(eulerAggregationVault.MODULE_ALLOCATION_POINTS(), "MODULE_ALLOCATION_POINTS");
+        vm.label(eulerAggregationVault.rewardsModule(), "rewardsModule");
+        vm.label(eulerAggregationVault.hooksModule(), "hooksModule");
+        vm.label(eulerAggregationVault.feeModule(), "feeModule");
+        vm.label(eulerAggregationVault.allocationPointsModule(), "allocationPointsModule");
         vm.label(address(assetTST), "assetTST");
     }
 
@@ -137,6 +141,56 @@ contract EulerAggregationVaultBase is EVaultTestBase {
         assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.STRATEGY_REMOVER(), manager));
         assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.AGGREGATION_LAYER_MANAGER(), manager));
         assertTrue(withdrawalQueue.hasRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER(), manager));
+
+        assertEq(eulerAggregationVaultFactory.getWithdrawalQueueImplsListLength(), 1);
+        address[] memory withdrawalQueueList = eulerAggregationVaultFactory.getWithdrawalQueueImplsList();
+        assertEq(withdrawalQueueList.length, 1);
+        assertEq(address(withdrawalQueueList[0]), address(withdrawalQueueImpl));
+
+        assertEq(eulerAggregationVaultFactory.getAggregationVaultsListLength(), 1);
+        address[] memory aggregationVaultsList = eulerAggregationVaultFactory.getAggregationVaultsListSlice(0, 1);
+        assertEq(aggregationVaultsList.length, 1);
+        assertEq(address(aggregationVaultsList[0]), address(eulerAggregationVault));
+    }
+
+    function testWhitelistWithdrawalQueueImpl() public {
+        address newWithdrawalQueueImpl = makeAddr("NEW_WITHDRAWAL_QUEUE_IMPL");
+
+        vm.prank(deployer);
+        eulerAggregationVaultFactory.whitelistWithdrawalQueueImpl(newWithdrawalQueueImpl);
+
+        assertEq(eulerAggregationVaultFactory.isWhitelistedWithdrawalQueueImpl(newWithdrawalQueueImpl), true);
+        address[] memory withdrawalQueueList = eulerAggregationVaultFactory.getWithdrawalQueueImplsList();
+        assertEq(withdrawalQueueList.length, 2);
+        assertEq(address(withdrawalQueueList[1]), address(newWithdrawalQueueImpl));
+
+        vm.prank(deployer);
+        vm.expectRevert(EulerAggregationVaultFactory.WithdrawalQueueAlreadyWhitelisted.selector);
+        eulerAggregationVaultFactory.whitelistWithdrawalQueueImpl(newWithdrawalQueueImpl);
+    }
+
+    function testDeployEulerAggregationVaultWithRandomWithdrawalQueue() public {
+        address newWithdrawalQueueImpl = makeAddr("NEW_WITHDRAWAL_QUEUE_IMPL");
+
+        vm.expectRevert(EulerAggregationVaultFactory.NotWhitelistedWithdrawalQueueImpl.selector);
+        eulerAggregationVaultFactory.deployEulerAggregationVault(
+            newWithdrawalQueueImpl, address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS
+        );
+
+        address[] memory aggregationVaultsList =
+            eulerAggregationVaultFactory.getAggregationVaultsListSlice(0, type(uint256).max);
+        assertEq(aggregationVaultsList.length, 1);
+        assertEq(address(aggregationVaultsList[0]), address(eulerAggregationVault));
+
+        vm.expectRevert(EulerAggregationVaultFactory.InvalidQuery.selector);
+        eulerAggregationVaultFactory.getAggregationVaultsListSlice(1, 0);
+    }
+
+    function testDeployEulerAggregationVaultWithInvalidInitialCashAllocationPoints() public {
+        vm.expectRevert(ErrorsLib.InitialAllocationPointsZero.selector);
+        eulerAggregationVaultFactory.deployEulerAggregationVault(
+            address(withdrawalQueueImpl), address(assetTST), "assetTST_Agg", "assetTST_Agg", 0
+        );
     }
 
     function _addStrategy(address from, address strategy, uint256 allocationPoints) internal {

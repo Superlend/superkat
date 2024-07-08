@@ -1,0 +1,20 @@
+{
+    "detectors_to_run": "abiencoderv2-array,array-by-reference,encode-packed-collision,incorrect-shift,name-reused,shadowing-state,uninitialized-state,uninitialized-storage,unprotected-upgrade,incorrect-return,storage-array,shadowing-abstract,write-after-write,constant-function-state,unused-return,variable-scope,redundant-statements,unimplemented-functions,unused-import,unused-state,dead-code,constable-states,external-function,immutable-states,var-read-using-this",
+    "exclude_informational": false,
+    "exclude_low": false,
+    "exclude_medium": false,
+    "exclude_high": false,
+    "disable_color": false,
+    "solc_remaps": [
+        "erc4626-tests/=lib/erc4626-tests/",
+        "ethereum-vault-connector/=lib/ethereum-vault-connector/src/",
+        "forge-std/=lib/forge-std/src/",
+        "evk/=lib/euler-vault-kit/",
+        "reward-streams=lib/reward-streams/src",
+        "openzeppelin-contracts/=lib/reward-streams/lib/openzeppelin-contracts/contracts",
+        "@openzeppelin/=lib/openzeppelin-contracts/",
+        "@openzeppelin-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
+        "crytic-properties/=lib/properties/contracts/"
+    ],
+    "compile_force_framework": "foundry"
+}

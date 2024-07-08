@@ -89,7 +89,7 @@ contract EulerAggregationVaultHandler is Test {
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             0,
             address(eulerAggVault),
-            abi.encodeWithSelector(IEulerAggregationVault.adjustAllocationPoints.selector, strategyAddr, _newPoints)
+            abi.encodeWithSelector(EulerAggregationVault.adjustAllocationPoints.selector, strategyAddr, _newPoints)
         );
 
         if (success) {
@@ -126,7 +126,7 @@ contract EulerAggregationVaultHandler is Test {
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             0,
             address(eulerAggVault),
-            abi.encodeWithSelector(IEulerAggregationVault.addStrategy.selector, strategyAddr, _allocationPoints)
+            abi.encodeWithSelector(EulerAggregationVault.addStrategy.selector, strategyAddr, _allocationPoints)
         );
 
         if (success) {
@@ -146,7 +146,7 @@ contract EulerAggregationVaultHandler is Test {
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             0,
             address(eulerAggVault),
-            abi.encodeWithSelector(IEulerAggregationVault.removeStrategy.selector, strategyAddr)
+            abi.encodeWithSelector(EulerAggregationVault.removeStrategy.selector, strategyAddr)
         );
 
         if (success) {
