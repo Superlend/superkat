@@ -37,8 +37,8 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue
     event ReorderWithdrawalQueue(uint8 index1, uint8 index2);
 
     /// @notice Initialize WithdrawalQueue.
-    /// @param _owner Aggregation layer vault owner.
-    /// @param _eulerAggregationVault Address of aggregation layer vault.
+    /// @param _owner Aggregation vault owner.
+    /// @param _eulerAggregationVault Address of aggregation vault.
     function init(address _owner, address _eulerAggregationVault) external initializer {
         WithdrawalQueueStorage storage $ = _getWithdrawalQueueStorage();
         $.eulerAggregationVault = _eulerAggregationVault;
@@ -49,7 +49,7 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue
     }
 
     /// @notice Add a strategy to withdrawal queue array.
-    /// @dev Can only be called by the aggregation layer vault's address.
+    /// @dev Can only be called by the aggregation vault's address.
     /// @param _strategy Strategy address to add
     function addStrategyToWithdrawalQueue(address _strategy) external {
         _isCallerAggregationVault();
@@ -60,7 +60,7 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue
     }
 
     /// @notice Remove a strategy from withdrawal queue array.
-    /// @dev Can only be called by the aggregation layer vault's address.
+    /// @dev Can only be called by the aggregation vault's address.
     /// @param _strategy Strategy address to add.
     function removeStrategyFromWithdrawalQueue(address _strategy) external {
         _isCallerAggregationVault();
@@ -102,14 +102,14 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue
         emit ReorderWithdrawalQueue(_index1, _index2);
     }
 
-    /// @notice Execute the withdraw initiated in the aggregation layer vault.
-    /// @dev Can only be called by the aggregation layer vault's address.
+    /// @notice Execute the withdraw initiated in the aggregation vault.
+    /// @dev Can only be called by the aggregation vault's address.
     /// @param _caller Initiator's address of withdraw.
     /// @param _receiver Withdraw receiver address.
     /// @param _owner Shares's owner to burn.
     /// @param _assets Amount of asset to withdraw.
     /// @param _shares Amount of shares to burn.
-    /// @param _availableAssets Amount of available asset in aggregation layer vault's cash reserve.
+    /// @param _availableAssets Amount of available asset in aggregation vault's cash reserve.
     function callWithdrawalQueue(
         address _caller,
         address _receiver,
@@ -187,7 +187,7 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue
         return $.withdrawalQueue.length;
     }
 
-    /// @dev Check if the msg.sender is the aggregation layer vault.
+    /// @dev Check if the msg.sender is the aggregation vault.
     function _isCallerAggregationVault() private view {
         WithdrawalQueueStorage storage $ = _getWithdrawalQueueStorage();
 

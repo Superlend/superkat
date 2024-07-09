@@ -51,14 +51,14 @@ contract BalanceForwarderE2ETest is EulerAggregationVaultBase {
         // eulerAggregationVault.grantRole(eulerAggregationVault.WITHDRAW_QUEUE_MANAGER_ADMIN(), deployer);
         eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_ADDER_ADMIN(), deployer);
         eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_REMOVER_ADMIN(), deployer);
-        eulerAggregationVault.grantRole(eulerAggregationVault.AGGREGATION_LAYER_MANAGER_ADMIN(), deployer);
+        eulerAggregationVault.grantRole(eulerAggregationVault.AGGREGATION_VAULT_MANAGER_ADMIN(), deployer);
 
         // grant roles to manager
         eulerAggregationVault.grantRole(eulerAggregationVault.ALLOCATIONS_MANAGER(), manager);
         // eulerAggregationVault.grantRole(eulerAggregationVault.WITHDRAW_QUEUE_MANAGER(), manager);
         eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_ADDER(), manager);
         eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_REMOVER(), manager);
-        eulerAggregationVault.grantRole(eulerAggregationVault.AGGREGATION_LAYER_MANAGER(), manager);
+        eulerAggregationVault.grantRole(eulerAggregationVault.AGGREGATION_VAULT_MANAGER(), manager);
         vm.stopPrank();
 
         uint256 initialStrategyAllocationPoints = 500e18;

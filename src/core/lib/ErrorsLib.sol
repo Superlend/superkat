@@ -24,4 +24,5 @@ library ErrorsLib {
     error NotRebalancer();
     error InvalidAllocationPoints();
     error CanNotRemoveStartegyWithAllocatedAmount();
+    error NoCapOnCashReserveStrategy();
 }
