@@ -17,13 +17,14 @@ interface IEulerAggregationVault {
     /// @dev A struct that hold a strategy allocation's config
     /// allocated: amount of asset deposited into strategy
     /// allocationPoints: number of points allocated to this strategy
-    /// active: a boolean to indice if this strategy is active or not
+    /// isActive: a boolean to indice if this strategy is active or not. This will be used as circuit-breaker for harvest()
+    /// and rebalance(), as a non-active strategy will not be neither harvested or rebalanced.
     /// cap: an optional cap in terms of deposited underlying asset. By default, it is set to 0(not activated)
     struct Strategy {
         uint120 allocated;
         uint120 allocationPoints;
-        bool active;
         uint120 cap;
+        StrategyStatus status;
     }
 
     /// @dev Euler saving rate struct
@@ -37,6 +38,12 @@ interface IEulerAggregationVault {
         uint40 interestSmearEnd;
         uint168 interestLeft;
         uint8 locked;
+    }
+
+    enum StrategyStatus {
+        Inactive,
+        Active,
+        Emergency
     }
 
     function rebalance(address _strategy, uint256 _amountToRebalance, bool _isDeposit) external;

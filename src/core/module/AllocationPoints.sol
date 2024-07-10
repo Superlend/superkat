@@ -20,18 +20,18 @@ abstract contract AllocationPointsModule is Shared {
     using SafeCast for uint256;
 
     /// @notice Adjust a certain strategy's allocation points.
-    /// @dev Can only be called by an address that have the ALLOCATIONS_MANAGER
+    /// @dev Can only be called by an address that have the STRATEGY_OPERATOR role.
     /// @param _strategy address of strategy
     /// @param _newPoints new strategy's points
     function adjustAllocationPoints(address _strategy, uint256 _newPoints) external virtual nonReentrant {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
-
-        if (_newPoints == 0) revert Errors.InvalidAllocationPoints();
         IEulerAggregationVault.Strategy memory strategyDataCache = $.strategies[_strategy];
 
-        if (!strategyDataCache.active) {
-            revert Errors.InactiveStrategy();
+        if (strategyDataCache.status != IEulerAggregationVault.StrategyStatus.Active) {
+            revert Errors.CanNotAdjustAllocationPoints();
         }
+
+        if (_newPoints == 0) revert Errors.InvalidAllocationPoints();
 
         $.strategies[_strategy].allocationPoints = _newPoints.toUint120();
         $.totalAllocationPoints = $.totalAllocationPoints + _newPoints - strategyDataCache.allocationPoints;
@@ -40,13 +40,14 @@ abstract contract AllocationPointsModule is Shared {
     }
 
     /// @notice Set cap on strategy allocated amount.
-    /// @dev By default, cap is set to 0, not activated.
+    /// @dev Can only be called by an address with the `GUARDIAN` role.
+    /// @dev By default, cap is set to 0.
     /// @param _strategy Strategy address.
     /// @param _cap Cap amount
     function setStrategyCap(address _strategy, uint256 _cap) external virtual nonReentrant {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
-        if (!$.strategies[_strategy].active) {
+        if ($.strategies[_strategy].status != IEulerAggregationVault.StrategyStatus.Active) {
             revert Errors.InactiveStrategy();
         }
 
@@ -59,6 +60,22 @@ abstract contract AllocationPointsModule is Shared {
         emit Events.SetStrategyCap(_strategy, _cap);
     }
 
+    function activateStrategyEmergency(address _strategy) external virtual nonReentrant {
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+
+        if ($.strategies[_strategy].status != IEulerAggregationVault.StrategyStatus.Active) revert();
+
+        $.strategies[_strategy].status = IEulerAggregationVault.StrategyStatus.Emergency;
+    }
+
+    function deactivateStrategyEmergency(address _strategy) external virtual nonReentrant {
+        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+
+        if ($.strategies[_strategy].status != IEulerAggregationVault.StrategyStatus.Emergency) revert();
+
+        $.strategies[_strategy].status = IEulerAggregationVault.StrategyStatus.Active;
+    }
+
     /// @notice Add new strategy with it's allocation points.
     /// @dev Can only be called by an address that have STRATEGY_OPERATOR.
     /// @param _strategy Address of the strategy
@@ -66,7 +83,7 @@ abstract contract AllocationPointsModule is Shared {
     function addStrategy(address _strategy, uint256 _allocationPoints) external virtual nonReentrant {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
-        if ($.strategies[_strategy].active) {
+        if ($.strategies[_strategy].status != IEulerAggregationVault.StrategyStatus.Inactive) {
             revert Errors.StrategyAlreadyExist();
         }
 
@@ -81,7 +98,7 @@ abstract contract AllocationPointsModule is Shared {
         $.strategies[_strategy] = IEulerAggregationVault.Strategy({
             allocated: 0,
             allocationPoints: _allocationPoints.toUint120(),
-            active: true,
+            status: IEulerAggregationVault.StrategyStatus.Active,
             cap: 0
         });
 
@@ -92,17 +109,18 @@ abstract contract AllocationPointsModule is Shared {
     }
 
     /// @notice Remove strategy and set its allocation points to zero.
-    /// @dev This function does not pull funds, `harvest()` needs to be called to withdraw
-    /// @dev Can only be called by an address that have the STRATEGY_OPERATOR
+    /// @dev Can only be called by an address that have the STRATEGY_OPERATOR.
+    /// @dev This function does not pull funds nor harvest yield.
+    /// A faulty startegy that has an allocated amount can not be removed, instead it is advised
+    /// to set as a non-active strategy using the `setStrategyStatus()`.
     /// @param _strategy Address of the strategy
     function removeStrategy(address _strategy) external virtual nonReentrant {
         if (_strategy == address(0)) revert Errors.CanNotRemoveCashReserve();
 
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
-
         IEulerAggregationVault.Strategy storage strategyStorage = $.strategies[_strategy];
 
-        if (!strategyStorage.active) {
+        if (strategyStorage.status == IEulerAggregationVault.StrategyStatus.Inactive) {
             revert Errors.AlreadyRemoved();
         }
         if (strategyStorage.allocated > 0) revert Errors.CanNotRemoveStartegyWithAllocatedAmount();
@@ -110,9 +128,7 @@ abstract contract AllocationPointsModule is Shared {
         _callHooksTarget(REMOVE_STRATEGY, msg.sender);
 
         $.totalAllocationPoints -= strategyStorage.allocationPoints;
-        // we do not reset strategyStorage.allocated, as this will allow removing broken strategy
-        // and adding them later once fixed(circuit-breaker for harvesting and rebalancing).
-        strategyStorage.active = false;
+        strategyStorage.status = IEulerAggregationVault.StrategyStatus.Inactive;
         strategyStorage.allocationPoints = 0;
         strategyStorage.cap = 0;
 

@@ -25,4 +25,5 @@ library ErrorsLib {
     error InvalidAllocationPoints();
     error CanNotRemoveStartegyWithAllocatedAmount();
     error NoCapOnCashReserveStrategy();
+    error CanNotAdjustAllocationPoints();
 }

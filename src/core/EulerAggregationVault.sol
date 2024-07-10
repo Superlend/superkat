@@ -41,8 +41,8 @@ contract EulerAggregationVault is
     using SafeCast for uint256;
 
     // Roles
-    bytes32 public constant ALLOCATIONS_MANAGER = keccak256("ALLOCATIONS_MANAGER");
-    bytes32 public constant ALLOCATIONS_MANAGER_ADMIN = keccak256("ALLOCATIONS_MANAGER_ADMIN");
+    bytes32 public constant GUARDIAN = keccak256("GUARDIAN");
+    bytes32 public constant GUARDIAN_ADMIN = keccak256("GUARDIAN_ADMIN");
     bytes32 public constant STRATEGY_OPERATOR = keccak256("STRATEGY_OPERATOR");
     bytes32 public constant STRATEGY_OPERATOR_ADMIN = keccak256("STRATEGY_OPERATOR_ADMIN");
     bytes32 public constant AGGREGATION_VAULT_MANAGER = keccak256("AGGREGATION_VAULT_MANAGER");
@@ -79,7 +79,7 @@ contract EulerAggregationVault is
         $.strategies[address(0)] = IEulerAggregationVault.Strategy({
             allocated: 0,
             allocationPoints: _initParams.initialCashAllocationPoints.toUint120(),
-            active: true,
+            status: IEulerAggregationVault.StrategyStatus.Active,
             cap: 0
         });
         $.totalAllocationPoints = _initParams.initialCashAllocationPoints;
@@ -88,7 +88,6 @@ contract EulerAggregationVault is
         _grantRole(DEFAULT_ADMIN_ROLE, _initParams.aggregationVaultOwner);
 
         // Setup role admins
-        _setRoleAdmin(ALLOCATIONS_MANAGER, ALLOCATIONS_MANAGER_ADMIN);
         _setRoleAdmin(STRATEGY_OPERATOR, STRATEGY_OPERATOR_ADMIN);
         _setRoleAdmin(STRATEGY_OPERATOR, STRATEGY_OPERATOR_ADMIN);
         _setRoleAdmin(AGGREGATION_VAULT_MANAGER, AGGREGATION_VAULT_MANAGER_ADMIN);
@@ -158,15 +157,7 @@ contract EulerAggregationVault is
         external
         override
         use(allocationPointsModule)
-        onlyRole(ALLOCATIONS_MANAGER)
-    {}
-
-    /// @dev See {AllocationPointsModule-setStrategyCap}.
-    function setStrategyCap(address _strategy, uint256 _cap)
-        external
-        override
-        use(allocationPointsModule)
-        onlyRole(ALLOCATIONS_MANAGER)
+        onlyRole(STRATEGY_OPERATOR)
     {}
 
     /// @dev See {AllocationPointsModule-addStrategy}.
@@ -183,6 +174,30 @@ contract EulerAggregationVault is
         override
         use(allocationPointsModule)
         onlyRole(STRATEGY_OPERATOR)
+    {}
+
+    /// @dev See {AllocationPointsModule-setStrategyCap}.
+    function setStrategyCap(address _strategy, uint256 _cap)
+        external
+        override
+        use(allocationPointsModule)
+        onlyRole(GUARDIAN)
+    {}
+
+    /// @dev See {AllocationPointsModule-activateStrategyEmergency}.
+    function activateStrategyEmergency(address _strategy)
+        external
+        override
+        use(allocationPointsModule)
+        onlyRole(GUARDIAN)
+    {}
+
+    /// @dev See {AllocationPointsModule-deactivateStrategyEmergency}.
+    function deactivateStrategyEmergency(address _strategy)
+        external
+        override
+        use(allocationPointsModule)
+        onlyRole(GUARDIAN)
     {}
 
     /// @dev See {RewardsModule-enableBalanceForwarder}.
@@ -216,7 +231,7 @@ contract EulerAggregationVault is
 
         IEulerAggregationVault.Strategy memory strategyData = $.strategies[_strategy];
 
-        if (!strategyData.active) return;
+        if (strategyData.status != IEulerAggregationVault.StrategyStatus.Active) return;
 
         if (_isDeposit) {
             // Do required approval (safely) and deposit
@@ -545,7 +560,10 @@ contract EulerAggregationVault is
 
         uint120 strategyAllocatedAmount = $.strategies[_strategy].allocated;
 
-        if (strategyAllocatedAmount == 0 || !$.strategies[_strategy].active) return (0, 0);
+        if (
+            strategyAllocatedAmount == 0
+                || $.strategies[_strategy].status != IEulerAggregationVault.StrategyStatus.Active
+        ) return (0, 0);
 
         uint256 underlyingBalance = IERC4626(_strategy).maxWithdraw(address(this));
         uint256 yield;

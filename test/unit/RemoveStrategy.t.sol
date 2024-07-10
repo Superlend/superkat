@@ -30,7 +30,7 @@ contract RemoveStrategyTest is EulerAggregationVaultBase {
 
         IEulerAggregationVault.Strategy memory strategyAfter = eulerAggregationVault.getStrategy(address(eTST));
 
-        assertEq(strategyAfter.active, false);
+        assertEq(strategyAfter.status == IEulerAggregationVault.StrategyStatus.Inactive, true);
         assertEq(strategyAfter.allocationPoints, 0);
         assertEq(eulerAggregationVault.totalAllocationPoints(), totalAllocationPointsBefore - strategyAllocationPoints);
         assertEq(_getWithdrawalQueueLength(), withdrawalQueueLengthBefore - 1);
@@ -50,7 +50,7 @@ contract RemoveStrategyTest is EulerAggregationVaultBase {
 
         IEulerAggregationVault.Strategy memory strategyAfter = eulerAggregationVault.getStrategy(address(eTST));
 
-        assertEq(strategyAfter.active, false);
+        assertEq(strategyAfter.status == IEulerAggregationVault.StrategyStatus.Inactive, true);
         assertEq(strategyAfter.allocationPoints, 0);
         assertEq(eulerAggregationVault.totalAllocationPoints(), totalAllocationPointsBefore - strategyAllocationPoints);
         assertEq(_getWithdrawalQueueLength(), withdrawalQueueLengthBefore - 1);
