@@ -105,11 +105,12 @@ abstract contract AllocationPointsModule is Shared {
         if (!strategyStorage.active) {
             revert Errors.AlreadyRemoved();
         }
-        if (strategyStorage.allocated > 0) revert Errors.CanNotRemoveStartegyWithAllocatedAmount();
 
         _callHooksTarget(REMOVE_STRATEGY, msg.sender);
 
         $.totalAllocationPoints -= strategyStorage.allocationPoints;
+        // we do not reset strategyStorage.allocated, as this will allow removing broken strategy 
+        // and adding them later once fixed(circuit-breaker for harvesting and rebalancing).
         strategyStorage.active = false;
         strategyStorage.allocationPoints = 0;
         strategyStorage.cap = 0;
