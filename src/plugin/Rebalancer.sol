@@ -19,7 +19,7 @@ contract Rebalancer {
     );
 
     /// @notice Rebalance strategies allocation for a specific curated vault.
-    /// @param _aggregationVault Aggregation layer vault address.
+    /// @param _aggregationVault Aggregation vault address.
     /// @param _strategies Strategies addresses.
     function executeRebalance(address _aggregationVault, address[] calldata _strategies) external {
         IEulerAggregationVault(_aggregationVault).gulp();
@@ -33,7 +33,7 @@ contract Rebalancer {
     ///      If current allocation is less than target allocation, the aggregator will:
     ///         - Try to deposit the delta, if the cash is not sufficient, deposit all the available cash
     ///         - If all the available cash is greater than the max deposit, deposit the max deposit
-    /// @param _aggregationVault Aggregation layer vault address.
+    /// @param _aggregationVault Aggregation vault address.
     /// @param _strategy Strategy address.
     function _rebalance(address _aggregationVault, address _strategy) private {
         if (_strategy == address(0)) {

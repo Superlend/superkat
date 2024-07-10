@@ -46,6 +46,8 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
         strategyUtil.includeStrategy(address(eTSTforth));
         strategyUtil.includeStrategy(address(eTSTfifth));
         strategyUtil.includeStrategy(address(eTSTsixth));
+        // cash reserve strategy
+        strategyUtil.includeStrategy(address(0));
 
         eulerAggregationVaultHandler =
             new EulerAggregationVaultHandler(eulerAggregationVault, actorUtil, strategyUtil, withdrawalQueue);
@@ -94,6 +96,18 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
         }
 
         assertEq(eulerAggregationVault.totalAllocationPoints(), expectedTotalAllocationpoints);
+    }
+
+    // Every strategy in the withdrawal queue should have an allocation points > 0.
+    function invariant_withdrawalQueueStrategiesAllocationPoints() public view {
+        address withdrawalQueueAddr = eulerAggregationVault.withdrawalQueue();
+
+        (address[] memory withdrawalQueueArray, uint256 withdrawalQueueLength) =
+            IWithdrawalQueue(withdrawalQueueAddr).getWithdrawalQueueArray();
+
+        for (uint256 i; i < withdrawalQueueLength; i++) {
+            assertGt(eulerAggregationVault.getStrategy(withdrawalQueueArray[i]).allocationPoints, 0);
+        }
     }
 
     // If `total allocation points - cash reserve allocation points == 0`(no strategy added), the withdrawal queue length should be zero.
@@ -145,6 +159,10 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
             eulerAggregationVault.getAggregationVaultSavingRate();
         uint256 accruedInterest = eulerAggregationVault.interestAccrued();
         assertGe(aggregationVaultSavingRate.interestLeft, accruedInterest);
+    }
+
+    function invariant_cashReserveStrategyCap() public view {
+        assertEq(eulerAggregationVault.getStrategy(address(0)).cap, 0);
     }
 
     function _deployOtherStrategies() private {

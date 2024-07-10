@@ -50,6 +50,10 @@ abstract contract AllocationPointsModule is Shared {
             revert Errors.InactiveStrategy();
         }
 
+        if (_strategy == address(0)) {
+            revert Errors.NoCapOnCashReserveStrategy();
+        }
+
         $.strategies[_strategy].cap = _cap.toUint120();
 
         emit Events.SetStrategyCap(_strategy, _cap);

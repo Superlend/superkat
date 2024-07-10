@@ -23,3 +23,6 @@ coverage
 # echidna
 crytic-export/
 /test/echidna/_corpus/
+
+# slither
+slither.db.json

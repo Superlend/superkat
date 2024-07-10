@@ -77,15 +77,15 @@ contract EulerAggregationVaultFactory is Ownable {
         emit WhitelistWithdrawalQueueImpl(_withdrawalQueuImpl);
     }
 
-    /// @notice Deploy a new aggregation layer vault.
-    /// @dev This will clone a new WithdrawalQueue plugin instance for the aggregation layer vault.
+    /// @notice Deploy a new aggregation vault.
+    /// @dev This will clone a new WithdrawalQueue plugin instance for the aggregation vault.
     /// @dev  This will use the defaut Rebalancer plugin configured in this factory.
-    /// @dev Both plugins are possible to change by the aggregation layer vault manager.
-    /// @param _asset Aggreation layer vault' asset address.
+    /// @dev Both plugins are possible to change by the aggregation vault manager.
+    /// @param _asset Aggreation vault' asset address.
     /// @param _name Vaut name.
     /// @param _symbol Vault symbol.
     /// @param _initialCashAllocationPoints The amount of points to initally allocate for cash reserve.
-    /// @return eulerAggregationVault The address of the new deployed aggregation layer vault.
+    /// @return eulerAggregationVault The address of the new deployed aggregation vault.
     function deployEulerAggregationVault(
         address _withdrawalQueueImpl,
         address _asset,
