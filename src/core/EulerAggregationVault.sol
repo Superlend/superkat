@@ -218,6 +218,8 @@ contract EulerAggregationVault is
 
         IEulerAggregationVault.Strategy memory strategyData = $.strategies[_strategy];
 
+        if(!strategyData.active) return;
+
         if (_isDeposit) {
             // Do required approval (safely) and deposit
             IERC20(asset()).safeIncreaseAllowance(_strategy, _amountToRebalance);
@@ -545,7 +547,7 @@ contract EulerAggregationVault is
 
         uint120 strategyAllocatedAmount = $.strategies[_strategy].allocated;
 
-        if (strategyAllocatedAmount == 0) return (0, 0);
+        if (strategyAllocatedAmount == 0 || !$.strategies[_strategy].active) return (0, 0);
 
         uint256 underlyingBalance = IERC4626(_strategy).maxWithdraw(address(this));
         uint256 yield;
