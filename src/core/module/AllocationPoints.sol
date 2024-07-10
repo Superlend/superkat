@@ -109,7 +109,7 @@ abstract contract AllocationPointsModule is Shared {
         _callHooksTarget(REMOVE_STRATEGY, msg.sender);
 
         $.totalAllocationPoints -= strategyStorage.allocationPoints;
-        // we do not reset strategyStorage.allocated, as this will allow removing broken strategy 
+        // we do not reset strategyStorage.allocated, as this will allow removing broken strategy
         // and adding them later once fixed(circuit-breaker for harvesting and rebalancing).
         strategyStorage.active = false;
         strategyStorage.allocationPoints = 0;
