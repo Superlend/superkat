@@ -218,7 +218,7 @@ contract EulerAggregationVault is
 
         IEulerAggregationVault.Strategy memory strategyData = $.strategies[_strategy];
 
-        if(!strategyData.active) return;
+        if (!strategyData.active) return;
 
         if (_isDeposit) {
             // Do required approval (safely) and deposit
