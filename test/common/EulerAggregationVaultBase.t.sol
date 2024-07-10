@@ -79,15 +79,13 @@ contract EulerAggregationVaultBase is EVaultTestBase {
 
         // grant admin roles to deployer
         eulerAggregationVault.grantRole(eulerAggregationVault.ALLOCATIONS_MANAGER_ADMIN(), deployer);
-        eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_ADDER_ADMIN(), deployer);
-        eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_REMOVER_ADMIN(), deployer);
+        eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_OPERATOR_ADMIN(), deployer);
         eulerAggregationVault.grantRole(eulerAggregationVault.AGGREGATION_VAULT_MANAGER_ADMIN(), deployer);
         withdrawalQueue.grantRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER_ADMIN(), deployer);
 
         // grant roles to manager
         eulerAggregationVault.grantRole(eulerAggregationVault.ALLOCATIONS_MANAGER(), manager);
-        eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_ADDER(), manager);
-        eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_REMOVER(), manager);
+        eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_OPERATOR(), manager);
         eulerAggregationVault.grantRole(eulerAggregationVault.AGGREGATION_VAULT_MANAGER(), manager);
         withdrawalQueue.grantRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER(), manager);
 
@@ -114,12 +112,8 @@ contract EulerAggregationVaultBase is EVaultTestBase {
             eulerAggregationVault.ALLOCATIONS_MANAGER_ADMIN()
         );
         assertEq(
-            eulerAggregationVault.getRoleAdmin(eulerAggregationVault.STRATEGY_ADDER()),
-            eulerAggregationVault.STRATEGY_ADDER_ADMIN()
-        );
-        assertEq(
-            eulerAggregationVault.getRoleAdmin(eulerAggregationVault.STRATEGY_REMOVER()),
-            eulerAggregationVault.STRATEGY_REMOVER_ADMIN()
+            eulerAggregationVault.getRoleAdmin(eulerAggregationVault.STRATEGY_OPERATOR()),
+            eulerAggregationVault.STRATEGY_OPERATOR_ADMIN()
         );
         assertEq(
             eulerAggregationVault.getRoleAdmin(eulerAggregationVault.AGGREGATION_VAULT_MANAGER()),
@@ -131,14 +125,12 @@ contract EulerAggregationVaultBase is EVaultTestBase {
         );
 
         assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.ALLOCATIONS_MANAGER_ADMIN(), deployer));
-        assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.STRATEGY_ADDER_ADMIN(), deployer));
-        assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.STRATEGY_REMOVER_ADMIN(), deployer));
+        assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.STRATEGY_OPERATOR_ADMIN(), deployer));
         assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.AGGREGATION_VAULT_MANAGER_ADMIN(), deployer));
         assertTrue(withdrawalQueue.hasRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER_ADMIN(), deployer));
 
         assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.ALLOCATIONS_MANAGER(), manager));
-        assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.STRATEGY_ADDER(), manager));
-        assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.STRATEGY_REMOVER(), manager));
+        assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.STRATEGY_OPERATOR(), manager));
         assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.AGGREGATION_VAULT_MANAGER(), manager));
         assertTrue(withdrawalQueue.hasRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER(), manager));
 

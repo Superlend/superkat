@@ -43,10 +43,8 @@ contract EulerAggregationVault is
     // Roles
     bytes32 public constant ALLOCATIONS_MANAGER = keccak256("ALLOCATIONS_MANAGER");
     bytes32 public constant ALLOCATIONS_MANAGER_ADMIN = keccak256("ALLOCATIONS_MANAGER_ADMIN");
-    bytes32 public constant STRATEGY_ADDER = keccak256("STRATEGY_ADDER");
-    bytes32 public constant STRATEGY_ADDER_ADMIN = keccak256("STRATEGY_ADDER_ADMIN");
-    bytes32 public constant STRATEGY_REMOVER = keccak256("STRATEGY_REMOVER");
-    bytes32 public constant STRATEGY_REMOVER_ADMIN = keccak256("STRATEGY_REMOVER_ADMIN");
+    bytes32 public constant STRATEGY_OPERATOR = keccak256("STRATEGY_OPERATOR");
+    bytes32 public constant STRATEGY_OPERATOR_ADMIN = keccak256("STRATEGY_OPERATOR_ADMIN");
     bytes32 public constant AGGREGATION_VAULT_MANAGER = keccak256("AGGREGATION_VAULT_MANAGER");
     bytes32 public constant AGGREGATION_VAULT_MANAGER_ADMIN = keccak256("AGGREGATION_VAULT_MANAGER_ADMIN");
 
@@ -91,8 +89,8 @@ contract EulerAggregationVault is
 
         // Setup role admins
         _setRoleAdmin(ALLOCATIONS_MANAGER, ALLOCATIONS_MANAGER_ADMIN);
-        _setRoleAdmin(STRATEGY_ADDER, STRATEGY_ADDER_ADMIN);
-        _setRoleAdmin(STRATEGY_REMOVER, STRATEGY_REMOVER_ADMIN);
+        _setRoleAdmin(STRATEGY_OPERATOR, STRATEGY_OPERATOR_ADMIN);
+        _setRoleAdmin(STRATEGY_OPERATOR, STRATEGY_OPERATOR_ADMIN);
         _setRoleAdmin(AGGREGATION_VAULT_MANAGER, AGGREGATION_VAULT_MANAGER_ADMIN);
     }
 
@@ -176,7 +174,7 @@ contract EulerAggregationVault is
         external
         override
         use(allocationPointsModule)
-        onlyRole(STRATEGY_ADDER)
+        onlyRole(STRATEGY_OPERATOR)
     {}
 
     /// @dev See {AllocationPointsModule-removeStrategy}.
@@ -184,7 +182,7 @@ contract EulerAggregationVault is
         external
         override
         use(allocationPointsModule)
-        onlyRole(STRATEGY_REMOVER)
+        onlyRole(STRATEGY_OPERATOR)
     {}
 
     /// @dev See {RewardsModule-enableBalanceForwarder}.

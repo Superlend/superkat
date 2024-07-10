@@ -56,7 +56,6 @@ contract EulerAggregationVaultHandler is Test {
 
     function setFeeRecipient(string calldata _feeRecipientSeed) external {
         address feeRecipientAddr = makeAddr(_feeRecipientSeed);
-        // vm.assume(_newFeeRecipient != address(0));
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             0,

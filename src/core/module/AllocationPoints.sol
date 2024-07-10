@@ -60,7 +60,7 @@ abstract contract AllocationPointsModule is Shared {
     }
 
     /// @notice Add new strategy with it's allocation points.
-    /// @dev Can only be called by an address that have STRATEGY_ADDER.
+    /// @dev Can only be called by an address that have STRATEGY_OPERATOR.
     /// @param _strategy Address of the strategy
     /// @param _allocationPoints Strategy's allocation points
     function addStrategy(address _strategy, uint256 _allocationPoints) external virtual nonReentrant {
@@ -93,7 +93,7 @@ abstract contract AllocationPointsModule is Shared {
 
     /// @notice Remove strategy and set its allocation points to zero.
     /// @dev This function does not pull funds, `harvest()` needs to be called to withdraw
-    /// @dev Can only be called by an address that have the STRATEGY_REMOVER
+    /// @dev Can only be called by an address that have the STRATEGY_OPERATOR
     /// @param _strategy Address of the strategy
     function removeStrategy(address _strategy) external virtual nonReentrant {
         if (_strategy == address(0)) revert Errors.CanNotRemoveCashReserve();
@@ -105,6 +105,7 @@ abstract contract AllocationPointsModule is Shared {
         if (!strategyStorage.active) {
             revert Errors.AlreadyRemoved();
         }
+        if (strategyStorage.allocated > 0) revert Errors.CanNotRemoveStartegyWithAllocatedAmount();
 
         _callHooksTarget(REMOVE_STRATEGY, msg.sender);
 
