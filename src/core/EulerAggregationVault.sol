@@ -184,16 +184,8 @@ contract EulerAggregationVault is
         onlyRole(GUARDIAN)
     {}
 
-    /// @dev See {AllocationPointsModule-activateStrategyEmergency}.
-    function activateStrategyEmergency(address _strategy)
-        external
-        override
-        use(allocationPointsModule)
-        onlyRole(GUARDIAN)
-    {}
-
-    /// @dev See {AllocationPointsModule-deactivateStrategyEmergency}.
-    function deactivateStrategyEmergency(address _strategy)
+    /// @dev See {AllocationPointsModule-toggleStrategyEmergencyStatus}.
+    function toggleStrategyEmergencyStatus(address _strategy)
         external
         override
         use(allocationPointsModule)

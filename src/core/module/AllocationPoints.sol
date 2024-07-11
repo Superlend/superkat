@@ -60,20 +60,21 @@ abstract contract AllocationPointsModule is Shared {
         emit Events.SetStrategyCap(_strategy, _cap);
     }
 
-    function activateStrategyEmergency(address _strategy) external virtual nonReentrant {
+    function toggleStrategyEmergencyStatus(address _strategy) external virtual nonReentrant {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+        IEulerAggregationVault.Strategy memory strategyCached = $.strategies[_strategy];
 
-        if ($.strategies[_strategy].status != IEulerAggregationVault.StrategyStatus.Active) revert();
+        if (strategyCached.status == IEulerAggregationVault.StrategyStatus.Inactive) {
+            revert Errors.InactiveStrategy();
+        } else if (strategyCached.status == IEulerAggregationVault.StrategyStatus.Active) {
+            strategyCached.status = IEulerAggregationVault.StrategyStatus.Emergency;
 
-        $.strategies[_strategy].status = IEulerAggregationVault.StrategyStatus.Emergency;
-    }
+            $.totalAllocationPoints -= strategyCached.allocationPoints;
+        } else {
+            strategyCached.status = IEulerAggregationVault.StrategyStatus.Active;
 
-    function deactivateStrategyEmergency(address _strategy) external virtual nonReentrant {
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
-
-        if ($.strategies[_strategy].status != IEulerAggregationVault.StrategyStatus.Emergency) revert();
-
-        $.strategies[_strategy].status = IEulerAggregationVault.StrategyStatus.Active;
+            $.totalAllocationPoints += strategyCached.allocationPoints;
+        }
     }
 
     /// @notice Add new strategy with it's allocation points.
