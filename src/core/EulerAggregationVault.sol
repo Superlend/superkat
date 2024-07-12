@@ -152,14 +152,6 @@ contract EulerAggregationVault is
         use(hooksModule)
     {}
 
-    /// @dev See {AllocationPointsModule-adjustAllocationPoints}.
-    function adjustAllocationPoints(address _strategy, uint256 _newPoints)
-        external
-        override
-        use(allocationPointsModule)
-        onlyRole(STRATEGY_OPERATOR)
-    {}
-
     /// @dev See {AllocationPointsModule-addStrategy}.
     function addStrategy(address _strategy, uint256 _allocationPoints)
         external
@@ -178,6 +170,14 @@ contract EulerAggregationVault is
 
     /// @dev See {AllocationPointsModule-setStrategyCap}.
     function setStrategyCap(address _strategy, uint256 _cap)
+        external
+        override
+        use(allocationPointsModule)
+        onlyRole(GUARDIAN)
+    {}
+
+    /// @dev See {AllocationPointsModule-adjustAllocationPoints}.
+    function adjustAllocationPoints(address _strategy, uint256 _newPoints)
         external
         override
         use(allocationPointsModule)
@@ -263,10 +263,12 @@ contract EulerAggregationVault is
     /// @dev Can only be called from the WithdrawalQueue contract.
     /// @param _strategy Strategy's address.
     /// @param _withdrawAmount Amount to withdraw.
-    function executeStrategyWithdraw(address _strategy, uint256 _withdrawAmount) external {
+    function executeStrategyWithdraw(address _strategy, uint256 _withdrawAmount) external returns (uint256) {
         _isCallerWithdrawalQueue();
 
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        if ($.strategies[_strategy].status != IEulerAggregationVault.StrategyStatus.Active) return 0;
 
         // Update allocated assets
         $.strategies[_strategy].allocated -= uint120(_withdrawAmount);
@@ -274,6 +276,8 @@ contract EulerAggregationVault is
 
         // Do actual withdraw from strategy
         IERC4626(_strategy).withdraw(_withdrawAmount, address(this), address(this));
+
+        return _withdrawAmount;
     }
 
     /// @notice Execute a withdraw from the AggregationVault
@@ -524,18 +528,7 @@ contract EulerAggregationVault is
         $.totalAllocated = $.totalAllocated + totalYield - totalLoss;
 
         if (totalLoss > totalYield) {
-            uint256 netLoss = totalLoss - totalYield;
-            uint168 cachedInterestLeft = $.interestLeft;
-
-            if (cachedInterestLeft >= netLoss) {
-                // cut loss from interest left only
-                cachedInterestLeft -= uint168(netLoss);
-            } else {
-                // cut the interest left and socialize the diff
-                $.totalAssetsDeposited -= netLoss - cachedInterestLeft;
-                cachedInterestLeft = 0;
-            }
-            $.interestLeft = cachedInterestLeft;
+            _deductLoss(totalLoss - totalYield);
         }
 
         emit Events.Harvest($.totalAllocated, totalYield, totalLoss);

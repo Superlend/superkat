@@ -53,12 +53,12 @@ contract AdjustAllocationsPointsTest is EulerAggregationVaultBase {
         vm.stopPrank();
     }
 
-    function testAdjustAllocationPoints_ZeroPoints() public {
-        uint256 newAllocationPoints = 0;
+    // function testAdjustAllocationPoints_ZeroPoints() public {
+    //     uint256 newAllocationPoints = 0;
 
-        vm.startPrank(manager);
-        vm.expectRevert(ErrorsLib.InvalidAllocationPoints.selector);
-        eulerAggregationVault.adjustAllocationPoints(address(eTST), newAllocationPoints);
-        vm.stopPrank();
-    }
+    //     vm.startPrank(manager);
+    //     vm.expectRevert(ErrorsLib.InvalidAllocationPoints.selector);
+    //     eulerAggregationVault.adjustAllocationPoints(address(eTST), newAllocationPoints);
+    //     vm.stopPrank();
+    // }
 }

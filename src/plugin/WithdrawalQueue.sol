@@ -132,12 +132,10 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue
                 uint256 desiredAssets = _assets - _availableAssets;
                 uint256 withdrawAmount = (underlyingBalance > desiredAssets) ? desiredAssets : underlyingBalance;
 
-                IEulerAggregationVault(eulerAggregationVaultCached).executeStrategyWithdraw(
+                // update _availableAssets
+                _availableAssets += IEulerAggregationVault(eulerAggregationVaultCached).executeStrategyWithdraw(
                     address(strategy), withdrawAmount
                 );
-
-                // update assetsRetrieved
-                _availableAssets += withdrawAmount;
 
                 if (_availableAssets >= _assets) {
                     break;

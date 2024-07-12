@@ -4,8 +4,8 @@ pragma solidity ^0.8.0;
 // interfaces
 import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
 // libs
-import {StorageLib, AggregationVaultStorage} from "../lib/StorageLib.sol";
 import {HooksLib} from "../lib/HooksLib.sol";
+import {StorageLib as Storage, AggregationVaultStorage} from "../lib/StorageLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 
 /// @title Shared contract
@@ -28,13 +28,28 @@ abstract contract Shared {
     uint256 constant HOOKS_MASK = 0x00000000000000000000000000000000000000000000000000000000FFFFFFFF;
 
     modifier nonReentrant() {
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         if ($.locked == REENTRANCYLOCK__LOCKED) revert Errors.Reentrancy();
 
         $.locked = REENTRANCYLOCK__LOCKED;
         _;
         $.locked = REENTRANCYLOCK__UNLOCKED;
+    }
+
+    function _deductLoss(uint256 _lostAmount) internal {
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        uint168 cachedInterestLeft = $.interestLeft;
+        if (cachedInterestLeft >= _lostAmount) {
+            // cut loss from interest left only
+            cachedInterestLeft -= uint168(_lostAmount);
+        } else {
+            // cut the interest left and socialize the diff
+            $.totalAssetsDeposited -= _lostAmount - cachedInterestLeft;
+            cachedInterestLeft = 0;
+        }
+        $.interestLeft = cachedInterestLeft;
     }
 
     function _setHooksConfig(address _hooksTarget, uint32 _hookedFns) internal {
@@ -47,7 +62,7 @@ abstract contract Shared {
         }
         if (_hookedFns >= ACTIONS_COUNTER) revert Errors.InvalidHookedFns();
 
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
         $.hooksConfig = (uint256(uint160(_hooksTarget)) << 32) | uint256(_hookedFns);
     }
 
@@ -55,7 +70,7 @@ abstract contract Shared {
     /// @param _fn Function to call the hook for.
     /// @param _caller Caller's address.
     function _callHooksTarget(uint32 _fn, address _caller) internal {
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         (address target, uint32 hookedFns) = _getHooksConfig($.hooksConfig);
 

@@ -13,14 +13,14 @@ import {StorageLib, AggregationVaultStorage} from "../lib/StorageLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
 
-/// @title FeeModule contract
+/// @title AllocationPointsModule contract
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
 abstract contract AllocationPointsModule is Shared {
     using SafeCast for uint256;
 
     /// @notice Adjust a certain strategy's allocation points.
-    /// @dev Can only be called by an address that have the STRATEGY_OPERATOR role.
+    /// @dev Can only be called by an address that have the GUARDIAN role.
     /// @param _strategy address of strategy
     /// @param _newPoints new strategy's points
     function adjustAllocationPoints(address _strategy, uint256 _newPoints) external virtual nonReentrant {
@@ -30,8 +30,6 @@ abstract contract AllocationPointsModule is Shared {
         if (strategyDataCache.status != IEulerAggregationVault.StrategyStatus.Active) {
             revert Errors.CanNotAdjustAllocationPoints();
         }
-
-        if (_newPoints == 0) revert Errors.InvalidAllocationPoints();
 
         $.strategies[_strategy].allocationPoints = _newPoints.toUint120();
         $.totalAllocationPoints = $.totalAllocationPoints + _newPoints - strategyDataCache.allocationPoints;
@@ -67,11 +65,14 @@ abstract contract AllocationPointsModule is Shared {
         if (strategyCached.status == IEulerAggregationVault.StrategyStatus.Inactive) {
             revert Errors.InactiveStrategy();
         } else if (strategyCached.status == IEulerAggregationVault.StrategyStatus.Active) {
-            strategyCached.status = IEulerAggregationVault.StrategyStatus.Emergency;
+            $.strategies[_strategy].status = IEulerAggregationVault.StrategyStatus.Emergency;
 
             $.totalAllocationPoints -= strategyCached.allocationPoints;
+            $.totalAllocated -= strategyCached.allocated;
+
+            _deductLoss(strategyCached.allocated);
         } else {
-            strategyCached.status = IEulerAggregationVault.StrategyStatus.Active;
+            $.strategies[_strategy].status = IEulerAggregationVault.StrategyStatus.Active;
 
             $.totalAllocationPoints += strategyCached.allocationPoints;
         }
