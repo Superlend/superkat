@@ -119,7 +119,7 @@ contract EulerAggregationVaultHandler is Test {
             assertEq(strategyAfter.cap, strategyBefore.cap);
         }
     }
-    
+
     function toggleStrategyEmergencyStatus(uint256 _strategyIndexSeed) external {
         address strategyAddr = strategyUtil.fetchStrategy(_strategyIndexSeed);
 
@@ -207,7 +207,7 @@ contract EulerAggregationVaultHandler is Test {
                     accumulatedPerformanceFee += performancefee;
                     totalYield += yield - performancefee;
                 } else {
-                    totalLoss +=allocated - underlying;
+                    totalLoss += allocated - underlying;
                 }
             }
         }

@@ -95,8 +95,7 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
             IEulerAggregationVault.Strategy memory strategy = eulerAggregationVault.getStrategy(withdrawalQueueArray[i]);
 
             if (strategy.status == IEulerAggregationVault.StrategyStatus.Active) {
-                expectedTotalAllocationpoints +=
-                    strategy.allocationPoints;
+                expectedTotalAllocationpoints += strategy.allocationPoints;
             }
         }
 
@@ -118,12 +117,13 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
             assertEq(eulerAggregationVault.totalAllocationPoints(), cashReserveAllocationPoints);
         }
 
-        if (withdrawalQueueLength > 0 && eulerAggregationVault.totalAllocationPoints() == cashReserveAllocationPoints)
-        {
+        if (withdrawalQueueLength > 0 && eulerAggregationVault.totalAllocationPoints() == cashReserveAllocationPoints) {
             for (uint256 i; i < withdrawalQueueLength; i++) {
-                IEulerAggregationVault.Strategy memory strategy = eulerAggregationVault.getStrategy(withdrawalQueueArray[i]);
+                IEulerAggregationVault.Strategy memory strategy =
+                    eulerAggregationVault.getStrategy(withdrawalQueueArray[i]);
                 assertEq(
-                    strategy.allocationPoints == 0 || strategy.status == IEulerAggregationVault.StrategyStatus.Emergency, true
+                    strategy.allocationPoints == 0 || strategy.status == IEulerAggregationVault.StrategyStatus.Emergency,
+                    true
                 );
             }
         }
