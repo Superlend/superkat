@@ -56,6 +56,7 @@ contract EulerAggregationVaultBase is EVaultTestBase {
         withdrawalQueueImpl = new WithdrawalQueue();
 
         EulerAggregationVaultFactory.FactoryParams memory factoryParams = EulerAggregationVaultFactory.FactoryParams({
+            owner: deployer,
             balanceTracker: address(0),
             rewardsModuleImpl: address(rewardsImpl),
             hooksModuleImpl: address(hooksImpl),
@@ -63,7 +64,7 @@ contract EulerAggregationVaultBase is EVaultTestBase {
             allocationPointsModuleImpl: address(allocationPointsModuleImpl),
             rebalancer: address(rebalancer)
         });
-        eulerAggregationVaultFactory = new EulerAggregationVaultFactory(deployer, factoryParams);
+        eulerAggregationVaultFactory = new EulerAggregationVaultFactory(factoryParams);
         eulerAggregationVaultFactory.whitelistWithdrawalQueueImpl(address(withdrawalQueueImpl));
 
         eulerAggregationVault = EulerAggregationVault(

@@ -26,6 +26,7 @@ contract BalanceForwarderE2ETest is EulerAggregationVaultBase {
         trackingReward = address(new TrackingRewardStreams(address(evc), 2 weeks));
 
         EulerAggregationVaultFactory.FactoryParams memory factoryParams = EulerAggregationVaultFactory.FactoryParams({
+            owner: deployer,
             balanceTracker: trackingReward,
             rewardsModuleImpl: address(rewardsImpl),
             hooksModuleImpl: address(hooksImpl),
@@ -33,7 +34,7 @@ contract BalanceForwarderE2ETest is EulerAggregationVaultBase {
             allocationPointsModuleImpl: address(allocationPointsModuleImpl),
             rebalancer: address(rebalancer)
         });
-        eulerAggregationVaultFactory = new EulerAggregationVaultFactory(deployer, factoryParams);
+        eulerAggregationVaultFactory = new EulerAggregationVaultFactory(factoryParams);
         eulerAggregationVaultFactory.whitelistWithdrawalQueueImpl(address(withdrawalQueueImpl));
 
         eulerAggregationVault = EulerAggregationVault(

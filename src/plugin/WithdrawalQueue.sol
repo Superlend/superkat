@@ -38,10 +38,9 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue
 
     /// @notice Initialize WithdrawalQueue.
     /// @param _owner Aggregation vault owner.
-    /// @param _eulerAggregationVault Address of aggregation vault.
-    function init(address _owner, address _eulerAggregationVault) external initializer {
+    function init(address _owner) external initializer {
         WithdrawalQueueStorage storage $ = _getWithdrawalQueueStorage();
-        $.eulerAggregationVault = _eulerAggregationVault;
+        $.eulerAggregationVault = msg.sender;
 
         // Setup DEFAULT_ADMIN
         _grantRole(DEFAULT_ADMIN_ROLE, _owner);

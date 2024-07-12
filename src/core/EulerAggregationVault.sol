@@ -54,12 +54,13 @@ contract EulerAggregationVault is
     uint256 public constant MIN_SHARES_FOR_GULP = 1e7;
 
     /// @dev Constructor.
-    /// @param _rewardsModule Address of Rewards module.
-    /// @param _hooksModule Address of Hooks module.
-    /// @param _feeModule Address of Fee module.
-    /// @param _allocationPointsModule Address of AllocationPoints module.
-    constructor(address _rewardsModule, address _hooksModule, address _feeModule, address _allocationPointsModule)
-        Dispatch(_rewardsModule, _hooksModule, _feeModule, _allocationPointsModule)
+    constructor(ConstructorParams memory _constructorParams)
+        Dispatch(
+            _constructorParams.rewardsModule,
+            _constructorParams.hooksModule,
+            _constructorParams.feeModule,
+            _constructorParams.allocationPointsModule
+        )
     {}
 
     /// @notice Initialize the EulerAggregationVault.
@@ -91,6 +92,8 @@ contract EulerAggregationVault is
         _setRoleAdmin(STRATEGY_OPERATOR, STRATEGY_OPERATOR_ADMIN);
         _setRoleAdmin(STRATEGY_OPERATOR, STRATEGY_OPERATOR_ADMIN);
         _setRoleAdmin(AGGREGATION_VAULT_MANAGER, AGGREGATION_VAULT_MANAGER_ADMIN);
+
+        IWithdrawalQueue(_initParams.withdrawalQueuePlugin).init(_initParams.aggregationVaultOwner);
     }
 
     /// @dev See {FeeModule-setFeeRecipient}.

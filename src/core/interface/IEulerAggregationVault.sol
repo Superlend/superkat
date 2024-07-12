@@ -2,13 +2,21 @@
 pragma solidity ^0.8.0;
 
 interface IEulerAggregationVault {
+    /// @dev Struct to pass to constrcutor.
+    struct ConstructorParams {
+        address rewardsModule;
+        address hooksModule;
+        address feeModule;
+        address allocationPointsModule;
+    }
+
     /// @dev Struct to pass init() call params.
     struct InitParams {
-        address balanceTracker;
-        address withdrawalQueuePlugin;
-        address rebalancerPlugin;
         address aggregationVaultOwner;
         address asset;
+        address withdrawalQueuePlugin;
+        address rebalancerPlugin;
+        address balanceTracker;
         string name;
         string symbol;
         uint256 initialCashAllocationPoints;

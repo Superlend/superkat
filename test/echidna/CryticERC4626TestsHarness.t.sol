@@ -41,6 +41,7 @@ contract CryticERC4626TestsHarness is CryticERC4626PropertyTests {
         withdrawalQueuePluginImpl = new WithdrawalQueue();
 
         EulerAggregationVaultFactory.FactoryParams memory factoryParams = EulerAggregationVaultFactory.FactoryParams({
+            owner: address(this),
             balanceTracker: address(0),
             rewardsModuleImpl: address(rewardsImpl),
             hooksModuleImpl: address(hooksImpl),
@@ -48,7 +49,7 @@ contract CryticERC4626TestsHarness is CryticERC4626PropertyTests {
             allocationPointsModuleImpl: address(allocationPointsModuleImpl),
             rebalancer: address(rebalancerPlugin)
         });
-        eulerAggregationVaultFactory = new EulerAggregationVaultFactory(address(this), factoryParams);
+        eulerAggregationVaultFactory = new EulerAggregationVaultFactory(factoryParams);
         eulerAggregationVaultFactory.whitelistWithdrawalQueueImpl(address(withdrawalQueuePluginImpl));
 
         TestERC20Token _asset = new TestERC20Token("Test Token", "TT", 18);

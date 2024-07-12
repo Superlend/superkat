@@ -44,6 +44,7 @@ contract A16zPropertyTests is ERC4626Test {
         withdrawalQueuePluginImpl = new WithdrawalQueue();
 
         EulerAggregationVaultFactory.FactoryParams memory factoryParams = EulerAggregationVaultFactory.FactoryParams({
+            owner: factoryOwner,
             balanceTracker: address(0),
             rewardsModuleImpl: address(rewardsImpl),
             hooksModuleImpl: address(hooksImpl),
@@ -51,7 +52,7 @@ contract A16zPropertyTests is ERC4626Test {
             allocationPointsModuleImpl: address(allocationPointsModuleImpl),
             rebalancer: address(rebalancerPlugin)
         });
-        eulerAggregationVaultFactory = new EulerAggregationVaultFactory(factoryOwner, factoryParams);
+        eulerAggregationVaultFactory = new EulerAggregationVaultFactory(factoryParams);
         vm.prank(factoryOwner);
         eulerAggregationVaultFactory.whitelistWithdrawalQueueImpl(address(withdrawalQueuePluginImpl));
 
