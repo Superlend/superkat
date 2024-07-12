@@ -27,5 +27,5 @@ library ErrorsLib {
     error NoCapOnCashReserveStrategy();
     error CanNotAdjustAllocationPoints();
     error CanNotToggleStrategyEmergencyStatus();
-    error CanNotRemoveEmergencyStrategy();
+    error CanNotRemoveStrategyInEmergencyStatus();
 }

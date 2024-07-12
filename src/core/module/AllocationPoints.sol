@@ -138,7 +138,7 @@ abstract contract AllocationPointsModule is Shared {
             revert Errors.AlreadyRemoved();
         }
         if (strategyStorage.status == IEulerAggregationVault.StrategyStatus.Emergency) {
-            revert Errors.CanNotRemoveEmergencyStrategy();
+            revert Errors.CanNotRemoveStrategyInEmergencyStatus();
         }
         if (strategyStorage.allocated > 0) revert Errors.CanNotRemoveStartegyWithAllocatedAmount();
 

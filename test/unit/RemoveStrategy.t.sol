@@ -123,4 +123,51 @@ contract RemoveStrategyTest is EulerAggregationVaultBase {
         vm.expectRevert(ErrorsLib.CanNotRemoveCashReserve.selector);
         eulerAggregationVault.removeStrategy(address(0));
     }
+
+    function testRemoveStrategyWithAllocatedAmount() public {
+        uint256 amountToDeposit = 10000e18;
+        assetTST.mint(user1, amountToDeposit);
+
+        // deposit into aggregator
+        {
+            uint256 balanceBefore = eulerAggregationVault.balanceOf(user1);
+            uint256 totalSupplyBefore = eulerAggregationVault.totalSupply();
+            uint256 totalAssetsDepositedBefore = eulerAggregationVault.totalAssetsDeposited();
+            uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
+
+            vm.startPrank(user1);
+            assetTST.approve(address(eulerAggregationVault), amountToDeposit);
+            eulerAggregationVault.deposit(amountToDeposit, user1);
+            vm.stopPrank();
+
+            assertEq(eulerAggregationVault.balanceOf(user1), balanceBefore + amountToDeposit);
+            assertEq(eulerAggregationVault.totalSupply(), totalSupplyBefore + amountToDeposit);
+            assertEq(eulerAggregationVault.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
+            assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - amountToDeposit);
+        }
+
+        // rebalance into strategy
+        vm.warp(block.timestamp + 86400);
+        {
+            IEulerAggregationVault.Strategy memory strategyBefore = eulerAggregationVault.getStrategy(address(eTST));
+
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationVault))), strategyBefore.allocated);
+
+            uint256 expectedStrategyCash = eulerAggregationVault.totalAssetsAllocatable()
+                * strategyBefore.allocationPoints / eulerAggregationVault.totalAllocationPoints();
+
+            vm.prank(user1);
+            address[] memory strategiesToRebalance = new address[](1);
+            strategiesToRebalance[0] = address(eTST);
+            rebalancer.executeRebalance(address(eulerAggregationVault), strategiesToRebalance);
+
+            assertEq(eulerAggregationVault.totalAllocated(), expectedStrategyCash);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationVault))), expectedStrategyCash);
+            assertEq((eulerAggregationVault.getStrategy(address(eTST))).allocated, expectedStrategyCash);
+        }
+
+        vm.prank(manager);
+        vm.expectRevert(ErrorsLib.CanNotRemoveStartegyWithAllocatedAmount.selector);
+        eulerAggregationVault.removeStrategy(address(eTST));
+    }
 }

@@ -176,4 +176,20 @@ contract ToggleStrategyEmergencyStatusE2ETest is EulerAggregationVaultBase {
             // );
         }
     }
+
+    function testToggleCashReserveStrategyStatus() public {
+        vm.startPrank(manager);
+        vm.expectRevert(ErrorsLib.CanNotToggleStrategyEmergencyStatus.selector);
+        eulerAggregationVault.toggleStrategyEmergencyStatus(address(0));
+        vm.stopPrank();
+    }
+
+    function testRemoveStrategyInEmergencyStatus() public {
+        vm.prank(manager);
+        eulerAggregationVault.toggleStrategyEmergencyStatus(address(eTSTsecondary));
+
+        vm.prank(manager);
+        vm.expectRevert(ErrorsLib.CanNotRemoveStrategyInEmergencyStatus.selector);
+        eulerAggregationVault.removeStrategy(address(eTSTsecondary));
+    }
 }
