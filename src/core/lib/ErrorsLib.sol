@@ -26,4 +26,6 @@ library ErrorsLib {
     error CanNotRemoveStartegyWithAllocatedAmount();
     error NoCapOnCashReserveStrategy();
     error CanNotAdjustAllocationPoints();
+    error CanNotToggleStrategyEmergencyStatus();
+    error CanNotRemoveEmergencyStrategy();
 }

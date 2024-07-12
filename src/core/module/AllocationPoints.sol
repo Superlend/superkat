@@ -62,7 +62,14 @@ abstract contract AllocationPointsModule is Shared {
         emit Events.SetStrategyCap(_strategy, _cap);
     }
 
+    /// @dev Toggle a strategy status between `Active` and `Emergency`.
+    /// @dev Can only get called by an address with the `GUARDIAN` role.
+    /// @dev This should be used as a cricuit-breaker to exclude a faulty strategy from being harvest or rebalanced.
+    /// It also deduct all the deposited amounts into the strategy as loss, and uses a loss socialization mechanism.
+    /// This is needed, in case the aggregation vault can no longer withdraw from a certain strategy.
     function toggleStrategyEmergencyStatus(address _strategy) external virtual nonReentrant {
+        if (_strategy == address(0)) revert Errors.CanNotToggleStrategyEmergencyStatus();
+
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
         IEulerAggregationVault.Strategy memory strategyCached = $.strategies[_strategy];
 
@@ -79,6 +86,7 @@ abstract contract AllocationPointsModule is Shared {
             $.strategies[_strategy].status = IEulerAggregationVault.StrategyStatus.Active;
 
             $.totalAllocationPoints += strategyCached.allocationPoints;
+            $.totalAllocated += strategyCached.allocated;
         }
     }
 
@@ -128,6 +136,9 @@ abstract contract AllocationPointsModule is Shared {
 
         if (strategyStorage.status == IEulerAggregationVault.StrategyStatus.Inactive) {
             revert Errors.AlreadyRemoved();
+        }
+        if (strategyStorage.status == IEulerAggregationVault.StrategyStatus.Emergency) {
+            revert Errors.CanNotRemoveEmergencyStrategy();
         }
         if (strategyStorage.allocated > 0) revert Errors.CanNotRemoveStartegyWithAllocatedAmount();
 

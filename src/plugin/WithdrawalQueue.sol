@@ -142,7 +142,7 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue
             }
         }
 
-        // is this possible?
+        //TODO: is this even possible now?
         if (_availableAssets < _assets) {
             revert NotEnoughAssets();
         }
