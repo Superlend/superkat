@@ -20,7 +20,7 @@ abstract contract AllocationPointsModule is Shared {
     using SafeCast for uint256;
 
     /// @notice Adjust a certain strategy's allocation points.
-    /// @dev Can only be called by an address that have the GUARDIAN role.
+    /// @dev Can only be called by an address that have the `GUARDIAN` role.
     /// @param _strategy address of strategy
     /// @param _newPoints new strategy's points
     function adjustAllocationPoints(address _strategy, uint256 _newPoints) external virtual nonReentrant {
@@ -29,6 +29,10 @@ abstract contract AllocationPointsModule is Shared {
 
         if (strategyDataCache.status != IEulerAggregationVault.StrategyStatus.Active) {
             revert Errors.CanNotAdjustAllocationPoints();
+        }
+
+        if (_strategy == address(0) && _newPoints == 0) {
+            revert Errors.InvalidAllocationPoints();
         }
 
         $.strategies[_strategy].allocationPoints = _newPoints.toUint120();
@@ -79,7 +83,7 @@ abstract contract AllocationPointsModule is Shared {
     }
 
     /// @notice Add new strategy with it's allocation points.
-    /// @dev Can only be called by an address that have STRATEGY_OPERATOR.
+    /// @dev Can only be called by an address that have `STRATEGY_OPERATOR` role.
     /// @param _strategy Address of the strategy
     /// @param _allocationPoints Strategy's allocation points
     function addStrategy(address _strategy, uint256 _allocationPoints) external virtual nonReentrant {
@@ -111,7 +115,7 @@ abstract contract AllocationPointsModule is Shared {
     }
 
     /// @notice Remove strategy and set its allocation points to zero.
-    /// @dev Can only be called by an address that have the STRATEGY_OPERATOR.
+    /// @dev Can only be called by an address that have the `STRATEGY_OPERATOR` role.
     /// @dev This function does not pull funds nor harvest yield.
     /// A faulty startegy that has an allocated amount can not be removed, instead it is advised
     /// to set as a non-active strategy using the `setStrategyStatus()`.

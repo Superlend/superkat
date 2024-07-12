@@ -26,11 +26,12 @@ contract EulerAggregationVaultHandler is Test {
     WithdrawalQueue internal withdrawalQueue;
 
     // ghost vars
-    uint256 ghost_totalAllocationPoints;
-    uint256 ghost_totalAssetsDeposited;
-    mapping(address => uint256) ghost_allocationPoints;
+    uint256 public ghost_totalAllocationPoints;
+    uint256 public ghost_totalAssetsDeposited;
+    mapping(address => uint256) public ghost_allocationPoints;
     address[] public ghost_feeRecipients;
     mapping(address => uint256) public ghost_accumulatedPerformanceFeePerRecipient;
+    uint256 public ghost_withdrawalQueueLength;
 
     // last function call state
     address currentActor;
@@ -131,6 +132,7 @@ contract EulerAggregationVaultHandler is Test {
         if (success) {
             ghost_totalAllocationPoints += _allocationPoints;
             ghost_allocationPoints[strategyAddr] = _allocationPoints;
+            ghost_withdrawalQueueLength += 1;
         }
         IEulerAggregationVault.Strategy memory strategyAfter = eulerAggVault.getStrategy(strategyAddr);
         assertEq(eulerAggVault.totalAllocationPoints(), ghost_totalAllocationPoints);
@@ -151,6 +153,7 @@ contract EulerAggregationVaultHandler is Test {
         if (success) {
             ghost_totalAllocationPoints -= strategyBefore.allocationPoints;
             ghost_allocationPoints[strategyAddr] = 0;
+            ghost_withdrawalQueueLength -= 1;
         }
 
         IEulerAggregationVault.Strategy memory strategyAfter = eulerAggVault.getStrategy(strategyAddr);
