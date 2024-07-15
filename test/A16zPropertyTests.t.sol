@@ -11,7 +11,7 @@ import {Rewards} from "../src/core/module/Rewards.sol";
 import {Fee} from "../src/core/module/Fee.sol";
 import {EulerAggregationVaultFactory} from "../src/core/EulerAggregationVaultFactory.sol";
 import {WithdrawalQueue} from "../src/plugin/WithdrawalQueue.sol";
-import {AllocationPoints} from "../src/core/module/AllocationPoints.sol";
+import {Strategy} from "../src/core/module/Strategy.sol";
 // mocks
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
@@ -24,7 +24,7 @@ contract A16zPropertyTests is ERC4626Test {
     Rewards rewardsImpl;
     Hooks hooksImpl;
     Fee feeModuleImpl;
-    AllocationPoints allocationPointsModuleImpl;
+    Strategy strategyModuleImpl;
     // plugins
     Rebalancer rebalancerPlugin;
     WithdrawalQueue withdrawalQueuePluginImpl;
@@ -38,7 +38,7 @@ contract A16zPropertyTests is ERC4626Test {
         rewardsImpl = new Rewards();
         hooksImpl = new Hooks();
         feeModuleImpl = new Fee();
-        allocationPointsModuleImpl = new AllocationPoints();
+        strategyModuleImpl = new Strategy();
 
         rebalancerPlugin = new Rebalancer();
         withdrawalQueuePluginImpl = new WithdrawalQueue();
@@ -49,7 +49,7 @@ contract A16zPropertyTests is ERC4626Test {
             rewardsModuleImpl: address(rewardsImpl),
             hooksModuleImpl: address(hooksImpl),
             feeModuleImpl: address(feeModuleImpl),
-            allocationPointsModuleImpl: address(allocationPointsModuleImpl),
+            strategyModuleImpl: address(strategyModuleImpl),
             rebalancer: address(rebalancerPlugin)
         });
         eulerAggregationVaultFactory = new EulerAggregationVaultFactory(factoryParams);

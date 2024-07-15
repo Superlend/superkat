@@ -59,7 +59,7 @@ contract EulerAggregationVault is
             _constructorParams.rewardsModule,
             _constructorParams.hooksModule,
             _constructorParams.feeModule,
-            _constructorParams.allocationPointsModule
+            _constructorParams.strategyModule
         )
     {}
 
@@ -155,43 +155,33 @@ contract EulerAggregationVault is
         use(hooksModule)
     {}
 
-    /// @dev See {AllocationPointsModule-addStrategy}.
+    /// @dev See {StrategyModule-addStrategy}.
     function addStrategy(address _strategy, uint256 _allocationPoints)
         external
         override
-        use(allocationPointsModule)
+        use(strategyModule)
         onlyRole(STRATEGY_OPERATOR)
     {}
 
-    /// @dev See {AllocationPointsModule-removeStrategy}.
-    function removeStrategy(address _strategy)
-        external
-        override
-        use(allocationPointsModule)
-        onlyRole(STRATEGY_OPERATOR)
-    {}
+    /// @dev See {StrategyModule-removeStrategy}.
+    function removeStrategy(address _strategy) external override use(strategyModule) onlyRole(STRATEGY_OPERATOR) {}
 
-    /// @dev See {AllocationPointsModule-setStrategyCap}.
-    function setStrategyCap(address _strategy, uint256 _cap)
-        external
-        override
-        use(allocationPointsModule)
-        onlyRole(GUARDIAN)
-    {}
+    /// @dev See {StrategyModule-setStrategyCap}.
+    function setStrategyCap(address _strategy, uint256 _cap) external override use(strategyModule) onlyRole(GUARDIAN) {}
 
-    /// @dev See {AllocationPointsModule-adjustAllocationPoints}.
+    /// @dev See {StrategyModule-adjustAllocationPoints}.
     function adjustAllocationPoints(address _strategy, uint256 _newPoints)
         external
         override
-        use(allocationPointsModule)
+        use(strategyModule)
         onlyRole(GUARDIAN)
     {}
 
-    /// @dev See {AllocationPointsModule-toggleStrategyEmergencyStatus}.
+    /// @dev See {StrategyModule-toggleStrategyEmergencyStatus}.
     function toggleStrategyEmergencyStatus(address _strategy)
         external
         override
-        use(allocationPointsModule)
+        use(strategyModule)
         onlyRole(GUARDIAN)
     {}
 

@@ -13,10 +13,10 @@ import {StorageLib, AggregationVaultStorage} from "../lib/StorageLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
 
-/// @title AllocationPointsModule contract
+/// @title StrategyModule contract
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
-abstract contract AllocationPointsModule is Shared {
+abstract contract StrategyModule is Shared {
     using SafeCast for uint256;
 
     /// @notice Adjust a certain strategy's allocation points.
@@ -156,4 +156,4 @@ abstract contract AllocationPointsModule is Shared {
     }
 }
 
-contract AllocationPoints is AllocationPointsModule {}
+contract Strategy is StrategyModule {}

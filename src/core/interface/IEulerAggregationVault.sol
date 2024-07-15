@@ -7,7 +7,7 @@ interface IEulerAggregationVault {
         address rewardsModule;
         address hooksModule;
         address feeModule;
-        address allocationPointsModule;
+        address strategyModule;
     }
 
     /// @dev Struct to pass init() call params.

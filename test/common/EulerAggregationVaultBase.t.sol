@@ -13,7 +13,7 @@ import {Rewards} from "../../src/core/module/Rewards.sol";
 import {Fee} from "../../src/core/module/Fee.sol";
 import {EulerAggregationVaultFactory} from "../../src/core/EulerAggregationVaultFactory.sol";
 import {WithdrawalQueue} from "../../src/plugin/WithdrawalQueue.sol";
-import {AllocationPoints} from "../../src/core/module/AllocationPoints.sol";
+import {Strategy} from "../../src/core/module/Strategy.sol";
 // libs
 import {ErrorsLib} from "../../src/core/lib/ErrorsLib.sol";
 
@@ -29,7 +29,7 @@ contract EulerAggregationVaultBase is EVaultTestBase {
     Rewards rewardsImpl;
     Hooks hooksImpl;
     Fee feeModuleImpl;
-    AllocationPoints allocationPointsModuleImpl;
+    Strategy strategyModuleImpl;
     // plugins
     Rebalancer rebalancer;
     WithdrawalQueue withdrawalQueueImpl;
@@ -50,7 +50,7 @@ contract EulerAggregationVaultBase is EVaultTestBase {
         rewardsImpl = new Rewards();
         hooksImpl = new Hooks();
         feeModuleImpl = new Fee();
-        allocationPointsModuleImpl = new AllocationPoints();
+        strategyModuleImpl = new Strategy();
 
         rebalancer = new Rebalancer();
         withdrawalQueueImpl = new WithdrawalQueue();
@@ -61,7 +61,7 @@ contract EulerAggregationVaultBase is EVaultTestBase {
             rewardsModuleImpl: address(rewardsImpl),
             hooksModuleImpl: address(hooksImpl),
             feeModuleImpl: address(feeModuleImpl),
-            allocationPointsModuleImpl: address(allocationPointsModuleImpl),
+            strategyModuleImpl: address(strategyModuleImpl),
             rebalancer: address(rebalancer)
         });
         eulerAggregationVaultFactory = new EulerAggregationVaultFactory(factoryParams);
@@ -97,7 +97,7 @@ contract EulerAggregationVaultBase is EVaultTestBase {
         vm.label(eulerAggregationVault.rewardsModule(), "rewardsModule");
         vm.label(eulerAggregationVault.hooksModule(), "hooksModule");
         vm.label(eulerAggregationVault.feeModule(), "feeModule");
-        vm.label(eulerAggregationVault.allocationPointsModule(), "allocationPointsModule");
+        vm.label(eulerAggregationVault.strategyModule(), "strategyModule");
         vm.label(address(assetTST), "assetTST");
     }
 
