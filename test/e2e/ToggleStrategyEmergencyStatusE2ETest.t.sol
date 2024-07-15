@@ -159,10 +159,7 @@ contract ToggleStrategyEmergencyStatusE2ETest is EulerAggregationVaultBase {
             assertTrue(eTST.balanceOf(address(eulerAggregationVault)) != 0);
             assertEq(eulerAggregationVault.totalAssetsDeposited(), 0);
             assertEq(eulerAggregationVault.totalSupply(), 0);
-            assertEq(
-                assetTST.balanceOf(user1),
-                user1AssetTSTBalanceBefore + expectedAssets
-            );
+            assertEq(assetTST.balanceOf(user1), user1AssetTSTBalanceBefore + expectedAssets);
         }
     }
 
