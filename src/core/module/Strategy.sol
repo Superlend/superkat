@@ -67,6 +67,8 @@ abstract contract StrategyModule is Shared {
     /// @dev This should be used as a cricuit-breaker to exclude a faulty strategy from being harvest or rebalanced.
     /// It also deduct all the deposited amounts into the strategy as loss, and uses a loss socialization mechanism.
     /// This is needed, in case the aggregation vault can no longer withdraw from a certain strategy.
+    /// In the case of switching a strategy from Emergency to Active again, the max withdrawable amount from the strategy
+    /// will be set as the allocated amount, and will be set as interest during the next time gulp() is called.
     function toggleStrategyEmergencyStatus(address _strategy) external virtual nonReentrant {
         if (_strategy == address(0)) revert Errors.CanNotToggleStrategyEmergencyStatus();
 
@@ -86,7 +88,7 @@ abstract contract StrategyModule is Shared {
             $.strategies[_strategy].status = IEulerAggregationVault.StrategyStatus.Active;
 
             $.totalAllocationPoints += strategyCached.allocationPoints;
-            $.totalAllocated += strategyCached.allocated;
+            $.totalAllocated += IERC4626(_strategy).maxWithdraw(address(this));
         }
     }
 
