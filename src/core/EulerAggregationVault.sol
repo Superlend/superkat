@@ -10,9 +10,10 @@ import {IWithdrawalQueue} from "./interface/IWithdrawalQueue.sol";
 // contracts
 import {Dispatch} from "./Dispatch.sol";
 import {
-    ERC4626Upgradeable,
-    ERC20Upgradeable
+    ERC20Upgradeable,
+    ERC4626Upgradeable
 } from "@openzeppelin-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
+import {ERC20VotesUpgradeable} from "@openzeppelin-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
 import {AccessControlEnumerableUpgradeable} from
     "@openzeppelin-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
 import {Shared} from "./common/Shared.sol";
@@ -33,6 +34,7 @@ import {EventsLib as Events} from "./lib/EventsLib.sol";
 /// @dev inspired by Yearn v3 ❤️
 contract EulerAggregationVault is
     ERC4626Upgradeable,
+    ERC20VotesUpgradeable,
     AccessControlEnumerableUpgradeable,
     Dispatch,
     IEulerAggregationVault
@@ -427,6 +429,11 @@ contract EulerAggregationVault is
         return super.redeem(_shares, _receiver, _owner);
     }
 
+    /// @dev See {IERC20Metadata-decimals}.
+    function decimals() public view virtual override (ERC4626Upgradeable, ERC20Upgradeable) returns (uint8) {
+        return ERC4626Upgradeable.decimals();
+    }
+
     /// @notice Return the total amount of assets deposited, plus the accrued interest.
     /// @return uint256 total amount
     function totalAssets() public view override returns (uint256) {
@@ -596,8 +603,11 @@ contract EulerAggregationVault is
     /// @dev Calling .balanceTrackerHook() passing the address total balance
     /// @param from Address sending the amount
     /// @param to Address receiving the amount
-    function _update(address from, address to, uint256 value) internal override {
-        super._update(from, to, value);
+    function _update(address from, address to, uint256 value)
+        internal
+        override (ERC20VotesUpgradeable, ERC20Upgradeable)
+    {
+        ERC20VotesUpgradeable._update(from, to, value);
 
         if (from == to) return;
 
