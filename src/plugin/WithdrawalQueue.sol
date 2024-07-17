@@ -38,10 +38,9 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue
 
     /// @notice Initialize WithdrawalQueue.
     /// @param _owner Aggregation vault owner.
-    /// @param _eulerAggregationVault Address of aggregation vault.
-    function init(address _owner, address _eulerAggregationVault) external initializer {
+    function init(address _owner) external initializer {
         WithdrawalQueueStorage storage $ = _getWithdrawalQueueStorage();
-        $.eulerAggregationVault = _eulerAggregationVault;
+        $.eulerAggregationVault = msg.sender;
 
         // Setup DEFAULT_ADMIN
         _grantRole(DEFAULT_ADMIN_ROLE, _owner);
@@ -132,12 +131,10 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue
                 uint256 desiredAssets = _assets - _availableAssets;
                 uint256 withdrawAmount = (underlyingBalance > desiredAssets) ? desiredAssets : underlyingBalance;
 
-                IEulerAggregationVault(eulerAggregationVaultCached).executeStrategyWithdraw(
+                // update _availableAssets
+                _availableAssets += IEulerAggregationVault(eulerAggregationVaultCached).executeStrategyWithdraw(
                     address(strategy), withdrawAmount
                 );
-
-                // update assetsRetrieved
-                _availableAssets += withdrawAmount;
 
                 if (_availableAssets >= _assets) {
                     break;
@@ -145,7 +142,7 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue
             }
         }
 
-        // is this possible?
+        //TODO: is this even possible now?
         if (_availableAssets < _assets) {
             revert NotEnoughAssets();
         }

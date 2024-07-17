@@ -26,14 +26,15 @@ contract BalanceForwarderE2ETest is EulerAggregationVaultBase {
         trackingReward = address(new TrackingRewardStreams(address(evc), 2 weeks));
 
         EulerAggregationVaultFactory.FactoryParams memory factoryParams = EulerAggregationVaultFactory.FactoryParams({
+            owner: deployer,
             balanceTracker: trackingReward,
             rewardsModuleImpl: address(rewardsImpl),
             hooksModuleImpl: address(hooksImpl),
             feeModuleImpl: address(feeModuleImpl),
-            allocationPointsModuleImpl: address(allocationPointsModuleImpl),
+            strategyModuleImpl: address(strategyModuleImpl),
             rebalancer: address(rebalancer)
         });
-        eulerAggregationVaultFactory = new EulerAggregationVaultFactory(deployer, factoryParams);
+        eulerAggregationVaultFactory = new EulerAggregationVaultFactory(factoryParams);
         eulerAggregationVaultFactory.whitelistWithdrawalQueueImpl(address(withdrawalQueueImpl));
 
         eulerAggregationVault = EulerAggregationVault(
@@ -47,18 +48,16 @@ contract BalanceForwarderE2ETest is EulerAggregationVaultBase {
         );
 
         // grant admin roles to deployer
-        eulerAggregationVault.grantRole(eulerAggregationVault.ALLOCATIONS_MANAGER_ADMIN(), deployer);
-        // eulerAggregationVault.grantRole(eulerAggregationVault.WITHDRAW_QUEUE_MANAGER_ADMIN(), deployer);
-        eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_ADDER_ADMIN(), deployer);
-        eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_REMOVER_ADMIN(), deployer);
+        eulerAggregationVault.grantRole(eulerAggregationVault.GUARDIAN_ADMIN(), deployer);
+        eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_OPERATOR_ADMIN(), deployer);
         eulerAggregationVault.grantRole(eulerAggregationVault.AGGREGATION_VAULT_MANAGER_ADMIN(), deployer);
+        withdrawalQueue.grantRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER_ADMIN(), deployer);
 
         // grant roles to manager
-        eulerAggregationVault.grantRole(eulerAggregationVault.ALLOCATIONS_MANAGER(), manager);
-        // eulerAggregationVault.grantRole(eulerAggregationVault.WITHDRAW_QUEUE_MANAGER(), manager);
-        eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_ADDER(), manager);
-        eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_REMOVER(), manager);
+        eulerAggregationVault.grantRole(eulerAggregationVault.GUARDIAN(), manager);
+        eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_OPERATOR(), manager);
         eulerAggregationVault.grantRole(eulerAggregationVault.AGGREGATION_VAULT_MANAGER(), manager);
+        withdrawalQueue.grantRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER(), manager);
         vm.stopPrank();
 
         uint256 initialStrategyAllocationPoints = 500e18;

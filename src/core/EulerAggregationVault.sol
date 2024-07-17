@@ -41,12 +41,10 @@ contract EulerAggregationVault is
     using SafeCast for uint256;
 
     // Roles
-    bytes32 public constant ALLOCATIONS_MANAGER = keccak256("ALLOCATIONS_MANAGER");
-    bytes32 public constant ALLOCATIONS_MANAGER_ADMIN = keccak256("ALLOCATIONS_MANAGER_ADMIN");
-    bytes32 public constant STRATEGY_ADDER = keccak256("STRATEGY_ADDER");
-    bytes32 public constant STRATEGY_ADDER_ADMIN = keccak256("STRATEGY_ADDER_ADMIN");
-    bytes32 public constant STRATEGY_REMOVER = keccak256("STRATEGY_REMOVER");
-    bytes32 public constant STRATEGY_REMOVER_ADMIN = keccak256("STRATEGY_REMOVER_ADMIN");
+    bytes32 public constant GUARDIAN = keccak256("GUARDIAN");
+    bytes32 public constant GUARDIAN_ADMIN = keccak256("GUARDIAN_ADMIN");
+    bytes32 public constant STRATEGY_OPERATOR = keccak256("STRATEGY_OPERATOR");
+    bytes32 public constant STRATEGY_OPERATOR_ADMIN = keccak256("STRATEGY_OPERATOR_ADMIN");
     bytes32 public constant AGGREGATION_VAULT_MANAGER = keccak256("AGGREGATION_VAULT_MANAGER");
     bytes32 public constant AGGREGATION_VAULT_MANAGER_ADMIN = keccak256("AGGREGATION_VAULT_MANAGER_ADMIN");
 
@@ -56,12 +54,13 @@ contract EulerAggregationVault is
     uint256 public constant MIN_SHARES_FOR_GULP = 1e7;
 
     /// @dev Constructor.
-    /// @param _rewardsModule Address of Rewards module.
-    /// @param _hooksModule Address of Hooks module.
-    /// @param _feeModule Address of Fee module.
-    /// @param _allocationPointsModule Address of AllocationPoints module.
-    constructor(address _rewardsModule, address _hooksModule, address _feeModule, address _allocationPointsModule)
-        Dispatch(_rewardsModule, _hooksModule, _feeModule, _allocationPointsModule)
+    constructor(ConstructorParams memory _constructorParams)
+        Dispatch(
+            _constructorParams.rewardsModule,
+            _constructorParams.hooksModule,
+            _constructorParams.feeModule,
+            _constructorParams.strategyModule
+        )
     {}
 
     /// @notice Initialize the EulerAggregationVault.
@@ -81,7 +80,7 @@ contract EulerAggregationVault is
         $.strategies[address(0)] = IEulerAggregationVault.Strategy({
             allocated: 0,
             allocationPoints: _initParams.initialCashAllocationPoints.toUint120(),
-            active: true,
+            status: IEulerAggregationVault.StrategyStatus.Active,
             cap: 0
         });
         $.totalAllocationPoints = _initParams.initialCashAllocationPoints;
@@ -90,10 +89,11 @@ contract EulerAggregationVault is
         _grantRole(DEFAULT_ADMIN_ROLE, _initParams.aggregationVaultOwner);
 
         // Setup role admins
-        _setRoleAdmin(ALLOCATIONS_MANAGER, ALLOCATIONS_MANAGER_ADMIN);
-        _setRoleAdmin(STRATEGY_ADDER, STRATEGY_ADDER_ADMIN);
-        _setRoleAdmin(STRATEGY_REMOVER, STRATEGY_REMOVER_ADMIN);
+        _setRoleAdmin(STRATEGY_OPERATOR, STRATEGY_OPERATOR_ADMIN);
+        _setRoleAdmin(STRATEGY_OPERATOR, STRATEGY_OPERATOR_ADMIN);
         _setRoleAdmin(AGGREGATION_VAULT_MANAGER, AGGREGATION_VAULT_MANAGER_ADMIN);
+
+        IWithdrawalQueue(_initParams.withdrawalQueuePlugin).init(_initParams.aggregationVaultOwner);
     }
 
     /// @dev See {FeeModule-setFeeRecipient}.
@@ -155,36 +155,34 @@ contract EulerAggregationVault is
         use(hooksModule)
     {}
 
-    /// @dev See {AllocationPointsModule-adjustAllocationPoints}.
-    function adjustAllocationPoints(address _strategy, uint256 _newPoints)
-        external
-        override
-        use(allocationPointsModule)
-        onlyRole(ALLOCATIONS_MANAGER)
-    {}
-
-    /// @dev See {AllocationPointsModule-setStrategyCap}.
-    function setStrategyCap(address _strategy, uint256 _cap)
-        external
-        override
-        use(allocationPointsModule)
-        onlyRole(ALLOCATIONS_MANAGER)
-    {}
-
-    /// @dev See {AllocationPointsModule-addStrategy}.
+    /// @dev See {StrategyModule-addStrategy}.
     function addStrategy(address _strategy, uint256 _allocationPoints)
         external
         override
-        use(allocationPointsModule)
-        onlyRole(STRATEGY_ADDER)
+        use(strategyModule)
+        onlyRole(STRATEGY_OPERATOR)
     {}
 
-    /// @dev See {AllocationPointsModule-removeStrategy}.
-    function removeStrategy(address _strategy)
+    /// @dev See {StrategyModule-removeStrategy}.
+    function removeStrategy(address _strategy) external override use(strategyModule) onlyRole(STRATEGY_OPERATOR) {}
+
+    /// @dev See {StrategyModule-setStrategyCap}.
+    function setStrategyCap(address _strategy, uint256 _cap) external override use(strategyModule) onlyRole(GUARDIAN) {}
+
+    /// @dev See {StrategyModule-adjustAllocationPoints}.
+    function adjustAllocationPoints(address _strategy, uint256 _newPoints)
         external
         override
-        use(allocationPointsModule)
-        onlyRole(STRATEGY_REMOVER)
+        use(strategyModule)
+        onlyRole(GUARDIAN)
+    {}
+
+    /// @dev See {StrategyModule-toggleStrategyEmergencyStatus}.
+    function toggleStrategyEmergencyStatus(address _strategy)
+        external
+        override
+        use(strategyModule)
+        onlyRole(GUARDIAN)
     {}
 
     /// @dev See {RewardsModule-enableBalanceForwarder}.
@@ -217,6 +215,8 @@ contract EulerAggregationVault is
         if (_msgSender() != $.rebalancer) revert Errors.NotRebalancer();
 
         IEulerAggregationVault.Strategy memory strategyData = $.strategies[_strategy];
+
+        if (strategyData.status != IEulerAggregationVault.StrategyStatus.Active) return;
 
         if (_isDeposit) {
             // Do required approval (safely) and deposit
@@ -256,10 +256,12 @@ contract EulerAggregationVault is
     /// @dev Can only be called from the WithdrawalQueue contract.
     /// @param _strategy Strategy's address.
     /// @param _withdrawAmount Amount to withdraw.
-    function executeStrategyWithdraw(address _strategy, uint256 _withdrawAmount) external {
+    function executeStrategyWithdraw(address _strategy, uint256 _withdrawAmount) external returns (uint256) {
         _isCallerWithdrawalQueue();
 
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        if ($.strategies[_strategy].status != IEulerAggregationVault.StrategyStatus.Active) return 0;
 
         // Update allocated assets
         $.strategies[_strategy].allocated -= uint120(_withdrawAmount);
@@ -267,6 +269,8 @@ contract EulerAggregationVault is
 
         // Do actual withdraw from strategy
         IERC4626(_strategy).withdraw(_withdrawAmount, address(this), address(this));
+
+        return _withdrawAmount;
     }
 
     /// @notice Execute a withdraw from the AggregationVault
@@ -517,18 +521,7 @@ contract EulerAggregationVault is
         $.totalAllocated = $.totalAllocated + totalYield - totalLoss;
 
         if (totalLoss > totalYield) {
-            uint256 netLoss = totalLoss - totalYield;
-            uint168 cachedInterestLeft = $.interestLeft;
-
-            if (cachedInterestLeft >= netLoss) {
-                // cut loss from interest left only
-                cachedInterestLeft -= uint168(netLoss);
-            } else {
-                // cut the interest left and socialize the diff
-                $.totalAssetsDeposited -= netLoss - cachedInterestLeft;
-                cachedInterestLeft = 0;
-            }
-            $.interestLeft = cachedInterestLeft;
+            _deductLoss(totalLoss - totalYield);
         }
 
         emit Events.Harvest($.totalAllocated, totalYield, totalLoss);
@@ -545,7 +538,10 @@ contract EulerAggregationVault is
 
         uint120 strategyAllocatedAmount = $.strategies[_strategy].allocated;
 
-        if (strategyAllocatedAmount == 0) return (0, 0);
+        if (
+            strategyAllocatedAmount == 0
+                || $.strategies[_strategy].status != IEulerAggregationVault.StrategyStatus.Active
+        ) return (0, 0);
 
         uint256 underlyingBalance = IERC4626(_strategy).maxWithdraw(address(this));
         uint256 yield;

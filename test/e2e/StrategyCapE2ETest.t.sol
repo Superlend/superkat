@@ -46,6 +46,14 @@ contract StrategyCapE2ETest is EulerAggregationVaultBase {
         eulerAggregationVault.setStrategyCap(address(0x2), cap);
     }
 
+    function testSetCapForCashReserveStrategy() public {
+        uint256 cap = 1000000e18;
+
+        vm.prank(manager);
+        vm.expectRevert(ErrorsLib.NoCapOnCashReserveStrategy.selector);
+        eulerAggregationVault.setStrategyCap(address(0), cap);
+    }
+
     function testRebalanceAfterHittingCap() public {
         address[] memory strategiesToRebalance = new address[](1);
 

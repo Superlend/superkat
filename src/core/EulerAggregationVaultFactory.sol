@@ -2,10 +2,6 @@
 pragma solidity ^0.8.0;
 
 // contracts
-import {Rewards} from "./module/Rewards.sol";
-import {Hooks} from "./module/Hooks.sol";
-import {Fee} from "./module/Fee.sol";
-import {WithdrawalQueue} from "../plugin/WithdrawalQueue.sol";
 import {EulerAggregationVault, IEulerAggregationVault} from "./EulerAggregationVault.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 // libs
@@ -25,7 +21,7 @@ contract EulerAggregationVaultFactory is Ownable {
     address public immutable rewardsModuleImpl;
     address public immutable hooksModuleImpl;
     address public immutable feeModuleImpl;
-    address public immutable allocationPointsModuleImpl;
+    address public immutable strategyModuleImpl;
     /// plugins
     /// @dev Rebalancer plugin contract address, one instance can serve different aggregation vaults
     address public immutable rebalancer;
@@ -38,11 +34,12 @@ contract EulerAggregationVaultFactory is Ownable {
 
     /// @dev Init params struct.
     struct FactoryParams {
+        address owner;
         address balanceTracker;
         address rewardsModuleImpl;
         address hooksModuleImpl;
         address feeModuleImpl;
-        address allocationPointsModuleImpl;
+        address strategyModuleImpl;
         address rebalancer;
     }
 
@@ -52,15 +49,13 @@ contract EulerAggregationVaultFactory is Ownable {
     );
 
     /// @notice Constructor.
-    /// @param _owner Factory owner.
     /// @param _factoryParams FactoryParams struct.
-    constructor(address _owner, FactoryParams memory _factoryParams) Ownable(_owner) {
+    constructor(FactoryParams memory _factoryParams) Ownable(_factoryParams.owner) {
         balanceTracker = _factoryParams.balanceTracker;
         rewardsModuleImpl = _factoryParams.rewardsModuleImpl;
         hooksModuleImpl = _factoryParams.hooksModuleImpl;
         feeModuleImpl = _factoryParams.feeModuleImpl;
-        allocationPointsModuleImpl = _factoryParams.allocationPointsModuleImpl;
-
+        strategyModuleImpl = _factoryParams.strategyModuleImpl;
         rebalancer = _factoryParams.rebalancer;
     }
 
@@ -95,31 +90,26 @@ contract EulerAggregationVaultFactory is Ownable {
     ) external returns (address) {
         if (!isWhitelistedWithdrawalQueueImpl[_withdrawalQueueImpl]) revert NotWhitelistedWithdrawalQueueImpl();
 
-        // cloning core modules
-        address rewardsModuleAddr = Clones.clone(rewardsModuleImpl);
-        address hooksModuleAddr = Clones.clone(hooksModuleImpl);
-        address feeModuleAddr = Clones.clone(feeModuleImpl);
-        address allocationpointsModuleAddr = Clones.clone(allocationPointsModuleImpl);
-
-        // cloning plugins
-        WithdrawalQueue withdrawalQueue = WithdrawalQueue(Clones.clone(_withdrawalQueueImpl));
-
         // deploy new aggregation vault
-        EulerAggregationVault eulerAggregationVault =
-            new EulerAggregationVault(rewardsModuleAddr, hooksModuleAddr, feeModuleAddr, allocationpointsModuleAddr);
+        IEulerAggregationVault.ConstructorParams memory aggregationVaultConstructorParams = IEulerAggregationVault
+            .ConstructorParams({
+            rewardsModule: Clones.clone(rewardsModuleImpl),
+            hooksModule: Clones.clone(hooksModuleImpl),
+            feeModule: Clones.clone(feeModuleImpl),
+            strategyModule: Clones.clone(strategyModuleImpl)
+        });
+        EulerAggregationVault eulerAggregationVault = new EulerAggregationVault(aggregationVaultConstructorParams);
 
         IEulerAggregationVault.InitParams memory aggregationVaultInitParams = IEulerAggregationVault.InitParams({
-            balanceTracker: balanceTracker,
-            withdrawalQueuePlugin: address(withdrawalQueue),
-            rebalancerPlugin: rebalancer,
             aggregationVaultOwner: msg.sender,
             asset: _asset,
+            withdrawalQueuePlugin: Clones.clone(_withdrawalQueueImpl),
+            rebalancerPlugin: rebalancer,
+            balanceTracker: balanceTracker,
             name: _name,
             symbol: _symbol,
             initialCashAllocationPoints: _initialCashAllocationPoints
         });
-
-        withdrawalQueue.init(msg.sender, address(eulerAggregationVault));
         eulerAggregationVault.init(aggregationVaultInitParams);
 
         aggregationVaults.push(address(eulerAggregationVault));

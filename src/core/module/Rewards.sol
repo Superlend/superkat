@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 // interfaces
 import {IBalanceForwarder} from "../interface/IBalanceForwarder.sol";
+import {IEulerAggregationVault} from "../interface/IEulerAggregationVault.sol";
 import {IBalanceTracker} from "reward-streams/interfaces/IBalanceTracker.sol";
 import {IRewardStreams} from "reward-streams/interfaces/IRewardStreams.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -24,7 +25,9 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
     function optInStrategyRewards(address _strategy) external virtual nonReentrant {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
-        if (!$.strategies[_strategy].active) revert Errors.InactiveStrategy();
+        if ($.strategies[_strategy].status == IEulerAggregationVault.StrategyStatus.Inactive) {
+            revert Errors.InactiveStrategy();
+        }
 
         IBalanceForwarder(_strategy).enableBalanceForwarder();
 
@@ -45,7 +48,9 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
     function enableRewardForStrategy(address _strategy, address _reward) external virtual nonReentrant {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
-        if (!$.strategies[_strategy].active) revert Errors.InactiveStrategy();
+        if ($.strategies[_strategy].status == IEulerAggregationVault.StrategyStatus.Inactive) {
+            revert Errors.InactiveStrategy();
+        }
 
         IRewardStreams(IBalanceForwarder(_strategy).balanceTrackerAddress()).enableReward(_strategy, _reward);
 
@@ -63,7 +68,9 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
     {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
-        if (!$.strategies[_strategy].active) revert Errors.InactiveStrategy();
+        if ($.strategies[_strategy].status == IEulerAggregationVault.StrategyStatus.Inactive) {
+            revert Errors.InactiveStrategy();
+        }
 
         IRewardStreams(IBalanceForwarder(_strategy).balanceTrackerAddress()).disableReward(
             _strategy, _reward, _forfeitRecentReward
