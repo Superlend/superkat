@@ -42,6 +42,16 @@ contract Actor is Test {
         return (randomActor, randomActorIndex);
     }
 
+    function getActors() external view returns (address[] memory) {
+        address[] memory actorsList = new address[](actors.length);
+
+        for (uint256 i; i < actors.length; i++) {
+            actorsList[i] = actors[i];
+        }
+
+        return actorsList;
+    }
+
     function _getActor(uint256 _actorIndexSeed) internal view returns (address) {
         return actors[bound(_actorIndexSeed, 0, actors.length - 1)];
     }

@@ -174,6 +174,14 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
         assertEq(eulerAggregationVault.getStrategy(address(0)).cap, 0);
     }
 
+    function invariant_votingPower() public view {
+        address[] memory actorsList = actorUtil.getActors();
+
+        for (uint256 i; i < actorsList.length; i++) {
+            assertEq(eulerAggregationVault.balanceOf(actorsList[i]), eulerAggregationVault.getVotes(actorsList[i]));
+        }
+    }
+
     function _deployOtherStrategies() private {
         eTSTsecond = IEVault(
             factory.createProxy(address(0), true, abi.encodePacked(address(assetTST), address(oracle), unitOfAccount))
