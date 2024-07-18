@@ -22,6 +22,7 @@ contract EulerAggregationVaultFactory is Ownable {
     address public immutable hooksModuleImpl;
     address public immutable feeModuleImpl;
     address public immutable strategyModuleImpl;
+    address public immutable rebalanceModuleImpl;
     /// plugins
     /// @dev Rebalancer plugin contract address, one instance can serve different aggregation vaults
     address public immutable rebalancer;
@@ -40,6 +41,7 @@ contract EulerAggregationVaultFactory is Ownable {
         address hooksModuleImpl;
         address feeModuleImpl;
         address strategyModuleImpl;
+        address rebalanceModuleImpl;
         address rebalancer;
     }
 
@@ -56,6 +58,7 @@ contract EulerAggregationVaultFactory is Ownable {
         hooksModuleImpl = _factoryParams.hooksModuleImpl;
         feeModuleImpl = _factoryParams.feeModuleImpl;
         strategyModuleImpl = _factoryParams.strategyModuleImpl;
+        rebalanceModuleImpl = _factoryParams.rebalanceModuleImpl;
         rebalancer = _factoryParams.rebalancer;
     }
 
@@ -96,7 +99,8 @@ contract EulerAggregationVaultFactory is Ownable {
             rewardsModule: Clones.clone(rewardsModuleImpl),
             hooksModule: Clones.clone(hooksModuleImpl),
             feeModule: Clones.clone(feeModuleImpl),
-            strategyModule: Clones.clone(strategyModuleImpl)
+            strategyModule: Clones.clone(strategyModuleImpl),
+            rebalanceModule: Clones.clone(rebalanceModuleImpl)
         });
         EulerAggregationVault eulerAggregationVault = new EulerAggregationVault(aggregationVaultConstructorParams);
 

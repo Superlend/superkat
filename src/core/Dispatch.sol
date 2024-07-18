@@ -7,6 +7,7 @@ import {HooksModule} from "./module/Hooks.sol";
 import {RewardsModule} from "./module/Rewards.sol";
 import {StrategyModule} from "./module/Strategy.sol";
 import {FeeModule} from "./module/Fee.sol";
+import {RebalanceModule} from "./module/Rebalance.sol";
 
 /// @title Dispatch contract
 /// @custom:security-contact security@euler.xyz
@@ -18,17 +19,26 @@ abstract contract Dispatch is RewardsModule, HooksModule, FeeModule, StrategyMod
     address public immutable hooksModule;
     address public immutable feeModule;
     address public immutable strategyModule;
+    address public immutable rebalanceModule;
 
     /// @dev Constructor.
     /// @param _rewardsModule Address of Rewards module.
     /// @param _hooksModule Address of Hooks module.
     /// @param _feeModule Address of Fee module.
     /// @param _strategyModule Address of Strategy module.
-    constructor(address _rewardsModule, address _hooksModule, address _feeModule, address _strategyModule) {
+    /// @param _rebalanceModule Address of Rebalance module.
+    constructor(
+        address _rewardsModule,
+        address _hooksModule,
+        address _feeModule,
+        address _strategyModule,
+        address _rebalanceModule
+    ) {
         rewardsModule = _rewardsModule;
         hooksModule = _hooksModule;
         feeModule = _feeModule;
         strategyModule = _strategyModule;
+        rebalanceModule = _rebalanceModule;
     }
 
     // Modifier proxies the function call to a module and low-level returns the result

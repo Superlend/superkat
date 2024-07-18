@@ -11,6 +11,7 @@ import {Rebalancer} from "../../src/plugin/Rebalancer.sol";
 import {Hooks, HooksModule} from "../../src/core/module/Hooks.sol";
 import {Rewards} from "../../src/core/module/Rewards.sol";
 import {Fee} from "../../src/core/module/Fee.sol";
+import {Rebalance} from "../../src/core/module/Rebalance.sol";
 import {EulerAggregationVaultFactory} from "../../src/core/EulerAggregationVaultFactory.sol";
 import {WithdrawalQueue} from "../../src/plugin/WithdrawalQueue.sol";
 import {Strategy} from "../../src/core/module/Strategy.sol";
@@ -30,6 +31,7 @@ contract EulerAggregationVaultBase is EVaultTestBase {
     Hooks hooksImpl;
     Fee feeModuleImpl;
     Strategy strategyModuleImpl;
+    Rebalance rebalanceModuleImpl;
     // plugins
     Rebalancer rebalancer;
     WithdrawalQueue withdrawalQueueImpl;
@@ -51,6 +53,7 @@ contract EulerAggregationVaultBase is EVaultTestBase {
         hooksImpl = new Hooks();
         feeModuleImpl = new Fee();
         strategyModuleImpl = new Strategy();
+        rebalanceModuleImpl = new Rebalance();
 
         rebalancer = new Rebalancer();
         withdrawalQueueImpl = new WithdrawalQueue();
@@ -62,6 +65,7 @@ contract EulerAggregationVaultBase is EVaultTestBase {
             hooksModuleImpl: address(hooksImpl),
             feeModuleImpl: address(feeModuleImpl),
             strategyModuleImpl: address(strategyModuleImpl),
+            rebalanceModuleImpl: address(rebalanceModuleImpl),
             rebalancer: address(rebalancer)
         });
         eulerAggregationVaultFactory = new EulerAggregationVaultFactory(factoryParams);

@@ -9,6 +9,7 @@ import {Rebalancer} from "../../src/plugin/Rebalancer.sol";
 import {Hooks} from "../../src/core/module/Hooks.sol";
 import {Rewards} from "../../src/core/module/Rewards.sol";
 import {Fee} from "../../src/core/module/Fee.sol";
+import {Rebalance} from "../../src/core/module/Rebalance.sol";
 import {EulerAggregationVaultFactory} from "../../src/core/EulerAggregationVaultFactory.sol";
 import {WithdrawalQueue} from "../../src/plugin/WithdrawalQueue.sol";
 import {Strategy} from "../../src/core/module/Strategy.sol";
@@ -24,6 +25,7 @@ contract CryticERC4626TestsHarness is CryticERC4626PropertyTests {
     Hooks hooksImpl;
     Fee feeModuleImpl;
     Strategy strategyModuleImpl;
+    Rebalance rebalanceModuleImpl;
     // plugins
     Rebalancer rebalancerPlugin;
     WithdrawalQueue withdrawalQueuePluginImpl;
@@ -36,6 +38,7 @@ contract CryticERC4626TestsHarness is CryticERC4626PropertyTests {
         hooksImpl = new Hooks();
         feeModuleImpl = new Fee();
         strategyModuleImpl = new Strategy();
+        rebalanceModuleImpl = new Rebalance();
 
         rebalancerPlugin = new Rebalancer();
         withdrawalQueuePluginImpl = new WithdrawalQueue();
@@ -47,6 +50,7 @@ contract CryticERC4626TestsHarness is CryticERC4626PropertyTests {
             hooksModuleImpl: address(hooksImpl),
             feeModuleImpl: address(feeModuleImpl),
             strategyModuleImpl: address(strategyModuleImpl),
+            rebalanceModuleImpl: address(rebalanceModuleImpl),
             rebalancer: address(rebalancerPlugin)
         });
         eulerAggregationVaultFactory = new EulerAggregationVaultFactory(factoryParams);

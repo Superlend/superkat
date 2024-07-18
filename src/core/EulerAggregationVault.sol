@@ -61,7 +61,8 @@ contract EulerAggregationVault is
             _constructorParams.rewardsModule,
             _constructorParams.hooksModule,
             _constructorParams.feeModule,
-            _constructorParams.strategyModule
+            _constructorParams.strategyModule,
+            _constructorParams.rebalanceModule
         )
     {}
 
@@ -193,6 +194,12 @@ contract EulerAggregationVault is
     /// @dev See {RewardsModule-disableBalanceForwarder}.
     function disableBalanceForwarder() external override use(rewardsModule) {}
 
+    function rebalance(address _strategy, uint256 _amountToRebalance, bool _isDeposit)
+        external
+        override
+        use(rewardsModule)
+    {}
+
     /// @notice Set a new address for Rebalancer plugin.
     /// @dev Can only be called by an address with the `AGGREGATION_VAULT_MANAGER` role.
     /// @param _rebalancer New Rebalancer contract address.
@@ -204,35 +211,6 @@ contract EulerAggregationVault is
         emit Events.SetRebalancer($.rebalancer, _rebalancer);
 
         $.rebalancer = _rebalancer;
-    }
-
-    /// @notice Rebalance strategy by depositing or withdrawing the amount to rebalance to hit target allocation.
-    /// @dev Can only be called only by the WithdrawalQueue plugin.
-    /// @param _strategy Strategy address.
-    /// @param _amountToRebalance Amount to deposit or withdraw.
-    /// @param _isDeposit bool to indicate if it is a deposit or a withdraw.
-    function rebalance(address _strategy, uint256 _amountToRebalance, bool _isDeposit) external nonReentrant {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-
-        if (_msgSender() != $.rebalancer) revert Errors.NotRebalancer();
-
-        IEulerAggregationVault.Strategy memory strategyData = $.strategies[_strategy];
-
-        if (strategyData.status != IEulerAggregationVault.StrategyStatus.Active) return;
-
-        if (_isDeposit) {
-            // Do required approval (safely) and deposit
-            IERC20(asset()).safeIncreaseAllowance(_strategy, _amountToRebalance);
-            IERC4626(_strategy).deposit(_amountToRebalance, address(this));
-            $.strategies[_strategy].allocated = (strategyData.allocated + _amountToRebalance).toUint120();
-            $.totalAllocated += _amountToRebalance;
-        } else {
-            IERC4626(_strategy).withdraw(_amountToRebalance, address(this), address(this));
-            $.strategies[_strategy].allocated = (strategyData.allocated - _amountToRebalance).toUint120();
-            $.totalAllocated -= _amountToRebalance;
-        }
-
-        emit Events.Rebalance(_strategy, _amountToRebalance, _isDeposit);
     }
 
     /// @notice Harvest all the strategies.
