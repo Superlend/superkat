@@ -7,7 +7,6 @@ import {IWithdrawalQueue} from "../../src/core/interface/IWithdrawalQueue.sol";
 // contracts
 import "evk/test/unit/evault/EVaultTestBase.t.sol";
 import {EulerAggregationVault, IEulerAggregationVault} from "../../src/core/EulerAggregationVault.sol";
-import {Rebalancer} from "../../src/plugin/Rebalancer.sol";
 import {Hooks, HooksModule} from "../../src/core/module/Hooks.sol";
 import {Rewards} from "../../src/core/module/Rewards.sol";
 import {Fee} from "../../src/core/module/Fee.sol";
@@ -33,7 +32,6 @@ contract EulerAggregationVaultBase is EVaultTestBase {
     Strategy strategyModuleImpl;
     Rebalance rebalanceModuleImpl;
     // plugins
-    Rebalancer rebalancer;
     WithdrawalQueue withdrawalQueueImpl;
 
     EulerAggregationVaultFactory eulerAggregationVaultFactory;
@@ -55,7 +53,6 @@ contract EulerAggregationVaultBase is EVaultTestBase {
         strategyModuleImpl = new Strategy();
         rebalanceModuleImpl = new Rebalance();
 
-        rebalancer = new Rebalancer();
         withdrawalQueueImpl = new WithdrawalQueue();
 
         EulerAggregationVaultFactory.FactoryParams memory factoryParams = EulerAggregationVaultFactory.FactoryParams({
@@ -65,8 +62,7 @@ contract EulerAggregationVaultBase is EVaultTestBase {
             hooksModuleImpl: address(hooksImpl),
             feeModuleImpl: address(feeModuleImpl),
             strategyModuleImpl: address(strategyModuleImpl),
-            rebalanceModuleImpl: address(rebalanceModuleImpl),
-            rebalancer: address(rebalancer)
+            rebalanceModuleImpl: address(rebalanceModuleImpl)
         });
         eulerAggregationVaultFactory = new EulerAggregationVaultFactory(factoryParams);
         eulerAggregationVaultFactory.whitelistWithdrawalQueueImpl(address(withdrawalQueueImpl));

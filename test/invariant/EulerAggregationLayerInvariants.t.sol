@@ -52,8 +52,7 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
 
         eulerAggregationVaultHandler =
             new EulerAggregationVaultHandler(eulerAggregationVault, actorUtil, strategyUtil, withdrawalQueue);
-        rebalancerHandler =
-            new RebalancerHandler(eulerAggregationVault, rebalancer, actorUtil, strategyUtil, withdrawalQueue);
+        rebalancerHandler = new RebalancerHandler(eulerAggregationVault, actorUtil, strategyUtil, withdrawalQueue);
         withdrawalQueueHandler =
             new WithdrawalQueueHandler(eulerAggregationVault, actorUtil, strategyUtil, withdrawalQueue);
 

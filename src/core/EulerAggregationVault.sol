@@ -78,7 +78,6 @@ contract EulerAggregationVault is
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
         $.locked = REENTRANCYLOCK__UNLOCKED;
         $.withdrawalQueue = _initParams.withdrawalQueuePlugin;
-        $.rebalancer = _initParams.rebalancerPlugin;
         $.balanceTracker = _initParams.balanceTracker;
         $.strategies[address(0)] = IEulerAggregationVault.Strategy({
             allocated: 0,
@@ -194,24 +193,7 @@ contract EulerAggregationVault is
     /// @dev See {RewardsModule-disableBalanceForwarder}.
     function disableBalanceForwarder() external override use(rewardsModule) {}
 
-    function rebalance(address _strategy, uint256 _amountToRebalance, bool _isDeposit)
-        external
-        override
-        use(rewardsModule)
-    {}
-
-    /// @notice Set a new address for Rebalancer plugin.
-    /// @dev Can only be called by an address with the `AGGREGATION_VAULT_MANAGER` role.
-    /// @param _rebalancer New Rebalancer contract address.
-    function setRebalancer(address _rebalancer) external onlyRole(AGGREGATION_VAULT_MANAGER) {
-        if (_rebalancer == address(0)) revert Errors.InvalidRebalancerPlugin();
-
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-
-        emit Events.SetRebalancer($.rebalancer, _rebalancer);
-
-        $.rebalancer = _rebalancer;
-    }
+    function executeRebalance(address[] calldata _strategies) external override use(rebalanceModule) {}
 
     /// @notice Harvest all the strategies.
     /// @dev This function will loop through the strategies following the withdrawal queue order and harvest all.
@@ -336,14 +318,6 @@ contract EulerAggregationVault is
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         return $.withdrawalQueue;
-    }
-
-    /// @notice Get the Rebalancer plugin address.
-    /// @return address Rebalancer address.
-    function rebalancer() external view returns (address) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-
-        return $.rebalancer;
     }
 
     /// @notice Get the performance fee config.

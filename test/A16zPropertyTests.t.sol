@@ -5,7 +5,6 @@ pragma solidity ^0.8.0;
 import {ERC4626Test} from "erc4626-tests/ERC4626.test.sol";
 // contracts
 import {EulerAggregationVault} from "../src/core/EulerAggregationVault.sol";
-import {Rebalancer} from "../src/plugin/Rebalancer.sol";
 import {Hooks} from "../src/core/module/Hooks.sol";
 import {Rewards} from "../src/core/module/Rewards.sol";
 import {Fee} from "../src/core/module/Fee.sol";
@@ -28,7 +27,6 @@ contract A16zPropertyTests is ERC4626Test {
     Strategy strategyModuleImpl;
     Rebalance rebalanceModuleImpl;
     // plugins
-    Rebalancer rebalancerPlugin;
     WithdrawalQueue withdrawalQueuePluginImpl;
 
     EulerAggregationVaultFactory eulerAggregationVaultFactory;
@@ -43,7 +41,6 @@ contract A16zPropertyTests is ERC4626Test {
         strategyModuleImpl = new Strategy();
         rebalanceModuleImpl = new Rebalance();
 
-        rebalancerPlugin = new Rebalancer();
         withdrawalQueuePluginImpl = new WithdrawalQueue();
 
         EulerAggregationVaultFactory.FactoryParams memory factoryParams = EulerAggregationVaultFactory.FactoryParams({
@@ -53,8 +50,7 @@ contract A16zPropertyTests is ERC4626Test {
             hooksModuleImpl: address(hooksImpl),
             feeModuleImpl: address(feeModuleImpl),
             strategyModuleImpl: address(strategyModuleImpl),
-            rebalanceModuleImpl: address(rebalanceModuleImpl),
-            rebalancer: address(rebalancerPlugin)
+            rebalanceModuleImpl: address(rebalanceModuleImpl)
         });
         eulerAggregationVaultFactory = new EulerAggregationVaultFactory(factoryParams);
         vm.prank(factoryOwner);

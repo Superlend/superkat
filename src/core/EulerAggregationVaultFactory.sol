@@ -23,9 +23,6 @@ contract EulerAggregationVaultFactory is Ownable {
     address public immutable feeModuleImpl;
     address public immutable strategyModuleImpl;
     address public immutable rebalanceModuleImpl;
-    /// plugins
-    /// @dev Rebalancer plugin contract address, one instance can serve different aggregation vaults
-    address public immutable rebalancer;
     /// @dev Mapping to set whitelisted WhithdrawalQueue plugin implementation.
     mapping(address => bool) public isWhitelistedWithdrawalQueueImpl;
     /// @dev An array of the whitelisted WithdrawalQueue plugin implementations.
@@ -42,7 +39,6 @@ contract EulerAggregationVaultFactory is Ownable {
         address feeModuleImpl;
         address strategyModuleImpl;
         address rebalanceModuleImpl;
-        address rebalancer;
     }
 
     event WhitelistWithdrawalQueueImpl(address withdrawalQueueImpl);
@@ -59,7 +55,6 @@ contract EulerAggregationVaultFactory is Ownable {
         feeModuleImpl = _factoryParams.feeModuleImpl;
         strategyModuleImpl = _factoryParams.strategyModuleImpl;
         rebalanceModuleImpl = _factoryParams.rebalanceModuleImpl;
-        rebalancer = _factoryParams.rebalancer;
     }
 
     /// @notice Whitelist a new WithdrawalQueue implementation.
@@ -108,7 +103,6 @@ contract EulerAggregationVaultFactory is Ownable {
             aggregationVaultOwner: msg.sender,
             asset: _asset,
             withdrawalQueuePlugin: Clones.clone(_withdrawalQueueImpl),
-            rebalancerPlugin: rebalancer,
             balanceTracker: balanceTracker,
             name: _name,
             symbol: _symbol,

@@ -12,7 +12,6 @@ import {
     IEulerAggregationVault,
     ErrorsLib,
     IERC4626,
-    Rebalancer,
     WithdrawalQueue
 } from "../../common/EulerAggregationVaultBase.t.sol";
 import {Actor} from "../util/Actor.sol";
@@ -22,7 +21,6 @@ contract RebalancerHandler is Test {
     Actor internal actorUtil;
     Strategy internal strategyUtil;
     EulerAggregationVault internal eulerAggVault;
-    Rebalancer internal rebalancer;
     WithdrawalQueue internal withdrawalQueue;
 
     // last function call state
@@ -33,7 +31,6 @@ contract RebalancerHandler is Test {
 
     constructor(
         EulerAggregationVault _eulerAggVault,
-        Rebalancer _rebalancer,
         Actor _actor,
         Strategy _strategy,
         WithdrawalQueue _withdrawalQueue
@@ -41,7 +38,6 @@ contract RebalancerHandler is Test {
         eulerAggVault = _eulerAggVault;
         actorUtil = _actor;
         strategyUtil = _strategy;
-        rebalancer = _rebalancer;
         withdrawalQueue = _withdrawalQueue;
     }
 
@@ -51,8 +47,8 @@ contract RebalancerHandler is Test {
         (address[] memory strategiesToRebalance, uint256 strategiesCounter) = withdrawalQueue.getWithdrawalQueueArray();
         (currentActor, success, returnData) = actorUtil.initiateActorCall(
             _actorIndexSeed,
-            address(rebalancer),
-            abi.encodeWithSelector(Rebalancer.executeRebalance.selector, address(eulerAggVault), strategiesToRebalance)
+            address(eulerAggVault),
+            abi.encodeWithSelector(EulerAggregationVault.executeRebalance.selector, strategiesToRebalance)
         );
 
         for (uint256 i; i < strategiesCounter; i++) {

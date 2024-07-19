@@ -14,7 +14,7 @@ import {RebalanceModule} from "./module/Rebalance.sol";
 /// @author Euler Labs (https://www.eulerlabs.com/)
 /// @dev This contract implement the modifier to use for forwarding calls to a specific module using delegateCall.
 /// @dev Copied from https://github.com/euler-xyz/euler-vault-kit/blob/55d1a1fd7d572372f1c8b9f58aba0604bda3ca4f/src/EVault/Dispatch.sol.
-abstract contract Dispatch is RewardsModule, HooksModule, FeeModule, StrategyModule {
+abstract contract Dispatch is RewardsModule, HooksModule, FeeModule, StrategyModule, RebalanceModule {
     address public immutable rewardsModule;
     address public immutable hooksModule;
     address public immutable feeModule;

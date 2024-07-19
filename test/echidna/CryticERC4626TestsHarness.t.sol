@@ -5,7 +5,6 @@ pragma solidity ^0.8.0;
 import {CryticERC4626PropertyTests} from "crytic-properties/ERC4626/ERC4626PropertyTests.sol";
 // contracts
 import {EulerAggregationVault} from "../../src/core/EulerAggregationVault.sol";
-import {Rebalancer} from "../../src/plugin/Rebalancer.sol";
 import {Hooks} from "../../src/core/module/Hooks.sol";
 import {Rewards} from "../../src/core/module/Rewards.sol";
 import {Fee} from "../../src/core/module/Fee.sol";
@@ -27,7 +26,6 @@ contract CryticERC4626TestsHarness is CryticERC4626PropertyTests {
     Strategy strategyModuleImpl;
     Rebalance rebalanceModuleImpl;
     // plugins
-    Rebalancer rebalancerPlugin;
     WithdrawalQueue withdrawalQueuePluginImpl;
 
     EulerAggregationVaultFactory eulerAggregationVaultFactory;
@@ -40,7 +38,6 @@ contract CryticERC4626TestsHarness is CryticERC4626PropertyTests {
         strategyModuleImpl = new Strategy();
         rebalanceModuleImpl = new Rebalance();
 
-        rebalancerPlugin = new Rebalancer();
         withdrawalQueuePluginImpl = new WithdrawalQueue();
 
         EulerAggregationVaultFactory.FactoryParams memory factoryParams = EulerAggregationVaultFactory.FactoryParams({
@@ -50,8 +47,7 @@ contract CryticERC4626TestsHarness is CryticERC4626PropertyTests {
             hooksModuleImpl: address(hooksImpl),
             feeModuleImpl: address(feeModuleImpl),
             strategyModuleImpl: address(strategyModuleImpl),
-            rebalanceModuleImpl: address(rebalanceModuleImpl),
-            rebalancer: address(rebalancerPlugin)
+            rebalanceModuleImpl: address(rebalanceModuleImpl)
         });
         eulerAggregationVaultFactory = new EulerAggregationVaultFactory(factoryParams);
         eulerAggregationVaultFactory.whitelistWithdrawalQueueImpl(address(withdrawalQueuePluginImpl));

@@ -52,7 +52,7 @@ contract GulpTest is EulerAggregationVaultBase {
             vm.prank(user1);
             address[] memory strategiesToRebalance = new address[](1);
             strategiesToRebalance[0] = address(eTST);
-            rebalancer.executeRebalance(address(eulerAggregationVault), strategiesToRebalance);
+            eulerAggregationVault.executeRebalance(strategiesToRebalance);
 
             assertEq(eulerAggregationVault.totalAllocated(), expectedStrategyCash);
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationVault))), expectedStrategyCash);
