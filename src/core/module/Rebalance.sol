@@ -22,7 +22,7 @@ abstract contract RebalanceModule is ContextUpgradeable, Shared {
     /// @notice Rebalance strategies allocation for a specific curated vault.
     /// @param _strategies Strategies addresses.
     function executeRebalance(address[] calldata _strategies) external virtual nonReentrant {
-        // IEulerAggregationVault(_aggregationVault).gulp();
+        _gulp();
 
         for (uint256 i; i < _strategies.length; ++i) {
             _rebalance(_strategies[i]);
@@ -67,10 +67,9 @@ abstract contract RebalanceModule is ContextUpgradeable, Shared {
             isDeposit = false;
         } else if (strategyData.allocated < targetAllocation) {
             // Deposit
-            uint256 targetCash = totalAssetsAllocatableCache
-                * IEulerAggregationVault(address(this)).getStrategy(address(0)).allocationPoints
-                / totalAllocationPointsCache;
-            uint256 currentCash = totalAssetsAllocatableCache - IEulerAggregationVault(address(this)).totalAllocated();
+            uint256 targetCash =
+                totalAssetsAllocatableCache * $.strategies[address(0)].allocationPoints / totalAllocationPointsCache;
+            uint256 currentCash = totalAssetsAllocatableCache - $.totalAllocated;
 
             // Calculate available cash to put in strategies
             uint256 cashAvailable = (currentCash > targetCash) ? currentCash - targetCash : 0;

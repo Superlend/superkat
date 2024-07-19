@@ -49,11 +49,6 @@ contract EulerAggregationVault is
     bytes32 public constant AGGREGATION_VAULT_MANAGER = keccak256("AGGREGATION_VAULT_MANAGER");
     bytes32 public constant AGGREGATION_VAULT_MANAGER_ADMIN = keccak256("AGGREGATION_VAULT_MANAGER_ADMIN");
 
-    /// @dev Interest rate smearing period
-    uint256 public constant INTEREST_SMEAR = 2 weeks;
-    /// @dev Minimum amount of shares to exist for gulp to be enabled
-    uint256 public constant MIN_SHARES_FOR_GULP = 1e7;
-
     /// @dev Constructor.
     constructor(ConstructorParams memory _constructorParams)
         Dispatch(
@@ -425,40 +420,6 @@ contract EulerAggregationVault is
         );
     }
 
-    /// @notice update accrued interest.
-    function _updateInterestAccrued() internal {
-        uint256 accruedInterest = _interestAccruedFromCache();
-
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-        // it's safe to down-cast because the accrued interest is a fraction of interest left
-        $.interestLeft -= uint168(accruedInterest);
-        $.lastInterestUpdate = uint40(block.timestamp);
-
-        // Move interest accrued to totalAssetsDeposited
-        $.totalAssetsDeposited += accruedInterest;
-    }
-
-    /// @dev gulp positive yield into interest left amd update accrued interest.
-    function _gulp() internal {
-        _updateInterestAccrued();
-
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-
-        // Do not gulp if total supply is too low
-        if (totalSupply() < MIN_SHARES_FOR_GULP) return;
-
-        uint256 toGulp = totalAssetsAllocatable() - $.totalAssetsDeposited - $.interestLeft;
-        if (toGulp == 0) return;
-
-        uint256 maxGulp = type(uint168).max - $.interestLeft;
-        if (toGulp > maxGulp) toGulp = maxGulp; // cap interest, allowing the vault to function
-
-        $.interestSmearEnd = uint40(block.timestamp + INTEREST_SMEAR);
-        $.interestLeft += uint168(toGulp); // toGulp <= maxGulp <= max uint168
-
-        emit Events.Gulp($.interestLeft, $.interestSmearEnd);
-    }
-
     /// @dev Loop through stratgies, aggregate positive yield and loss and account for net amount.
     /// @dev Loss socialization will be taken out from interest left first, if not enough, sozialize on deposits.
     function _harvest() internal {
@@ -571,28 +532,6 @@ contract EulerAggregationVault is
         if ((to != address(0)) && (_balanceForwarderEnabled(to))) {
             balanceTracker.balanceTrackerHook(to, super.balanceOf(to), false);
         }
-    }
-
-    /// @dev Get accrued interest without updating it.
-    /// @return uint256 Accrued interest.
-    function _interestAccruedFromCache() internal view returns (uint256) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-
-        // If distribution ended, full amount is accrued
-        if (block.timestamp >= $.interestSmearEnd) {
-            return $.interestLeft;
-        }
-
-        // If just updated return 0
-        if ($.lastInterestUpdate == block.timestamp) {
-            return 0;
-        }
-
-        // Else return what has accrued
-        uint256 totalDuration = $.interestSmearEnd - $.lastInterestUpdate;
-        uint256 timePassed = block.timestamp - $.lastInterestUpdate;
-
-        return $.interestLeft * timePassed / totalDuration;
     }
 
     /// @dev Check if caller is WithdrawalQueue address, if not revert.
