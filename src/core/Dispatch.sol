@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 //contracts
-import {Shared} from "./common/Shared.sol";
 import {HooksModule} from "./module/Hooks.sol";
 import {RewardsModule} from "./module/Rewards.sol";
 import {StrategyModule} from "./module/Strategy.sol";
