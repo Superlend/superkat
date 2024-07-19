@@ -17,7 +17,6 @@ import {ERC20VotesUpgradeable} from "@openzeppelin-upgradeable/token/ERC20/exten
 import {AccessControlEnumerableUpgradeable} from
     "@openzeppelin-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
 import {Shared} from "./common/Shared.sol";
-import {ContextUpgradeable} from "@openzeppelin-upgradeable/utils/ContextUpgradeable.sol";
 // libs
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -161,30 +160,30 @@ contract EulerAggregationVault is
     function addStrategy(address _strategy, uint256 _allocationPoints)
         external
         override
-        use(strategyModule)
         onlyRole(STRATEGY_OPERATOR)
+        use(strategyModule)
     {}
 
     /// @dev See {StrategyModule-removeStrategy}.
-    function removeStrategy(address _strategy) external override use(strategyModule) onlyRole(STRATEGY_OPERATOR) {}
+    function removeStrategy(address _strategy) external override onlyRole(STRATEGY_OPERATOR) use(strategyModule) {}
 
     /// @dev See {StrategyModule-setStrategyCap}.
-    function setStrategyCap(address _strategy, uint256 _cap) external override use(strategyModule) onlyRole(GUARDIAN) {}
+    function setStrategyCap(address _strategy, uint256 _cap) external override onlyRole(GUARDIAN) use(strategyModule) {}
 
     /// @dev See {StrategyModule-adjustAllocationPoints}.
     function adjustAllocationPoints(address _strategy, uint256 _newPoints)
         external
         override
-        use(strategyModule)
         onlyRole(GUARDIAN)
+        use(strategyModule)
     {}
 
     /// @dev See {StrategyModule-toggleStrategyEmergencyStatus}.
     function toggleStrategyEmergencyStatus(address _strategy)
         external
         override
-        use(strategyModule)
         onlyRole(GUARDIAN)
+        use(strategyModule)
     {}
 
     /// @dev See {RewardsModule-enableBalanceForwarder}.
