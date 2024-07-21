@@ -22,6 +22,8 @@ contract EulerAggregationVaultFactory {
     address public immutable feeModule;
     address public immutable strategyModule;
     address public immutable rebalanceModule;
+    /// aggregation vault implementation address
+    address public immutable aggregationVaultImpl;
 
     address[] public aggregationVaults;
 
@@ -36,7 +38,6 @@ contract EulerAggregationVaultFactory {
         address rebalanceModuleImpl;
     }
 
-    event WhitelistWithdrawalQueueImpl(address withdrawalQueueImpl);
     event DeployEulerAggregationVault(
         address indexed _owner, address _aggregationVault, address indexed _withdrawalQueueImpl, address indexed _asset
     );
@@ -50,6 +51,16 @@ contract EulerAggregationVaultFactory {
         feeModule = Clones.clone(_factoryParams.feeModuleImpl);
         strategyModule = Clones.clone(_factoryParams.strategyModuleImpl);
         rebalanceModule = Clones.clone(_factoryParams.rebalanceModuleImpl);
+
+        IEulerAggregationVault.ConstructorParams memory aggregationVaultConstructorParams = IEulerAggregationVault
+            .ConstructorParams({
+            rewardsModule: rewardsModule,
+            hooksModule: hooksModule,
+            feeModule: feeModule,
+            strategyModule: strategyModule,
+            rebalanceModule: rebalanceModule
+        });
+        aggregationVaultImpl = address(new EulerAggregationVault(aggregationVaultConstructorParams));
     }
 
     /// @notice Deploy a new aggregation vault.
@@ -68,16 +79,7 @@ contract EulerAggregationVaultFactory {
         string memory _symbol,
         uint256 _initialCashAllocationPoints
     ) external returns (address) {
-        // deploy new aggregation vault
-        IEulerAggregationVault.ConstructorParams memory aggregationVaultConstructorParams = IEulerAggregationVault
-            .ConstructorParams({
-            rewardsModule: rewardsModule,
-            hooksModule: hooksModule,
-            feeModule: feeModule,
-            strategyModule: strategyModule,
-            rebalanceModule: rebalanceModule
-        });
-        EulerAggregationVault eulerAggregationVault = new EulerAggregationVault(aggregationVaultConstructorParams);
+        address eulerAggregationVault = Clones.clone(aggregationVaultImpl);
 
         IEulerAggregationVault.InitParams memory aggregationVaultInitParams = IEulerAggregationVault.InitParams({
             aggregationVaultOwner: msg.sender,
@@ -88,13 +90,13 @@ contract EulerAggregationVaultFactory {
             symbol: _symbol,
             initialCashAllocationPoints: _initialCashAllocationPoints
         });
-        eulerAggregationVault.init(aggregationVaultInitParams);
+        IEulerAggregationVault(eulerAggregationVault).init(aggregationVaultInitParams);
 
         aggregationVaults.push(address(eulerAggregationVault));
 
         emit DeployEulerAggregationVault(msg.sender, address(eulerAggregationVault), _withdrawalQueueImpl, _asset);
 
-        return address(eulerAggregationVault);
+        return eulerAggregationVault;
     }
 
     /// @notice Fetch the length of the deployed aggregation vaults list.

@@ -59,6 +59,7 @@ interface IEulerAggregationVault {
         Emergency
     }
 
+    function init(InitParams calldata _initParams) external;
     function gulp() external;
     function harvest() external;
     function executeStrategyWithdraw(address _strategy, uint256 _withdrawAmount) external returns (uint256);
