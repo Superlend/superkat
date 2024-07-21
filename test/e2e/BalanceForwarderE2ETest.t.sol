@@ -35,7 +35,7 @@ contract BalanceForwarderE2ETest is EulerAggregationVaultBase {
             rebalanceModuleImpl: address(rebalanceModuleImpl)
         });
         eulerAggregationVaultFactory = new EulerAggregationVaultFactory(factoryParams);
-        eulerAggregationVaultFactory.whitelistWithdrawalQueueImpl(address(withdrawalQueueImpl));
+        // eulerAggregationVaultFactory.whitelistWithdrawalQueueImpl(address(withdrawalQueueImpl));
 
         eulerAggregationVault = EulerAggregationVault(
             eulerAggregationVaultFactory.deployEulerAggregationVault(

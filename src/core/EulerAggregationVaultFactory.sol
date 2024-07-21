@@ -3,14 +3,13 @@ pragma solidity ^0.8.0;
 
 // contracts
 import {EulerAggregationVault, IEulerAggregationVault} from "./EulerAggregationVault.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 // libs
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
 /// @title EulerAggregationVaultFactory contract
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
-contract EulerAggregationVaultFactory is Ownable {
+contract EulerAggregationVaultFactory {
     error WithdrawalQueueAlreadyWhitelisted();
     error NotWhitelistedWithdrawalQueueImpl();
     error InvalidQuery();
@@ -18,16 +17,12 @@ contract EulerAggregationVaultFactory is Ownable {
     /// core dependencies
     address public immutable balanceTracker;
     /// core modules implementations addresses
-    address public immutable rewardsModuleImpl;
-    address public immutable hooksModuleImpl;
-    address public immutable feeModuleImpl;
-    address public immutable strategyModuleImpl;
-    address public immutable rebalanceModuleImpl;
-    /// @dev Mapping to set whitelisted WhithdrawalQueue plugin implementation.
-    mapping(address => bool) public isWhitelistedWithdrawalQueueImpl;
-    /// @dev An array of the whitelisted WithdrawalQueue plugin implementations.
-    address[] public withdrawalQueueImpls;
-    /// @dev Array to store the addresses of all deployed aggregation vaults.
+    address public immutable rewardsModule;
+    address public immutable hooksModule;
+    address public immutable feeModule;
+    address public immutable strategyModule;
+    address public immutable rebalanceModule;
+
     address[] public aggregationVaults;
 
     /// @dev Init params struct.
@@ -48,26 +43,13 @@ contract EulerAggregationVaultFactory is Ownable {
 
     /// @notice Constructor.
     /// @param _factoryParams FactoryParams struct.
-    constructor(FactoryParams memory _factoryParams) Ownable(_factoryParams.owner) {
+    constructor(FactoryParams memory _factoryParams) {
         balanceTracker = _factoryParams.balanceTracker;
-        rewardsModuleImpl = _factoryParams.rewardsModuleImpl;
-        hooksModuleImpl = _factoryParams.hooksModuleImpl;
-        feeModuleImpl = _factoryParams.feeModuleImpl;
-        strategyModuleImpl = _factoryParams.strategyModuleImpl;
-        rebalanceModuleImpl = _factoryParams.rebalanceModuleImpl;
-    }
-
-    /// @notice Whitelist a new WithdrawalQueue implementation.
-    /// @dev Can only be called by factory owner.
-    /// @param _withdrawalQueuImpl WithdrawalQueue plugin implementation.
-    function whitelistWithdrawalQueueImpl(address _withdrawalQueuImpl) external onlyOwner {
-        if (isWhitelistedWithdrawalQueueImpl[_withdrawalQueuImpl]) revert WithdrawalQueueAlreadyWhitelisted();
-
-        isWhitelistedWithdrawalQueueImpl[_withdrawalQueuImpl] = true;
-
-        withdrawalQueueImpls.push(_withdrawalQueuImpl);
-
-        emit WhitelistWithdrawalQueueImpl(_withdrawalQueuImpl);
+        rewardsModule = Clones.clone(_factoryParams.rewardsModuleImpl);
+        hooksModule = Clones.clone(_factoryParams.hooksModuleImpl);
+        feeModule = Clones.clone(_factoryParams.feeModuleImpl);
+        strategyModule = Clones.clone(_factoryParams.strategyModuleImpl);
+        rebalanceModule = Clones.clone(_factoryParams.rebalanceModuleImpl);
     }
 
     /// @notice Deploy a new aggregation vault.
@@ -86,16 +68,14 @@ contract EulerAggregationVaultFactory is Ownable {
         string memory _symbol,
         uint256 _initialCashAllocationPoints
     ) external returns (address) {
-        if (!isWhitelistedWithdrawalQueueImpl[_withdrawalQueueImpl]) revert NotWhitelistedWithdrawalQueueImpl();
-
         // deploy new aggregation vault
         IEulerAggregationVault.ConstructorParams memory aggregationVaultConstructorParams = IEulerAggregationVault
             .ConstructorParams({
-            rewardsModule: Clones.clone(rewardsModuleImpl),
-            hooksModule: Clones.clone(hooksModuleImpl),
-            feeModule: Clones.clone(feeModuleImpl),
-            strategyModule: Clones.clone(strategyModuleImpl),
-            rebalanceModule: Clones.clone(rebalanceModuleImpl)
+            rewardsModule: rewardsModule,
+            hooksModule: hooksModule,
+            feeModule: feeModule,
+            strategyModule: strategyModule,
+            rebalanceModule: rebalanceModule
         });
         EulerAggregationVault eulerAggregationVault = new EulerAggregationVault(aggregationVaultConstructorParams);
 
@@ -115,25 +95,6 @@ contract EulerAggregationVaultFactory is Ownable {
         emit DeployEulerAggregationVault(msg.sender, address(eulerAggregationVault), _withdrawalQueueImpl, _asset);
 
         return address(eulerAggregationVault);
-    }
-
-    /// @notice Fetch the length of the whitelisted WithdrawalQueue implementations list
-    /// @return The length of the proxy list array
-    function getWithdrawalQueueImplsListLength() external view returns (uint256) {
-        return withdrawalQueueImpls.length;
-    }
-
-    /// @notice Return the WithdrawalQueue implementations list.
-    /// @return withdrawalQueueImplsList An array of addresses.
-    function getWithdrawalQueueImplsList() external view returns (address[] memory) {
-        uint256 length = withdrawalQueueImpls.length;
-        address[] memory withdrawalQueueImplsList = new address[](length);
-
-        for (uint256 i; i < length; ++i) {
-            withdrawalQueueImplsList[i] = withdrawalQueueImpls[i];
-        }
-
-        return withdrawalQueueImplsList;
     }
 
     /// @notice Fetch the length of the deployed aggregation vaults list.

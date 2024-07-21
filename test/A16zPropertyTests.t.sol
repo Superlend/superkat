@@ -54,7 +54,7 @@ contract A16zPropertyTests is ERC4626Test {
         });
         eulerAggregationVaultFactory = new EulerAggregationVaultFactory(factoryParams);
         vm.prank(factoryOwner);
-        eulerAggregationVaultFactory.whitelistWithdrawalQueueImpl(address(withdrawalQueuePluginImpl));
+        // eulerAggregationVaultFactory.whitelistWithdrawalQueueImpl(address(withdrawalQueuePluginImpl));
 
         _underlying_ = address(new ERC20Mock());
         _vault_ = eulerAggregationVaultFactory.deployEulerAggregationVault(

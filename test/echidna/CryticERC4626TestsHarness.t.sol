@@ -50,7 +50,7 @@ contract CryticERC4626TestsHarness is CryticERC4626PropertyTests {
             rebalanceModuleImpl: address(rebalanceModuleImpl)
         });
         eulerAggregationVaultFactory = new EulerAggregationVaultFactory(factoryParams);
-        eulerAggregationVaultFactory.whitelistWithdrawalQueueImpl(address(withdrawalQueuePluginImpl));
+        // eulerAggregationVaultFactory.whitelistWithdrawalQueueImpl(address(withdrawalQueuePluginImpl));
 
         TestERC20Token _asset = new TestERC20Token("Test Token", "TT", 18);
         address _vault = eulerAggregationVaultFactory.deployEulerAggregationVault(
