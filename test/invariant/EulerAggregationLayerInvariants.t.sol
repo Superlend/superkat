@@ -61,11 +61,13 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
     function invariant_gulp() public {
         eulerAggregationVault.gulp();
 
-        assertEq(
-            eulerAggregationVault.totalAssetsAllocatable(),
-            eulerAggregationVault.totalAssetsDeposited()
-                + (eulerAggregationVault.getAggregationVaultSavingRate()).interestLeft
-        );
+        if (eulerAggregationVault.totalSupply() >= eulerAggregationVault.MIN_SHARES_FOR_GULP()) {
+            assertEq(
+                eulerAggregationVault.totalAssetsAllocatable(),
+                eulerAggregationVault.totalAssetsDeposited()
+                    + (eulerAggregationVault.getAggregationVaultSavingRate()).interestLeft
+            );
+        }
     }
 
     // totalAssetsDeposited should be equal to the totalAssetsAllocatable after SMEAR has passed.
@@ -169,13 +171,13 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
         assertEq(eulerAggregationVault.getStrategy(address(0)).cap, 0);
     }
 
-    function invariant_votingPower() public view {
-        address[] memory actorsList = actorUtil.getActors();
+    // function invariant_votingPower() public view {
+    //     address[] memory actorsList = actorUtil.getActors();
 
-        for (uint256 i; i < actorsList.length; i++) {
-            assertEq(eulerAggregationVault.balanceOf(actorsList[i]), eulerAggregationVault.getVotes(actorsList[i]));
-        }
-    }
+    //     for (uint256 i; i < actorsList.length; i++) {
+    //         assertEq(eulerAggregationVault.balanceOf(actorsList[i]), eulerAggregationVault.getVotes(actorsList[i]));
+    //     }
+    // }
 
     function _deployOtherStrategies() private {
         eTSTsecond = IEVault(

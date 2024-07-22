@@ -85,10 +85,13 @@ abstract contract StrategyModule is Shared {
 
             _deductLoss(strategyCached.allocated);
         } else {
+            uint256 vaultStrategyBalance = IERC4626(_strategy).maxWithdraw(address(this));
+
             $.strategies[_strategy].status = IEulerAggregationVault.StrategyStatus.Active;
+            $.strategies[_strategy].allocated = vaultStrategyBalance.toUint120();
 
             $.totalAllocationPoints += strategyCached.allocationPoints;
-            $.totalAllocated += IERC4626(_strategy).maxWithdraw(address(this));
+            $.totalAllocated += vaultStrategyBalance;
         }
     }
 
