@@ -32,8 +32,8 @@ import {EventsLib as Events} from "./lib/EventsLib.sol";
 /// @dev Do NOT use with rebasing tokens
 /// @dev inspired by Yearn v3 ❤️
 contract EulerAggregationVault is
-    ERC4626Upgradeable,
     ERC20VotesUpgradeable,
+    ERC4626Upgradeable,
     AccessControlEnumerableUpgradeable,
     Dispatch,
     IEulerAggregationVault
@@ -189,7 +189,7 @@ contract EulerAggregationVault is
 
     function executeRebalance(address[] calldata _strategies) external override use(rebalanceModule) {}
 
-    /// @notice Harvest all the strategies.
+    /// @notice Harvest all the strategies. Any positive yiled should be gupled by calling gulp() after harvesting.
     /// @dev This function will loop through the strategies following the withdrawal queue order and harvest all.
     /// @dev Harvest yield and losses will be aggregated and only net yield/loss will be accounted.
     function harvest() external nonReentrant {
@@ -244,6 +244,8 @@ contract EulerAggregationVault is
         uint256 _shares
     ) external {
         _isCallerWithdrawalQueue();
+
+        if (_receiver == address(this)) revert Errors.CanNotReceiveWithdrawnAsset();
 
         super._withdraw(_caller, _receiver, _owner, _assets, _shares);
 
@@ -423,6 +425,9 @@ contract EulerAggregationVault is
     /// @dev Loop through stratgies, aggregate positive yield and loss and account for net amount.
     /// @dev Loss socialization will be taken out from interest left first, if not enough, sozialize on deposits.
     function _harvest() internal {
+        // gulp any extra tokens to cover in case of loss socialization
+        _gulp();
+
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         (address[] memory withdrawalQueueArray, uint256 length) =
@@ -440,12 +445,14 @@ contract EulerAggregationVault is
         $.totalAllocated = $.totalAllocated + totalYield - totalLoss;
 
         if (totalLoss > totalYield) {
+            // we do not need to call gulp() again here as aggregated yield is negative and there is nothing gulpable.
             _deductLoss(totalLoss - totalYield);
+        } else {
+            // gulp net positive yield
+            _gulp();
         }
 
         emit Events.Harvest($.totalAllocated, totalYield, totalLoss);
-
-        _gulp();
     }
 
     /// @dev Execute harvest on a single strategy.

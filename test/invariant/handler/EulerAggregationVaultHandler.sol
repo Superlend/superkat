@@ -186,6 +186,24 @@ contract EulerAggregationVaultHandler is Test {
         assertEq(eulerAggVault.totalAllocationPoints(), ghost_totalAllocationPoints);
     }
 
+    function executeRebalance(uint256 _actorIndexSeed) external {
+        (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
+
+        (address[] memory strategiesToRebalance, uint256 strategiesCounter) = withdrawalQueue.getWithdrawalQueueArray();
+        (currentActor, success, returnData) = actorUtil.initiateActorCall(
+            _actorIndexSeed,
+            address(eulerAggVault),
+            abi.encodeWithSelector(EulerAggregationVault.executeRebalance.selector, strategiesToRebalance)
+        );
+
+        for (uint256 i; i < strategiesCounter; i++) {
+            assertEq(
+                IERC4626(strategiesToRebalance[i]).maxWithdraw(address(eulerAggVault)),
+                (eulerAggVault.getStrategy(strategiesToRebalance[i])).allocated
+            );
+        }
+    }
+
     function harvest(uint256 _actorIndexSeed) external {
         // track total yield and total loss to simulate loss socialization
         uint256 totalYield;

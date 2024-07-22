@@ -12,7 +12,6 @@ import {
 import {Actor} from "./util/Actor.sol";
 import {Strategy} from "./util/Strategy.sol";
 import {EulerAggregationVaultHandler} from "./handler/EulerAggregationVaultHandler.sol";
-import {RebalancerHandler} from "./handler/RebalancerHandler.sol";
 import {WithdrawalQueueHandler} from "./handler/WithdrawalQueueHandler.sol";
 
 contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
@@ -20,7 +19,6 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
     Strategy internal strategyUtil;
 
     EulerAggregationVaultHandler internal eulerAggregationVaultHandler;
-    RebalancerHandler internal rebalancerHandler;
     WithdrawalQueueHandler internal withdrawalQueueHandler;
 
     // other strategies
@@ -52,12 +50,10 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
 
         eulerAggregationVaultHandler =
             new EulerAggregationVaultHandler(eulerAggregationVault, actorUtil, strategyUtil, withdrawalQueue);
-        rebalancerHandler = new RebalancerHandler(eulerAggregationVault, actorUtil, strategyUtil, withdrawalQueue);
         withdrawalQueueHandler =
             new WithdrawalQueueHandler(eulerAggregationVault, actorUtil, strategyUtil, withdrawalQueue);
 
         targetContract(address(eulerAggregationVaultHandler));
-        targetContract(address(rebalancerHandler));
         targetContract(address(withdrawalQueueHandler));
     }
 
