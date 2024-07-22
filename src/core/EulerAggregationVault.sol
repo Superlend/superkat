@@ -32,8 +32,8 @@ import {EventsLib as Events} from "./lib/EventsLib.sol";
 /// @dev Do NOT use with rebasing tokens
 /// @dev inspired by Yearn v3 ❤️
 contract EulerAggregationVault is
-    ERC20VotesUpgradeable,
     ERC4626Upgradeable,
+    ERC20VotesUpgradeable,
     AccessControlEnumerableUpgradeable,
     Dispatch,
     IEulerAggregationVault

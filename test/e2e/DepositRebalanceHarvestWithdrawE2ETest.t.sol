@@ -44,6 +44,8 @@ contract DepositRebalanceHarvestWithdrawE2ETest is EulerAggregationVaultBase {
             assertEq(eulerAggregationVault.totalSupply(), totalSupplyBefore + amountToDeposit);
             assertEq(eulerAggregationVault.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
             assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - amountToDeposit);
+            assertEq(eulerAggregationVault.numCheckpoints(user1), 0);
+            assertEq(eulerAggregationVault.balanceOf(user1), eulerAggregationVault.getVotes(user1));
         }
 
         // rebalance into strategy

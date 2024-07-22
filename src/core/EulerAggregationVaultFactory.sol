@@ -23,7 +23,7 @@ contract EulerAggregationVaultFactory {
     address public immutable strategyModule;
     address public immutable rebalanceModule;
     /// aggregation vault implementation address
-    address public immutable aggregationVaultImpl;
+    // address public immutable aggregationVaultImpl;
 
     address[] public aggregationVaults;
 
@@ -52,15 +52,15 @@ contract EulerAggregationVaultFactory {
         strategyModule = Clones.clone(_factoryParams.strategyModuleImpl);
         rebalanceModule = Clones.clone(_factoryParams.rebalanceModuleImpl);
 
-        IEulerAggregationVault.ConstructorParams memory aggregationVaultConstructorParams = IEulerAggregationVault
-            .ConstructorParams({
-            rewardsModule: rewardsModule,
-            hooksModule: hooksModule,
-            feeModule: feeModule,
-            strategyModule: strategyModule,
-            rebalanceModule: rebalanceModule
-        });
-        aggregationVaultImpl = address(new EulerAggregationVault(aggregationVaultConstructorParams));
+        // IEulerAggregationVault.ConstructorParams memory aggregationVaultConstructorParams = IEulerAggregationVault
+        //     .ConstructorParams({
+        //     rewardsModule: rewardsModule,
+        //     hooksModule: hooksModule,
+        //     feeModule: feeModule,
+        //     strategyModule: strategyModule,
+        //     rebalanceModule: rebalanceModule
+        // });
+        // aggregationVaultImpl = address(new EulerAggregationVault(aggregationVaultConstructorParams));
     }
 
     /// @notice Deploy a new aggregation vault.
@@ -79,7 +79,16 @@ contract EulerAggregationVaultFactory {
         string memory _symbol,
         uint256 _initialCashAllocationPoints
     ) external returns (address) {
-        address eulerAggregationVault = Clones.clone(aggregationVaultImpl);
+        // address eulerAggregationVault = Clones.clone(aggregationVaultImpl);
+        IEulerAggregationVault.ConstructorParams memory aggregationVaultConstructorParams = IEulerAggregationVault
+            .ConstructorParams({
+            rewardsModule: rewardsModule,
+            hooksModule: hooksModule,
+            feeModule: feeModule,
+            strategyModule: strategyModule,
+            rebalanceModule: rebalanceModule
+        });
+        address eulerAggregationVault = address(new EulerAggregationVault(aggregationVaultConstructorParams));
 
         IEulerAggregationVault.InitParams memory aggregationVaultInitParams = IEulerAggregationVault.InitParams({
             aggregationVaultOwner: msg.sender,
