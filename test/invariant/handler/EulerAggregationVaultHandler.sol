@@ -269,6 +269,10 @@ contract EulerAggregationVaultHandler is Test {
 
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
 
+        if (eulerAggVault.totalSupply() == 0) {
+            uint256 minAssets = eulerAggVault.previewMint(eulerAggVault.MIN_SHARES_FOR_GULP());
+            vm.assume(_assets >= minAssets);
+        }
         _fillBalance(currentActor, eulerAggVault.asset(), _assets);
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
@@ -287,6 +291,10 @@ contract EulerAggregationVaultHandler is Test {
         vm.assume(_receiver != address(0));
 
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
+
+        if (eulerAggVault.totalSupply() == 0) {
+            vm.assume(_shares >= eulerAggVault.MIN_SHARES_FOR_GULP());
+        }
 
         uint256 assets = eulerAggVault.previewMint(_shares);
         _fillBalance(currentActor, eulerAggVault.asset(), assets);

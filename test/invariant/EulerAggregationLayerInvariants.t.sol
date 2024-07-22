@@ -31,7 +31,7 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
     function setUp() public override {
         super.setUp();
 
-        actorUtil = new Actor();
+        actorUtil = new Actor(address(eulerAggregationVault));
         actorUtil.includeActor(manager);
         actorUtil.includeActor(deployer);
         actorUtil.includeActor(user1);
@@ -76,7 +76,9 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
         skip(eulerAggregationVault.INTEREST_SMEAR()); // make sure smear has passed
         eulerAggregationVault.updateInterestAccrued();
 
-        assertEq(eulerAggregationVault.totalAssets(), eulerAggregationVault.totalAssetsAllocatable());
+        if (eulerAggregationVault.totalSupply() >= eulerAggregationVault.MIN_SHARES_FOR_GULP()) {
+            assertEq(eulerAggregationVault.totalAssets(), eulerAggregationVault.totalAssetsAllocatable());
+        }
     }
 
     // total allocation points should be equal to the sum of the allocation points of all strategies.
