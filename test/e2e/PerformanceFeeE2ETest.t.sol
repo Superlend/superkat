@@ -86,7 +86,7 @@ contract PerformanceFeeE2ETest is EulerAggregationVaultBase {
             vm.prank(user1);
             address[] memory strategiesToRebalance = new address[](1);
             strategiesToRebalance[0] = address(eTST);
-            eulerAggregationVault.executeRebalance(strategiesToRebalance);
+            eulerAggregationVault.rebalance(strategiesToRebalance);
 
             assertEq(eulerAggregationVault.totalAllocated(), expectedStrategyCash);
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationVault))), expectedStrategyCash);

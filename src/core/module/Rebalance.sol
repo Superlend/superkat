@@ -21,7 +21,7 @@ abstract contract RebalanceModule is ContextUpgradeable, Shared {
 
     /// @notice Rebalance strategies allocation for a specific curated vault.
     /// @param _strategies Strategies addresses.
-    function executeRebalance(address[] calldata _strategies) external virtual nonReentrant {
+    function rebalance(address[] calldata _strategies) external virtual nonReentrant {
         _gulp();
 
         for (uint256 i; i < _strategies.length; ++i) {

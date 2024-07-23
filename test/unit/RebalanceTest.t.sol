@@ -58,7 +58,7 @@ contract RebalanceTest is EulerAggregationVaultBase {
         vm.prank(user1);
         address[] memory strategiesToRebalance = new address[](1);
         strategiesToRebalance[0] = address(eTST);
-        eulerAggregationVault.executeRebalance(strategiesToRebalance);
+        eulerAggregationVault.rebalance(strategiesToRebalance);
 
         assertEq(eulerAggregationVault.totalAllocated(), expectedStrategyCash);
         assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationVault))), expectedStrategyCash);
@@ -107,7 +107,7 @@ contract RebalanceTest is EulerAggregationVaultBase {
         vm.prank(user1);
         address[] memory strategiesToRebalance = new address[](1);
         strategiesToRebalance[0] = address(eTST);
-        eulerAggregationVault.executeRebalance(strategiesToRebalance);
+        eulerAggregationVault.rebalance(strategiesToRebalance);
 
         assertEq(eulerAggregationVault.totalAllocated(), eTSTMaxDeposit);
         assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationVault))), eTSTMaxDeposit);
@@ -142,7 +142,7 @@ contract RebalanceTest is EulerAggregationVaultBase {
         vm.warp(block.timestamp + 86400);
         vm.prank(user1);
         strategiesToRebalance[0] = address(eTST);
-        eulerAggregationVault.executeRebalance(strategiesToRebalance);
+        eulerAggregationVault.rebalance(strategiesToRebalance);
 
         // create new strategy & add it
         IEVault eTSTsecondary;
@@ -176,7 +176,7 @@ contract RebalanceTest is EulerAggregationVaultBase {
 
             vm.prank(user1);
             strategiesToRebalance[0] = address(eTSTsecondary);
-            eulerAggregationVault.executeRebalance(strategiesToRebalance);
+            eulerAggregationVault.rebalance(strategiesToRebalance);
 
             // assertEq(eulerAggregationVault.totalAllocated(), eTSTsecondaryMaxDeposit);
             assertEq(
@@ -226,7 +226,7 @@ contract RebalanceTest is EulerAggregationVaultBase {
         vm.prank(user1);
         address[] memory strategiesToRebalance = new address[](1);
         strategiesToRebalance[0] = address(eTST);
-        eulerAggregationVault.executeRebalance(strategiesToRebalance);
+        eulerAggregationVault.rebalance(strategiesToRebalance);
 
         assertEq(eulerAggregationVault.totalAllocated(), strategyBefore.allocated);
         assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationVault))), strategyBefore.allocated);
@@ -259,7 +259,7 @@ contract RebalanceTest is EulerAggregationVaultBase {
         vm.prank(user1);
         address[] memory strategiesToRebalance = new address[](1);
         strategiesToRebalance[0] = address(eTST);
-        eulerAggregationVault.executeRebalance(strategiesToRebalance);
+        eulerAggregationVault.rebalance(strategiesToRebalance);
 
         // decrease allocation points
         uint256 newAllocationPoints = 300e18;
@@ -277,7 +277,7 @@ contract RebalanceTest is EulerAggregationVaultBase {
 
         vm.prank(user1);
         strategiesToRebalance[0] = address(eTST);
-        eulerAggregationVault.executeRebalance(strategiesToRebalance);
+        eulerAggregationVault.rebalance(strategiesToRebalance);
 
         assertEq(eulerAggregationVault.totalAllocated(), expectedStrategyCash);
         assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationVault))), expectedStrategyCash);
@@ -313,7 +313,7 @@ contract RebalanceTest is EulerAggregationVaultBase {
         vm.prank(user1);
         address[] memory strategiesToRebalance = new address[](1);
         strategiesToRebalance[0] = address(eTST);
-        eulerAggregationVault.executeRebalance(strategiesToRebalance);
+        eulerAggregationVault.rebalance(strategiesToRebalance);
 
         // decrease allocation points
         uint256 newAllocationPoints = 300e18;
@@ -339,7 +339,7 @@ contract RebalanceTest is EulerAggregationVaultBase {
 
         vm.prank(user1);
         strategiesToRebalance[0] = address(eTST);
-        eulerAggregationVault.executeRebalance(strategiesToRebalance);
+        eulerAggregationVault.rebalance(strategiesToRebalance);
 
         // TODO: check this
         // assertEq(eulerAggregationVault.totalAllocated(), strategyBefore.allocated - eTSTMaxWithdraw);

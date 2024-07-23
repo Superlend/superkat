@@ -187,7 +187,7 @@ contract EulerAggregationVault is
     /// @dev See {RewardsModule-disableBalanceForwarder}.
     function disableBalanceForwarder() external override use(rewardsModule) {}
 
-    function executeRebalance(address[] calldata _strategies) external override use(rebalanceModule) {}
+    function rebalance(address[] calldata _strategies) external override use(rebalanceModule) {}
 
     /// @notice Harvest all the strategies. Any positive yiled should be gupled by calling gulp() after harvesting.
     /// @dev This function will loop through the strategies following the withdrawal queue order and harvest all.
@@ -247,10 +247,10 @@ contract EulerAggregationVault is
 
         if (_receiver == address(this)) revert Errors.CanNotReceiveWithdrawnAsset();
 
-        super._withdraw(_caller, _receiver, _owner, _assets, _shares);
-
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
         $.totalAssetsDeposited -= _assets;
+
+        super._withdraw(_caller, _receiver, _owner, _assets, _shares);
 
         _gulp();
     }
@@ -423,7 +423,7 @@ contract EulerAggregationVault is
     }
 
     /// @dev Loop through stratgies, aggregate positive yield and loss and account for net amount.
-    /// @dev Loss socialization will be taken out from interest left first, if not enough, sozialize on deposits.
+    /// @dev Loss socialization will be taken out from interest left first, if not enough, socialize on deposits.
     function _harvest() internal {
         // gulp any extra tokens to cover in case of loss socialization
         _gulp();
@@ -482,13 +482,12 @@ contract EulerAggregationVault is
                 underlyingBalance -= accruedPerformanceFee;
                 yield -= accruedPerformanceFee;
             }
-
-            $.strategies[_strategy].allocated = uint120(underlyingBalance);
         } else {
             loss = strategyAllocatedAmount - underlyingBalance;
-
-            $.strategies[_strategy].allocated = uint120(underlyingBalance);
         }
+
+        $.strategies[_strategy].allocated = uint120(underlyingBalance);
+
         emit Events.ExecuteHarvest(_strategy, underlyingBalance, strategyAllocatedAmount);
 
         return (yield, loss);
@@ -545,6 +544,6 @@ contract EulerAggregationVault is
     function _isCallerWithdrawalQueue() internal view {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
-        if (_msgSender() != $.withdrawalQueue) revert Errors.NotWithdrawaQueue();
+        if (msg.sender != $.withdrawalQueue) revert Errors.NotWithdrawaQueue();
     }
 }

@@ -186,14 +186,14 @@ contract EulerAggregationVaultHandler is Test {
         assertEq(eulerAggVault.totalAllocationPoints(), ghost_totalAllocationPoints);
     }
 
-    function executeRebalance(uint256 _actorIndexSeed) external {
+    function rebalance(uint256 _actorIndexSeed) external {
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
 
         (address[] memory strategiesToRebalance, uint256 strategiesCounter) = withdrawalQueue.getWithdrawalQueueArray();
         (currentActor, success, returnData) = actorUtil.initiateActorCall(
             _actorIndexSeed,
             address(eulerAggVault),
-            abi.encodeWithSelector(EulerAggregationVault.executeRebalance.selector, strategiesToRebalance)
+            abi.encodeWithSelector(EulerAggregationVault.rebalance.selector, strategiesToRebalance)
         );
 
         for (uint256 i; i < strategiesCounter; i++) {
