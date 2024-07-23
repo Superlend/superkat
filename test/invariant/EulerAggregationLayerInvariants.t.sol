@@ -7,7 +7,8 @@ import {
     IWithdrawalQueue,
     IEVault,
     TestERC20,
-    IEulerAggregationVault
+    IEulerAggregationVault,
+    AggAmountCap
 } from "../common/EulerAggregationVaultBase.t.sol";
 import {Actor} from "./util/Actor.sol";
 import {Strategy} from "./util/Strategy.sol";
@@ -170,7 +171,7 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
     }
 
     function invariant_cashReserveStrategyCap() public view {
-        assertEq(eulerAggregationVault.getStrategy(address(0)).cap, 0);
+        assertEq(AggAmountCap.unwrap(eulerAggregationVault.getStrategy(address(0)).cap), 0);
     }
 
     function invariant_votingPower() public view {

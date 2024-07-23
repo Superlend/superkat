@@ -22,6 +22,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {StorageLib as Storage, AggregationVaultStorage} from "./lib/StorageLib.sol";
+import {AmountCap} from "./lib/AmountCapLib.sol";
 import {ErrorsLib as Errors} from "./lib/ErrorsLib.sol";
 import {EventsLib as Events} from "./lib/EventsLib.sol";
 
@@ -75,9 +76,9 @@ contract EulerAggregationVault is
         $.balanceTracker = _initParams.balanceTracker;
         $.strategies[address(0)] = IEulerAggregationVault.Strategy({
             allocated: 0,
-            allocationPoints: _initParams.initialCashAllocationPoints.toUint120(),
+            allocationPoints: _initParams.initialCashAllocationPoints.toUint96(),
             status: IEulerAggregationVault.StrategyStatus.Active,
-            cap: 0
+            cap: AmountCap.wrap(0)
         });
         $.totalAllocationPoints = _initParams.initialCashAllocationPoints;
 
@@ -163,7 +164,7 @@ contract EulerAggregationVault is
     function removeStrategy(address _strategy) external override onlyRole(STRATEGY_OPERATOR) use(strategyModule) {}
 
     /// @dev See {StrategyModule-setStrategyCap}.
-    function setStrategyCap(address _strategy, uint256 _cap) external override onlyRole(GUARDIAN) use(strategyModule) {}
+    function setStrategyCap(address _strategy, uint16 _cap) external override onlyRole(GUARDIAN) use(strategyModule) {}
 
     /// @dev See {StrategyModule-adjustAllocationPoints}.
     function adjustAllocationPoints(address _strategy, uint256 _newPoints)

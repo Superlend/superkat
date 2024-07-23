@@ -12,12 +12,14 @@ import {ContextUpgradeable} from "@openzeppelin-upgradeable/utils/ContextUpgrade
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {StorageLib, AggregationVaultStorage} from "../lib/StorageLib.sol";
+import {AmountCapLib, AmountCap} from "../lib/AmountCapLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
 
 abstract contract RebalanceModule is ContextUpgradeable, Shared {
     using SafeERC20 for IERC20;
     using SafeCast for uint256;
+    using AmountCapLib for AmountCap;
 
     /// @notice Rebalance strategies allocation for a specific curated vault.
     /// @param _strategies Strategies addresses.
@@ -51,7 +53,8 @@ abstract contract RebalanceModule is ContextUpgradeable, Shared {
         uint256 targetAllocation =
             totalAssetsAllocatableCache * strategyData.allocationPoints / totalAllocationPointsCache;
 
-        if ((strategyData.cap > 0) && (targetAllocation > strategyData.cap)) targetAllocation = strategyData.cap;
+        uint120 capAmount = uint120(strategyData.cap.resolve());
+        if ((AmountCap.unwrap(strategyData.cap) != 0) && (targetAllocation > capAmount)) targetAllocation = capAmount;
 
         uint256 amountToRebalance;
         bool isDeposit;

@@ -29,4 +29,5 @@ library ErrorsLib {
     error CanNotToggleStrategyEmergencyStatus();
     error CanNotRemoveStrategyInEmergencyStatus();
     error CanNotReceiveWithdrawnAsset();
+    error BadStrategyCap();
 }

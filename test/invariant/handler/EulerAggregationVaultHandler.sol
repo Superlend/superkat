@@ -13,13 +13,17 @@ import {
     IEulerAggregationVault,
     ErrorsLib,
     IERC4626,
-    WithdrawalQueue
+    WithdrawalQueue,
+    AggAmountCapLib,
+    AggAmountCap
 } from "../../common/EulerAggregationVaultBase.t.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Actor} from "../util/Actor.sol";
 import {Strategy} from "../util/Strategy.sol";
 
 contract EulerAggregationVaultHandler is Test {
+    using AggAmountCapLib for AggAmountCap;
+
     Actor internal actorUtil;
     Strategy internal strategyUtil;
     EulerAggregationVault internal eulerAggVault;
@@ -101,8 +105,11 @@ contract EulerAggregationVaultHandler is Test {
         assertEq(strategyAfter.allocationPoints, ghost_allocationPoints[strategyAddr]);
     }
 
-    function setStrategyCap(uint256 _strategyIndexSeed, uint256 _cap) external {
+    function setStrategyCap(uint256 _strategyIndexSeed, uint16 _cap) external {
         address strategyAddr = strategyUtil.fetchStrategy(_strategyIndexSeed);
+
+        uint256 strategyCapAmount = AggAmountCap.wrap(_cap).resolve();
+        vm.assume(strategyCapAmount <= eulerAggVault.MAX_CAP_AMOUNT());
 
         IEulerAggregationVault.Strategy memory strategyBefore = eulerAggVault.getStrategy(strategyAddr);
 
@@ -114,9 +121,9 @@ contract EulerAggregationVaultHandler is Test {
 
         IEulerAggregationVault.Strategy memory strategyAfter = eulerAggVault.getStrategy(strategyAddr);
         if (success) {
-            assertEq(strategyAfter.cap, _cap);
+            assertEq(AggAmountCap.unwrap(strategyAfter.cap), _cap);
         } else {
-            assertEq(strategyAfter.cap, strategyBefore.cap);
+            assertEq(AggAmountCap.unwrap(strategyAfter.cap), AggAmountCap.unwrap(strategyBefore.cap));
         }
     }
 

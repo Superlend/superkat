@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
+import {AmountCap} from "../lib/AmountCapLib.sol";
+
 interface IEulerAggregationVault {
     /// @dev Struct to pass to constrcutor.
     struct ConstructorParams {
@@ -29,8 +31,8 @@ interface IEulerAggregationVault {
     /// status: an enum describing the strategy status. Check the enum definition for more details.
     struct Strategy {
         uint120 allocated;
-        uint120 allocationPoints;
-        uint120 cap;
+        uint96 allocationPoints;
+        AmountCap cap;
         StrategyStatus status;
     }
 
