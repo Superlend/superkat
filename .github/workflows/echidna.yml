@@ -34,5 +34,6 @@ jobs:
     - name: Run Echidna
       uses: crytic/echidna-action@v2
       with:
-        files: test/echidna/
+        files: .
         contract: CryticERC4626Harness
+        crytic-args: --ignore-compile
