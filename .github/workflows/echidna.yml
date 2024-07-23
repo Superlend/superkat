@@ -35,5 +35,5 @@ jobs:
       uses: crytic/echidna-action@v2
       with:
         files: .
-        contract: CryticERC4626Harness
+        contract: CryticERC4626TestsHarness
         crytic-args: --ignore-compile
