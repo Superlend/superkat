@@ -168,11 +168,6 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue
         WithdrawalQueueStorage storage $ = _getWithdrawalQueueStorage();
         uint256 withdrawalQueueLengthCached = $.withdrawalQueue.length;
 
-        // address[] memory withdrawalQueueMem = new address[](withdrawalQueueLengthCached);
-        // for (uint256 i; i < withdrawalQueueLengthCached; ++i) {
-        //     withdrawalQueueMem[i] = $.withdrawalQueue[i];
-        // }
-
         return ($.withdrawalQueue, withdrawalQueueLengthCached);
     }
 
