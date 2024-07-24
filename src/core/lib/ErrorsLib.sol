@@ -28,4 +28,6 @@ library ErrorsLib {
     error CanNotAdjustAllocationPoints();
     error CanNotToggleStrategyEmergencyStatus();
     error CanNotRemoveStrategyInEmergencyStatus();
+    error CanNotReceiveWithdrawnAsset();
+    error BadStrategyCap();
 }

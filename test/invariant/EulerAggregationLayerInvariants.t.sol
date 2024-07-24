@@ -7,12 +7,12 @@ import {
     IWithdrawalQueue,
     IEVault,
     TestERC20,
-    IEulerAggregationVault
+    IEulerAggregationVault,
+    AggAmountCap
 } from "../common/EulerAggregationVaultBase.t.sol";
 import {Actor} from "./util/Actor.sol";
 import {Strategy} from "./util/Strategy.sol";
 import {EulerAggregationVaultHandler} from "./handler/EulerAggregationVaultHandler.sol";
-import {RebalancerHandler} from "./handler/RebalancerHandler.sol";
 import {WithdrawalQueueHandler} from "./handler/WithdrawalQueueHandler.sol";
 
 contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
@@ -20,7 +20,6 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
     Strategy internal strategyUtil;
 
     EulerAggregationVaultHandler internal eulerAggregationVaultHandler;
-    RebalancerHandler internal rebalancerHandler;
     WithdrawalQueueHandler internal withdrawalQueueHandler;
 
     // other strategies
@@ -33,7 +32,7 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
     function setUp() public override {
         super.setUp();
 
-        actorUtil = new Actor();
+        actorUtil = new Actor(address(eulerAggregationVault));
         actorUtil.includeActor(manager);
         actorUtil.includeActor(deployer);
         actorUtil.includeActor(user1);
@@ -52,13 +51,10 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
 
         eulerAggregationVaultHandler =
             new EulerAggregationVaultHandler(eulerAggregationVault, actorUtil, strategyUtil, withdrawalQueue);
-        rebalancerHandler =
-            new RebalancerHandler(eulerAggregationVault, rebalancer, actorUtil, strategyUtil, withdrawalQueue);
         withdrawalQueueHandler =
             new WithdrawalQueueHandler(eulerAggregationVault, actorUtil, strategyUtil, withdrawalQueue);
 
         targetContract(address(eulerAggregationVaultHandler));
-        targetContract(address(rebalancerHandler));
         targetContract(address(withdrawalQueueHandler));
     }
 
@@ -66,11 +62,13 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
     function invariant_gulp() public {
         eulerAggregationVault.gulp();
 
-        assertEq(
-            eulerAggregationVault.totalAssetsAllocatable(),
-            eulerAggregationVault.totalAssetsDeposited()
-                + (eulerAggregationVault.getAggregationVaultSavingRate()).interestLeft
-        );
+        if (eulerAggregationVault.totalSupply() >= eulerAggregationVault.MIN_SHARES_FOR_GULP()) {
+            assertEq(
+                eulerAggregationVault.totalAssetsAllocatable(),
+                eulerAggregationVault.totalAssetsDeposited()
+                    + (eulerAggregationVault.getAggregationVaultSavingRate()).interestLeft
+            );
+        }
     }
 
     // totalAssetsDeposited should be equal to the totalAssetsAllocatable after SMEAR has passed.
@@ -79,7 +77,9 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
         skip(eulerAggregationVault.INTEREST_SMEAR()); // make sure smear has passed
         eulerAggregationVault.updateInterestAccrued();
 
-        assertEq(eulerAggregationVault.totalAssets(), eulerAggregationVault.totalAssetsAllocatable());
+        if (eulerAggregationVault.totalSupply() >= eulerAggregationVault.MIN_SHARES_FOR_GULP()) {
+            assertEq(eulerAggregationVault.totalAssets(), eulerAggregationVault.totalAssetsAllocatable());
+        }
     }
 
     // total allocation points should be equal to the sum of the allocation points of all strategies.
@@ -171,7 +171,15 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
     }
 
     function invariant_cashReserveStrategyCap() public view {
-        assertEq(eulerAggregationVault.getStrategy(address(0)).cap, 0);
+        assertEq(AggAmountCap.unwrap(eulerAggregationVault.getStrategy(address(0)).cap), 0);
+    }
+
+    function invariant_votingPower() public view {
+        address[] memory actorsList = actorUtil.getActors();
+
+        for (uint256 i; i < actorsList.length; i++) {
+            assertEq(eulerAggregationVault.balanceOf(actorsList[i]), eulerAggregationVault.getVotes(actorsList[i]));
+        }
     }
 
     function _deployOtherStrategies() private {

@@ -3,10 +3,14 @@ pragma solidity ^0.8.0;
 
 // interfaces
 import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {IEulerAggregationVault} from "../interface/IEulerAggregationVault.sol";
 // libs
 import {HooksLib} from "../lib/HooksLib.sol";
 import {StorageLib as Storage, AggregationVaultStorage} from "../lib/StorageLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
+import {EventsLib as Events} from "../lib/EventsLib.sol";
 
 /// @title Shared contract
 /// @custom:security-contact security@euler.xyz
@@ -26,6 +30,11 @@ abstract contract Shared {
 
     uint32 constant ACTIONS_COUNTER = 1 << 6;
     uint256 constant HOOKS_MASK = 0x00000000000000000000000000000000000000000000000000000000FFFFFFFF;
+
+    /// @dev Interest rate smearing period
+    uint256 public constant INTEREST_SMEAR = 2 weeks;
+    /// @dev Minimum amount of shares to exist for gulp to be enabled
+    uint256 public constant MIN_SHARES_FOR_GULP = 1e7;
 
     modifier nonReentrant() {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
@@ -86,6 +95,65 @@ abstract contract Shared {
     /// @return uint32 Hooked functions.
     function _getHooksConfig(uint256 _hooksConfig) internal pure returns (address, uint32) {
         return (address(uint160(_hooksConfig >> 32)), uint32(_hooksConfig & HOOKS_MASK));
+    }
+
+    /// @dev gulp positive yield into interest left amd update accrued interest.
+    function _gulp() internal {
+        _updateInterestAccrued();
+
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        // Do not gulp if total supply is too low
+        if (IERC4626(address(this)).totalSupply() < MIN_SHARES_FOR_GULP) return;
+
+        uint256 toGulp =
+            IEulerAggregationVault(address(this)).totalAssetsAllocatable() - $.totalAssetsDeposited - $.interestLeft;
+        if (toGulp == 0) return;
+
+        uint256 maxGulp = type(uint168).max - $.interestLeft;
+        if (toGulp > maxGulp) toGulp = maxGulp; // cap interest, allowing the vault to function
+
+        $.interestSmearEnd = uint40(block.timestamp + INTEREST_SMEAR);
+        $.interestLeft += uint168(toGulp); // toGulp <= maxGulp <= max uint168
+
+        emit Events.Gulp($.interestLeft, $.interestSmearEnd);
+    }
+
+    /// @notice update accrued interest.
+    function _updateInterestAccrued() internal {
+        uint256 accruedInterest = _interestAccruedFromCache();
+
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        // it's safe to down-cast because the accrued interest is a fraction of interest left
+        $.interestLeft -= uint168(accruedInterest);
+        $.lastInterestUpdate = uint40(block.timestamp);
+
+        // Move interest accrued to totalAssetsDeposited
+        $.totalAssetsDeposited += accruedInterest;
+    }
+
+    /// @dev Get accrued interest without updating it.
+    /// @return uint256 Accrued interest.
+    function _interestAccruedFromCache() internal view returns (uint256) {
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        uint40 interestSmearEndCached = $.interestSmearEnd;
+        // If distribution ended, full amount is accrued
+        if (block.timestamp >= interestSmearEndCached) {
+            return $.interestLeft;
+        }
+
+        uint40 lastInterestUpdateCached = $.lastInterestUpdate;
+        // If just updated return 0
+        if (lastInterestUpdateCached == block.timestamp) {
+            return 0;
+        }
+
+        // Else return what has accrued
+        uint256 totalDuration = interestSmearEndCached - lastInterestUpdateCached;
+        uint256 timePassed = block.timestamp - lastInterestUpdateCached;
+
+        return $.interestLeft * timePassed / totalDuration;
     }
 
     /// @dev Revert with call error or EmptyError

@@ -13,13 +13,17 @@ import {
     IEulerAggregationVault,
     ErrorsLib,
     IERC4626,
-    WithdrawalQueue
+    WithdrawalQueue,
+    AggAmountCapLib,
+    AggAmountCap
 } from "../../common/EulerAggregationVaultBase.t.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Actor} from "../util/Actor.sol";
 import {Strategy} from "../util/Strategy.sol";
 
 contract EulerAggregationVaultHandler is Test {
+    using AggAmountCapLib for AggAmountCap;
+
     Actor internal actorUtil;
     Strategy internal strategyUtil;
     EulerAggregationVault internal eulerAggVault;
@@ -101,8 +105,11 @@ contract EulerAggregationVaultHandler is Test {
         assertEq(strategyAfter.allocationPoints, ghost_allocationPoints[strategyAddr]);
     }
 
-    function setStrategyCap(uint256 _strategyIndexSeed, uint256 _cap) external {
+    function setStrategyCap(uint256 _strategyIndexSeed, uint16 _cap) external {
         address strategyAddr = strategyUtil.fetchStrategy(_strategyIndexSeed);
+
+        uint256 strategyCapAmount = AggAmountCap.wrap(_cap).resolve();
+        vm.assume(strategyCapAmount <= eulerAggVault.MAX_CAP_AMOUNT());
 
         IEulerAggregationVault.Strategy memory strategyBefore = eulerAggVault.getStrategy(strategyAddr);
 
@@ -114,9 +121,9 @@ contract EulerAggregationVaultHandler is Test {
 
         IEulerAggregationVault.Strategy memory strategyAfter = eulerAggVault.getStrategy(strategyAddr);
         if (success) {
-            assertEq(strategyAfter.cap, _cap);
+            assertEq(AggAmountCap.unwrap(strategyAfter.cap), _cap);
         } else {
-            assertEq(strategyAfter.cap, strategyBefore.cap);
+            assertEq(AggAmountCap.unwrap(strategyAfter.cap), AggAmountCap.unwrap(strategyBefore.cap));
         }
     }
 
@@ -186,6 +193,24 @@ contract EulerAggregationVaultHandler is Test {
         assertEq(eulerAggVault.totalAllocationPoints(), ghost_totalAllocationPoints);
     }
 
+    function rebalance(uint256 _actorIndexSeed) external {
+        (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
+
+        (address[] memory strategiesToRebalance, uint256 strategiesCounter) = withdrawalQueue.getWithdrawalQueueArray();
+        (currentActor, success, returnData) = actorUtil.initiateActorCall(
+            _actorIndexSeed,
+            address(eulerAggVault),
+            abi.encodeWithSelector(EulerAggregationVault.rebalance.selector, strategiesToRebalance)
+        );
+
+        for (uint256 i; i < strategiesCounter; i++) {
+            assertEq(
+                IERC4626(strategiesToRebalance[i]).maxWithdraw(address(eulerAggVault)),
+                (eulerAggVault.getStrategy(strategiesToRebalance[i])).allocated
+            );
+        }
+    }
+
     function harvest(uint256 _actorIndexSeed) external {
         // track total yield and total loss to simulate loss socialization
         uint256 totalYield;
@@ -251,6 +276,10 @@ contract EulerAggregationVaultHandler is Test {
 
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
 
+        if (eulerAggVault.totalSupply() == 0) {
+            uint256 minAssets = eulerAggVault.previewMint(eulerAggVault.MIN_SHARES_FOR_GULP());
+            vm.assume(_assets >= minAssets);
+        }
         _fillBalance(currentActor, eulerAggVault.asset(), _assets);
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
@@ -269,6 +298,10 @@ contract EulerAggregationVaultHandler is Test {
         vm.assume(_receiver != address(0));
 
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
+
+        if (eulerAggVault.totalSupply() == 0) {
+            vm.assume(_shares >= eulerAggVault.MIN_SHARES_FOR_GULP());
+        }
 
         uint256 assets = eulerAggVault.previewMint(_shares);
         _fillBalance(currentActor, eulerAggVault.asset(), assets);

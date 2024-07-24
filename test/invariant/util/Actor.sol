@@ -1,14 +1,24 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
+import {IVotes} from "@openzeppelin/contracts/governance/utils/IVotes.sol";
 import {Test} from "forge-std/Test.sol";
 
 contract Actor is Test {
+    address eulerAggregationVault;
+
     /// @dev actor[0] will always be a manager address that have access to all EulerAggregationVault roles.
     address[] public actors;
 
+    constructor(address _eulerAggregationVault) {
+        eulerAggregationVault = _eulerAggregationVault;
+    }
+
     function includeActor(address _actor) external {
         actors.push(_actor);
+
+        vm.prank(_actor);
+        IVotes(eulerAggregationVault).delegate(_actor);
     }
 
     function initiateExactActorCall(uint256 _actorIndex, address _target, bytes memory _calldata)
@@ -40,6 +50,16 @@ contract Actor is Test {
         address randomActor = actors[randomActorIndex];
 
         return (randomActor, randomActorIndex);
+    }
+
+    function getActors() external view returns (address[] memory) {
+        address[] memory actorsList = new address[](actors.length);
+
+        for (uint256 i; i < actors.length; i++) {
+            actorsList[i] = actors[i];
+        }
+
+        return actorsList;
     }
 
     function _getActor(uint256 _actorIndexSeed) internal view returns (address) {
