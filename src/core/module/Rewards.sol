@@ -25,7 +25,7 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
     function optInStrategyRewards(address _strategy) external virtual nonReentrant {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
-        if ($.strategies[_strategy].status == IEulerAggregationVault.StrategyStatus.Inactive) {
+        if ($.strategies[_strategy].status != IEulerAggregationVault.StrategyStatus.Active) {
             revert Errors.InactiveStrategy();
         }
 

@@ -1,11 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-// interfaces
-import {IBalanceForwarder} from "../interface/IBalanceForwarder.sol";
-import {IBalanceTracker} from "reward-streams/interfaces/IBalanceTracker.sol";
-import {IRewardStreams} from "reward-streams/interfaces/IRewardStreams.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 // libs
 import {StorageLib, AggregationVaultStorage} from "../lib/StorageLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";

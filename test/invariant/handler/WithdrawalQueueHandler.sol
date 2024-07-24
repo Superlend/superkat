@@ -13,7 +13,6 @@ import {
     IEulerAggregationVault,
     ErrorsLib,
     IERC4626,
-    Rebalancer,
     WithdrawalQueue
 } from "../../common/EulerAggregationVaultBase.t.sol";
 import {Actor} from "../util/Actor.sol";

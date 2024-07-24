@@ -10,6 +10,7 @@ import {Shared} from "../common/Shared.sol";
 // libs
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {StorageLib, AggregationVaultStorage} from "../lib/StorageLib.sol";
+import {AmountCapLib, AmountCap} from "../lib/AmountCapLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
 
@@ -18,6 +19,10 @@ import {EventsLib as Events} from "../lib/EventsLib.sol";
 /// @author Euler Labs (https://www.eulerlabs.com/)
 abstract contract StrategyModule is Shared {
     using SafeCast for uint256;
+    using AmountCapLib for AmountCap;
+
+    // max cap amount, which is the same as the max amount Strategy.allocated can hold.
+    uint256 public constant MAX_CAP_AMOUNT = type(uint120).max;
 
     /// @notice Adjust a certain strategy's allocation points.
     /// @dev Can only be called by an address that have the `GUARDIAN` role.
@@ -35,7 +40,7 @@ abstract contract StrategyModule is Shared {
             revert Errors.InvalidAllocationPoints();
         }
 
-        $.strategies[_strategy].allocationPoints = _newPoints.toUint120();
+        $.strategies[_strategy].allocationPoints = _newPoints.toUint96();
         $.totalAllocationPoints = $.totalAllocationPoints + _newPoints - strategyDataCache.allocationPoints;
 
         emit Events.AdjustAllocationPoints(_strategy, strategyDataCache.allocationPoints, _newPoints);
@@ -46,7 +51,7 @@ abstract contract StrategyModule is Shared {
     /// @dev By default, cap is set to 0.
     /// @param _strategy Strategy address.
     /// @param _cap Cap amount
-    function setStrategyCap(address _strategy, uint256 _cap) external virtual nonReentrant {
+    function setStrategyCap(address _strategy, uint16 _cap) external virtual nonReentrant {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         if ($.strategies[_strategy].status != IEulerAggregationVault.StrategyStatus.Active) {
@@ -57,7 +62,12 @@ abstract contract StrategyModule is Shared {
             revert Errors.NoCapOnCashReserveStrategy();
         }
 
-        $.strategies[_strategy].cap = _cap.toUint120();
+        AmountCap strategyCap = AmountCap.wrap(_cap);
+        // The raw uint16 cap amount == 0 is a special value. See comments in AmountCapLib.sol
+        // Max cap is max amount that can be allocated into strategy (max uint120).
+        if (_cap != 0 && strategyCap.resolve() > MAX_CAP_AMOUNT) revert Errors.BadStrategyCap();
+
+        $.strategies[_strategy].cap = strategyCap;
 
         emit Events.SetStrategyCap(_strategy, _cap);
     }
@@ -85,10 +95,13 @@ abstract contract StrategyModule is Shared {
 
             _deductLoss(strategyCached.allocated);
         } else {
+            uint256 vaultStrategyBalance = IERC4626(_strategy).maxWithdraw(address(this));
+
             $.strategies[_strategy].status = IEulerAggregationVault.StrategyStatus.Active;
+            $.strategies[_strategy].allocated = vaultStrategyBalance.toUint120();
 
             $.totalAllocationPoints += strategyCached.allocationPoints;
-            $.totalAllocated += IERC4626(_strategy).maxWithdraw(address(this));
+            $.totalAllocated += vaultStrategyBalance;
         }
     }
 
@@ -113,9 +126,9 @@ abstract contract StrategyModule is Shared {
 
         $.strategies[_strategy] = IEulerAggregationVault.Strategy({
             allocated: 0,
-            allocationPoints: _allocationPoints.toUint120(),
+            allocationPoints: _allocationPoints.toUint96(),
             status: IEulerAggregationVault.StrategyStatus.Active,
-            cap: 0
+            cap: AmountCap.wrap(0)
         });
 
         $.totalAllocationPoints += _allocationPoints;
@@ -149,7 +162,7 @@ abstract contract StrategyModule is Shared {
         $.totalAllocationPoints -= strategyStorage.allocationPoints;
         strategyStorage.status = IEulerAggregationVault.StrategyStatus.Inactive;
         strategyStorage.allocationPoints = 0;
-        strategyStorage.cap = 0;
+        strategyStorage.cap = AmountCap.wrap(0);
 
         // remove from withdrawalQueue
         IWithdrawalQueue($.withdrawalQueue).removeStrategyFromWithdrawalQueue(_strategy);
