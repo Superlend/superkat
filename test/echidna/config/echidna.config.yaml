@@ -2,9 +2,6 @@ corpusDir: "test/echidna/_corpus/"
 
 testMode: assertion
 
-#testLimit is the number of test sequences to run
-testLimit: 20000000
-
 deployer: "0x10000"
 
 sender: ["0x10000"]
