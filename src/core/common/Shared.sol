@@ -137,19 +137,21 @@ abstract contract Shared {
     function _interestAccruedFromCache() internal view returns (uint256) {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
+        uint40 interestSmearEndCached = $.interestSmearEnd;
         // If distribution ended, full amount is accrued
-        if (block.timestamp >= $.interestSmearEnd) {
+        if (block.timestamp >= interestSmearEndCached) {
             return $.interestLeft;
         }
 
+        uint40 lastInterestUpdateCached = $.lastInterestUpdate;
         // If just updated return 0
-        if ($.lastInterestUpdate == block.timestamp) {
+        if (lastInterestUpdateCached == block.timestamp) {
             return 0;
         }
 
         // Else return what has accrued
-        uint256 totalDuration = $.interestSmearEnd - $.lastInterestUpdate;
-        uint256 timePassed = block.timestamp - $.lastInterestUpdate;
+        uint256 totalDuration = interestSmearEndCached - lastInterestUpdateCached;
+        uint256 timePassed = block.timestamp - lastInterestUpdateCached;
 
         return $.interestLeft * timePassed / totalDuration;
     }

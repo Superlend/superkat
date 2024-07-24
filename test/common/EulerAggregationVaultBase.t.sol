@@ -16,8 +16,12 @@ import {WithdrawalQueue} from "../../src/plugin/WithdrawalQueue.sol";
 import {Strategy} from "../../src/core/module/Strategy.sol";
 // libs
 import {ErrorsLib} from "../../src/core/lib/ErrorsLib.sol";
+import {ErrorsLib} from "../../src/core/lib/ErrorsLib.sol";
+import {AmountCapLib as AggAmountCapLib, AmountCap as AggAmountCap} from "../../src/core/lib/AmountCapLib.sol";
 
 contract EulerAggregationVaultBase is EVaultTestBase {
+    using AggAmountCapLib for AggAmountCap;
+
     uint256 public constant CASH_RESERVE_ALLOCATION_POINTS = 1000e18;
 
     address deployer;

@@ -125,7 +125,7 @@ contract ToggleStrategyEmergencyStatusE2ETest is EulerAggregationVaultBase {
             strategiesToRebalance[0] = address(eTST);
             strategiesToRebalance[1] = address(eTSTsecondary);
             vm.prank(user1);
-            eulerAggregationVault.executeRebalance(strategiesToRebalance);
+            eulerAggregationVault.rebalance(strategiesToRebalance);
 
             assertEq(
                 eulerAggregationVault.totalAllocated(), expectedeTSTStrategyCash + expectedeTSTsecondaryStrategyCash
@@ -224,7 +224,7 @@ contract ToggleStrategyEmergencyStatusE2ETest is EulerAggregationVaultBase {
             strategiesToRebalance[0] = address(eTST);
             strategiesToRebalance[1] = address(eTSTsecondary);
             vm.prank(user1);
-            eulerAggregationVault.executeRebalance(strategiesToRebalance);
+            eulerAggregationVault.rebalance(strategiesToRebalance);
 
             assertEq(
                 eulerAggregationVault.totalAllocated(), expectedeTSTStrategyCash + expectedeTSTsecondaryStrategyCash

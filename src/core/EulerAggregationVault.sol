@@ -22,6 +22,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {StorageLib as Storage, AggregationVaultStorage} from "./lib/StorageLib.sol";
+import {AmountCap} from "./lib/AmountCapLib.sol";
 import {ErrorsLib as Errors} from "./lib/ErrorsLib.sol";
 import {EventsLib as Events} from "./lib/EventsLib.sol";
 
@@ -75,9 +76,9 @@ contract EulerAggregationVault is
         $.balanceTracker = _initParams.balanceTracker;
         $.strategies[address(0)] = IEulerAggregationVault.Strategy({
             allocated: 0,
-            allocationPoints: _initParams.initialCashAllocationPoints.toUint120(),
+            allocationPoints: _initParams.initialCashAllocationPoints.toUint96(),
             status: IEulerAggregationVault.StrategyStatus.Active,
-            cap: 0
+            cap: AmountCap.wrap(0)
         });
         $.totalAllocationPoints = _initParams.initialCashAllocationPoints;
 
@@ -163,7 +164,7 @@ contract EulerAggregationVault is
     function removeStrategy(address _strategy) external override onlyRole(STRATEGY_OPERATOR) use(strategyModule) {}
 
     /// @dev See {StrategyModule-setStrategyCap}.
-    function setStrategyCap(address _strategy, uint256 _cap) external override onlyRole(GUARDIAN) use(strategyModule) {}
+    function setStrategyCap(address _strategy, uint16 _cap) external override onlyRole(GUARDIAN) use(strategyModule) {}
 
     /// @dev See {StrategyModule-adjustAllocationPoints}.
     function adjustAllocationPoints(address _strategy, uint256 _newPoints)
@@ -187,9 +188,9 @@ contract EulerAggregationVault is
     /// @dev See {RewardsModule-disableBalanceForwarder}.
     function disableBalanceForwarder() external override use(rewardsModule) {}
 
-    function executeRebalance(address[] calldata _strategies) external override use(rebalanceModule) {}
+    function rebalance(address[] calldata _strategies) external override use(rebalanceModule) {}
 
-    /// @notice Harvest all the strategies.
+    /// @notice Harvest all the strategies. Any positive yiled should be gupled by calling gulp() after harvesting.
     /// @dev This function will loop through the strategies following the withdrawal queue order and harvest all.
     /// @dev Harvest yield and losses will be aggregated and only net yield/loss will be accounted.
     function harvest() external nonReentrant {
@@ -245,10 +246,12 @@ contract EulerAggregationVault is
     ) external {
         _isCallerWithdrawalQueue();
 
-        super._withdraw(_caller, _receiver, _owner, _assets, _shares);
+        if (_receiver == address(this)) revert Errors.CanNotReceiveWithdrawnAsset();
 
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
         $.totalAssetsDeposited -= _assets;
+
+        super._withdraw(_caller, _receiver, _owner, _assets, _shares);
 
         _gulp();
     }
@@ -275,8 +278,7 @@ contract EulerAggregationVault is
         AggregationVaultSavingRate memory avsr = AggregationVaultSavingRate({
             lastInterestUpdate: $.lastInterestUpdate,
             interestSmearEnd: $.interestSmearEnd,
-            interestLeft: $.interestLeft,
-            locked: $.locked
+            interestLeft: $.interestLeft
         });
 
         return avsr;
@@ -421,8 +423,11 @@ contract EulerAggregationVault is
     }
 
     /// @dev Loop through stratgies, aggregate positive yield and loss and account for net amount.
-    /// @dev Loss socialization will be taken out from interest left first, if not enough, sozialize on deposits.
+    /// @dev Loss socialization will be taken out from interest left first, if not enough, socialize on deposits.
     function _harvest() internal {
+        // gulp any extra tokens to cover in case of loss socialization
+        _gulp();
+
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         (address[] memory withdrawalQueueArray, uint256 length) =
@@ -440,12 +445,14 @@ contract EulerAggregationVault is
         $.totalAllocated = $.totalAllocated + totalYield - totalLoss;
 
         if (totalLoss > totalYield) {
+            // we do not need to call gulp() again here as aggregated yield is negative and there is nothing gulpable.
             _deductLoss(totalLoss - totalYield);
+        } else {
+            // gulp net positive yield
+            _gulp();
         }
 
         emit Events.Harvest($.totalAllocated, totalYield, totalLoss);
-
-        _gulp();
     }
 
     /// @dev Execute harvest on a single strategy.
@@ -475,13 +482,12 @@ contract EulerAggregationVault is
                 underlyingBalance -= accruedPerformanceFee;
                 yield -= accruedPerformanceFee;
             }
-
-            $.strategies[_strategy].allocated = uint120(underlyingBalance);
         } else {
             loss = strategyAllocatedAmount - underlyingBalance;
-
-            $.strategies[_strategy].allocated = uint120(underlyingBalance);
         }
+
+        $.strategies[_strategy].allocated = uint120(underlyingBalance);
+
         emit Events.ExecuteHarvest(_strategy, underlyingBalance, strategyAllocatedAmount);
 
         return (yield, loss);
@@ -538,6 +544,6 @@ contract EulerAggregationVault is
     function _isCallerWithdrawalQueue() internal view {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
-        if (_msgSender() != $.withdrawalQueue) revert Errors.NotWithdrawaQueue();
+        if (msg.sender != $.withdrawalQueue) revert Errors.NotWithdrawaQueue();
     }
 }

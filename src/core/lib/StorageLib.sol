@@ -18,9 +18,9 @@ struct AggregationVaultStorage {
     address feeRecipient;
     /// WithdrawalQueue plugin address
     address withdrawalQueue;
-    /// Mapping between strategy address and it's allocation config
+    /// Mapping between a strategy address and it's allocation config
     mapping(address => IEulerAggregationVault.Strategy) strategies;
-    /// lastInterestUpdate: last timestamo where interest was updated.
+    /// lastInterestUpdate: last timestamp where interest was updated.
     uint40 lastInterestUpdate;
     /// interestSmearEnd: timestamp when the smearing of interest end.
     uint40 interestSmearEnd;

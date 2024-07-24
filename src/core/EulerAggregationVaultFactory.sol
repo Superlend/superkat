@@ -10,8 +10,6 @@ import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
 contract EulerAggregationVaultFactory {
-    error WithdrawalQueueAlreadyWhitelisted();
-    error NotWhitelistedWithdrawalQueueImpl();
     error InvalidQuery();
 
     /// core dependencies
