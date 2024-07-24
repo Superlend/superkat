@@ -66,8 +66,6 @@ abstract contract RebalanceModule is ContextUpgradeable, Shared {
             if (amountToRebalance > maxWithdraw) {
                 amountToRebalance = maxWithdraw;
             }
-
-            isDeposit = false;
         } else if (strategyData.allocated < targetAllocation) {
             // Deposit
             uint256 targetCash =
@@ -87,11 +85,11 @@ abstract contract RebalanceModule is ContextUpgradeable, Shared {
                 amountToRebalance = maxDeposit;
             }
 
-            if (amountToRebalance == 0) {
-                return; // No cash to deposit
-            }
-
             isDeposit = true;
+        }
+
+        if (amountToRebalance == 0) {
+            return;
         }
 
         if (isDeposit) {

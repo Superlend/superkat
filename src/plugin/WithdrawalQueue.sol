@@ -60,7 +60,7 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue
 
     /// @notice Remove a strategy from withdrawal queue array.
     /// @dev Can only be called by the aggregation vault's address.
-    /// @param _strategy Strategy address to add.
+    /// @param _strategy Strategy address to remove.
     function removeStrategyFromWithdrawalQueue(address _strategy) external {
         _isCallerAggregationVault();
 
@@ -168,12 +168,12 @@ contract WithdrawalQueue is AccessControlEnumerableUpgradeable, IWithdrawalQueue
         WithdrawalQueueStorage storage $ = _getWithdrawalQueueStorage();
         uint256 withdrawalQueueLengthCached = $.withdrawalQueue.length;
 
-        address[] memory withdrawalQueueMem = new address[](withdrawalQueueLengthCached);
-        for (uint256 i; i < withdrawalQueueLengthCached; ++i) {
-            withdrawalQueueMem[i] = $.withdrawalQueue[i];
-        }
+        // address[] memory withdrawalQueueMem = new address[](withdrawalQueueLengthCached);
+        // for (uint256 i; i < withdrawalQueueLengthCached; ++i) {
+        //     withdrawalQueueMem[i] = $.withdrawalQueue[i];
+        // }
 
-        return (withdrawalQueueMem, withdrawalQueueLengthCached);
+        return ($.withdrawalQueue, withdrawalQueueLengthCached);
     }
 
     /// @notice Return the withdrawal queue length.

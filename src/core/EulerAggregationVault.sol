@@ -278,8 +278,7 @@ contract EulerAggregationVault is
         AggregationVaultSavingRate memory avsr = AggregationVaultSavingRate({
             lastInterestUpdate: $.lastInterestUpdate,
             interestSmearEnd: $.interestSmearEnd,
-            interestLeft: $.interestLeft,
-            locked: $.locked
+            interestLeft: $.interestLeft
         });
 
         return avsr;
