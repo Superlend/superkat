@@ -9,8 +9,8 @@ import {Hooks} from "../src/core/module/Hooks.sol";
 import {Rewards} from "../src/core/module/Rewards.sol";
 import {Fee} from "../src/core/module/Fee.sol";
 import {Rebalance} from "../src/core/module/Rebalance.sol";
+import {WithdrawalQueue} from "../src/core/module/WithdrawalQueue.sol";
 import {EulerAggregationVaultFactory} from "../src/core/EulerAggregationVaultFactory.sol";
-import {WithdrawalQueue} from "../src/plugin/WithdrawalQueue.sol";
 import {Strategy} from "../src/core/module/Strategy.sol";
 // mocks
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
@@ -26,8 +26,7 @@ contract A16zPropertyTests is ERC4626Test {
     Fee feeModuleImpl;
     Strategy strategyModuleImpl;
     Rebalance rebalanceModuleImpl;
-    // plugins
-    WithdrawalQueue withdrawalQueuePluginImpl;
+    WithdrawalQueue withdrawalQueueModuleImpl;
 
     EulerAggregationVaultFactory eulerAggregationVaultFactory;
     EulerAggregationVault eulerAggregationVault;
@@ -40,8 +39,7 @@ contract A16zPropertyTests is ERC4626Test {
         feeModuleImpl = new Fee();
         strategyModuleImpl = new Strategy();
         rebalanceModuleImpl = new Rebalance();
-
-        withdrawalQueuePluginImpl = new WithdrawalQueue();
+        withdrawalQueueModuleImpl = new WithdrawalQueue();
 
         EulerAggregationVaultFactory.FactoryParams memory factoryParams = EulerAggregationVaultFactory.FactoryParams({
             owner: factoryOwner,
@@ -50,15 +48,15 @@ contract A16zPropertyTests is ERC4626Test {
             hooksModuleImpl: address(hooksImpl),
             feeModuleImpl: address(feeModuleImpl),
             strategyModuleImpl: address(strategyModuleImpl),
-            rebalanceModuleImpl: address(rebalanceModuleImpl)
+            rebalanceModuleImpl: address(rebalanceModuleImpl),
+            withdrawalQueueModuleImpl: address(withdrawalQueueModuleImpl)
         });
         eulerAggregationVaultFactory = new EulerAggregationVaultFactory(factoryParams);
         vm.prank(factoryOwner);
-        // eulerAggregationVaultFactory.whitelistWithdrawalQueueImpl(address(withdrawalQueuePluginImpl));
 
         _underlying_ = address(new ERC20Mock());
         _vault_ = eulerAggregationVaultFactory.deployEulerAggregationVault(
-            address(withdrawalQueuePluginImpl), _underlying_, "E20M_Agg", "E20M_Agg", CASH_RESERVE_ALLOCATION_POINTS
+            _underlying_, "E20M_Agg", "E20M_Agg", CASH_RESERVE_ALLOCATION_POINTS
         );
         _delta_ = 0;
         _vaultMayBeEmpty = false;

@@ -6,7 +6,6 @@ import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IBalanceTracker} from "reward-streams/interfaces/IBalanceTracker.sol";
 import {IEulerAggregationVault} from "./interface/IEulerAggregationVault.sol";
-import {IWithdrawalQueue} from "./interface/IWithdrawalQueue.sol";
 // contracts
 import {Dispatch} from "./Dispatch.sol";
 import {
@@ -57,7 +56,8 @@ contract EulerAggregationVault is
             _constructorParams.hooksModule,
             _constructorParams.feeModule,
             _constructorParams.strategyModule,
-            _constructorParams.rebalanceModule
+            _constructorParams.rebalanceModule,
+            _constructorParams.withdrawalQueueModule
         )
     {}
 
@@ -72,7 +72,6 @@ contract EulerAggregationVault is
 
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
         $.locked = REENTRANCYLOCK__UNLOCKED;
-        $.withdrawalQueue = _initParams.withdrawalQueuePlugin;
         $.balanceTracker = _initParams.balanceTracker;
         $.strategies[address(0)] = IEulerAggregationVault.Strategy({
             allocated: 0,
@@ -89,8 +88,6 @@ contract EulerAggregationVault is
         _setRoleAdmin(GUARDIAN, GUARDIAN_ADMIN);
         _setRoleAdmin(STRATEGY_OPERATOR, STRATEGY_OPERATOR_ADMIN);
         _setRoleAdmin(AGGREGATION_VAULT_MANAGER, AGGREGATION_VAULT_MANAGER_ADMIN);
-
-        IWithdrawalQueue(_initParams.withdrawalQueuePlugin).init(_initParams.aggregationVaultOwner);
     }
 
     /// @dev See {FeeModule-setFeeRecipient}.
@@ -190,6 +187,14 @@ contract EulerAggregationVault is
 
     function rebalance(address[] calldata _strategies) external override use(rebalanceModule) {}
 
+    function reorderWithdrawalQueue(uint8 _index1, uint8 _index2) public override {
+        super.reorderWithdrawalQueue(_index1, _index2);
+    }
+
+    function withdrawalQueue() public view override returns (address[] memory) {
+        return super.withdrawalQueue();
+    }
+
     /// @notice Harvest all the strategies. Any positive yiled should be gupled by calling gulp() after harvesting.
     /// @dev This function will loop through the strategies following the withdrawal queue order and harvest all.
     /// @dev Harvest yield and losses will be aggregated and only net yield/loss will be accounted.
@@ -206,53 +211,6 @@ contract EulerAggregationVault is
 
     /// @notice gulp positive harvest yield
     function gulp() external nonReentrant {
-        _gulp();
-    }
-
-    /// @notice Execute a withdraw from a strategy.
-    /// @dev Can only be called from the WithdrawalQueue contract.
-    /// @param _strategy Strategy's address.
-    /// @param _withdrawAmount Amount to withdraw.
-    function executeStrategyWithdraw(address _strategy, uint256 _withdrawAmount) external returns (uint256) {
-        _isCallerWithdrawalQueue();
-
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-
-        if ($.strategies[_strategy].status != IEulerAggregationVault.StrategyStatus.Active) return 0;
-
-        // Update allocated assets
-        $.strategies[_strategy].allocated -= uint120(_withdrawAmount);
-        $.totalAllocated -= _withdrawAmount;
-
-        // Do actual withdraw from strategy
-        IERC4626(_strategy).withdraw(_withdrawAmount, address(this), address(this));
-
-        return _withdrawAmount;
-    }
-
-    /// @notice Execute a withdraw from the AggregationVault
-    /// @dev This function should be called and can only be called by the WithdrawalQueue.
-    /// @param _caller Withdraw call initiator.
-    /// @param _receiver Receiver of the withdrawn asset.
-    /// @param _owner Owner of shares to withdraw against.
-    /// @param _assets Amount of asset to withdraw.
-    /// @param _shares Amount of shares to withdraw against.
-    function executeAggregationVaultWithdraw(
-        address _caller,
-        address _receiver,
-        address _owner,
-        uint256 _assets,
-        uint256 _shares
-    ) external {
-        _isCallerWithdrawalQueue();
-
-        if (_receiver == address(this)) revert Errors.CanNotReceiveWithdrawnAsset();
-
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-        $.totalAssetsDeposited -= _assets;
-
-        super._withdraw(_caller, _receiver, _owner, _assets, _shares);
-
         _gulp();
     }
 
@@ -308,14 +266,6 @@ contract EulerAggregationVault is
         return $.totalAssetsDeposited;
     }
 
-    /// @notice Get the WithdrawalQueue plugin address.
-    /// @return address Withdrawal queue address.
-    function withdrawalQueue() external view returns (address) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-
-        return $.withdrawalQueue;
-    }
-
     /// @notice Get the performance fee config.
     /// @return adddress Fee recipient.
     /// @return uint256 Fee percentage.
@@ -323,6 +273,23 @@ contract EulerAggregationVault is
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         return ($.feeRecipient, $.performanceFee);
+    }
+
+    /// @notice Get strategy address from withdrawal queue by index.
+    /// @param _index Index to fetch.
+    /// @return address Strategy address.
+    function getWithdrawalQueueAtIndex(uint256 _index) external view returns (address) {
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        return $.withdrawalQueue[_index];
+    }
+
+    /// @notice Get the withdrawal queue array and it's length.
+    /// @return withdrawalQueueMem The withdrawal queue array in memory.
+    function getWithdrawalQueueArray() external view returns (address[] memory) {
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        return $.withdrawalQueue;
     }
 
     /// @dev See {IERC4626-deposit}.
@@ -417,9 +384,42 @@ contract EulerAggregationVault is
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
         uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
 
-        IWithdrawalQueue($.withdrawalQueue).callWithdrawalQueue(
-            _caller, _receiver, _owner, _assets, _shares, assetsRetrieved
-        );
+        if (assetsRetrieved < _assets) {
+            uint256 numStrategies = $.withdrawalQueue.length;
+            for (uint256 i; i < numStrategies; ++i) {
+                IERC4626 strategy = IERC4626($.withdrawalQueue[i]);
+
+                if ($.strategies[address(strategy)].status != IEulerAggregationVault.StrategyStatus.Active) continue;
+
+                uint256 underlyingBalance = strategy.maxWithdraw(address(this));
+                uint256 desiredAssets = _assets - assetsRetrieved;
+                uint256 withdrawAmount = (underlyingBalance > desiredAssets) ? desiredAssets : underlyingBalance;
+
+                // Update allocated assets
+                $.strategies[address(strategy)].allocated -= uint120(withdrawAmount);
+                $.totalAllocated -= withdrawAmount;
+
+                // Do actual withdraw from strategy
+                IERC4626(address(strategy)).withdraw(withdrawAmount, address(this), address(this));
+
+                // update _availableAssets
+                assetsRetrieved += withdrawAmount;
+
+                if (assetsRetrieved >= _assets) {
+                    break;
+                }
+            }
+        }
+
+        if (assetsRetrieved < _assets) {
+            revert Errors.NotEnoughAssets();
+        }
+
+        $.totalAssetsDeposited -= _assets;
+
+        super._withdraw(_caller, _receiver, _owner, _assets, _shares);
+
+        _gulp();
     }
 
     /// @dev Loop through stratgies, aggregate positive yield and loss and account for net amount.
@@ -430,13 +430,10 @@ contract EulerAggregationVault is
 
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
-        (address[] memory withdrawalQueueArray, uint256 length) =
-            IWithdrawalQueue($.withdrawalQueue).getWithdrawalQueueArray();
-
         uint256 totalYield;
         uint256 totalLoss;
-        for (uint256 i; i < length; ++i) {
-            (uint256 yield, uint256 loss) = _executeHarvest(withdrawalQueueArray[i]);
+        for (uint256 i; i < $.withdrawalQueue.length; ++i) {
+            (uint256 yield, uint256 loss) = _executeHarvest($.withdrawalQueue[i]);
 
             totalYield += yield;
             totalLoss += loss;
@@ -538,12 +535,5 @@ contract EulerAggregationVault is
         if ((to != address(0)) && (_balanceForwarderEnabled(to))) {
             balanceTracker.balanceTrackerHook(to, super.balanceOf(to), false);
         }
-    }
-
-    /// @dev Check if caller is WithdrawalQueue address, if not revert.
-    function _isCallerWithdrawalQueue() internal view {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-
-        if (msg.sender != $.withdrawalQueue) revert Errors.NotWithdrawaQueue();
     }
 }

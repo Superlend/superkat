@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 // interfaces
 import {IERC4626} from "@openzeppelin-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
-import {IWithdrawalQueue} from "../interface/IWithdrawalQueue.sol";
 import {IEulerAggregationVault} from "../interface/IEulerAggregationVault.sol";
 // contracts
 import {Shared} from "../common/Shared.sol";
@@ -132,7 +131,7 @@ abstract contract StrategyModule is Shared {
         });
 
         $.totalAllocationPoints += _allocationPoints;
-        IWithdrawalQueue($.withdrawalQueue).addStrategyToWithdrawalQueue(_strategy);
+        $.withdrawalQueue.push(_strategy);
 
         emit Events.AddStrategy(_strategy, _allocationPoints);
     }
@@ -165,7 +164,15 @@ abstract contract StrategyModule is Shared {
         strategyStorage.cap = AmountCap.wrap(0);
 
         // remove from withdrawalQueue
-        IWithdrawalQueue($.withdrawalQueue).removeStrategyFromWithdrawalQueue(_strategy);
+        uint256 lastStrategyIndex = $.withdrawalQueue.length - 1;
+        for (uint256 i = 0; i < lastStrategyIndex; ++i) {
+            if ($.withdrawalQueue[i] == _strategy) {
+                $.withdrawalQueue[i] = $.withdrawalQueue[lastStrategyIndex];
+
+                break;
+            }
+        }
+        $.withdrawalQueue.pop();
 
         emit Events.RemoveStrategy(_strategy);
     }

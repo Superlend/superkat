@@ -11,13 +11,13 @@ interface IEulerAggregationVault {
         address feeModule;
         address strategyModule;
         address rebalanceModule;
+        address withdrawalQueueModule;
     }
 
     /// @dev Struct to pass init() call params.
     struct InitParams {
         address aggregationVaultOwner;
         address asset;
-        address withdrawalQueuePlugin;
         address balanceTracker;
         string name;
         string symbol;
@@ -62,14 +62,6 @@ interface IEulerAggregationVault {
     function init(InitParams calldata _initParams) external;
     function gulp() external;
     function harvest() external;
-    function executeStrategyWithdraw(address _strategy, uint256 _withdrawAmount) external returns (uint256);
-    function executeAggregationVaultWithdraw(
-        address caller,
-        address receiver,
-        address owner,
-        uint256 assets,
-        uint256 shares
-    ) external;
     function getStrategy(address _strategy) external view returns (Strategy memory);
     function totalAllocationPoints() external view returns (uint256);
     function totalAllocated() external view returns (uint256);

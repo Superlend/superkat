@@ -13,7 +13,6 @@ import {
     IEulerAggregationVault,
     ErrorsLib,
     IERC4626,
-    WithdrawalQueue,
     AggAmountCapLib,
     AggAmountCap
 } from "../../common/EulerAggregationVaultBase.t.sol";
@@ -27,7 +26,6 @@ contract EulerAggregationVaultHandler is Test {
     Actor internal actorUtil;
     Strategy internal strategyUtil;
     EulerAggregationVault internal eulerAggVault;
-    WithdrawalQueue internal withdrawalQueue;
 
     // ghost vars
     uint256 public ghost_totalAllocationPoints;
@@ -43,16 +41,10 @@ contract EulerAggregationVaultHandler is Test {
     bool success;
     bytes returnData;
 
-    constructor(
-        EulerAggregationVault _eulerAggVault,
-        Actor _actor,
-        Strategy _strategy,
-        WithdrawalQueue _withdrawalQueue
-    ) {
+    constructor(EulerAggregationVault _eulerAggVault, Actor _actor, Strategy _strategy) {
         eulerAggVault = _eulerAggVault;
         actorUtil = _actor;
         strategyUtil = _strategy;
-        withdrawalQueue = _withdrawalQueue;
 
         // initiating ghost total allocation points to match count cash reserve.
         ghost_totalAllocationPoints += eulerAggVault.totalAllocationPoints();
@@ -193,17 +185,25 @@ contract EulerAggregationVaultHandler is Test {
         assertEq(eulerAggVault.totalAllocationPoints(), ghost_totalAllocationPoints);
     }
 
+    function reorderWithdrawalQueue(uint8 _index1, uint8 _index2) external {
+        (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
+            0,
+            address(eulerAggVault),
+            abi.encodeWithSelector(EulerAggregationVault.reorderWithdrawalQueue.selector, _index1, _index2)
+        );
+    }
+
     function rebalance(uint256 _actorIndexSeed) external {
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
 
-        (address[] memory strategiesToRebalance, uint256 strategiesCounter) = withdrawalQueue.getWithdrawalQueueArray();
+        (address[] memory strategiesToRebalance) = eulerAggVault.getWithdrawalQueueArray();
         (currentActor, success, returnData) = actorUtil.initiateActorCall(
             _actorIndexSeed,
             address(eulerAggVault),
             abi.encodeWithSelector(EulerAggregationVault.rebalance.selector, strategiesToRebalance)
         );
 
-        for (uint256 i; i < strategiesCounter; i++) {
+        for (uint256 i; i < strategiesToRebalance.length; i++) {
             assertEq(
                 IERC4626(strategiesToRebalance[i]).maxWithdraw(address(eulerAggVault)),
                 (eulerAggVault.getStrategy(strategiesToRebalance[i])).allocated
@@ -220,10 +220,9 @@ contract EulerAggregationVaultHandler is Test {
         uint256 accumulatedPerformanceFee;
         if (feeRecipient != address(0) && performanceFee > 0) {
             accumulatedPerformanceFee = ghost_accumulatedPerformanceFeePerRecipient[feeRecipient];
-            (address[] memory withdrawalQueueArray, uint256 withdrawalQueueLength) =
-                withdrawalQueue.getWithdrawalQueueArray();
+            address[] memory withdrawalQueueArray = eulerAggVault.getWithdrawalQueueArray();
 
-            for (uint256 i; i < withdrawalQueueLength; i++) {
+            for (uint256 i; i < withdrawalQueueArray.length; i++) {
                 uint256 allocated = (eulerAggVault.getStrategy(withdrawalQueueArray[i])).allocated;
                 uint256 underlying = IERC4626(withdrawalQueueArray[i]).maxWithdraw(address(eulerAggVault));
                 if (underlying >= allocated) {
