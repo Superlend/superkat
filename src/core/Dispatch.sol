@@ -7,7 +7,7 @@ import {RewardsModule} from "./module/Rewards.sol";
 import {StrategyModule} from "./module/Strategy.sol";
 import {FeeModule} from "./module/Fee.sol";
 import {RebalanceModule} from "./module/Rebalance.sol";
-import {WithdrawalQueue} from "./module/WithdrawalQueue.sol";
+import {WithdrawalQueueModule} from "./module/WithdrawalQueue.sol";
 
 /// @title Dispatch contract
 /// @custom:security-contact security@euler.xyz
@@ -20,7 +20,7 @@ abstract contract Dispatch is
     FeeModule,
     StrategyModule,
     RebalanceModule,
-    WithdrawalQueue
+    WithdrawalQueueModule
 {
     address public immutable rewardsModule;
     address public immutable hooksModule;
