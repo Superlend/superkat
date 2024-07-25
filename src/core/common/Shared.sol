@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
+import {Test, console2, stdError} from "forge-std/Test.sol";
+
 // interfaces
 import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
@@ -49,16 +51,31 @@ abstract contract Shared {
     function _deductLoss(uint256 _lostAmount) internal {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
-        uint168 cachedInterestLeft = $.interestLeft;
-        if (cachedInterestLeft >= _lostAmount) {
-            // cut loss from interest left only
-            cachedInterestLeft -= uint168(_lostAmount);
-        } else {
-            // cut the interest left and socialize the diff
-            $.totalAssetsDeposited -= _lostAmount - cachedInterestLeft;
-            cachedInterestLeft = 0;
+        // uint168 cachedInterestLeft = $.interestLeft;
+        // if (cachedInterestLeft >= _lostAmount) {
+        //     // cut loss from interest left only
+        //     cachedInterestLeft -= uint168(_lostAmount);
+        // } else {
+        //     // cut the interest left and socialize the diff
+        //     $.totalAssetsDeposited -= _lostAmount - cachedInterestLeft;
+        //     cachedInterestLeft = 0;
+        // }
+        // $.interestLeft = cachedInterestLeft;
+
+        uint256 totalAssetsDepositedCache = $.totalAssetsDeposited;
+
+        console2.log("_totalAssetsAllocatable()", _totalAssetsAllocatable());
+        console2.log("totalAssetsDepositedCache", totalAssetsDepositedCache);
+
+        uint256 totalNotDistributed = _totalAssetsAllocatable() - totalAssetsDepositedCache;
+
+        $.interestLeft = 0;
+        if (_lostAmount > totalNotDistributed) {
+            _lostAmount -= totalNotDistributed;
+
+            // socialize the loss
+            $.totalAssetsDeposited = totalAssetsDepositedCache - _lostAmount;
         }
-        $.interestLeft = cachedInterestLeft;
     }
 
     function _setHooksConfig(address _hooksTarget, uint32 _hookedFns) internal {

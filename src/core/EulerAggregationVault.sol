@@ -418,9 +418,6 @@ contract EulerAggregationVault is
     /// @dev Loop through stratgies, aggregate positive yield and loss and account for net amount.
     /// @dev Loss socialization will be taken out from interest left first, if not enough, socialize on deposits.
     function _harvest() internal {
-        // gulp any extra tokens to cover in case of loss socialization
-        _gulp();
-
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         uint256 totalYield;
@@ -432,15 +429,13 @@ contract EulerAggregationVault is
             totalLoss += loss;
         }
 
+        if (totalLoss > totalYield) {
+            _deductLoss(totalLoss - totalYield);
+        }
+
         $.totalAllocated = $.totalAllocated + totalYield - totalLoss;
 
-        if (totalLoss > totalYield) {
-            // we do not need to call gulp() again here as aggregated yield is negative and there is nothing gulpable.
-            _deductLoss(totalLoss - totalYield);
-        } else {
-            // gulp net positive yield
-            _gulp();
-        }
+        _gulp();
 
         emit Events.Harvest($.totalAllocated, totalYield, totalLoss);
     }
