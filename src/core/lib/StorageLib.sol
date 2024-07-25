@@ -39,7 +39,8 @@ struct AggregationVaultStorage {
     
     
     /// @dev storing the hooks target and kooked functions.
-    uint256 hooksConfig;
+    address hooksTarget;
+    uint32 hookedFns;
 }
 
 library StorageLib {

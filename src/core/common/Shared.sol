@@ -72,7 +72,8 @@ abstract contract Shared {
         if (_hookedFns >= ACTIONS_COUNTER) revert Errors.InvalidHookedFns();
 
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-        $.hooksConfig = (uint256(uint160(_hooksTarget)) << 32) | uint256(_hookedFns);
+        $.hooksTarget = _hooksTarget;
+        $.hookedFns = _hookedFns;
     }
 
     /// @notice Checks whether a hook has been installed for the function and if so, invokes the hook target.
@@ -81,20 +82,13 @@ abstract contract Shared {
     function _callHooksTarget(uint32 _fn, address _caller) internal {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
-        (address target, uint32 hookedFns) = _getHooksConfig($.hooksConfig);
+        (address target, uint32 hookedFns) = ($.hooksTarget, $.hookedFns);
 
         if (hookedFns.isNotSet(_fn)) return;
 
         (bool success, bytes memory data) = target.call(abi.encodePacked(msg.data, _caller));
 
         if (!success) _revertBytes(data);
-    }
-
-    /// @notice Get the hooks contract and the hooked functions.
-    /// @return address Hooks contract.
-    /// @return uint32 Hooked functions.
-    function _getHooksConfig(uint256 _hooksConfig) internal pure returns (address, uint32) {
-        return (address(uint160(_hooksConfig >> 32)), uint32(_hooksConfig & HOOKS_MASK));
     }
 
     /// @dev gulp positive yield into interest left amd update accrued interest.

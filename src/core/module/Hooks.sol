@@ -29,7 +29,7 @@ abstract contract HooksModule is Shared {
     function getHooksConfig() external view returns (address, uint32) {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
-        return _getHooksConfig($.hooksConfig);
+        return ($.hooksTarget, $.hookedFns);
     }
 }
 
