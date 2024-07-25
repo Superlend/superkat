@@ -9,8 +9,8 @@ import {Hooks} from "../../src/core/module/Hooks.sol";
 import {Rewards} from "../../src/core/module/Rewards.sol";
 import {Fee} from "../../src/core/module/Fee.sol";
 import {Rebalance} from "../../src/core/module/Rebalance.sol";
+import {WithdrawalQueue} from "../../src/core/module/WithdrawalQueue.sol";
 import {EulerAggregationVaultFactory} from "../../src/core/EulerAggregationVaultFactory.sol";
-import {WithdrawalQueue} from "../../src/plugin/WithdrawalQueue.sol";
 import {Strategy} from "../../src/core/module/Strategy.sol";
 import {TestERC20Token} from "crytic-properties/ERC4626/util/TestERC20Token.sol";
 
@@ -25,8 +25,7 @@ contract CryticERC4626TestsHarness is CryticERC4626PropertyTests {
     Fee feeModuleImpl;
     Strategy strategyModuleImpl;
     Rebalance rebalanceModuleImpl;
-    // plugins
-    WithdrawalQueue withdrawalQueuePluginImpl;
+    WithdrawalQueue withdrawalQueueModuleImpl;
 
     EulerAggregationVaultFactory eulerAggregationVaultFactory;
     EulerAggregationVault eulerAggregationVault;
@@ -37,8 +36,7 @@ contract CryticERC4626TestsHarness is CryticERC4626PropertyTests {
         feeModuleImpl = new Fee();
         strategyModuleImpl = new Strategy();
         rebalanceModuleImpl = new Rebalance();
-
-        withdrawalQueuePluginImpl = new WithdrawalQueue();
+        withdrawalQueueModuleImpl = new WithdrawalQueue();
 
         EulerAggregationVaultFactory.FactoryParams memory factoryParams = EulerAggregationVaultFactory.FactoryParams({
             owner: address(this),
@@ -47,14 +45,14 @@ contract CryticERC4626TestsHarness is CryticERC4626PropertyTests {
             hooksModuleImpl: address(hooksImpl),
             feeModuleImpl: address(feeModuleImpl),
             strategyModuleImpl: address(strategyModuleImpl),
-            rebalanceModuleImpl: address(rebalanceModuleImpl)
+            rebalanceModuleImpl: address(rebalanceModuleImpl),
+            withdrawalQueueModuleImpl: address(withdrawalQueueModuleImpl)
         });
         eulerAggregationVaultFactory = new EulerAggregationVaultFactory(factoryParams);
-        // eulerAggregationVaultFactory.whitelistWithdrawalQueueImpl(address(withdrawalQueuePluginImpl));
 
         TestERC20Token _asset = new TestERC20Token("Test Token", "TT", 18);
         address _vault = eulerAggregationVaultFactory.deployEulerAggregationVault(
-            address(withdrawalQueuePluginImpl), address(_asset), "TT_Agg", "TT_Agg", CASH_RESERVE_ALLOCATION_POINTS
+            address(_asset), "TT_Agg", "TT_Agg", CASH_RESERVE_ALLOCATION_POINTS
         );
 
         initialize(address(_vault), address(_asset), false);

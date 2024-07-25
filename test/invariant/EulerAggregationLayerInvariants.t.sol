@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import {
     EulerAggregationVaultBase,
     EulerAggregationVault,
-    IWithdrawalQueue,
     IEVault,
     TestERC20,
     IEulerAggregationVault,
@@ -13,14 +12,12 @@ import {
 import {Actor} from "./util/Actor.sol";
 import {Strategy} from "./util/Strategy.sol";
 import {EulerAggregationVaultHandler} from "./handler/EulerAggregationVaultHandler.sol";
-import {WithdrawalQueueHandler} from "./handler/WithdrawalQueueHandler.sol";
 
 contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
     Actor internal actorUtil;
     Strategy internal strategyUtil;
 
     EulerAggregationVaultHandler internal eulerAggregationVaultHandler;
-    WithdrawalQueueHandler internal withdrawalQueueHandler;
 
     // other strategies
     IEVault eTSTsecond;
@@ -49,13 +46,9 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
         // cash reserve strategy
         strategyUtil.includeStrategy(address(0));
 
-        eulerAggregationVaultHandler =
-            new EulerAggregationVaultHandler(eulerAggregationVault, actorUtil, strategyUtil, withdrawalQueue);
-        withdrawalQueueHandler =
-            new WithdrawalQueueHandler(eulerAggregationVault, actorUtil, strategyUtil, withdrawalQueue);
+        eulerAggregationVaultHandler = new EulerAggregationVaultHandler(eulerAggregationVault, actorUtil, strategyUtil);
 
         targetContract(address(eulerAggregationVaultHandler));
-        targetContract(address(withdrawalQueueHandler));
     }
 
     // Right after gulp, total assets allocatable should be always equal to total assets deposited + interest left.
@@ -84,14 +77,11 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
 
     // total allocation points should be equal to the sum of the allocation points of all strategies.
     function invariant_totalAllocationPoints() public view {
-        address withdrawalQueueAddr = eulerAggregationVault.withdrawalQueue();
-
-        (address[] memory withdrawalQueueArray, uint256 withdrawalQueueLength) =
-            IWithdrawalQueue(withdrawalQueueAddr).getWithdrawalQueueArray();
+        address[] memory withdrawalQueueArray = eulerAggregationVault.withdrawalQueue();
 
         uint256 expectedTotalAllocationpoints;
         expectedTotalAllocationpoints += (eulerAggregationVault.getStrategy(address(0))).allocationPoints;
-        for (uint256 i; i < withdrawalQueueLength; i++) {
+        for (uint256 i; i < withdrawalQueueArray.length; i++) {
             IEulerAggregationVault.Strategy memory strategy = eulerAggregationVault.getStrategy(withdrawalQueueArray[i]);
 
             if (strategy.status == IEulerAggregationVault.StrategyStatus.Active) {
@@ -106,19 +96,19 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
     // (2) If length > 0 and the total allocation points == cash reserve allocation points, then every strategy should have a 0 allocation points or should be a strategy in EMERGENCY mode.
     // (3) withdrawal queue length should always be equal the ghost length variable.
     function invariant_withdrawalQueue() public view {
-        address withdrawalQueueAddr = eulerAggregationVault.withdrawalQueue();
-
-        (address[] memory withdrawalQueueArray, uint256 withdrawalQueueLength) =
-            IWithdrawalQueue(withdrawalQueueAddr).getWithdrawalQueueArray();
+        (address[] memory withdrawalQueueArray) = eulerAggregationVault.withdrawalQueue();
 
         uint256 cashReserveAllocationPoints = (eulerAggregationVault.getStrategy(address(0))).allocationPoints;
 
-        if (withdrawalQueueLength == 0) {
+        if (withdrawalQueueArray.length == 0) {
             assertEq(eulerAggregationVault.totalAllocationPoints(), cashReserveAllocationPoints);
         }
 
-        if (withdrawalQueueLength > 0 && eulerAggregationVault.totalAllocationPoints() == cashReserveAllocationPoints) {
-            for (uint256 i; i < withdrawalQueueLength; i++) {
+        if (
+            withdrawalQueueArray.length > 0
+                && eulerAggregationVault.totalAllocationPoints() == cashReserveAllocationPoints
+        ) {
+            for (uint256 i; i < withdrawalQueueArray.length; i++) {
                 IEulerAggregationVault.Strategy memory strategy =
                     eulerAggregationVault.getStrategy(withdrawalQueueArray[i]);
                 assertEq(
@@ -128,18 +118,15 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
             }
         }
 
-        assertEq(withdrawalQueueLength, eulerAggregationVaultHandler.ghost_withdrawalQueueLength());
+        assertEq(withdrawalQueueArray.length, eulerAggregationVaultHandler.ghost_withdrawalQueueLength());
     }
 
     // total allocated amount should always be equal the sum of allocated amount in all the strategies.
     function invariant_totalAllocated() public view {
-        address withdrawalQueueAddr = eulerAggregationVault.withdrawalQueue();
-
-        (address[] memory withdrawalQueueArray, uint256 withdrawalQueueLength) =
-            IWithdrawalQueue(withdrawalQueueAddr).getWithdrawalQueueArray();
+        (address[] memory withdrawalQueueArray) = eulerAggregationVault.withdrawalQueue();
 
         uint256 aggregatedAllocatedAmount;
-        for (uint256 i; i < withdrawalQueueLength; i++) {
+        for (uint256 i; i < withdrawalQueueArray.length; i++) {
             IEulerAggregationVault.Strategy memory strategy = eulerAggregationVault.getStrategy(withdrawalQueueArray[i]);
 
             if (strategy.status == IEulerAggregationVault.StrategyStatus.Active) {

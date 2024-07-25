@@ -30,4 +30,7 @@ library ErrorsLib {
     error CanNotRemoveStrategyInEmergencyStatus();
     error CanNotReceiveWithdrawnAsset();
     error BadStrategyCap();
+    error OutOfBounds();
+    error SameIndexes();
+    error NotEnoughAssets();
 }

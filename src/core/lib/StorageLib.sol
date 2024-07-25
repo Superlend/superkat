@@ -16,10 +16,12 @@ struct AggregationVaultStorage {
     uint256 performanceFee;
     /// fee recipient address
     address feeRecipient;
-    /// WithdrawalQueue plugin address
-    address withdrawalQueue;
     /// Mapping between a strategy address and it's allocation config
     mapping(address => IEulerAggregationVault.Strategy) strategies;
+    /// @dev An array of strategy addresses to withdraw from
+    address[] withdrawalQueue;
+
+
     /// lastInterestUpdate: last timestamp where interest was updated.
     uint40 lastInterestUpdate;
     /// interestSmearEnd: timestamp when the smearing of interest end.
@@ -37,7 +39,8 @@ struct AggregationVaultStorage {
     
     
     /// @dev storing the hooks target and kooked functions.
-    uint256 hooksConfig;
+    address hooksTarget;
+    uint32 hookedFns;
 }
 
 library StorageLib {

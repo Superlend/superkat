@@ -7,18 +7,27 @@ import {RewardsModule} from "./module/Rewards.sol";
 import {StrategyModule} from "./module/Strategy.sol";
 import {FeeModule} from "./module/Fee.sol";
 import {RebalanceModule} from "./module/Rebalance.sol";
+import {WithdrawalQueueModule} from "./module/WithdrawalQueue.sol";
 
 /// @title Dispatch contract
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
 /// @dev This contract implement the modifier to use for forwarding calls to a specific module using delegateCall.
 /// @dev Copied from https://github.com/euler-xyz/euler-vault-kit/blob/55d1a1fd7d572372f1c8b9f58aba0604bda3ca4f/src/EVault/Dispatch.sol.
-abstract contract Dispatch is RewardsModule, HooksModule, FeeModule, StrategyModule, RebalanceModule {
+abstract contract Dispatch is
+    RewardsModule,
+    HooksModule,
+    FeeModule,
+    StrategyModule,
+    RebalanceModule,
+    WithdrawalQueueModule
+{
     address public immutable rewardsModule;
     address public immutable hooksModule;
     address public immutable feeModule;
     address public immutable strategyModule;
     address public immutable rebalanceModule;
+    address public immutable withdrawalQueueModule;
 
     /// @dev Constructor.
     /// @param _rewardsModule Address of Rewards module.
@@ -31,13 +40,15 @@ abstract contract Dispatch is RewardsModule, HooksModule, FeeModule, StrategyMod
         address _hooksModule,
         address _feeModule,
         address _strategyModule,
-        address _rebalanceModule
+        address _rebalanceModule,
+        address _withdrawalQueueModule
     ) {
         rewardsModule = _rewardsModule;
         hooksModule = _hooksModule;
         feeModule = _feeModule;
         strategyModule = _strategyModule;
         rebalanceModule = _rebalanceModule;
+        withdrawalQueueModule = _withdrawalQueueModule;
     }
 
     // Modifier proxies the function call to a module and low-level returns the result

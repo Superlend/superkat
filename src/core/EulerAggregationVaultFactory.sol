@@ -20,6 +20,7 @@ contract EulerAggregationVaultFactory {
     address public immutable feeModule;
     address public immutable strategyModule;
     address public immutable rebalanceModule;
+    address public immutable withdrawalQueueModule;
     /// aggregation vault implementation address
     address public immutable aggregationVaultImpl;
 
@@ -34,11 +35,10 @@ contract EulerAggregationVaultFactory {
         address feeModuleImpl;
         address strategyModuleImpl;
         address rebalanceModuleImpl;
+        address withdrawalQueueModuleImpl;
     }
 
-    event DeployEulerAggregationVault(
-        address indexed _owner, address _aggregationVault, address indexed _withdrawalQueueImpl, address indexed _asset
-    );
+    event DeployEulerAggregationVault(address indexed _owner, address _aggregationVault, address indexed _asset);
 
     /// @notice Constructor.
     /// @param _factoryParams FactoryParams struct.
@@ -49,6 +49,7 @@ contract EulerAggregationVaultFactory {
         feeModule = Clones.clone(_factoryParams.feeModuleImpl);
         strategyModule = Clones.clone(_factoryParams.strategyModuleImpl);
         rebalanceModule = Clones.clone(_factoryParams.rebalanceModuleImpl);
+        withdrawalQueueModule = Clones.clone(_factoryParams.withdrawalQueueModuleImpl);
 
         IEulerAggregationVault.ConstructorParams memory aggregationVaultConstructorParams = IEulerAggregationVault
             .ConstructorParams({
@@ -56,7 +57,8 @@ contract EulerAggregationVaultFactory {
             hooksModule: hooksModule,
             feeModule: feeModule,
             strategyModule: strategyModule,
-            rebalanceModule: rebalanceModule
+            rebalanceModule: rebalanceModule,
+            withdrawalQueueModule: withdrawalQueueModule
         });
         aggregationVaultImpl = address(new EulerAggregationVault(aggregationVaultConstructorParams));
     }
@@ -71,7 +73,6 @@ contract EulerAggregationVaultFactory {
     /// @param _initialCashAllocationPoints The amount of points to initally allocate for cash reserve.
     /// @return eulerAggregationVault The address of the new deployed aggregation vault.
     function deployEulerAggregationVault(
-        address _withdrawalQueueImpl,
         address _asset,
         string memory _name,
         string memory _symbol,
@@ -82,7 +83,6 @@ contract EulerAggregationVaultFactory {
         IEulerAggregationVault.InitParams memory aggregationVaultInitParams = IEulerAggregationVault.InitParams({
             aggregationVaultOwner: msg.sender,
             asset: _asset,
-            withdrawalQueuePlugin: Clones.clone(_withdrawalQueueImpl),
             balanceTracker: balanceTracker,
             name: _name,
             symbol: _symbol,
@@ -92,7 +92,7 @@ contract EulerAggregationVaultFactory {
 
         aggregationVaults.push(address(eulerAggregationVault));
 
-        emit DeployEulerAggregationVault(msg.sender, address(eulerAggregationVault), _withdrawalQueueImpl, _asset);
+        emit DeployEulerAggregationVault(msg.sender, address(eulerAggregationVault), _asset);
 
         return eulerAggregationVault;
     }

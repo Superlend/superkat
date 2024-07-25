@@ -49,7 +49,7 @@ abstract contract RebalanceModule is ContextUpgradeable, Shared {
         if (strategyData.status != IEulerAggregationVault.StrategyStatus.Active) return;
 
         uint256 totalAllocationPointsCache = $.totalAllocationPoints;
-        uint256 totalAssetsAllocatableCache = IEulerAggregationVault(address(this)).totalAssetsAllocatable();
+        uint256 totalAssetsAllocatableCache = _totalAssetsAllocatable();
         uint256 targetAllocation =
             totalAssetsAllocatableCache * strategyData.allocationPoints / totalAllocationPointsCache;
 
