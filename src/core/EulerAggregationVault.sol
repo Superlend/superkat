@@ -188,22 +188,16 @@ contract EulerAggregationVault is
     /// @dev See {RewardsModule-disableBalanceForwarder}.
     function disableBalanceForwarder() external override use(rewardsModule) {}
 
+    /// @dev See {RebalanceModule-rebalance}.
     function rebalance(address[] calldata _strategies) external override use(rebalanceModule) {}
 
+    /// @dev See {WithdrawalQueue-reorderWithdrawalQueue}.
     function reorderWithdrawalQueue(uint8 _index1, uint8 _index2)
         external
         override
         onlyRole(WITHDRAWAL_QUEUE_MANAGER)
         use(withdrawalQueueModule)
     {}
-
-    /// @notice Return the withdrawal queue length.
-    /// @return uint256 length.
-    function withdrawalQueue() public view virtual returns (address[] memory) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-
-        return $.withdrawalQueue;
-    }
 
     /// @notice Harvest all the strategies. Any positive yiled should be gupled by calling gulp() after harvesting.
     /// @dev This function will loop through the strategies following the withdrawal queue order and harvest all.
@@ -215,7 +209,7 @@ contract EulerAggregationVault is
     }
 
     /// @notice update accrued interest
-    function updateInterestAccrued() external {
+    function updateInterestAccrued() external nonReentrant {
         return _updateInterestAccrued();
     }
 
@@ -240,7 +234,7 @@ contract EulerAggregationVault is
     }
 
     /// @notice Get saving rate data.
-    /// @return avsr AggregationVaultSavingRate struct.
+    /// @return AggregationVaultSavingRate struct.
     function getAggregationVaultSavingRate() external view returns (AggregationVaultSavingRate memory) {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
         AggregationVaultSavingRate memory avsr = AggregationVaultSavingRate({
@@ -283,6 +277,14 @@ contract EulerAggregationVault is
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         return ($.feeRecipient, $.performanceFee);
+    }
+
+    /// @notice Return the withdrawal queue length.
+    /// @return uint256 length.
+    function withdrawalQueue() external view virtual returns (address[] memory) {
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        return $.withdrawalQueue;
     }
 
     /// @dev See {IERC4626-deposit}.
@@ -353,10 +355,8 @@ contract EulerAggregationVault is
     /// @notice get the total assets allocatable
     /// @dev the total assets allocatable is the amount of assets deposited into the aggregator + assets already deposited into strategies
     /// @return uint256 total assets
-    function totalAssetsAllocatable() public view returns (uint256) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-
-        return IERC20(asset()).balanceOf(address(this)) + $.totalAllocated;
+    function totalAssetsAllocatable() external view returns (uint256) {
+        return _totalAssetsAllocatable();
     }
 
     /// @dev See {IERC4626-_deposit}.

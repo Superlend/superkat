@@ -106,8 +106,7 @@ abstract contract Shared {
         // Do not gulp if total supply is too low
         if (IERC4626(address(this)).totalSupply() < MIN_SHARES_FOR_GULP) return;
 
-        uint256 toGulp =
-            IEulerAggregationVault(address(this)).totalAssetsAllocatable() - $.totalAssetsDeposited - $.interestLeft;
+        uint256 toGulp = _totalAssetsAllocatable() - $.totalAssetsDeposited - $.interestLeft;
         if (toGulp == 0) return;
 
         uint256 maxGulp = type(uint168).max - $.interestLeft;
@@ -154,6 +153,12 @@ abstract contract Shared {
         uint256 timePassed = block.timestamp - lastInterestUpdateCached;
 
         return $.interestLeft * timePassed / totalDuration;
+    }
+
+    function _totalAssetsAllocatable() internal view returns (uint256) {
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        return IERC20(IERC4626(address(this)).asset()).balanceOf(address(this)) + $.totalAllocated;
     }
 
     /// @dev Revert with call error or EmptyError
