@@ -196,7 +196,7 @@ contract EulerAggregationVaultHandler is Test {
     function rebalance(uint256 _actorIndexSeed) external {
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
 
-        (address[] memory strategiesToRebalance) = eulerAggVault.getWithdrawalQueueArray();
+        (address[] memory strategiesToRebalance) = eulerAggVault.withdrawalQueue();
         (currentActor, success, returnData) = actorUtil.initiateActorCall(
             _actorIndexSeed,
             address(eulerAggVault),
@@ -220,7 +220,7 @@ contract EulerAggregationVaultHandler is Test {
         uint256 accumulatedPerformanceFee;
         if (feeRecipient != address(0) && performanceFee > 0) {
             accumulatedPerformanceFee = ghost_accumulatedPerformanceFeePerRecipient[feeRecipient];
-            address[] memory withdrawalQueueArray = eulerAggVault.getWithdrawalQueueArray();
+            address[] memory withdrawalQueueArray = eulerAggVault.withdrawalQueue();
 
             for (uint256 i; i < withdrawalQueueArray.length; i++) {
                 uint256 allocated = (eulerAggVault.getStrategy(withdrawalQueueArray[i])).allocated;

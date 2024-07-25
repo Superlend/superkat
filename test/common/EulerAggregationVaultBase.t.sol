@@ -76,13 +76,13 @@ contract EulerAggregationVaultBase is EVaultTestBase {
         eulerAggregationVault.grantRole(eulerAggregationVault.GUARDIAN_ADMIN(), deployer);
         eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_OPERATOR_ADMIN(), deployer);
         eulerAggregationVault.grantRole(eulerAggregationVault.AGGREGATION_VAULT_MANAGER_ADMIN(), deployer);
-        // withdrawalQueue.grantRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER_ADMIN(), deployer);
+        eulerAggregationVault.grantRole(eulerAggregationVault.WITHDRAWAL_QUEUE_MANAGER_ADMIN(), deployer);
 
         // grant roles to manager
         eulerAggregationVault.grantRole(eulerAggregationVault.GUARDIAN(), manager);
         eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_OPERATOR(), manager);
         eulerAggregationVault.grantRole(eulerAggregationVault.AGGREGATION_VAULT_MANAGER(), manager);
-        // withdrawalQueue.grantRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER(), manager);
+        eulerAggregationVault.grantRole(eulerAggregationVault.WITHDRAWAL_QUEUE_MANAGER(), manager);
 
         vm.stopPrank();
 
@@ -110,62 +110,24 @@ contract EulerAggregationVaultBase is EVaultTestBase {
             eulerAggregationVault.getRoleAdmin(eulerAggregationVault.AGGREGATION_VAULT_MANAGER()),
             eulerAggregationVault.AGGREGATION_VAULT_MANAGER_ADMIN()
         );
-        // assertEq(
-        //     withdrawalQueue.getRoleAdmin(withdrawalQueue.WITHDRAW_QUEUE_MANAGER()),
-        //     withdrawalQueue.WITHDRAW_QUEUE_MANAGER_ADMIN()
-        // );
+        assertEq(
+            eulerAggregationVault.getRoleAdmin(eulerAggregationVault.WITHDRAWAL_QUEUE_MANAGER()),
+            eulerAggregationVault.WITHDRAWAL_QUEUE_MANAGER_ADMIN()
+        );
 
         assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.STRATEGY_OPERATOR_ADMIN(), deployer));
         assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.AGGREGATION_VAULT_MANAGER_ADMIN(), deployer));
-        // assertTrue(withdrawalQueue.hasRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER_ADMIN(), deployer));
+        assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.WITHDRAWAL_QUEUE_MANAGER_ADMIN(), deployer));
 
         assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.STRATEGY_OPERATOR(), manager));
         assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.AGGREGATION_VAULT_MANAGER(), manager));
-        // assertTrue(withdrawalQueue.hasRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER(), manager));
-
-        // assertEq(eulerAggregationVaultFactory.getWithdrawalQueueImplsListLength(), 1);
-        // address[] memory withdrawalQueueList = eulerAggregationVaultFactory.getWithdrawalQueueImplsList();
-        // assertEq(withdrawalQueueList.length, 1);
-        // assertEq(address(withdrawalQueueList[0]), address(withdrawalQueueImpl));
+        assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.WITHDRAWAL_QUEUE_MANAGER(), manager));
 
         assertEq(eulerAggregationVaultFactory.getAggregationVaultsListLength(), 1);
         address[] memory aggregationVaultsList = eulerAggregationVaultFactory.getAggregationVaultsListSlice(0, 1);
         assertEq(aggregationVaultsList.length, 1);
         assertEq(address(aggregationVaultsList[0]), address(eulerAggregationVault));
     }
-
-    // function testWhitelistWithdrawalQueueImpl() public {
-    //     address newWithdrawalQueueImpl = makeAddr("NEW_WITHDRAWAL_QUEUE_IMPL");
-
-    //     vm.prank(deployer);
-    //     eulerAggregationVaultFactory.whitelistWithdrawalQueueImpl(newWithdrawalQueueImpl);
-
-    //     assertEq(eulerAggregationVaultFactory.isWhitelistedWithdrawalQueueImpl(newWithdrawalQueueImpl), true);
-    //     address[] memory withdrawalQueueList = eulerAggregationVaultFactory.getWithdrawalQueueImplsList();
-    //     assertEq(withdrawalQueueList.length, 2);
-    //     assertEq(address(withdrawalQueueList[1]), address(newWithdrawalQueueImpl));
-
-    //     vm.prank(deployer);
-    //     vm.expectRevert(EulerAggregationVaultFactory.WithdrawalQueueAlreadyWhitelisted.selector);
-    //     eulerAggregationVaultFactory.whitelistWithdrawalQueueImpl(newWithdrawalQueueImpl);
-    // }
-
-    // function testDeployEulerAggregationVaultWithRandomWithdrawalQueue() public {
-    //     address newWithdrawalQueueImpl = makeAddr("NEW_WITHDRAWAL_QUEUE_IMPL");
-
-    //     vm.expectRevert(EulerAggregationVaultFactory.NotWhitelistedWithdrawalQueueImpl.selector);
-    //     eulerAggregationVaultFactory.deployEulerAggregationVault(
-    //         newWithdrawalQueueImpl, address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS
-    //     );
-
-    //     address[] memory aggregationVaultsList =
-    //         eulerAggregationVaultFactory.getAggregationVaultsListSlice(0, type(uint256).max);
-    //     assertEq(aggregationVaultsList.length, 1);
-    //     assertEq(address(aggregationVaultsList[0]), address(eulerAggregationVault));
-
-    //     vm.expectRevert(EulerAggregationVaultFactory.InvalidQuery.selector);
-    //     eulerAggregationVaultFactory.getAggregationVaultsListSlice(1, 0);
-    // }
 
     function testDeployEulerAggregationVaultWithInvalidInitialCashAllocationPoints() public {
         vm.expectRevert(ErrorsLib.InitialAllocationPointsZero.selector);

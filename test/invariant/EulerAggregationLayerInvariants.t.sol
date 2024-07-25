@@ -77,7 +77,7 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
 
     // total allocation points should be equal to the sum of the allocation points of all strategies.
     function invariant_totalAllocationPoints() public view {
-        address[] memory withdrawalQueueArray = eulerAggregationVault.getWithdrawalQueueArray();
+        address[] memory withdrawalQueueArray = eulerAggregationVault.withdrawalQueue();
 
         uint256 expectedTotalAllocationpoints;
         expectedTotalAllocationpoints += (eulerAggregationVault.getStrategy(address(0))).allocationPoints;
@@ -96,7 +96,7 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
     // (2) If length > 0 and the total allocation points == cash reserve allocation points, then every strategy should have a 0 allocation points or should be a strategy in EMERGENCY mode.
     // (3) withdrawal queue length should always be equal the ghost length variable.
     function invariant_withdrawalQueue() public view {
-        (address[] memory withdrawalQueueArray) = eulerAggregationVault.getWithdrawalQueueArray();
+        (address[] memory withdrawalQueueArray) = eulerAggregationVault.withdrawalQueue();
 
         uint256 cashReserveAllocationPoints = (eulerAggregationVault.getStrategy(address(0))).allocationPoints;
 
@@ -123,7 +123,7 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
 
     // total allocated amount should always be equal the sum of allocated amount in all the strategies.
     function invariant_totalAllocated() public view {
-        (address[] memory withdrawalQueueArray) = eulerAggregationVault.getWithdrawalQueueArray();
+        (address[] memory withdrawalQueueArray) = eulerAggregationVault.withdrawalQueue();
 
         uint256 aggregatedAllocatedAmount;
         for (uint256 i; i < withdrawalQueueArray.length; i++) {

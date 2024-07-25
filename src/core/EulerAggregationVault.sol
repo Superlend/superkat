@@ -48,6 +48,8 @@ contract EulerAggregationVault is
     bytes32 public constant STRATEGY_OPERATOR_ADMIN = keccak256("STRATEGY_OPERATOR_ADMIN");
     bytes32 public constant AGGREGATION_VAULT_MANAGER = keccak256("AGGREGATION_VAULT_MANAGER");
     bytes32 public constant AGGREGATION_VAULT_MANAGER_ADMIN = keccak256("AGGREGATION_VAULT_MANAGER_ADMIN");
+    bytes32 public constant WITHDRAWAL_QUEUE_MANAGER = keccak256("WITHDRAWAL_QUEUE_MANAGER");
+    bytes32 public constant WITHDRAWAL_QUEUE_MANAGER_ADMIN = keccak256("WITHDRAWAL_QUEUE_MANAGER_ADMIN");
 
     /// @dev Constructor.
     constructor(ConstructorParams memory _constructorParams)
@@ -88,6 +90,7 @@ contract EulerAggregationVault is
         _setRoleAdmin(GUARDIAN, GUARDIAN_ADMIN);
         _setRoleAdmin(STRATEGY_OPERATOR, STRATEGY_OPERATOR_ADMIN);
         _setRoleAdmin(AGGREGATION_VAULT_MANAGER, AGGREGATION_VAULT_MANAGER_ADMIN);
+        _setRoleAdmin(WITHDRAWAL_QUEUE_MANAGER, WITHDRAWAL_QUEUE_MANAGER_ADMIN);
     }
 
     /// @dev See {FeeModule-setFeeRecipient}.
@@ -187,12 +190,19 @@ contract EulerAggregationVault is
 
     function rebalance(address[] calldata _strategies) external override use(rebalanceModule) {}
 
-    function reorderWithdrawalQueue(uint8 _index1, uint8 _index2) public override {
-        super.reorderWithdrawalQueue(_index1, _index2);
-    }
+    function reorderWithdrawalQueue(uint8 _index1, uint8 _index2)
+        external
+        override
+        onlyRole(WITHDRAWAL_QUEUE_MANAGER)
+        use(withdrawalQueueModule)
+    {}
 
-    function withdrawalQueue() public view override returns (address[] memory) {
-        return super.withdrawalQueue();
+    /// @notice Return the withdrawal queue length.
+    /// @return uint256 length.
+    function withdrawalQueue() public view virtual returns (address[] memory) {
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        return $.withdrawalQueue;
     }
 
     /// @notice Harvest all the strategies. Any positive yiled should be gupled by calling gulp() after harvesting.
@@ -269,27 +279,10 @@ contract EulerAggregationVault is
     /// @notice Get the performance fee config.
     /// @return adddress Fee recipient.
     /// @return uint256 Fee percentage.
-    function performanceFeeConfig() external view returns (address, uint256) {
+    function performanceFeeConfig() external view virtual returns (address, uint256) {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         return ($.feeRecipient, $.performanceFee);
-    }
-
-    /// @notice Get strategy address from withdrawal queue by index.
-    /// @param _index Index to fetch.
-    /// @return address Strategy address.
-    function getWithdrawalQueueAtIndex(uint256 _index) external view returns (address) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-
-        return $.withdrawalQueue[_index];
-    }
-
-    /// @notice Get the withdrawal queue array and it's length.
-    /// @return withdrawalQueueMem The withdrawal queue array in memory.
-    function getWithdrawalQueueArray() external view returns (address[] memory) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-
-        return $.withdrawalQueue;
     }
 
     /// @dev See {IERC4626-deposit}.
