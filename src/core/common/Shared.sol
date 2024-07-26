@@ -46,19 +46,23 @@ abstract contract Shared {
         $.locked = REENTRANCYLOCK__UNLOCKED;
     }
 
-    function _deductLoss(uint256 _lostAmount) internal {
+    /// @dev Deduct _lossAmount from not-distributed amount, if not enough, socialize loss.
+    /// @dev not distributed amount is amount available to gulp + interest left.
+    /// @param _lossAmount Amount lost.
+    function _deductLoss(uint256 _lossAmount) internal {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
-        uint168 cachedInterestLeft = $.interestLeft;
-        if (cachedInterestLeft >= _lostAmount) {
-            // cut loss from interest left only
-            cachedInterestLeft -= uint168(_lostAmount);
-        } else {
-            // cut the interest left and socialize the diff
-            $.totalAssetsDeposited -= _lostAmount - cachedInterestLeft;
-            cachedInterestLeft = 0;
+        uint256 totalAssetsDepositedCache = $.totalAssetsDeposited;
+        uint256 totalNotDistributed = _totalAssetsAllocatable() - totalAssetsDepositedCache;
+
+        // set interestLeft to zero, will be updated to the right value during _gulp()
+        $.interestLeft = 0;
+        if (_lossAmount > totalNotDistributed) {
+            _lossAmount -= totalNotDistributed;
+
+            // socialize the loss
+            $.totalAssetsDeposited = totalAssetsDepositedCache - _lossAmount;
         }
-        $.interestLeft = cachedInterestLeft;
     }
 
     function _setHooksConfig(address _hooksTarget, uint32 _hookedFns) internal {

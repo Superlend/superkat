@@ -89,10 +89,13 @@ abstract contract StrategyModule is Shared {
         } else if (strategyCached.status == IEulerAggregationVault.StrategyStatus.Active) {
             $.strategies[_strategy].status = IEulerAggregationVault.StrategyStatus.Emergency;
 
+            // we should deduct loss before decrease totalAllocated to not underflow
+            _deductLoss(strategyCached.allocated);
+
             $.totalAllocationPoints -= strategyCached.allocationPoints;
             $.totalAllocated -= strategyCached.allocated;
 
-            _deductLoss(strategyCached.allocated);
+            _gulp();
         } else {
             uint256 vaultStrategyBalance = IERC4626(_strategy).maxWithdraw(address(this));
 
