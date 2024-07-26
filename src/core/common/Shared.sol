@@ -49,7 +49,7 @@ abstract contract Shared {
     }
 
     /// @dev Deduct _lossAmount from not-distributed yet amounts, if not enough, socialize loss.
-    /// @dev not distributed amount is amount available to gulp + interest left. 
+    /// @dev not distributed amount is amount available to gulp + interest left.
     /// @param _lossAmount Amount lost.
     function _deductLoss(uint256 _lossAmount) internal {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
