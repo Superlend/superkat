@@ -429,6 +429,7 @@ contract EulerAggregationVault is
             totalLoss += loss;
         }
 
+        // we should deduct loss before decrease totalAllocated to not underflow
         if (totalLoss > totalYield) {
             _deductLoss(totalLoss - totalYield);
         }
