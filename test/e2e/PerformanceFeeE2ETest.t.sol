@@ -106,7 +106,8 @@ contract PerformanceFeeE2ETest is EulerAggregationVaultBase {
         }
 
         (, uint256 performanceFee) = eulerAggregationVault.performanceFeeConfig();
-        uint256 expectedPerformanceFee = yield * performanceFee / 1e18;
+        uint256 expectedPerformanceFeeAssets = yield * performanceFee / 1e18;
+        uint256 expectedPerformanceFeeShares = eulerAggregationVault.previewDeposit(expectedPerformanceFeeAssets);
 
         IEulerAggregationVault.Strategy memory strategyBeforeHarvest = eulerAggregationVault.getStrategy(address(eTST));
         uint256 totalAllocatedBefore = eulerAggregationVault.totalAllocated();
@@ -115,13 +116,11 @@ contract PerformanceFeeE2ETest is EulerAggregationVaultBase {
         vm.prank(user1);
         eulerAggregationVault.harvest();
 
-        assertGt(expectedPerformanceFee, 0);
-        assertEq(assetTST.balanceOf(feeRecipient), expectedPerformanceFee);
-        assertEq(
-            eulerAggregationVault.getStrategy(address(eTST)).allocated,
-            strategyBeforeHarvest.allocated + yield - expectedPerformanceFee
-        );
-        assertEq(eulerAggregationVault.totalAllocated(), totalAllocatedBefore + yield - expectedPerformanceFee);
+        assertGt(expectedPerformanceFeeShares, 0);
+        assertEq(assetTST.balanceOf(feeRecipient), 0);
+        assertEq(eulerAggregationVault.balanceOf(feeRecipient), expectedPerformanceFeeShares);
+        assertEq(eulerAggregationVault.getStrategy(address(eTST)).allocated, strategyBeforeHarvest.allocated + yield);
+        assertEq(eulerAggregationVault.totalAllocated(), totalAllocatedBefore + yield);
 
         // full withdraw, will have to withdraw from strategy as cash reserve is not enough
         {
@@ -141,13 +140,15 @@ contract PerformanceFeeE2ETest is EulerAggregationVaultBase {
             assertApproxEqAbs(assetTST.balanceOf(user1), user1AssetTSTBalanceBefore + expectedAssetTST, 1);
         }
 
-        // full withdraw of recipient fees
+        // full redemption of recipient fees
         {
             uint256 totalAssetsDepositedBefore = eulerAggregationVault.totalAssetsDeposited();
             uint256 assetTSTBalanceBefore = assetTST.balanceOf(feeRecipient);
 
             uint256 feeShares = eulerAggregationVault.balanceOf(feeRecipient);
             uint256 expectedAssets = eulerAggregationVault.convertToAssets(feeShares);
+            assertGt(expectedAssets, 0);
+
             vm.prank(feeRecipient);
             eulerAggregationVault.redeem(feeShares, feeRecipient, feeRecipient);
 
