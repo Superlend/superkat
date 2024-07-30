@@ -432,6 +432,8 @@ contract EulerAggregationVault is
         // we should deduct loss before decrease totalAllocated to not underflow
         if (totalLoss > totalYield) {
             _deductLoss(totalLoss - totalYield);
+        } else if (totalLoss < totalYield) {
+            _accruePerformanceFee(totalYield - totalLoss);
         }
 
         $.totalAllocated = $.totalAllocated + totalYield - totalLoss;
@@ -456,23 +458,17 @@ contract EulerAggregationVault is
         ) return (0, 0);
 
         uint256 underlyingBalance = IERC4626(_strategy).maxWithdraw(address(this));
+        $.strategies[_strategy].allocated = uint120(underlyingBalance);
+
         uint256 yield;
         uint256 loss;
         if (underlyingBalance == strategyAllocatedAmount) {
             return (yield, loss);
         } else if (underlyingBalance > strategyAllocatedAmount) {
             yield = underlyingBalance - strategyAllocatedAmount;
-            uint120 accruedPerformanceFee = _accruePerformanceFee(_strategy, yield);
-
-            if (accruedPerformanceFee > 0) {
-                underlyingBalance -= accruedPerformanceFee;
-                yield -= accruedPerformanceFee;
-            }
         } else {
             loss = strategyAllocatedAmount - underlyingBalance;
         }
-
-        $.strategies[_strategy].allocated = uint120(underlyingBalance);
 
         emit Events.ExecuteHarvest(_strategy, underlyingBalance, strategyAllocatedAmount);
 
@@ -480,27 +476,27 @@ contract EulerAggregationVault is
     }
 
     /// @dev Accrue performace fee on harvested yield.
-    /// @param _strategy Strategy that the yield is harvested from.
     /// @param _yield Amount of yield harvested.
-    /// @return feeAssets Amount of performance fee taken.
-    function _accruePerformanceFee(address _strategy, uint256 _yield) internal returns (uint120) {
+    function _accruePerformanceFee(uint256 _yield) internal {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         address cachedFeeRecipient = $.feeRecipient;
         uint256 cachedPerformanceFee = $.performanceFee;
 
-        if (cachedFeeRecipient == address(0) || cachedPerformanceFee == 0) return 0;
+        if (cachedFeeRecipient == address(0) || cachedPerformanceFee == 0) return;
 
         // `feeAssets` will be rounded down to 0 if `yield * performanceFee < 1e18`.
         uint256 feeAssets = Math.mulDiv(_yield, cachedPerformanceFee, 1e18, Math.Rounding.Floor);
+        uint256 feeShares = _convertToShares(feeAssets, Math.Rounding.Floor);
 
-        if (feeAssets > 0) {
-            IERC4626(_strategy).withdraw(feeAssets, cachedFeeRecipient, address(this));
+        if (feeShares != 0) {
+            // Move feeAssets from gulpable amount to totalAssetsDeposited to not delute other depositors.
+            $.totalAssetsDeposited += feeAssets;
+
+            _mint(cachedFeeRecipient, feeShares);
         }
 
-        emit Events.AccruePerformanceFee(cachedFeeRecipient, _yield, feeAssets);
-
-        return feeAssets.toUint120();
+        emit Events.AccruePerformanceFee(cachedFeeRecipient, _yield, feeShares);
     }
 
     /// @dev Override _afterTokenTransfer hook to call IBalanceTracker.balanceTrackerHook()
