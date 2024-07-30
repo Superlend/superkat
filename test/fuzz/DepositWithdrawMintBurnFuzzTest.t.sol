@@ -58,7 +58,7 @@ contract DepositWithdrawMintBurnFuzzTest is EulerAggregationVaultBase {
 
         assertEq(eulerAggregationVault.balanceOf(user1), balanceBefore - _assetsToWithdraw);
         assertEq(eulerAggregationVault.totalSupply(), totalSupplyBefore - _assetsToWithdraw);
-        // assertEq(eulerAggregationVault.totalAssetsDeposited(), totalAssetsDepositedBefore - _assetsToWithdraw);
+        assertEq(eulerAggregationVault.totalAssetsDeposited(), totalAssetsDepositedBefore - _assetsToWithdraw);
         // assertEq(assetTST.balanceOf(_receiver), receiverAssetBalanceBefore + _assetsToWithdraw);
     }
 
@@ -109,7 +109,7 @@ contract DepositWithdrawMintBurnFuzzTest is EulerAggregationVaultBase {
 
         assertEq(eulerAggregationVault.balanceOf(user1), balanceBefore - _sharesToRedeem);
         assertEq(eulerAggregationVault.totalSupply(), totalSupplyBefore - _sharesToRedeem);
-        // assertEq(eulerAggregationVault.totalAssetsDeposited(), totalAssetsDepositedBefore - assetsToWithdraw);
+        assertEq(eulerAggregationVault.totalAssetsDeposited(), totalAssetsDepositedBefore - assetsToWithdraw);
         // assertEq(assetTST.balanceOf(_receiver), receiverAssetBalanceBefore + assetsToWithdraw);
     }
 
