@@ -19,7 +19,7 @@ library EventsLib {
 
     /// @dev Fee events
     event SetFeeRecipient(address indexed oldRecipient, address indexed newRecipient);
-    event SetPerformanceFee(uint256 oldFee, uint256 newFee);
+    event SetPerformanceFee(uint96 oldFee, uint96 newFee);
 
     /// @dev Hooks events
     event SetHooksConfig(address indexed hooksTarget, uint32 hookedFns);

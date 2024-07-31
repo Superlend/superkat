@@ -68,12 +68,12 @@ contract EulerAggregationVaultHandler is Test {
         assertEq(feeRecipient, feeRecipientAddr);
     }
 
-    function setPerformanceFee(uint256 _newFee) external {
+    function setPerformanceFee(uint96 _newFee) external {
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             0, address(eulerAggVault), abi.encodeWithSelector(EulerAggregationVault.setPerformanceFee.selector, _newFee)
         );
 
-        (, uint256 fee) = eulerAggVault.performanceFeeConfig();
+        (, uint96 fee) = eulerAggVault.performanceFeeConfig();
 
         assertEq(_newFee, fee);
     }

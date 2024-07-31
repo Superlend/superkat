@@ -102,7 +102,7 @@ contract EulerAggregationVault is
     {}
 
     /// @dev See {FeeModule-setPerformanceFee}.
-    function setPerformanceFee(uint256 _newFee) external override onlyRole(AGGREGATION_VAULT_MANAGER) use(feeModule) {}
+    function setPerformanceFee(uint96 _newFee) external override onlyRole(AGGREGATION_VAULT_MANAGER) use(feeModule) {}
 
     /// @dev See {RewardsModule-optInStrategyRewards}.
     function optInStrategyRewards(address _strategy)
@@ -273,7 +273,7 @@ contract EulerAggregationVault is
     /// @notice Get the performance fee config.
     /// @return adddress Fee recipient.
     /// @return uint256 Fee percentage.
-    function performanceFeeConfig() external view virtual returns (address, uint256) {
+    function performanceFeeConfig() external view virtual returns (address, uint96) {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         return ($.feeRecipient, $.performanceFee);
@@ -415,6 +415,8 @@ contract EulerAggregationVault is
         _gulp();
     }
 
+    function checkHarvest() internal {}
+
     /// @dev Loop through stratgies, aggregate positive and negative yield and account for net amounts.
     /// @dev Loss socialization will be taken out from interest left first, if not enough, socialize on deposits.
     /// @dev Performance fee will only be applied on net positive yield.
@@ -482,7 +484,7 @@ contract EulerAggregationVault is
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         address cachedFeeRecipient = $.feeRecipient;
-        uint256 cachedPerformanceFee = $.performanceFee;
+        uint96 cachedPerformanceFee = $.performanceFee;
 
         if (cachedFeeRecipient == address(0) || cachedPerformanceFee == 0) return;
 
