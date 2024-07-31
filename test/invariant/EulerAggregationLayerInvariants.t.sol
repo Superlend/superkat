@@ -89,7 +89,7 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
             }
         }
 
-        // assertEq(eulerAggregationVault.totalAllocationPoints(), expectedTotalAllocationpoints);
+        assertEq(eulerAggregationVault.totalAllocationPoints(), expectedTotalAllocationpoints);
     }
 
     // (1) If withdrawal queue length == 0, then the total allocation points should be equal cash reserve allocation points.
@@ -143,7 +143,7 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
             address feeRecipient = eulerAggregationVaultHandler.ghost_feeRecipients(i);
 
             assertEq(
-                assetTST.balanceOf(feeRecipient),
+                eulerAggregationVault.balanceOf(feeRecipient),
                 eulerAggregationVaultHandler.ghost_accumulatedPerformanceFeePerRecipient(feeRecipient)
             );
         }

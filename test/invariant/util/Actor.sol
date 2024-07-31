@@ -9,6 +9,8 @@ contract Actor is Test {
 
     /// @dev actor[0] will always be a manager address that have access to all EulerAggregationVault roles.
     address[] public actors;
+    /// @dev using a mapping to detect fee receiver, just for cleaner and expected test results.
+    mapping(address => bool) public isFeeReceiver;
 
     constructor(address _eulerAggregationVault) {
         eulerAggregationVault = _eulerAggregationVault;
@@ -43,6 +45,10 @@ contract Actor is Test {
         (bool success, bytes memory returnData) = address(_target).call(_calldata);
 
         return (currentActor, success, returnData);
+    }
+
+    function setAsFeeReceiver(address _feeReceiver) external {
+        isFeeReceiver[_feeReceiver] = true;
     }
 
     function fetchActor(uint256 _actorIndexSeed) external view returns (address, uint256) {

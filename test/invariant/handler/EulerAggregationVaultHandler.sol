@@ -62,6 +62,7 @@ contract EulerAggregationVaultHandler is Test {
 
         if (success) {
             ghost_feeRecipients.push(feeRecipientAddr);
+            actorUtil.setAsFeeReceiver(feeRecipientAddr);
         }
         (address feeRecipient,) = eulerAggVault.performanceFeeConfig();
         assertEq(feeRecipient, feeRecipientAddr);
@@ -124,7 +125,8 @@ contract EulerAggregationVaultHandler is Test {
 
         // simulating loss when switching strategy to emergency status
         IEulerAggregationVault.Strategy memory strategyBefore = eulerAggVault.getStrategy(strategyAddr);
-        uint256 cached_ghost_totalAssetsDeposited = _simulateLossSocialization(strategyBefore.allocated);
+        uint256 cached_ghost_totalAssetsDeposited =
+            _simulateLossSocialization(ghost_totalAssetsDeposited, strategyBefore.allocated);
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             0,
@@ -218,6 +220,7 @@ contract EulerAggregationVaultHandler is Test {
         // check if performance fee is on; store received fee per recipient if call is succesfull
         (address feeRecipient, uint256 performanceFee) = eulerAggVault.performanceFeeConfig();
         uint256 accumulatedPerformanceFee;
+        uint256 cached_ghost_totalAssetsDeposited = ghost_totalAssetsDeposited;
         if (feeRecipient != address(0) && performanceFee > 0) {
             accumulatedPerformanceFee = ghost_accumulatedPerformanceFeePerRecipient[feeRecipient];
             address[] memory withdrawalQueueArray = eulerAggVault.withdrawalQueue();
@@ -226,17 +229,22 @@ contract EulerAggregationVaultHandler is Test {
                 uint256 allocated = (eulerAggVault.getStrategy(withdrawalQueueArray[i])).allocated;
                 uint256 underlying = IERC4626(withdrawalQueueArray[i]).maxWithdraw(address(eulerAggVault));
                 if (underlying >= allocated) {
-                    uint256 yield = underlying - allocated;
-                    uint256 performancefee = Math.mulDiv(yield, performanceFee, 1e18, Math.Rounding.Floor);
-                    accumulatedPerformanceFee += performancefee;
-                    totalYield += yield - performancefee;
+                    totalYield += underlying - allocated;
                 } else {
                     totalLoss += allocated - underlying;
                 }
             }
-        }
 
-        uint256 cached_ghost_totalAssetsDeposited = _simulateLossSocialization(totalLoss);
+            if (totalYield > totalLoss) {
+                uint256 performancefeeAssets = Math.mulDiv(totalYield, performanceFee, 1e18, Math.Rounding.Floor);
+
+                accumulatedPerformanceFee = eulerAggVault.previewDeposit(performancefeeAssets);
+                cached_ghost_totalAssetsDeposited += performancefeeAssets;
+            } else if (totalYield < totalLoss) {
+                cached_ghost_totalAssetsDeposited =
+                    _simulateLossSocialization(cached_ghost_totalAssetsDeposited, totalLoss);
+            }
+        }
 
         // simulate loss
         (, success, returnData) = actorUtil.initiateActorCall(
@@ -272,6 +280,7 @@ contract EulerAggregationVaultHandler is Test {
 
     function deposit(uint256 _actorIndexSeed, uint256 _assets, address _receiver) external {
         vm.assume(_receiver != address(0));
+        vm.assume(!actorUtil.isFeeReceiver(_receiver));
 
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
 
@@ -295,6 +304,7 @@ contract EulerAggregationVaultHandler is Test {
 
     function mint(uint256 _actorIndexSeed, uint256 _shares, address _receiver) external {
         vm.assume(_receiver != address(0));
+        vm.assume(!actorUtil.isFeeReceiver(_receiver));
 
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
 
@@ -319,6 +329,7 @@ contract EulerAggregationVaultHandler is Test {
 
     function withdraw(uint256 _actorIndexSeed, uint256 _assets, address _receiver) external {
         vm.assume(_receiver != address(0));
+        vm.assume(!actorUtil.isFeeReceiver(_receiver));
 
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
 
@@ -336,6 +347,7 @@ contract EulerAggregationVaultHandler is Test {
 
     function redeem(uint256 _actorIndexSeed, uint256 _shares, address _receiver) external {
         vm.assume(_receiver != address(0));
+        vm.assume(!actorUtil.isFeeReceiver(_receiver));
 
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
 
@@ -369,13 +381,16 @@ contract EulerAggregationVaultHandler is Test {
 
     // This function simulate loss socialization, the part related to decreasing totalAssetsDeposited only.
     // Return the expected ghost_totalAssetsDeposited after loss socialization.
-    function _simulateLossSocialization(uint256 _loss) private view returns (uint256) {
-        uint256 cached_ghost_totalAssetsDeposited = ghost_totalAssetsDeposited;
+    function _simulateLossSocialization(uint256 cachedGhostTotalAssetsDeposited, uint256 _loss)
+        private
+        view
+        returns (uint256)
+    {
         IEulerAggregationVault.AggregationVaultSavingRate memory avsr = eulerAggVault.getAggregationVaultSavingRate();
         if (_loss > avsr.interestLeft) {
-            cached_ghost_totalAssetsDeposited -= _loss - avsr.interestLeft;
+            cachedGhostTotalAssetsDeposited -= _loss - avsr.interestLeft;
         }
 
-        return cached_ghost_totalAssetsDeposited;
+        return cachedGhostTotalAssetsDeposited;
     }
 }
