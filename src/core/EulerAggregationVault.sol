@@ -201,7 +201,7 @@ contract EulerAggregationVault is
 
     /// @notice Harvest all the strategies. Any positive yiled should be gupled by calling gulp() after harvesting.
     /// @dev This function will loop through the strategies following the withdrawal queue order and harvest all.
-    /// @dev Harvest yield and losses will be aggregated and only net yield/loss will be accounted.
+    /// @dev Harvest positive and negative yields will be aggregated and only net amounts will be accounted.
     function harvest() external nonReentrant {
         _updateInterestAccrued();
 
@@ -213,7 +213,7 @@ contract EulerAggregationVault is
         return _updateInterestAccrued();
     }
 
-    /// @notice gulp positive harvest yield
+    /// @notice gulp harvested positive yield
     function gulp() external nonReentrant {
         _gulp();
     }
@@ -415,37 +415,38 @@ contract EulerAggregationVault is
         _gulp();
     }
 
-    /// @dev Loop through stratgies, aggregate positive yield and loss and account for net amount.
+    /// @dev Loop through stratgies, aggregate positive and negative yield and account for net amounts.
     /// @dev Loss socialization will be taken out from interest left first, if not enough, socialize on deposits.
+    /// @dev Performance fee will only be applied on net positive yield.
     function _harvest() internal {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
-        uint256 totalYield;
-        uint256 totalLoss;
+        uint256 totalPositiveYield;
+        uint256 totalNegativeYield;
         for (uint256 i; i < $.withdrawalQueue.length; ++i) {
-            (uint256 yield, uint256 loss) = _executeHarvest($.withdrawalQueue[i]);
+            (uint256 positiveYield, uint256 loss) = _executeHarvest($.withdrawalQueue[i]);
 
-            totalYield += yield;
-            totalLoss += loss;
+            totalPositiveYield += positiveYield;
+            totalNegativeYield += loss;
         }
 
         // we should deduct loss before decrease totalAllocated to not underflow
-        if (totalLoss > totalYield) {
-            _deductLoss(totalLoss - totalYield);
-        } else if (totalLoss < totalYield) {
-            _accruePerformanceFee(totalYield - totalLoss);
+        if (totalNegativeYield > totalPositiveYield) {
+            _deductLoss(totalNegativeYield - totalPositiveYield);
+        } else if (totalNegativeYield < totalPositiveYield) {
+            _accruePerformanceFee(totalPositiveYield - totalNegativeYield);
         }
 
-        $.totalAllocated = $.totalAllocated + totalYield - totalLoss;
+        $.totalAllocated = $.totalAllocated + totalPositiveYield - totalNegativeYield;
 
         _gulp();
 
-        emit Events.Harvest($.totalAllocated, totalYield, totalLoss);
+        emit Events.Harvest($.totalAllocated, totalPositiveYield, totalNegativeYield);
     }
 
     /// @dev Execute harvest on a single strategy.
     /// @param _strategy Strategy address.
-    /// @return yield Amount of yield if any, else 0.
+    /// @return positiveYield Amount of positive yield if any, else 0.
     /// @return loss Amount of loss if any, else 0.
     function _executeHarvest(address _strategy) internal returns (uint256, uint256) {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
@@ -460,23 +461,23 @@ contract EulerAggregationVault is
         uint256 underlyingBalance = IERC4626(_strategy).maxWithdraw(address(this));
         $.strategies[_strategy].allocated = uint120(underlyingBalance);
 
-        uint256 yield;
+        uint256 positiveYield;
         uint256 loss;
         if (underlyingBalance == strategyAllocatedAmount) {
-            return (yield, loss);
+            return (positiveYield, loss);
         } else if (underlyingBalance > strategyAllocatedAmount) {
-            yield = underlyingBalance - strategyAllocatedAmount;
+            positiveYield = underlyingBalance - strategyAllocatedAmount;
         } else {
             loss = strategyAllocatedAmount - underlyingBalance;
         }
 
         emit Events.ExecuteHarvest(_strategy, underlyingBalance, strategyAllocatedAmount);
 
-        return (yield, loss);
+        return (positiveYield, loss);
     }
 
     /// @dev Accrue performace fee on harvested yield.
-    /// @param _yield Amount of yield harvested.
+    /// @param _yield Net positive yield.
     function _accruePerformanceFee(uint256 _yield) internal {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
