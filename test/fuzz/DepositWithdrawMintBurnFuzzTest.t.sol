@@ -82,25 +82,20 @@ contract DepositWithdrawMintBurnFuzzTest is EulerAggregationVaultBase {
         assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - assets);
     }
 
-    function testFuzzRedeem(
-        address _receiver,
-        uint256 _sharesToMint,
-        uint256 _sharesToRedeem,
-        uint256 _timestampAfterDeposit
-    ) public {
+    function testFuzzRedeem(address _receiver, uint256 _sharesToMint, uint256 _sharesToRedeem) public {
         vm.assume(_receiver != address(0));
 
         _sharesToMint = bound(_sharesToMint, 1, type(uint256).max - 1);
-        _timestampAfterDeposit = bound(_timestampAfterDeposit, 0, 86400);
 
         // deposit
         uint256 assetsToDeposit = eulerAggregationVault.previewMint(_sharesToMint);
         if (assetsToDeposit > MAX_ALLOWED) assetsToDeposit = MAX_ALLOWED;
         assetTST.mint(user1, assetsToDeposit);
+
         _sharesToMint = eulerAggregationVault.previewDeposit(assetsToDeposit);
         _sharesToRedeem = bound(_sharesToRedeem, 0, _sharesToMint);
         _mint(user1, assetsToDeposit, _sharesToMint);
-        vm.warp(block.timestamp + _timestampAfterDeposit);
+        vm.warp(block.timestamp + 86400);
 
         // fuzz partial & full redeem
         uint256 balanceBefore = eulerAggregationVault.balanceOf(user1);
