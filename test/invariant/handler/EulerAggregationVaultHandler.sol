@@ -214,37 +214,8 @@ contract EulerAggregationVaultHandler is Test {
     }
 
     function harvest(uint256 _actorIndexSeed) external {
-        // track total yield and total loss to simulate loss socialization
-        uint256 totalYield;
-        uint256 totalLoss;
-        // check if performance fee is on; store received fee per recipient if call is succesfull
-        (address feeRecipient, uint256 performanceFee) = eulerAggVault.performanceFeeConfig();
-        uint256 accumulatedPerformanceFee;
-        uint256 cached_ghost_totalAssetsDeposited = ghost_totalAssetsDeposited;
-        if (feeRecipient != address(0) && performanceFee > 0) {
-            accumulatedPerformanceFee = ghost_accumulatedPerformanceFeePerRecipient[feeRecipient];
-            address[] memory withdrawalQueueArray = eulerAggVault.withdrawalQueue();
-
-            for (uint256 i; i < withdrawalQueueArray.length; i++) {
-                uint256 allocated = (eulerAggVault.getStrategy(withdrawalQueueArray[i])).allocated;
-                uint256 underlying = IERC4626(withdrawalQueueArray[i]).maxWithdraw(address(eulerAggVault));
-                if (underlying >= allocated) {
-                    totalYield += underlying - allocated;
-                } else {
-                    totalLoss += allocated - underlying;
-                }
-            }
-
-            if (totalYield > totalLoss) {
-                uint256 performancefeeAssets = Math.mulDiv(totalYield, performanceFee, 1e18, Math.Rounding.Floor);
-
-                accumulatedPerformanceFee = eulerAggVault.previewDeposit(performancefeeAssets);
-                cached_ghost_totalAssetsDeposited += performancefeeAssets;
-            } else if (totalYield < totalLoss) {
-                cached_ghost_totalAssetsDeposited =
-                    _simulateLossSocialization(cached_ghost_totalAssetsDeposited, totalLoss);
-            }
-        }
+        (uint256 expectedAccumulatedPerformanceFee, uint256 expectedTotalAssetsDeposited) =
+            _simulateFeeAndLossSocialization();
 
         // simulate loss
         (, success, returnData) = actorUtil.initiateActorCall(
@@ -252,8 +223,9 @@ contract EulerAggregationVaultHandler is Test {
         );
 
         if (success) {
-            ghost_accumulatedPerformanceFeePerRecipient[feeRecipient] = accumulatedPerformanceFee;
-            ghost_totalAssetsDeposited = cached_ghost_totalAssetsDeposited;
+            (address feeRecipient,) = eulerAggVault.performanceFeeConfig();
+            ghost_accumulatedPerformanceFeePerRecipient[feeRecipient] = expectedAccumulatedPerformanceFee;
+            ghost_totalAssetsDeposited = expectedTotalAssetsDeposited;
         }
     }
 
@@ -331,6 +303,10 @@ contract EulerAggregationVaultHandler is Test {
         vm.assume(_receiver != address(0));
         vm.assume(!actorUtil.isFeeReceiver(_receiver));
 
+        uint256 previousHarvestTimestamp = eulerAggVault.lastHarvestTimestamp();
+        (uint256 expectedAccumulatedPerformanceFee, uint256 expectedTotalAssetsDeposited) =
+            _simulateFeeAndLossSocialization();
+
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
@@ -340,6 +316,12 @@ contract EulerAggregationVaultHandler is Test {
         );
 
         if (success) {
+            if (block.timestamp > previousHarvestTimestamp + eulerAggVault.HARVEST_COOLDOWN()) {
+                (address feeRecipient,) = eulerAggVault.performanceFeeConfig();
+                ghost_accumulatedPerformanceFeePerRecipient[feeRecipient] = expectedAccumulatedPerformanceFee;
+                ghost_totalAssetsDeposited = expectedTotalAssetsDeposited;
+            }
+
             ghost_totalAssetsDeposited -= _assets;
         }
         assertEq(eulerAggVault.totalAssetsDeposited(), ghost_totalAssetsDeposited);
@@ -392,5 +374,41 @@ contract EulerAggregationVaultHandler is Test {
         }
 
         return cachedGhostTotalAssetsDeposited;
+    }
+
+    function _simulateFeeAndLossSocialization() private view returns (uint256, uint256) {
+        // track total yield and total loss to simulate loss socialization
+        uint256 totalYield;
+        uint256 totalLoss;
+        // check if performance fee is on; store received fee per recipient if call is succesfull
+        (address feeRecipient, uint256 performanceFee) = eulerAggVault.performanceFeeConfig();
+        uint256 accumulatedPerformanceFee;
+        uint256 cached_ghost_totalAssetsDeposited = ghost_totalAssetsDeposited;
+        if (feeRecipient != address(0) && performanceFee > 0) {
+            accumulatedPerformanceFee = ghost_accumulatedPerformanceFeePerRecipient[feeRecipient];
+            address[] memory withdrawalQueueArray = eulerAggVault.withdrawalQueue();
+
+            for (uint256 i; i < withdrawalQueueArray.length; i++) {
+                uint256 allocated = (eulerAggVault.getStrategy(withdrawalQueueArray[i])).allocated;
+                uint256 underlying = IERC4626(withdrawalQueueArray[i]).maxWithdraw(address(eulerAggVault));
+                if (underlying >= allocated) {
+                    totalYield += underlying - allocated;
+                } else {
+                    totalLoss += allocated - underlying;
+                }
+            }
+
+            if (totalYield > totalLoss) {
+                uint256 performancefeeAssets = Math.mulDiv(totalYield, performanceFee, 1e18, Math.Rounding.Floor);
+
+                accumulatedPerformanceFee = eulerAggVault.previewDeposit(performancefeeAssets);
+                cached_ghost_totalAssetsDeposited += performancefeeAssets;
+            } else if (totalYield < totalLoss) {
+                cached_ghost_totalAssetsDeposited =
+                    _simulateLossSocialization(cached_ghost_totalAssetsDeposited, totalLoss);
+            }
+        }
+
+        return (accumulatedPerformanceFee, cached_ghost_totalAssetsDeposited);
     }
 }

@@ -41,6 +41,8 @@ contract EulerAggregationVault is
     using SafeERC20 for IERC20;
     using SafeCast for uint256;
 
+    uint256 public constant HARVEST_COOLDOWN = 1 days;
+
     // Roles
     bytes32 public constant GUARDIAN = keccak256("GUARDIAN");
     bytes32 public constant GUARDIAN_ADMIN = keccak256("GUARDIAN_ADMIN");
@@ -50,8 +52,6 @@ contract EulerAggregationVault is
     bytes32 public constant AGGREGATION_VAULT_MANAGER_ADMIN = keccak256("AGGREGATION_VAULT_MANAGER_ADMIN");
     bytes32 public constant WITHDRAWAL_QUEUE_MANAGER = keccak256("WITHDRAWAL_QUEUE_MANAGER");
     bytes32 public constant WITHDRAWAL_QUEUE_MANAGER_ADMIN = keccak256("WITHDRAWAL_QUEUE_MANAGER_ADMIN");
-
-    uint256 public constant HARVEST_COOLDOWN = 1 days;
 
     /// @dev Constructor.
     constructor(ConstructorParams memory _constructorParams)
@@ -275,18 +275,24 @@ contract EulerAggregationVault is
     /// @notice Get the performance fee config.
     /// @return adddress Fee recipient.
     /// @return uint256 Fee percentage.
-    function performanceFeeConfig() external view virtual returns (address, uint96) {
+    function performanceFeeConfig() external view returns (address, uint96) {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         return ($.feeRecipient, $.performanceFee);
     }
 
-    /// @notice Return the withdrawal queue length.
+    /// @notice Return the withdrawal queue.
     /// @return uint256 length.
-    function withdrawalQueue() external view virtual returns (address[] memory) {
+    function withdrawalQueue() external view returns (address[] memory) {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         return $.withdrawalQueue;
+    }
+
+    function lastHarvestTimestamp() external view returns (uint256) {
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        return $.lastHarvestTimestamp;
     }
 
     /// @dev See {IERC4626-deposit}.
