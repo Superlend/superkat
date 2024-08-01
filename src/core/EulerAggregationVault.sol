@@ -413,8 +413,6 @@ contract EulerAggregationVault is
         $.totalAssetsDeposited -= _assets;
 
         super._withdraw(_caller, _receiver, _owner, _assets, _shares);
-
-        _gulp();
     }
 
     /// @dev Loop through stratgies, aggregate positive and negative yield and account for net amounts.
