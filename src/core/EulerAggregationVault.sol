@@ -51,6 +51,8 @@ contract EulerAggregationVault is
     bytes32 public constant WITHDRAWAL_QUEUE_MANAGER = keccak256("WITHDRAWAL_QUEUE_MANAGER");
     bytes32 public constant WITHDRAWAL_QUEUE_MANAGER_ADMIN = keccak256("WITHDRAWAL_QUEUE_MANAGER_ADMIN");
 
+    uint256 public constant HARVEST_COOLDOWN = 1 days;
+
     /// @dev Constructor.
     constructor(ConstructorParams memory _constructorParams)
         Dispatch(
@@ -205,7 +207,7 @@ contract EulerAggregationVault is
     function harvest() external nonReentrant {
         _updateInterestAccrued();
 
-        _harvest();
+        _harvest(false);
     }
 
     /// @notice update accrued interest
@@ -316,7 +318,7 @@ contract EulerAggregationVault is
 
         _callHooksTarget(WITHDRAW, _msgSender());
 
-        _harvest();
+        _harvest(true);
 
         return super.withdraw(_assets, _receiver, _owner);
     }
@@ -334,7 +336,7 @@ contract EulerAggregationVault is
 
         _callHooksTarget(REDEEM, _msgSender());
 
-        _harvest();
+        _harvest(true);
 
         return super.redeem(_shares, _receiver, _owner);
     }
@@ -415,13 +417,15 @@ contract EulerAggregationVault is
         _gulp();
     }
 
-    function checkHarvest() internal {}
-
     /// @dev Loop through stratgies, aggregate positive and negative yield and account for net amounts.
     /// @dev Loss socialization will be taken out from interest left first, if not enough, socialize on deposits.
     /// @dev Performance fee will only be applied on net positive yield.
-    function _harvest() internal {
+    function _harvest(bool _checkCooldown) internal {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        if ((_checkCooldown) && ($.lastHarvestTimestamp + HARVEST_COOLDOWN >= block.timestamp)) {
+            return;
+        }
 
         uint256 totalPositiveYield;
         uint256 totalNegativeYield;
@@ -432,7 +436,7 @@ contract EulerAggregationVault is
             totalNegativeYield += loss;
         }
 
-        // we should deduct loss before decrease totalAllocated to not underflow
+        // we should deduct loss before updating totalAllocated to not underflow
         if (totalNegativeYield > totalPositiveYield) {
             _deductLoss(totalNegativeYield - totalPositiveYield);
         } else if (totalNegativeYield < totalPositiveYield) {
@@ -440,6 +444,7 @@ contract EulerAggregationVault is
         }
 
         $.totalAllocated = $.totalAllocated + totalPositiveYield - totalNegativeYield;
+        $.lastHarvestTimestamp = block.timestamp;
 
         _gulp();
 

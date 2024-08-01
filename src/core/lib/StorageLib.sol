@@ -20,7 +20,8 @@ struct AggregationVaultStorage {
     mapping(address => IEulerAggregationVault.Strategy) strategies;
     /// @dev An array of strategy addresses to withdraw from
     address[] withdrawalQueue;
-
+    /// @dev Last harvest timestamp
+    uint256 lastHarvestTimestamp;
 
     /// lastInterestUpdate: last timestamp where interest was updated.
     uint40 lastInterestUpdate;
