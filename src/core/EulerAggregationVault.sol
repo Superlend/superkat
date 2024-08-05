@@ -7,6 +7,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IBalanceTracker} from "reward-streams/interfaces/IBalanceTracker.sol";
 import {IEulerAggregationVault} from "./interface/IEulerAggregationVault.sol";
 // contracts
+import {ContextUpgradeable} from "@openzeppelin-upgradeable/utils/ContextUpgradeable.sol";
 import {Dispatch} from "./Dispatch.sol";
 import {
     ERC20Upgradeable,
@@ -16,6 +17,7 @@ import {ERC20VotesUpgradeable} from "@openzeppelin-upgradeable/token/ERC20/exten
 import {AccessControlEnumerableUpgradeable} from
     "@openzeppelin-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
 import {Shared} from "./common/Shared.sol";
+import {EVCUtil} from "ethereum-vault-connector/utils/EVCUtil.sol";
 // libs
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -36,6 +38,7 @@ contract EulerAggregationVault is
     ERC20VotesUpgradeable,
     AccessControlEnumerableUpgradeable,
     Dispatch,
+    EVCUtil,
     IEulerAggregationVault
 {
     using SafeERC20 for IERC20;
@@ -55,6 +58,7 @@ contract EulerAggregationVault is
 
     /// @dev Constructor.
     constructor(ConstructorParams memory _constructorParams)
+        EVCUtil(_constructorParams.evc)
         Dispatch(
             _constructorParams.rewardsModule,
             _constructorParams.hooksModule,
@@ -532,5 +536,9 @@ contract EulerAggregationVault is
         if ((to != address(0)) && (_balanceForwarderEnabled(to))) {
             balanceTracker.balanceTrackerHook(to, super.balanceOf(to), false);
         }
+    }
+
+    function _msgSender() internal view override (ContextUpgradeable, EVCUtil) returns (address) {
+        return EVCUtil._msgSender();
     }
 }

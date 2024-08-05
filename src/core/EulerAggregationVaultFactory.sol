@@ -13,6 +13,7 @@ contract EulerAggregationVaultFactory {
     error InvalidQuery();
 
     /// core dependencies
+    address public immutable evc;
     address public immutable balanceTracker;
     /// core modules implementations addresses
     address public immutable rewardsModule;
@@ -29,6 +30,7 @@ contract EulerAggregationVaultFactory {
     /// @dev Init params struct.
     struct FactoryParams {
         address owner;
+        address evc;
         address balanceTracker;
         address rewardsModuleImpl;
         address hooksModuleImpl;
@@ -43,6 +45,7 @@ contract EulerAggregationVaultFactory {
     /// @notice Constructor.
     /// @param _factoryParams FactoryParams struct.
     constructor(FactoryParams memory _factoryParams) {
+        evc = _factoryParams.evc;
         balanceTracker = _factoryParams.balanceTracker;
         rewardsModule = Clones.clone(_factoryParams.rewardsModuleImpl);
         hooksModule = Clones.clone(_factoryParams.hooksModuleImpl);
@@ -53,6 +56,7 @@ contract EulerAggregationVaultFactory {
 
         IEulerAggregationVault.ConstructorParams memory aggregationVaultConstructorParams = IEulerAggregationVault
             .ConstructorParams({
+            evc: evc,
             rewardsModule: rewardsModule,
             hooksModule: hooksModule,
             feeModule: feeModule,

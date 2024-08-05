@@ -57,6 +57,7 @@ contract EulerAggregationVaultBase is EVaultTestBase {
 
         EulerAggregationVaultFactory.FactoryParams memory factoryParams = EulerAggregationVaultFactory.FactoryParams({
             owner: deployer,
+            evc: address(evc),
             balanceTracker: address(0),
             rewardsModuleImpl: address(rewardsImpl),
             hooksModuleImpl: address(hooksImpl),

@@ -14,10 +14,13 @@ import {EulerAggregationVaultFactory} from "../src/core/EulerAggregationVaultFac
 import {Strategy} from "../src/core/module/Strategy.sol";
 // mocks
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
+// evc setup
+import {EthereumVaultConnector} from "ethereum-vault-connector/EthereumVaultConnector.sol";
 
 contract A16zPropertyTests is ERC4626Test {
     uint256 public constant CASH_RESERVE_ALLOCATION_POINTS = 1000e18;
 
+    EthereumVaultConnector public evc;
     address public factoryOwner;
 
     // core modules
@@ -33,6 +36,7 @@ contract A16zPropertyTests is ERC4626Test {
 
     function setUp() public override {
         factoryOwner = makeAddr("FACTORY_OWNER");
+        evc = new EthereumVaultConnector();
 
         rewardsImpl = new Rewards();
         hooksImpl = new Hooks();
@@ -43,6 +47,7 @@ contract A16zPropertyTests is ERC4626Test {
 
         EulerAggregationVaultFactory.FactoryParams memory factoryParams = EulerAggregationVaultFactory.FactoryParams({
             owner: factoryOwner,
+            evc: address(evc),
             balanceTracker: address(0),
             rewardsModuleImpl: address(rewardsImpl),
             hooksModuleImpl: address(hooksImpl),
