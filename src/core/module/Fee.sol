@@ -11,7 +11,7 @@ import {EventsLib as Events} from "../lib/EventsLib.sol";
 /// @author Euler Labs (https://www.eulerlabs.com/)
 abstract contract FeeModule {
     /// @dev The maximum performanceFee the vault can have is 50%
-    uint256 internal constant MAX_PERFORMANCE_FEE = 0.5e18;
+    uint96 internal constant MAX_PERFORMANCE_FEE = 0.5e18;
 
     /// @notice Set performance fee recipient address
     /// @param _newFeeRecipient Recipient address
@@ -25,10 +25,10 @@ abstract contract FeeModule {
 
     /// @notice Set performance fee (1e18 == 100%)
     /// @param _newFee Fee rate
-    function setPerformanceFee(uint256 _newFee) external virtual {
+    function setPerformanceFee(uint96 _newFee) external virtual {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
-        uint256 performanceFeeCached = $.performanceFee;
+        uint96 performanceFeeCached = $.performanceFee;
 
         if (_newFee > MAX_PERFORMANCE_FEE) revert Errors.MaxPerformanceFeeExceeded();
         if ($.feeRecipient == address(0)) revert Errors.FeeRecipientNotSet();

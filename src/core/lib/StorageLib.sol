@@ -13,14 +13,15 @@ struct AggregationVaultStorage {
     /// Total amount of allocation points across all strategies including the cash reserve.
     uint256 totalAllocationPoints;
     /// fee rate
-    uint256 performanceFee;
+    uint96 performanceFee;
     /// fee recipient address
     address feeRecipient;
     /// Mapping between a strategy address and it's allocation config
     mapping(address => IEulerAggregationVault.Strategy) strategies;
     /// @dev An array of strategy addresses to withdraw from
     address[] withdrawalQueue;
-
+    /// @dev Last harvest timestamp
+    uint256 lastHarvestTimestamp;
 
     /// lastInterestUpdate: last timestamp where interest was updated.
     uint40 lastInterestUpdate;

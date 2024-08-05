@@ -33,7 +33,7 @@ contract PerformanceFeeE2ETest is EulerAggregationVaultBase {
         assertEq(fee, 0);
         assertEq(feeRecipientAddr, address(0));
 
-        uint256 newPerformanceFee = 3e17;
+        uint96 newPerformanceFee = 3e17;
 
         vm.startPrank(manager);
         eulerAggregationVault.setFeeRecipient(feeRecipient);
@@ -46,7 +46,7 @@ contract PerformanceFeeE2ETest is EulerAggregationVaultBase {
     }
 
     function testHarvestWithFeeEnabled() public {
-        uint256 newPerformanceFee = 3e17;
+        uint96 newPerformanceFee = 3e17;
 
         vm.startPrank(manager);
         eulerAggregationVault.setFeeRecipient(feeRecipient);

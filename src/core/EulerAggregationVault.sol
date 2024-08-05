@@ -41,6 +41,8 @@ contract EulerAggregationVault is
     using SafeERC20 for IERC20;
     using SafeCast for uint256;
 
+    uint256 public constant HARVEST_COOLDOWN = 1 days;
+
     // Roles
     bytes32 public constant GUARDIAN = keccak256("GUARDIAN");
     bytes32 public constant GUARDIAN_ADMIN = keccak256("GUARDIAN_ADMIN");
@@ -102,7 +104,7 @@ contract EulerAggregationVault is
     {}
 
     /// @dev See {FeeModule-setPerformanceFee}.
-    function setPerformanceFee(uint256 _newFee) external override onlyRole(AGGREGATION_VAULT_MANAGER) use(feeModule) {}
+    function setPerformanceFee(uint96 _newFee) external override onlyRole(AGGREGATION_VAULT_MANAGER) use(feeModule) {}
 
     /// @dev See {RewardsModule-optInStrategyRewards}.
     function optInStrategyRewards(address _strategy)
@@ -205,7 +207,7 @@ contract EulerAggregationVault is
     function harvest() external nonReentrant {
         _updateInterestAccrued();
 
-        _harvest();
+        _harvest(false);
     }
 
     /// @notice update accrued interest
@@ -273,18 +275,24 @@ contract EulerAggregationVault is
     /// @notice Get the performance fee config.
     /// @return adddress Fee recipient.
     /// @return uint256 Fee percentage.
-    function performanceFeeConfig() external view virtual returns (address, uint256) {
+    function performanceFeeConfig() external view returns (address, uint96) {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         return ($.feeRecipient, $.performanceFee);
     }
 
-    /// @notice Return the withdrawal queue length.
+    /// @notice Return the withdrawal queue.
     /// @return uint256 length.
-    function withdrawalQueue() external view virtual returns (address[] memory) {
+    function withdrawalQueue() external view returns (address[] memory) {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         return $.withdrawalQueue;
+    }
+
+    function lastHarvestTimestamp() external view returns (uint256) {
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        return $.lastHarvestTimestamp;
     }
 
     /// @dev See {IERC4626-deposit}.
@@ -316,7 +324,7 @@ contract EulerAggregationVault is
 
         _callHooksTarget(WITHDRAW, _msgSender());
 
-        _harvest();
+        _harvest(true);
 
         return super.withdraw(_assets, _receiver, _owner);
     }
@@ -334,7 +342,7 @@ contract EulerAggregationVault is
 
         _callHooksTarget(REDEEM, _msgSender());
 
-        _harvest();
+        _harvest(true);
 
         return super.redeem(_shares, _receiver, _owner);
     }
@@ -411,15 +419,17 @@ contract EulerAggregationVault is
         $.totalAssetsDeposited -= _assets;
 
         super._withdraw(_caller, _receiver, _owner, _assets, _shares);
-
-        _gulp();
     }
 
     /// @dev Loop through stratgies, aggregate positive and negative yield and account for net amounts.
     /// @dev Loss socialization will be taken out from interest left first, if not enough, socialize on deposits.
     /// @dev Performance fee will only be applied on net positive yield.
-    function _harvest() internal {
+    function _harvest(bool _checkCooldown) internal {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        if ((_checkCooldown) && ($.lastHarvestTimestamp + HARVEST_COOLDOWN >= block.timestamp)) {
+            return;
+        }
 
         uint256 totalPositiveYield;
         uint256 totalNegativeYield;
@@ -430,7 +440,7 @@ contract EulerAggregationVault is
             totalNegativeYield += loss;
         }
 
-        // we should deduct loss before decrease totalAllocated to not underflow
+        // we should deduct loss before updating totalAllocated to not underflow
         if (totalNegativeYield > totalPositiveYield) {
             _deductLoss(totalNegativeYield - totalPositiveYield);
         } else if (totalNegativeYield < totalPositiveYield) {
@@ -438,6 +448,7 @@ contract EulerAggregationVault is
         }
 
         $.totalAllocated = $.totalAllocated + totalPositiveYield - totalNegativeYield;
+        $.lastHarvestTimestamp = block.timestamp;
 
         _gulp();
 
@@ -482,7 +493,7 @@ contract EulerAggregationVault is
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         address cachedFeeRecipient = $.feeRecipient;
-        uint256 cachedPerformanceFee = $.performanceFee;
+        uint96 cachedPerformanceFee = $.performanceFee;
 
         if (cachedFeeRecipient == address(0) || cachedPerformanceFee == 0) return;
 
