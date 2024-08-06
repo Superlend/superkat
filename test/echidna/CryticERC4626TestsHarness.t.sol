@@ -13,10 +13,13 @@ import {WithdrawalQueue} from "../../src/core/module/WithdrawalQueue.sol";
 import {EulerAggregationVaultFactory} from "../../src/core/EulerAggregationVaultFactory.sol";
 import {Strategy} from "../../src/core/module/Strategy.sol";
 import {TestERC20Token} from "crytic-properties/ERC4626/util/TestERC20Token.sol";
+// evc setup
+import {EthereumVaultConnector} from "ethereum-vault-connector/EthereumVaultConnector.sol";
 
 contract CryticERC4626TestsHarness is CryticERC4626PropertyTests {
     uint256 public constant CASH_RESERVE_ALLOCATION_POINTS = 1000e18;
 
+    EthereumVaultConnector public evc;
     address factoryDeployer;
 
     // core modules
@@ -31,6 +34,8 @@ contract CryticERC4626TestsHarness is CryticERC4626PropertyTests {
     EulerAggregationVault eulerAggregationVault;
 
     constructor() {
+        evc = new EthereumVaultConnector();
+
         rewardsImpl = new Rewards();
         hooksImpl = new Hooks();
         feeModuleImpl = new Fee();
@@ -40,6 +45,7 @@ contract CryticERC4626TestsHarness is CryticERC4626PropertyTests {
 
         EulerAggregationVaultFactory.FactoryParams memory factoryParams = EulerAggregationVaultFactory.FactoryParams({
             owner: address(this),
+            evc: address(evc),
             balanceTracker: address(0),
             rewardsModuleImpl: address(rewardsImpl),
             hooksModuleImpl: address(hooksImpl),

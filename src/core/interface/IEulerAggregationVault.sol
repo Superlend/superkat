@@ -6,6 +6,7 @@ import {AmountCap} from "../lib/AmountCapLib.sol";
 interface IEulerAggregationVault {
     /// @dev Struct to pass to constrcutor.
     struct ConstructorParams {
+        address evc;
         address rewardsModule;
         address hooksModule;
         address feeModule;

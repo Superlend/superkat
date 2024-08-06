@@ -27,6 +27,7 @@ contract BalanceForwarderE2ETest is EulerAggregationVaultBase {
 
         EulerAggregationVaultFactory.FactoryParams memory factoryParams = EulerAggregationVaultFactory.FactoryParams({
             owner: deployer,
+            evc: address(evc),
             balanceTracker: trackingReward,
             rewardsModuleImpl: address(rewardsImpl),
             hooksModuleImpl: address(hooksImpl),
