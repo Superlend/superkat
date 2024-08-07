@@ -62,16 +62,21 @@ abstract contract Shared {
 
             // socialize the loss
             $.totalAssetsDeposited = totalAssetsDepositedCache - _lossAmount;
+
+            emit Events.DeductLoss(_lossAmount);
         }
     }
 
+    /// @dev Set hooks target and hooked functions.
+    /// @param _hooksTarget Contract address for hooks target.
+    /// @param _hookedFns Hooked functions.
     function _setHooksConfig(address _hooksTarget, uint32 _hookedFns) internal {
+        if (_hookedFns != 0 && _hooksTarget == address(0)) {
+            revert Errors.InvalidHooksTarget();
+        }
         if (_hooksTarget != address(0) && IHookTarget(_hooksTarget).isHookTarget() != IHookTarget.isHookTarget.selector)
         {
             revert Errors.NotHooksContract();
-        }
-        if (_hookedFns != 0 && _hooksTarget == address(0)) {
-            revert Errors.InvalidHooksTarget();
         }
         if (_hookedFns >= ACTIONS_COUNTER) revert Errors.InvalidHookedFns();
 

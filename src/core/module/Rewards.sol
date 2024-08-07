@@ -26,7 +26,7 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
         if ($.strategies[_strategy].status != IEulerAggregationVault.StrategyStatus.Active) {
-            revert Errors.InactiveStrategy();
+            revert Errors.StrategyShouldBeActive();
         }
 
         IBalanceForwarder(_strategy).enableBalanceForwarder();
@@ -48,8 +48,8 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
     function enableRewardForStrategy(address _strategy, address _reward) external virtual nonReentrant {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
 
-        if ($.strategies[_strategy].status == IEulerAggregationVault.StrategyStatus.Inactive) {
-            revert Errors.InactiveStrategy();
+        if ($.strategies[_strategy].status != IEulerAggregationVault.StrategyStatus.Active) {
+            revert Errors.StrategyShouldBeActive();
         }
 
         IRewardStreams(IBalanceForwarder(_strategy).balanceTrackerAddress()).enableReward(_strategy, _reward);
@@ -129,8 +129,8 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
         IBalanceTracker balanceTrackerCached = IBalanceTracker($.balanceTracker);
 
-        if (address(balanceTrackerCached) == address(0)) revert Errors.NotSupported();
-        if ($.isBalanceForwarderEnabled[_sender]) revert Errors.AlreadyEnabled();
+        if (address(balanceTrackerCached) == address(0)) revert Errors.AggVaultRewardsNotSupported();
+        if ($.isBalanceForwarderEnabled[_sender]) revert Errors.AggVaultRewardsAlreadyEnabled();
 
         $.isBalanceForwarderEnabled[_sender] = true;
         balanceTrackerCached.balanceTrackerHook(_sender, _senderBalance, false);
@@ -145,8 +145,8 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
         AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
         IBalanceTracker balanceTrackerCached = IBalanceTracker($.balanceTracker);
 
-        if (address(balanceTrackerCached) == address(0)) revert Errors.NotSupported();
-        if (!$.isBalanceForwarderEnabled[_sender]) revert Errors.AlreadyDisabled();
+        if (address(balanceTrackerCached) == address(0)) revert Errors.AggVaultRewardsNotSupported();
+        if (!$.isBalanceForwarderEnabled[_sender]) revert Errors.AggVaultRewardsAlreadyDisabled();
 
         $.isBalanceForwarderEnabled[_sender] = false;
         balanceTrackerCached.balanceTrackerHook(_sender, 0, false);

@@ -177,7 +177,7 @@ contract ToggleStrategyEmergencyStatusE2ETest is EulerAggregationVaultBase {
         eulerAggregationVault.toggleStrategyEmergencyStatus(address(eTSTsecondary));
 
         vm.prank(manager);
-        vm.expectRevert(ErrorsLib.CanNotRemoveStrategyInEmergencyStatus.selector);
+        vm.expectRevert(ErrorsLib.StrategyShouldBeActive.selector);
         eulerAggregationVault.removeStrategy(address(eTSTsecondary));
     }
 

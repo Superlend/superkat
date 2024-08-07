@@ -32,7 +32,6 @@ abstract contract FeeModule {
 
         if (_newFee > MAX_PERFORMANCE_FEE) revert Errors.MaxPerformanceFeeExceeded();
         if ($.feeRecipient == address(0)) revert Errors.FeeRecipientNotSet();
-        if (_newFee == performanceFeeCached) revert Errors.PerformanceFeeAlreadySet();
 
         emit Events.SetPerformanceFee(performanceFeeCached, _newFee);
 
