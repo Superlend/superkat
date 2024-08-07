@@ -37,13 +37,9 @@ abstract contract Shared {
     uint256 public constant MIN_SHARES_FOR_GULP = 1e7;
 
     modifier nonReentrant() {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-
-        if ($.locked == REENTRANCYLOCK__LOCKED) revert Errors.Reentrancy();
-
-        $.locked = REENTRANCYLOCK__LOCKED;
+        _nonReentrantBefore();
         _;
-        $.locked = REENTRANCYLOCK__UNLOCKED;
+        _nonReentrantAfter();
     }
 
     /// @dev Deduct _lossAmount from not-distributed amount, if not enough, socialize loss.
@@ -162,6 +158,22 @@ abstract contract Shared {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         return IERC20(IERC4626(address(this)).asset()).balanceOf(address(this)) + $.totalAllocated;
+    }
+
+    /// @dev Used by the nonReentrant before returning the execution flow to the original function.
+    function _nonReentrantBefore() private {
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        if ($.locked == REENTRANCYLOCK__LOCKED) revert Errors.Reentrancy();
+
+        $.locked = REENTRANCYLOCK__LOCKED;
+    }
+
+    /// @dev Used by the nonReentrant after returning the execution flow to the original function.
+    function _nonReentrantAfter() private {
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        $.locked = REENTRANCYLOCK__UNLOCKED;
     }
 
     /// @dev Revert with call error or EmptyError
