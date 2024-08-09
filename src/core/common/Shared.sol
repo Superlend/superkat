@@ -111,6 +111,7 @@ abstract contract Shared {
         uint256 maxGulp = type(uint168).max - $.interestLeft;
         if (toGulp > maxGulp) toGulp = maxGulp; // cap interest, allowing the vault to function
 
+        $.lastInterestUpdate = uint40(block.timestamp);
         $.interestSmearEnd = uint40(block.timestamp + INTEREST_SMEAR);
         $.interestLeft += uint168(toGulp); // toGulp <= maxGulp <= max uint168
 
@@ -121,13 +122,17 @@ abstract contract Shared {
     function _updateInterestAccrued() internal {
         uint256 accruedInterest = _interestAccruedFromCache();
 
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-        // it's safe to down-cast because the accrued interest is a fraction of interest left
-        $.interestLeft -= uint168(accruedInterest);
-        $.lastInterestUpdate = uint40(block.timestamp);
+        if (accruedInterest > 0) {
+            AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+            // it's safe to down-cast because the accrued interest is a fraction of interest left
+            $.interestLeft -= uint168(accruedInterest);
+            $.lastInterestUpdate = uint40(block.timestamp);
 
-        // Move interest accrued to totalAssetsDeposited
-        $.totalAssetsDeposited += accruedInterest;
+            // Move interest accrued to totalAssetsDeposited
+            $.totalAssetsDeposited += accruedInterest;
+
+            emit Events.InterestUpdated(accruedInterest, $.interestLeft);
+        }
     }
 
     /// @dev Get accrued interest without updating it.

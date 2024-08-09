@@ -5,6 +5,7 @@ library EventsLib {
     /// @dev Shared.sol events
     event Gulp(uint256 interestLeft, uint256 interestSmearEnd);
     event DeductLoss(uint256 socializedAmount);
+    event InterestUpdated(uint256 interestAccrued, uint256 interestLeft);
 
     /// @dev EulerAggregationVault.sol events
     event AccruePerformanceFee(address indexed feeRecipient, uint256 yield, uint256 feeShares);
