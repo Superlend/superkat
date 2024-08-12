@@ -53,7 +53,7 @@ contract HarvestTest is EulerAggregationVaultBase {
             vm.prank(user1);
             address[] memory strategiesToRebalance = new address[](1);
             strategiesToRebalance[0] = address(eTST);
-            rebalancer.executeRebalance(address(eulerAggregationVault), strategiesToRebalance);
+            eulerAggregationVault.rebalance(strategiesToRebalance);
 
             assertEq(eulerAggregationVault.totalAllocated(), expectedStrategyCash);
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationVault))), expectedStrategyCash);
@@ -257,12 +257,5 @@ contract HarvestTest is EulerAggregationVaultBase {
 
         assertApproxEqAbs(user1AssetsAfter, expectedUser1Assets + interestToBeAccrued, 1);
         assertEq(eulerAggregationVault.totalAssetsDeposited(), totalAssetsDepositedBefore + interestToBeAccrued);
-    }
-
-    function testCallingHarvestMethodsFromRandomSender() public {
-        vm.startPrank(user1);
-        vm.expectRevert(ErrorsLib.NotWithdrawaQueue.selector);
-        eulerAggregationVault.executeStrategyWithdraw(address(eTST), 1);
-        vm.stopPrank();
     }
 }

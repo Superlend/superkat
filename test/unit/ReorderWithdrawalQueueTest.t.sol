@@ -5,7 +5,8 @@ import {
     EulerAggregationVaultBase,
     EulerAggregationVault,
     IEVault,
-    WithdrawalQueue
+    WithdrawalQueue,
+    ErrorsLib
 } from "../common/EulerAggregationVaultBase.t.sol";
 
 contract ReorderWithdrawalQueueTest is EulerAggregationVaultBase {
@@ -36,7 +37,7 @@ contract ReorderWithdrawalQueueTest is EulerAggregationVaultBase {
         );
 
         vm.prank(manager);
-        withdrawalQueue.reorderWithdrawalQueue(0, 1);
+        eulerAggregationVault.reorderWithdrawalQueue(0, 1);
 
         assertEq(
             eulerAggregationVault.getStrategy(_getWithdrawalQueue()[0]).allocationPoints, eTSTsecondaryAllocationPoints
@@ -46,15 +47,15 @@ contract ReorderWithdrawalQueueTest is EulerAggregationVaultBase {
 
     function testReorderWithdrawalQueueWhenOutOfBounds() public {
         vm.startPrank(manager);
-        vm.expectRevert(WithdrawalQueue.OutOfBounds.selector);
-        withdrawalQueue.reorderWithdrawalQueue(0, 3);
+        vm.expectRevert(ErrorsLib.OutOfBounds.selector);
+        eulerAggregationVault.reorderWithdrawalQueue(0, 3);
         vm.stopPrank();
     }
 
     function testReorderWithdrawalQueueWhenSameIndex() public {
         vm.startPrank(manager);
-        vm.expectRevert(WithdrawalQueue.SameIndexes.selector);
-        withdrawalQueue.reorderWithdrawalQueue(0, 0);
+        vm.expectRevert(ErrorsLib.SameIndexes.selector);
+        eulerAggregationVault.reorderWithdrawalQueue(0, 0);
         vm.stopPrank();
     }
 }

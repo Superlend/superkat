@@ -112,9 +112,9 @@ contract RemoveStrategyTest is EulerAggregationVaultBase {
         eulerAggregationVault.removeStrategy(address(eTST));
     }
 
-    function testRemoveStrategy_AlreadyRemoved() public {
+    function testRemoveStrategy_StrategyShouldBeActive() public {
         vm.prank(manager);
-        vm.expectRevert(ErrorsLib.AlreadyRemoved.selector);
+        vm.expectRevert(ErrorsLib.StrategyShouldBeActive.selector);
         eulerAggregationVault.removeStrategy(address(eTST2));
     }
 
@@ -159,7 +159,7 @@ contract RemoveStrategyTest is EulerAggregationVaultBase {
             vm.prank(user1);
             address[] memory strategiesToRebalance = new address[](1);
             strategiesToRebalance[0] = address(eTST);
-            rebalancer.executeRebalance(address(eulerAggregationVault), strategiesToRebalance);
+            eulerAggregationVault.rebalance(strategiesToRebalance);
 
             assertEq(eulerAggregationVault.totalAllocated(), expectedStrategyCash);
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationVault))), expectedStrategyCash);

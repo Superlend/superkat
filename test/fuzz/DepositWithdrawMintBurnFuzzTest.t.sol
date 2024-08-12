@@ -4,13 +4,15 @@ pragma solidity ^0.8.0;
 import {console2, EulerAggregationVaultBase, EulerAggregationVault} from "../common/EulerAggregationVaultBase.t.sol";
 
 contract DepositWithdrawMintBurnFuzzTest is EulerAggregationVaultBase {
-    uint256 constant MAX_ALLOWED = type(uint256).max;
+    uint256 constant MAX_ALLOWED = type(uint208).max;
 
     function setUp() public virtual override {
         super.setUp();
     }
 
     function testFuzzDeposit(uint256 _assets) public {
+        _assets = bound(_assets, 0, MAX_ALLOWED);
+
         // moch the scenario of _assets ownership
         assetTST.mint(user1, _assets);
 
@@ -35,7 +37,7 @@ contract DepositWithdrawMintBurnFuzzTest is EulerAggregationVaultBase {
     ) public {
         vm.assume(_receiver != address(0));
 
-        _assetsToDeposit = bound(_assetsToDeposit, 1, type(uint256).max - 1);
+        _assetsToDeposit = bound(_assetsToDeposit, 1, MAX_ALLOWED - 1);
         _assetsToWithdraw = bound(_assetsToWithdraw, 0, _assetsToDeposit);
         _timestampAfterDeposit = bound(_timestampAfterDeposit, 0, 86400);
 
@@ -61,9 +63,11 @@ contract DepositWithdrawMintBurnFuzzTest is EulerAggregationVaultBase {
     }
 
     function testFuzzMint(uint256 _shares) public {
-        // moch the scenario of _assets ownership
+        // mock the scenario of _assets ownership
         uint256 assets = eulerAggregationVault.previewMint(_shares);
+        if (assets > MAX_ALLOWED) assets = MAX_ALLOWED;
         assetTST.mint(user1, assets);
+        _shares = eulerAggregationVault.previewDeposit(assets);
 
         uint256 balanceBefore = eulerAggregationVault.balanceOf(user1);
         uint256 totalSupplyBefore = eulerAggregationVault.totalSupply();
@@ -78,23 +82,20 @@ contract DepositWithdrawMintBurnFuzzTest is EulerAggregationVaultBase {
         assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - assets);
     }
 
-    function testFuzzRedeem(
-        address _receiver,
-        uint256 _sharesToMint,
-        uint256 _sharesToRedeem,
-        uint256 _timestampAfterDeposit
-    ) public {
+    function testFuzzRedeem(address _receiver, uint256 _sharesToMint, uint256 _sharesToRedeem) public {
         vm.assume(_receiver != address(0));
 
         _sharesToMint = bound(_sharesToMint, 1, type(uint256).max - 1);
-        _sharesToRedeem = bound(_sharesToRedeem, 0, _sharesToMint);
-        _timestampAfterDeposit = bound(_timestampAfterDeposit, 0, 86400);
 
         // deposit
         uint256 assetsToDeposit = eulerAggregationVault.previewMint(_sharesToMint);
+        if (assetsToDeposit > MAX_ALLOWED) assetsToDeposit = MAX_ALLOWED;
         assetTST.mint(user1, assetsToDeposit);
+
+        _sharesToMint = eulerAggregationVault.previewDeposit(assetsToDeposit);
+        _sharesToRedeem = bound(_sharesToRedeem, 0, _sharesToMint);
         _mint(user1, assetsToDeposit, _sharesToMint);
-        vm.warp(block.timestamp + _timestampAfterDeposit);
+        vm.warp(block.timestamp + 86400);
 
         // fuzz partial & full redeem
         uint256 balanceBefore = eulerAggregationVault.balanceOf(user1);

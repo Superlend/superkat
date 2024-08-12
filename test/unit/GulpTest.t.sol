@@ -52,7 +52,7 @@ contract GulpTest is EulerAggregationVaultBase {
             vm.prank(user1);
             address[] memory strategiesToRebalance = new address[](1);
             strategiesToRebalance[0] = address(eTST);
-            rebalancer.executeRebalance(address(eulerAggregationVault), strategiesToRebalance);
+            eulerAggregationVault.rebalance(strategiesToRebalance);
 
             assertEq(eulerAggregationVault.totalAllocated(), expectedStrategyCash);
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationVault))), expectedStrategyCash);
@@ -62,10 +62,9 @@ contract GulpTest is EulerAggregationVaultBase {
 
     function testGulpAfterNegativeYieldEqualToInterestLeft() public {
         eulerAggregationVault.gulp();
-        EulerAggregationVault.AggregationVaultSavingRate memory ers =
-            eulerAggregationVault.getAggregationVaultSavingRate();
+        (,, uint168 interestLeft) = eulerAggregationVault.getAggregationVaultSavingRate();
         assertEq(eulerAggregationVault.interestAccrued(), 0);
-        assertEq(ers.interestLeft, 0);
+        assertEq(interestLeft, 0);
 
         vm.warp(block.timestamp + 2 days);
         eulerAggregationVault.gulp();
@@ -91,17 +90,17 @@ contract GulpTest is EulerAggregationVaultBase {
         // interest per day 23.809523809523
         assertEq(eulerAggregationVault.interestAccrued(), 23809523809523809523);
         eulerAggregationVault.gulp();
-        ers = eulerAggregationVault.getAggregationVaultSavingRate();
-        assertEq(ers.interestLeft, yield - 23809523809523809523);
+        (,, interestLeft) = eulerAggregationVault.getAggregationVaultSavingRate();
+        assertEq(interestLeft, yield - 23809523809523809523);
 
         // move close to end of smearing
         vm.warp(block.timestamp + 11 days);
         eulerAggregationVault.gulp();
-        ers = eulerAggregationVault.getAggregationVaultSavingRate();
+        (,, interestLeft) = eulerAggregationVault.getAggregationVaultSavingRate();
 
-        // mock a decrease of strategy balance by ers.interestLeft
+        // mock a decrease of strategy balance by interestLeft
         uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(eulerAggregationVault));
-        uint256 aggrCurrentStrategyBalanceAfterNegYield = aggrCurrentStrategyBalance - ers.interestLeft;
+        uint256 aggrCurrentStrategyBalanceAfterNegYield = aggrCurrentStrategyBalance - interestLeft;
         vm.mockCall(
             address(eTST),
             abi.encodeWithSelector(EVault.balanceOf.selector, address(eulerAggregationVault)),
@@ -113,10 +112,9 @@ contract GulpTest is EulerAggregationVaultBase {
 
     function testGulpAfterNegativeYieldBiggerThanInterestLeft() public {
         eulerAggregationVault.gulp();
-        EulerAggregationVault.AggregationVaultSavingRate memory ers =
-            eulerAggregationVault.getAggregationVaultSavingRate();
+        (,, uint168 interestLeft) = eulerAggregationVault.getAggregationVaultSavingRate();
         assertEq(eulerAggregationVault.interestAccrued(), 0);
-        assertEq(ers.interestLeft, 0);
+        assertEq(interestLeft, 0);
 
         vm.warp(block.timestamp + 2 days);
         eulerAggregationVault.gulp();
@@ -142,17 +140,17 @@ contract GulpTest is EulerAggregationVaultBase {
         // interest per day 23.809523809523
         assertEq(eulerAggregationVault.interestAccrued(), 23809523809523809523);
         eulerAggregationVault.gulp();
-        ers = eulerAggregationVault.getAggregationVaultSavingRate();
-        assertEq(ers.interestLeft, yield - 23809523809523809523);
+        (,, interestLeft) = eulerAggregationVault.getAggregationVaultSavingRate();
+        assertEq(interestLeft, yield - 23809523809523809523);
 
         // move close to end of smearing
         vm.warp(block.timestamp + 11 days);
         eulerAggregationVault.gulp();
-        ers = eulerAggregationVault.getAggregationVaultSavingRate();
+        (,, interestLeft) = eulerAggregationVault.getAggregationVaultSavingRate();
 
-        // mock a decrease of strategy balance by ers.interestLeft
+        // mock a decrease of strategy balance by interestLeft
         uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(eulerAggregationVault));
-        uint256 aggrCurrentStrategyBalanceAfterNegYield = aggrCurrentStrategyBalance - (ers.interestLeft * 2);
+        uint256 aggrCurrentStrategyBalanceAfterNegYield = aggrCurrentStrategyBalance - (interestLeft * 2);
         vm.mockCall(
             address(eTST),
             abi.encodeWithSelector(EVault.balanceOf.selector, address(eulerAggregationVault)),

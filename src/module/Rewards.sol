@@ -10,7 +10,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 // contracts
 import {Shared} from "../common/Shared.sol";
 // libs
-import {StorageLib, AggregationVaultStorage} from "../lib/StorageLib.sol";
+import {StorageLib as Storage, AggregationVaultStorage} from "../lib/StorageLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
 
@@ -23,10 +23,10 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
     /// @notice Opt in to strategy rewards
     /// @param _strategy Strategy address
     function optInStrategyRewards(address _strategy) external virtual nonReentrant {
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
-        if ($.strategies[_strategy].status == IEulerAggregationVault.StrategyStatus.Inactive) {
-            revert Errors.InactiveStrategy();
+        if ($.strategies[_strategy].status != IEulerAggregationVault.StrategyStatus.Active) {
+            revert Errors.StrategyShouldBeActive();
         }
 
         IBalanceForwarder(_strategy).enableBalanceForwarder();
@@ -46,10 +46,10 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
     /// @param _strategy Strategy address.
     /// @param _reward Reward token address.
     function enableRewardForStrategy(address _strategy, address _reward) external virtual nonReentrant {
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
-        if ($.strategies[_strategy].status == IEulerAggregationVault.StrategyStatus.Inactive) {
-            revert Errors.InactiveStrategy();
+        if ($.strategies[_strategy].status != IEulerAggregationVault.StrategyStatus.Active) {
+            revert Errors.StrategyShouldBeActive();
         }
 
         IRewardStreams(IBalanceForwarder(_strategy).balanceTrackerAddress()).enableReward(_strategy, _reward);
@@ -66,7 +66,7 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
         virtual
         nonReentrant
     {
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         if ($.strategies[_strategy].status == IEulerAggregationVault.StrategyStatus.Inactive) {
             revert Errors.InactiveStrategy();
@@ -94,26 +94,26 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
         IRewardStreams(rewardStreams).claimReward(_strategy, _reward, _recipient, _forfeitRecentReward);
     }
 
-    /// @notice Enables balance forwarding for the authenticated account
+    /// @notice Enables balance forwarding for the authenticated account.
     /// @dev Only the authenticated account can enable balance forwarding for itself
     /// @dev Should call the IBalanceTracker hook with the current account's balance
     function enableBalanceForwarder() external virtual nonReentrant {
-        uint256 userBalance = IERC20(address(this)).balanceOf(msg.sender);
+        uint256 userBalance = IERC20(address(this)).balanceOf(_msgSender());
 
-        _enableBalanceForwarder(msg.sender, userBalance);
+        _enableBalanceForwarder(_msgSender(), userBalance);
     }
 
     /// @notice Disables balance forwarding for the authenticated account
     /// @dev Only the authenticated account can disable balance forwarding for itself
     /// @dev Should call the IBalanceTracker hook with the account's balance of 0
     function disableBalanceForwarder() external virtual nonReentrant {
-        _disableBalanceForwarder(msg.sender);
+        _disableBalanceForwarder(_msgSender());
     }
 
     /// @notice Retrieve the address of rewards contract, tracking changes in account's balances
     /// @return The balance tracker address
-    function balanceTrackerAddress() external view returns (address) {
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+    function balanceTrackerAddress() public view virtual returns (address) {
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         return address($.balanceTracker);
     }
@@ -121,16 +121,17 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
     /// @notice Retrieves boolean indicating if the account opted in to forward balance changes to the rewards contract
     /// @param _account Address to query
     /// @return True if balance forwarder is enabled
-    function balanceForwarderEnabled(address _account) external view returns (bool) {
+    function balanceForwarderEnabled(address _account) public view virtual returns (bool) {
         return _balanceForwarderEnabled(_account);
     }
 
+    /// @dev Enables balance forwarding for the authenticated account.
     function _enableBalanceForwarder(address _sender, uint256 _senderBalance) internal {
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
         IBalanceTracker balanceTrackerCached = IBalanceTracker($.balanceTracker);
 
-        if (address(balanceTrackerCached) == address(0)) revert Errors.NotSupported();
-        if ($.isBalanceForwarderEnabled[_sender]) revert Errors.AlreadyEnabled();
+        if (address(balanceTrackerCached) == address(0)) revert Errors.AggVaultRewardsNotSupported();
+        if ($.isBalanceForwarderEnabled[_sender]) revert Errors.AggVaultRewardsAlreadyEnabled();
 
         $.isBalanceForwarderEnabled[_sender] = true;
         balanceTrackerCached.balanceTrackerHook(_sender, _senderBalance, false);
@@ -142,11 +143,11 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
     /// @dev Only the authenticated account can disable balance forwarding for itself
     /// @dev Should call the IBalanceTracker hook with the account's balance of 0
     function _disableBalanceForwarder(address _sender) internal {
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
         IBalanceTracker balanceTrackerCached = IBalanceTracker($.balanceTracker);
 
-        if (address(balanceTrackerCached) == address(0)) revert Errors.NotSupported();
-        if (!$.isBalanceForwarderEnabled[_sender]) revert Errors.AlreadyDisabled();
+        if (address(balanceTrackerCached) == address(0)) revert Errors.AggVaultRewardsNotSupported();
+        if (!$.isBalanceForwarderEnabled[_sender]) revert Errors.AggVaultRewardsAlreadyDisabled();
 
         $.isBalanceForwarderEnabled[_sender] = false;
         balanceTrackerCached.balanceTrackerHook(_sender, 0, false);
@@ -158,7 +159,7 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
     /// @param _account Address to query
     /// @return True if balance forwarder is enabled
     function _balanceForwarderEnabled(address _account) internal view returns (bool) {
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         return $.isBalanceForwarderEnabled[_account];
     }
@@ -166,10 +167,12 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
     /// @notice Retrieve the address of rewards contract, tracking changes in account's balances
     /// @return The balance tracker address
     function _balanceTrackerAddress() internal view returns (address) {
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         return address($.balanceTracker);
     }
 }
 
-contract Rewards is RewardsModule {}
+contract Rewards is RewardsModule {
+    constructor(address _evc) Shared(_evc) {}
+}

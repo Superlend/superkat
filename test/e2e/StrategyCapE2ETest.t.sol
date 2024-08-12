@@ -10,11 +10,15 @@ import {
     IRMTestDefault,
     TestERC20,
     IEulerAggregationVault,
-    ErrorsLib
+    ErrorsLib,
+    AggAmountCapLib,
+    AggAmountCap
 } from "../common/EulerAggregationVaultBase.t.sol";
 
 contract StrategyCapE2ETest is EulerAggregationVaultBase {
     uint256 user1InitialBalance = 100000e18;
+
+    using AggAmountCapLib for AggAmountCap;
 
     function setUp() public virtual override {
         super.setUp();
@@ -26,40 +30,43 @@ contract StrategyCapE2ETest is EulerAggregationVaultBase {
     }
 
     function testSetCap() public {
-        uint256 cap = 1000000e18;
+        uint256 cap = 100e18;
 
-        assertEq((eulerAggregationVault.getStrategy(address(eTST))).cap, 0);
+        assertEq(AggAmountCap.unwrap(eulerAggregationVault.getStrategy(address(eTST)).cap), 0);
 
         vm.prank(manager);
-        eulerAggregationVault.setStrategyCap(address(eTST), cap);
+        // 100e18 cap
+        eulerAggregationVault.setStrategyCap(address(eTST), 6420);
 
         IEulerAggregationVault.Strategy memory strategy = eulerAggregationVault.getStrategy(address(eTST));
 
-        assertEq(strategy.cap, cap);
+        assertEq(strategy.cap.resolve(), cap);
+        assertEq(AggAmountCap.unwrap(strategy.cap), 6420);
     }
 
     function testSetCapForInactiveStrategy() public {
-        uint256 cap = 1000000e18;
-
         vm.prank(manager);
-        vm.expectRevert(ErrorsLib.InactiveStrategy.selector);
-        eulerAggregationVault.setStrategyCap(address(0x2), cap);
+        vm.expectRevert(ErrorsLib.StrategyShouldBeActive.selector);
+        eulerAggregationVault.setStrategyCap(address(0x2), 1);
     }
 
     function testSetCapForCashReserveStrategy() public {
-        uint256 cap = 1000000e18;
-
         vm.prank(manager);
         vm.expectRevert(ErrorsLib.NoCapOnCashReserveStrategy.selector);
-        eulerAggregationVault.setStrategyCap(address(0), cap);
+        eulerAggregationVault.setStrategyCap(address(0), 1);
     }
 
     function testRebalanceAfterHittingCap() public {
         address[] memory strategiesToRebalance = new address[](1);
 
-        uint256 cap = 3333333333333333333333;
+        uint120 cappedBalance = 3000000000000000000000;
+        // 3000000000000000000000 cap
+        uint16 cap = 19221;
         vm.prank(manager);
         eulerAggregationVault.setStrategyCap(address(eTST), cap);
+        IEulerAggregationVault.Strategy memory strategy = eulerAggregationVault.getStrategy(address(eTST));
+        assertEq(strategy.cap.resolve(), cappedBalance);
+        assertEq(AggAmountCap.unwrap(strategy.cap), cap);
 
         uint256 amountToDeposit = 10000e18;
 
@@ -93,13 +100,13 @@ contract StrategyCapE2ETest is EulerAggregationVaultBase {
 
             vm.prank(user1);
             strategiesToRebalance[0] = address(eTST);
-            rebalancer.executeRebalance(address(eulerAggregationVault), strategiesToRebalance);
+            eulerAggregationVault.rebalance(strategiesToRebalance);
 
-            assertEq(eulerAggregationVault.totalAllocated(), expectedStrategyCash);
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationVault))), expectedStrategyCash);
+            assertTrue(expectedStrategyCash > cappedBalance);
+            assertEq(eulerAggregationVault.totalAllocated(), cappedBalance);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationVault))), cappedBalance);
             assertEq(
-                (eulerAggregationVault.getStrategy(address(eTST))).allocated,
-                strategyBefore.allocated + expectedStrategyCash
+                (eulerAggregationVault.getStrategy(address(eTST))).allocated, strategyBefore.allocated + cappedBalance
             );
         }
 
@@ -113,7 +120,7 @@ contract StrategyCapE2ETest is EulerAggregationVaultBase {
         uint256 strategyAllocatedBefore = (eulerAggregationVault.getStrategy(address(eTST))).allocated;
 
         strategiesToRebalance[0] = address(eTST);
-        rebalancer.executeRebalance(address(eulerAggregationVault), strategiesToRebalance);
+        eulerAggregationVault.rebalance(strategiesToRebalance);
         vm.stopPrank();
 
         assertEq(strategyAllocatedBefore, (eulerAggregationVault.getStrategy(address(eTST))).allocated);
@@ -147,22 +154,24 @@ contract StrategyCapE2ETest is EulerAggregationVaultBase {
 
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationVault))), strategyBefore.allocated);
 
-            uint256 expectedStrategyCash = eulerAggregationVault.totalAssetsAllocatable()
-                * strategyBefore.allocationPoints / eulerAggregationVault.totalAllocationPoints();
-
-            // set cap 10% less than target allocation
-            uint256 cap = expectedStrategyCash * 9e17 / 1e18;
+            // set cap at around 10% less than target allocation
+            uint16 cap = 19219;
             vm.prank(manager);
             eulerAggregationVault.setStrategyCap(address(eTST), cap);
 
             vm.prank(user1);
             address[] memory strategiesToRebalance = new address[](1);
             strategiesToRebalance[0] = address(eTST);
-            rebalancer.executeRebalance(address(eulerAggregationVault), strategiesToRebalance);
+            eulerAggregationVault.rebalance(strategiesToRebalance);
 
-            assertEq(eulerAggregationVault.totalAllocated(), cap);
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationVault))), cap);
-            assertEq((eulerAggregationVault.getStrategy(address(eTST))).allocated, strategyBefore.allocated + cap);
+            assertEq(eulerAggregationVault.totalAllocated(), AggAmountCap.wrap(cap).resolve());
+            assertEq(
+                eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationVault))), AggAmountCap.wrap(cap).resolve()
+            );
+            assertEq(
+                (eulerAggregationVault.getStrategy(address(eTST))).allocated,
+                strategyBefore.allocated + AggAmountCap.wrap(cap).resolve()
+            );
         }
     }
 }

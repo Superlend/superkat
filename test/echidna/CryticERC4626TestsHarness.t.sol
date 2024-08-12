@@ -4,57 +4,61 @@ pragma solidity ^0.8.0;
 // echidna erc-4626 properties tests
 import {CryticERC4626PropertyTests} from "crytic-properties/ERC4626/ERC4626PropertyTests.sol";
 // contracts
-import {EulerAggregationVault} from "../../src/core/EulerAggregationVault.sol";
-import {Rebalancer} from "../../src/plugin/Rebalancer.sol";
-import {Hooks} from "../../src/core/module/Hooks.sol";
-import {Rewards} from "../../src/core/module/Rewards.sol";
-import {Fee} from "../../src/core/module/Fee.sol";
-import {EulerAggregationVaultFactory} from "../../src/core/EulerAggregationVaultFactory.sol";
-import {WithdrawalQueue} from "../../src/plugin/WithdrawalQueue.sol";
-import {AllocationPoints} from "../../src/core/module/AllocationPoints.sol";
+import {EulerAggregationVault} from "../../src/EulerAggregationVault.sol";
+import {Hooks} from "../../src/module/Hooks.sol";
+import {Rewards} from "../../src/module/Rewards.sol";
+import {Fee} from "../../src/module/Fee.sol";
+import {Rebalance} from "../../src/module/Rebalance.sol";
+import {WithdrawalQueue} from "../../src/module/WithdrawalQueue.sol";
+import {EulerAggregationVaultFactory} from "../../src/EulerAggregationVaultFactory.sol";
+import {Strategy} from "../../src/module/Strategy.sol";
 import {TestERC20Token} from "crytic-properties/ERC4626/util/TestERC20Token.sol";
+// evc setup
+import {EthereumVaultConnector} from "ethereum-vault-connector/EthereumVaultConnector.sol";
 
 contract CryticERC4626TestsHarness is CryticERC4626PropertyTests {
     uint256 public constant CASH_RESERVE_ALLOCATION_POINTS = 1000e18;
 
+    EthereumVaultConnector public evc;
     address factoryDeployer;
 
     // core modules
     Rewards rewardsImpl;
     Hooks hooksImpl;
     Fee feeModuleImpl;
-    AllocationPoints allocationPointsModuleImpl;
-    // plugins
-    Rebalancer rebalancerPlugin;
-    WithdrawalQueue withdrawalQueuePluginImpl;
+    Strategy strategyModuleImpl;
+    Rebalance rebalanceModuleImpl;
+    WithdrawalQueue withdrawalQueueModuleImpl;
 
     EulerAggregationVaultFactory eulerAggregationVaultFactory;
     EulerAggregationVault eulerAggregationVault;
 
     constructor() {
-        rewardsImpl = new Rewards();
-        hooksImpl = new Hooks();
-        feeModuleImpl = new Fee();
-        allocationPointsModuleImpl = new AllocationPoints();
+        evc = new EthereumVaultConnector();
 
-        rebalancerPlugin = new Rebalancer();
-        withdrawalQueuePluginImpl = new WithdrawalQueue();
+        rewardsImpl = new Rewards(address(evc));
+        hooksImpl = new Hooks(address(evc));
+        feeModuleImpl = new Fee(address(evc));
+        strategyModuleImpl = new Strategy(address(evc));
+        rebalanceModuleImpl = new Rebalance(address(evc));
+        withdrawalQueueModuleImpl = new WithdrawalQueue(address(evc));
 
         EulerAggregationVaultFactory.FactoryParams memory factoryParams = EulerAggregationVaultFactory.FactoryParams({
             owner: address(this),
+            evc: address(evc),
             balanceTracker: address(0),
             rewardsModuleImpl: address(rewardsImpl),
             hooksModuleImpl: address(hooksImpl),
             feeModuleImpl: address(feeModuleImpl),
-            allocationPointsModuleImpl: address(allocationPointsModuleImpl),
-            rebalancer: address(rebalancerPlugin)
+            strategyModuleImpl: address(strategyModuleImpl),
+            rebalanceModuleImpl: address(rebalanceModuleImpl),
+            withdrawalQueueModuleImpl: address(withdrawalQueueModuleImpl)
         });
         eulerAggregationVaultFactory = new EulerAggregationVaultFactory(factoryParams);
-        eulerAggregationVaultFactory.whitelistWithdrawalQueueImpl(address(withdrawalQueuePluginImpl));
 
         TestERC20Token _asset = new TestERC20Token("Test Token", "TT", 18);
         address _vault = eulerAggregationVaultFactory.deployEulerAggregationVault(
-            address(withdrawalQueuePluginImpl), address(_asset), "TT_Agg", "TT_Agg", CASH_RESERVE_ALLOCATION_POINTS
+            address(_asset), "TT_Agg", "TT_Agg", CASH_RESERVE_ALLOCATION_POINTS
         );
 
         initialize(address(_vault), address(_asset), false);
