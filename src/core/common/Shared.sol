@@ -2,10 +2,10 @@
 pragma solidity ^0.8.0;
 
 // interfaces
-import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {IEulerAggregationVault} from "../interface/IEulerAggregationVault.sol";
+// contracts
+import {EVCUtil} from "ethereum-vault-connector/utils/EVCUtil.sol";
 // libs
 import {HooksLib} from "../lib/HooksLib.sol";
 import {StorageLib as Storage, AggregationVaultStorage} from "../lib/StorageLib.sol";
@@ -13,14 +13,13 @@ import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
 
 /// @title Shared contract
+/// @dev Have common functions that is used in different contracts.
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
-abstract contract Shared {
+abstract contract Shared is EVCUtil {
     using HooksLib for uint32;
 
-    uint8 internal constant REENTRANCYLOCK__UNLOCKED = 1;
-    uint8 internal constant REENTRANCYLOCK__LOCKED = 2;
-
+    // Hookable functions code.
     uint32 public constant DEPOSIT = 1 << 0;
     uint32 public constant WITHDRAW = 1 << 1;
     uint32 public constant MINT = 1 << 2;
@@ -28,26 +27,26 @@ abstract contract Shared {
     uint32 public constant ADD_STRATEGY = 1 << 4;
     uint32 public constant REMOVE_STRATEGY = 1 << 5;
 
-    uint32 constant ACTIONS_COUNTER = 1 << 6;
-    uint256 constant HOOKS_MASK = 0x00000000000000000000000000000000000000000000000000000000FFFFFFFF;
+    // Re-entrancy protection
+    uint8 internal constant REENTRANCYLOCK__UNLOCKED = 1;
+    uint8 internal constant REENTRANCYLOCK__LOCKED = 2;
 
     /// @dev Interest rate smearing period
     uint256 public constant INTEREST_SMEAR = 2 weeks;
     /// @dev Minimum amount of shares to exist for gulp to be enabled
     uint256 public constant MIN_SHARES_FOR_GULP = 1e7;
 
+    /// @dev Non-reentracy protection.
     modifier nonReentrant() {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-
-        if ($.locked == REENTRANCYLOCK__LOCKED) revert Errors.Reentrancy();
-
-        $.locked = REENTRANCYLOCK__LOCKED;
+        _nonReentrantBefore();
         _;
-        $.locked = REENTRANCYLOCK__UNLOCKED;
+        _nonReentrantAfter();
     }
 
-    /// @dev Deduct _lossAmount from not-distributed amount, if not enough, socialize loss.
-    /// @dev not distributed amount is amount available to gulp + interest left.
+    constructor(address _evc) EVCUtil(_evc) {}
+
+    /// @dev Deduct _lossAmount from the not-distributed amount, if not enough, socialize loss.
+    /// @dev The not distributed amount is amount available to gulp + interest left.
     /// @param _lossAmount Amount lost.
     function _deductLoss(uint256 _lossAmount) internal {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
@@ -62,22 +61,9 @@ abstract contract Shared {
 
             // socialize the loss
             $.totalAssetsDeposited = totalAssetsDepositedCache - _lossAmount;
-        }
-    }
 
-    function _setHooksConfig(address _hooksTarget, uint32 _hookedFns) internal {
-        if (_hooksTarget != address(0) && IHookTarget(_hooksTarget).isHookTarget() != IHookTarget.isHookTarget.selector)
-        {
-            revert Errors.NotHooksContract();
+            emit Events.DeductLoss(_lossAmount);
         }
-        if (_hookedFns != 0 && _hooksTarget == address(0)) {
-            revert Errors.InvalidHooksTarget();
-        }
-        if (_hookedFns >= ACTIONS_COUNTER) revert Errors.InvalidHookedFns();
-
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-        $.hooksTarget = _hooksTarget;
-        $.hookedFns = _hookedFns;
     }
 
     /// @notice Checks whether a hook has been installed for the function and if so, invokes the hook target.
@@ -110,6 +96,7 @@ abstract contract Shared {
         uint256 maxGulp = type(uint168).max - $.interestLeft;
         if (toGulp > maxGulp) toGulp = maxGulp; // cap interest, allowing the vault to function
 
+        $.lastInterestUpdate = uint40(block.timestamp);
         $.interestSmearEnd = uint40(block.timestamp + INTEREST_SMEAR);
         $.interestLeft += uint168(toGulp); // toGulp <= maxGulp <= max uint168
 
@@ -120,13 +107,17 @@ abstract contract Shared {
     function _updateInterestAccrued() internal {
         uint256 accruedInterest = _interestAccruedFromCache();
 
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-        // it's safe to down-cast because the accrued interest is a fraction of interest left
-        $.interestLeft -= uint168(accruedInterest);
-        $.lastInterestUpdate = uint40(block.timestamp);
+        if (accruedInterest > 0) {
+            AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+            // it's safe to down-cast because the accrued interest is a fraction of interest left
+            $.interestLeft -= uint168(accruedInterest);
+            $.lastInterestUpdate = uint40(block.timestamp);
 
-        // Move interest accrued to totalAssetsDeposited
-        $.totalAssetsDeposited += accruedInterest;
+            // Move interest accrued to totalAssetsDeposited
+            $.totalAssetsDeposited += accruedInterest;
+
+            emit Events.InterestUpdated(accruedInterest, $.interestLeft);
+        }
     }
 
     /// @dev Get accrued interest without updating it.
@@ -153,10 +144,35 @@ abstract contract Shared {
         return $.interestLeft * timePassed / totalDuration;
     }
 
+    /// @dev Return total assets allocatable.
+    /// @dev The total assets allocatable is the current balanceOf + total amount already allocated.
+    /// @return uint256 total assets allocatable.
     function _totalAssetsAllocatable() internal view returns (uint256) {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         return IERC20(IERC4626(address(this)).asset()).balanceOf(address(this)) + $.totalAllocated;
+    }
+
+    /// @dev Override for _msgSender() to use the EVC authentication.
+    /// @return address Sender address.
+    function _msgSender() internal view virtual override (EVCUtil) returns (address) {
+        return EVCUtil._msgSender();
+    }
+
+    /// @dev Used by the nonReentrant before returning the execution flow to the original function.
+    function _nonReentrantBefore() private {
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        if ($.locked == REENTRANCYLOCK__LOCKED) revert Errors.Reentrancy();
+
+        $.locked = REENTRANCYLOCK__LOCKED;
+    }
+
+    /// @dev Used by the nonReentrant after returning the execution flow to the original function.
+    function _nonReentrantAfter() private {
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        $.locked = REENTRANCYLOCK__UNLOCKED;
     }
 
     /// @dev Revert with call error or EmptyError

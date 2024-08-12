@@ -11,10 +11,12 @@ import {Shared} from "../common/Shared.sol";
 // libs
 import {StorageLib as Storage, AggregationVaultStorage} from "../lib/StorageLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
+import {EventsLib as Events} from "../lib/EventsLib.sol";
 
+/// @title WithdrawalQueueModule contract
+/// @custom:security-contact security@euler.xyz
+/// @author Euler Labs (https://www.eulerlabs.com/)
 abstract contract WithdrawalQueueModule is Shared {
-    event ReorderWithdrawalQueue(uint8 index1, uint8 index2);
-
     /// @notice Swap two strategies indexes in the withdrawal queue.
     /// @dev Can only be called by an address that have the WITHDRAWAL_QUEUE_MANAGER role.
     /// @param _index1 index of first strategy.
@@ -34,8 +36,10 @@ abstract contract WithdrawalQueueModule is Shared {
         ($.withdrawalQueue[_index1], $.withdrawalQueue[_index2]) =
             ($.withdrawalQueue[_index2], $.withdrawalQueue[_index1]);
 
-        emit ReorderWithdrawalQueue(_index1, _index2);
+        emit Events.ReorderWithdrawalQueue(_index1, _index2);
     }
 }
 
-contract WithdrawalQueue is WithdrawalQueueModule {}
+contract WithdrawalQueue is WithdrawalQueueModule {
+    constructor(address _evc) Shared(_evc) {}
+}

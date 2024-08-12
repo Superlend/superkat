@@ -112,9 +112,9 @@ contract RemoveStrategyTest is EulerAggregationVaultBase {
         eulerAggregationVault.removeStrategy(address(eTST));
     }
 
-    function testRemoveStrategy_AlreadyRemoved() public {
+    function testRemoveStrategy_StrategyShouldBeActive() public {
         vm.prank(manager);
-        vm.expectRevert(ErrorsLib.AlreadyRemoved.selector);
+        vm.expectRevert(ErrorsLib.StrategyShouldBeActive.selector);
         eulerAggregationVault.removeStrategy(address(eTST2));
     }
 

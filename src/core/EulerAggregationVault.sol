@@ -17,7 +17,6 @@ import {ERC20VotesUpgradeable} from "@openzeppelin-upgradeable/token/ERC20/exten
 import {AccessControlEnumerableUpgradeable} from
     "@openzeppelin-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
 import {Shared} from "./common/Shared.sol";
-import {EVCUtil} from "ethereum-vault-connector/utils/EVCUtil.sol";
 // libs
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -30,35 +29,38 @@ import {EventsLib as Events} from "./lib/EventsLib.sol";
 /// @title EulerAggregationVault contract
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
-/// @dev Do NOT use with fee on transfer tokens
-/// @dev Do NOT use with rebasing tokens
 /// @dev inspired by Yearn v3 ❤️
 contract EulerAggregationVault is
     ERC4626Upgradeable,
     ERC20VotesUpgradeable,
     AccessControlEnumerableUpgradeable,
     Dispatch,
-    EVCUtil,
     IEulerAggregationVault
 {
     using SafeERC20 for IERC20;
     using SafeCast for uint256;
+    using Math for uint256;
 
     uint256 public constant HARVEST_COOLDOWN = 1 days;
 
-    // Roles
+    // Roles and their ADMIN roles.
+    // GUARDIAN: can set strategy cap, adjust strategy allocation points, set strategy status to EMERGENCY or revert it back.
     bytes32 public constant GUARDIAN = keccak256("GUARDIAN");
     bytes32 public constant GUARDIAN_ADMIN = keccak256("GUARDIAN_ADMIN");
+    // STRATEGY_OPERATOR: can add and remove strategy.
     bytes32 public constant STRATEGY_OPERATOR = keccak256("STRATEGY_OPERATOR");
     bytes32 public constant STRATEGY_OPERATOR_ADMIN = keccak256("STRATEGY_OPERATOR_ADMIN");
+    // AGGREGATION_VAULT_MANAGER: can set performance fee and recipient, opt in&out underlying strategy rewards,
+    // including enabling, desabling and claiming those rewards, plus set hooks config.
     bytes32 public constant AGGREGATION_VAULT_MANAGER = keccak256("AGGREGATION_VAULT_MANAGER");
     bytes32 public constant AGGREGATION_VAULT_MANAGER_ADMIN = keccak256("AGGREGATION_VAULT_MANAGER_ADMIN");
+    // WITHDRAWAL_QUEUE_MANAGER: can re-order withdrawal queue array.
     bytes32 public constant WITHDRAWAL_QUEUE_MANAGER = keccak256("WITHDRAWAL_QUEUE_MANAGER");
     bytes32 public constant WITHDRAWAL_QUEUE_MANAGER_ADMIN = keccak256("WITHDRAWAL_QUEUE_MANAGER_ADMIN");
 
     /// @dev Constructor.
     constructor(ConstructorParams memory _constructorParams)
-        EVCUtil(_constructorParams.evc)
+        Shared(_constructorParams.evc)
         Dispatch(
             _constructorParams.rewardsModule,
             _constructorParams.hooksModule,
@@ -269,16 +271,13 @@ contract EulerAggregationVault is
     }
 
     /// @notice Get saving rate data.
-    /// @return AggregationVaultSavingRate struct.
-    function getAggregationVaultSavingRate() external view returns (AggregationVaultSavingRate memory) {
+    /// @return uint40 last interest update timestamp.
+    /// @return uint40 timestamp when interest smearing end.
+    /// @return uint168 Amount of interest left to distribute.
+    function getAggregationVaultSavingRate() external view returns (uint40, uint40, uint168) {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-        AggregationVaultSavingRate memory avsr = AggregationVaultSavingRate({
-            lastInterestUpdate: $.lastInterestUpdate,
-            interestSmearEnd: $.interestSmearEnd,
-            interestLeft: $.interestLeft
-        });
 
-        return avsr;
+        return ($.lastInterestUpdate, $.interestSmearEnd, $.interestLeft);
     }
 
     /// @notice Get the total allocated amount.
@@ -326,6 +325,22 @@ contract EulerAggregationVault is
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         return $.lastHarvestTimestamp;
+    }
+
+    /// @notice Get the hooks contract and the hooked functions.
+    /// @return address Hooks contract.
+    /// @return uint32 Hooked functions.
+    function getHooksConfig() external view returns (address, uint32) {
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        return ($.hooksTarget, $.hookedFns);
+    }
+
+    /// @notice get the total assets allocatable
+    /// @dev the total assets allocatable is the amount of assets deposited into the aggregator + assets already deposited into strategies
+    /// @return uint256 total assets
+    function totalAssetsAllocatable() external view returns (uint256) {
+        return _totalAssetsAllocatable();
     }
 
     /// @dev See {IERC4626-deposit}.
@@ -393,11 +408,17 @@ contract EulerAggregationVault is
         return $.totalAssetsDeposited + _interestAccruedFromCache();
     }
 
-    /// @notice get the total assets allocatable
-    /// @dev the total assets allocatable is the amount of assets deposited into the aggregator + assets already deposited into strategies
-    /// @return uint256 total assets
-    function totalAssetsAllocatable() external view returns (uint256) {
-        return _totalAssetsAllocatable();
+    /// @notice Retrieve the address of rewards contract, tracking changes in account's balances
+    /// @return The balance tracker address
+    function balanceTrackerAddress() public view override returns (address) {
+        return super.balanceTrackerAddress();
+    }
+
+    /// @notice Retrieves boolean indicating if the account opted in to forward balance changes to the rewards contract
+    /// @param _account Address to query
+    /// @return True if balance forwarder is enabled
+    function balanceForwarderEnabled(address _account) public view override returns (bool) {
+        return super.balanceForwarderEnabled(_account);
     }
 
     /// @dev See {IERC4626-_deposit}.
@@ -410,7 +431,8 @@ contract EulerAggregationVault is
     }
 
     /// @dev See {IERC4626-_withdraw}.
-    /// @dev This function do not withdraw assets, it makes call to WithdrawalQueue to finish the withdraw request.
+    /// @dev If cash reserve is not enough for withdraw, this function will loop through the withdrawal queue
+    ///      and do withdraws till the amount is retrieved, or revert with NotEnoughAssets() error.
     function _withdraw(address _caller, address _receiver, address _owner, uint256 _assets, uint256 _shares)
         internal
         override
@@ -455,8 +477,9 @@ contract EulerAggregationVault is
     }
 
     /// @dev Loop through stratgies, aggregate positive and negative yield and account for net amounts.
-    /// @dev Loss socialization will be taken out from interest left first, if not enough, socialize on deposits.
-    /// @dev Performance fee will only be applied on net positive yield.
+    /// @dev Loss socialization will be taken out from interest left + amount available to gulp first, if not enough, socialize on deposits.
+    /// @dev Performance fee will only be applied on net positive yield across all strategies.
+    /// @param _checkCooldown a boolean to indicate wether to check for cooldown period or not.
     function _harvest(bool _checkCooldown) internal {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
@@ -490,8 +513,8 @@ contract EulerAggregationVault is
 
     /// @dev Execute harvest on a single strategy.
     /// @param _strategy Strategy address.
-    /// @return positiveYield Amount of positive yield if any, else 0.
-    /// @return loss Amount of loss if any, else 0.
+    /// @return uint256 Amount of positive yield if any, else 0.
+    /// @return uint256 Amount of loss if any, else 0.
     function _executeHarvest(address _strategy) internal returns (uint256, uint256) {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
@@ -520,7 +543,8 @@ contract EulerAggregationVault is
         return (positiveYield, loss);
     }
 
-    /// @dev Accrue performace fee on harvested yield.
+    /// @dev Accrue performace fee on aggregated harvested positive yield.
+    /// @dev Fees will be minted as shares to fee recipient.
     /// @param _yield Net positive yield.
     function _accruePerformanceFee(uint256 _yield) internal {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
@@ -531,7 +555,7 @@ contract EulerAggregationVault is
         if (cachedFeeRecipient == address(0) || cachedPerformanceFee == 0) return;
 
         // `feeAssets` will be rounded down to 0 if `yield * performanceFee < 1e18`.
-        uint256 feeAssets = Math.mulDiv(_yield, cachedPerformanceFee, 1e18, Math.Rounding.Floor);
+        uint256 feeAssets = _yield.mulDiv(cachedPerformanceFee, 1e18, Math.Rounding.Floor);
         uint256 feeShares = _convertToShares(feeAssets, Math.Rounding.Floor);
 
         if (feeShares != 0) {
@@ -567,7 +591,9 @@ contract EulerAggregationVault is
         }
     }
 
-    function _msgSender() internal view override (ContextUpgradeable, EVCUtil) returns (address) {
-        return EVCUtil._msgSender();
+    /// @dev Override _msgSender() to recognize EVC authentication.
+    /// @return address Sender address.
+    function _msgSender() internal view override (ContextUpgradeable, Shared) returns (address) {
+        return Shared._msgSender();
     }
 }

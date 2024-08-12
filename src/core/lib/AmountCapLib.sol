@@ -13,6 +13,8 @@ pragma solidity ^0.8.0;
 ///   * This is so that uninitialized storage implies no limit
 ///   * For an actual cap value of 0, use a zero mantissa and non-zero exponent
 library AmountCapLib {
+    /// @dev Resolve a cap amount from AmountCap type.
+    /// @return uint256 Strategy cap amount.
     function resolve(AmountCap self) internal pure returns (uint256) {
         uint256 amountCap = AmountCap.unwrap(self);
 
@@ -25,6 +27,7 @@ library AmountCapLib {
         }
     }
 
+    ///
     function toRawUint16(AmountCap self) internal pure returns (uint16) {
         return AmountCap.unwrap(self);
     }

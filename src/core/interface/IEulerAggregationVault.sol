@@ -37,21 +37,10 @@ interface IEulerAggregationVault {
         StrategyStatus status;
     }
 
-    /// @dev Euler saving rate struct
-    /// @dev Based on https://github.com/euler-xyz/euler-vault-kit/blob/master/src/Synths/EulerSavingsRate.sol
-    /// lastInterestUpdate: last timestamo where interest was updated.
-    /// interestSmearEnd: timestamp when the smearing of interest end.
-    /// interestLeft: amount of interest left to smear.
-    struct AggregationVaultSavingRate {
-        uint40 lastInterestUpdate;
-        uint40 interestSmearEnd;
-        uint168 interestLeft;
-    }
-
     /// @dev An enum for strategy status.
     /// An inactive strategy is a strategy that is not added to and recognized by the withdrawal queue.
     /// An active startegy is a well-functional strategy that is added in the withdrawal queue, can be rebalanced and harvested.
-    /// A strategy status set as Emeregncy, if when the strategy for some reasons can no longer be withdrawn from or deposited into it,
+    /// A strategy status set as Emergency, if when the strategy for some reasons can no longer be withdrawn from or deposited into it,
     /// this will be used as a circuit-breaker to ensure that the aggregation vault can continue functioning as intended,
     /// and the only impacted strategy will be the one set as Emergency.
     enum StrategyStatus {

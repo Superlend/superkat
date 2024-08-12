@@ -51,12 +51,13 @@ abstract contract Dispatch is
         withdrawalQueueModule = _withdrawalQueueModule;
     }
 
-    // Modifier proxies the function call to a module and low-level returns the result
+    /// @dev Modifier proxies the function call to a module and low-level returns the result
     modifier use(address module) {
         _; // when using the modifier, it is assumed the function body is empty.
         _delegateToModule(module);
     }
 
+    /// @dev forward the function call to a module and low-level returns the result
     function _delegateToModule(address module) private {
         assembly {
             calldatacopy(0, 0, calldatasize())

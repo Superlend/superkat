@@ -177,7 +177,7 @@ contract ToggleStrategyEmergencyStatusE2ETest is EulerAggregationVaultBase {
         eulerAggregationVault.toggleStrategyEmergencyStatus(address(eTSTsecondary));
 
         vm.prank(manager);
-        vm.expectRevert(ErrorsLib.CanNotRemoveStrategyInEmergencyStatus.selector);
+        vm.expectRevert(ErrorsLib.StrategyShouldBeActive.selector);
         eulerAggregationVault.removeStrategy(address(eTSTsecondary));
     }
 
@@ -306,9 +306,8 @@ contract ToggleStrategyEmergencyStatusE2ETest is EulerAggregationVaultBase {
 
         EulerAggregationVault.Strategy memory eTSTsecondaryStrategy =
             eulerAggregationVault.getStrategy(address(eTSTsecondary));
-        EulerAggregationVault.AggregationVaultSavingRate memory avsr =
-            eulerAggregationVault.getAggregationVaultSavingRate();
+        (,, uint168 interestLeft) = eulerAggregationVault.getAggregationVaultSavingRate();
 
-        assertEq(avsr.interestLeft, eTSTsecondaryStrategy.allocated);
+        assertEq(interestLeft, eTSTsecondaryStrategy.allocated);
     }
 }

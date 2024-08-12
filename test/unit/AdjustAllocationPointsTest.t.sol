@@ -48,7 +48,7 @@ contract AdjustAllocationsPointsTest is EulerAggregationVaultBase {
         uint256 newAllocationPoints = 859e18;
 
         vm.startPrank(manager);
-        vm.expectRevert(ErrorsLib.CanNotAdjustAllocationPoints.selector);
+        vm.expectRevert(ErrorsLib.StrategyShouldBeActive.selector);
         eulerAggregationVault.adjustAllocationPoints(address(eTST2), newAllocationPoints);
         vm.stopPrank();
     }

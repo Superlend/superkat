@@ -46,7 +46,7 @@ contract StrategyCapE2ETest is EulerAggregationVaultBase {
 
     function testSetCapForInactiveStrategy() public {
         vm.prank(manager);
-        vm.expectRevert(ErrorsLib.InactiveStrategy.selector);
+        vm.expectRevert(ErrorsLib.StrategyShouldBeActive.selector);
         eulerAggregationVault.setStrategyCap(address(0x2), 1);
     }
 

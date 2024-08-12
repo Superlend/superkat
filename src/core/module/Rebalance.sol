@@ -10,17 +10,20 @@ import {Shared} from "../common/Shared.sol";
 // libs
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {StorageLib, AggregationVaultStorage} from "../lib/StorageLib.sol";
+import {StorageLib as Storage, AggregationVaultStorage} from "../lib/StorageLib.sol";
 import {AmountCapLib, AmountCap} from "../lib/AmountCapLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
 
+/// @title RebalanceModule contract
+/// @custom:security-contact security@euler.xyz
+/// @author Euler Labs (https://www.eulerlabs.com/)
 abstract contract RebalanceModule is Shared {
     using SafeERC20 for IERC20;
     using SafeCast for uint256;
     using AmountCapLib for AmountCap;
 
-    /// @notice Rebalance strategies allocation for a specific curated vault.
+    /// @notice Rebalance strategies allocation.
     /// @param _strategies Strategies addresses.
     function rebalance(address[] calldata _strategies) external virtual nonReentrant {
         _gulp();
@@ -30,8 +33,8 @@ abstract contract RebalanceModule is Shared {
         }
     }
 
-    /// @notice Rebalance strategy by depositing or withdrawing the amount to rebalance to hit target allocation.
-    /// @dev If current allocation is greater than target allocation, the aggregator will withdraw the excess assets.
+    /// @dev Rebalance strategy by depositing or withdrawing the amount to rebalance to hit target allocation.
+    ///      If current allocation is greater than target allocation, the aggregator will withdraw the excess assets.
     ///      If current allocation is less than target allocation, the aggregator will:
     ///         - Try to deposit the delta, if the cash is not sufficient, deposit all the available cash
     ///         - If all the available cash is greater than the max deposit, deposit the max deposit
@@ -41,7 +44,7 @@ abstract contract RebalanceModule is Shared {
             return; //nothing to rebalance as that's the cash reserve
         }
 
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         IEulerAggregationVault.Strategy memory strategyData = $.strategies[_strategy];
 
@@ -53,7 +56,7 @@ abstract contract RebalanceModule is Shared {
             totalAssetsAllocatableCache * strategyData.allocationPoints / totalAllocationPointsCache;
 
         uint120 capAmount = uint120(strategyData.cap.resolve());
-        if ((AmountCap.unwrap(strategyData.cap) != 0) && (targetAllocation > capAmount)) targetAllocation = capAmount;
+        if ((capAmount != 0) && (targetAllocation > capAmount)) targetAllocation = capAmount;
 
         uint256 amountToRebalance;
         bool isDeposit;
@@ -107,4 +110,6 @@ abstract contract RebalanceModule is Shared {
     }
 }
 
-contract Rebalance is RebalanceModule {}
+contract Rebalance is RebalanceModule {
+    constructor(address _evc) Shared(_evc) {}
+}

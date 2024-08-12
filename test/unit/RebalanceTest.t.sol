@@ -341,11 +341,13 @@ contract RebalanceTest is EulerAggregationVaultBase {
         strategiesToRebalance[0] = address(eTST);
         eulerAggregationVault.rebalance(strategiesToRebalance);
 
-        // TODO: check this
-        // assertEq(eulerAggregationVault.totalAllocated(), strategyBefore.allocated - eTSTMaxWithdraw);
-        // assertEq(
-        //     eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationVault))), strategyBefore.allocated - eTSTMaxWithdraw
-        // );
-        // assertEq((eulerAggregationVault.getStrategy(address(eTST))).allocated, strategyBefore.allocated - eTSTMaxWithdraw);
+        assertEq(eulerAggregationVault.totalAllocated(), strategyBefore.allocated - eTSTMaxWithdraw);
+        assertEq(
+            eTST.convertToAssets(eTST.balanceOf(address(eulerAggregationVault))),
+            strategyBefore.allocated - eTSTMaxWithdraw
+        );
+        assertEq(
+            (eulerAggregationVault.getStrategy(address(eTST))).allocated, strategyBefore.allocated - eTSTMaxWithdraw
+        );
     }
 }
