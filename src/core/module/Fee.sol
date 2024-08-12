@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 // contracts
 import {Shared} from "../common/Shared.sol";
 // libs
-import {StorageLib, AggregationVaultStorage} from "../lib/StorageLib.sol";
+import {StorageLib as Storage, AggregationVaultStorage} from "../lib/StorageLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
 
@@ -18,7 +18,7 @@ abstract contract FeeModule is Shared {
     /// @notice Set performance fee recipient address
     /// @param _newFeeRecipient Recipient address
     function setFeeRecipient(address _newFeeRecipient) external virtual nonReentrant {
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         emit Events.SetFeeRecipient($.feeRecipient, _newFeeRecipient);
 
@@ -28,7 +28,7 @@ abstract contract FeeModule is Shared {
     /// @notice Set performance fee (1e18 == 100%)
     /// @param _newFee Fee rate
     function setPerformanceFee(uint96 _newFee) external virtual nonReentrant {
-        AggregationVaultStorage storage $ = StorageLib._getAggregationVaultStorage();
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         uint96 performanceFeeCached = $.performanceFee;
 

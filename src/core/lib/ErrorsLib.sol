@@ -22,7 +22,6 @@ library ErrorsLib {
     error CanNotRemoveStartegyWithAllocatedAmount();
     error NoCapOnCashReserveStrategy();
     error CanNotToggleStrategyEmergencyStatus();
-    error CanNotRemoveStrategyInEmergencyStatus();
     error StrategyCapExceedMax();
     error OutOfBounds();
     error SameIndexes();

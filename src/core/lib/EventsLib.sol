@@ -19,7 +19,7 @@ library EventsLib {
     event SetStrategyCap(address indexed strategy, uint256 cap);
     event ToggleStrategyEmergencyStatus(address indexed strategy, bool isSetToEmergency);
 
-    /// @dev Fee.sok events
+    /// @dev Fee.sol events
     event SetFeeRecipient(address indexed oldRecipient, address indexed newRecipient);
     event SetPerformanceFee(uint96 oldFee, uint96 newFee);
 
