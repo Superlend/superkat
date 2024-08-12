@@ -18,7 +18,7 @@ quote_style = "double"
 number_underscore = "preserve"
 override_spacing = true
 ignore = [
-    "src/core/lib/StorageLib.sol"
+    "src/lib/StorageLib.sol"
 ]
 
 [profile.test]

@@ -4,14 +4,14 @@ pragma solidity ^0.8.0;
 // a16z properties tests
 import {ERC4626Test} from "erc4626-tests/ERC4626.test.sol";
 // contracts
-import {EulerAggregationVault} from "../src/core/EulerAggregationVault.sol";
-import {Hooks} from "../src/core/module/Hooks.sol";
-import {Rewards} from "../src/core/module/Rewards.sol";
-import {Fee} from "../src/core/module/Fee.sol";
-import {Rebalance} from "../src/core/module/Rebalance.sol";
-import {WithdrawalQueue} from "../src/core/module/WithdrawalQueue.sol";
-import {EulerAggregationVaultFactory} from "../src/core/EulerAggregationVaultFactory.sol";
-import {Strategy} from "../src/core/module/Strategy.sol";
+import {EulerAggregationVault} from "../src/EulerAggregationVault.sol";
+import {Hooks} from "../src/module/Hooks.sol";
+import {Rewards} from "../src/module/Rewards.sol";
+import {Fee} from "../src/module/Fee.sol";
+import {Rebalance} from "../src/module/Rebalance.sol";
+import {WithdrawalQueue} from "../src/module/WithdrawalQueue.sol";
+import {EulerAggregationVaultFactory} from "../src/EulerAggregationVaultFactory.sol";
+import {Strategy} from "../src/module/Strategy.sol";
 // mocks
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 // evc setup

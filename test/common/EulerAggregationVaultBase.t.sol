@@ -5,18 +5,18 @@ pragma solidity ^0.8.0;
 import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
 // contracts
 import "evk/test/unit/evault/EVaultTestBase.t.sol";
-import {EulerAggregationVault, IEulerAggregationVault} from "../../src/core/EulerAggregationVault.sol";
-import {Hooks, HooksModule} from "../../src/core/module/Hooks.sol";
-import {Rewards} from "../../src/core/module/Rewards.sol";
-import {Fee} from "../../src/core/module/Fee.sol";
-import {Rebalance} from "../../src/core/module/Rebalance.sol";
-import {WithdrawalQueue} from "../../src/core/module/WithdrawalQueue.sol";
-import {EulerAggregationVaultFactory} from "../../src/core/EulerAggregationVaultFactory.sol";
-import {Strategy} from "../../src/core/module/Strategy.sol";
+import {EulerAggregationVault, IEulerAggregationVault} from "../../src/EulerAggregationVault.sol";
+import {Hooks, HooksModule} from "../../src/module/Hooks.sol";
+import {Rewards} from "../../src/module/Rewards.sol";
+import {Fee} from "../../src/module/Fee.sol";
+import {Rebalance} from "../../src/module/Rebalance.sol";
+import {WithdrawalQueue} from "../../src/module/WithdrawalQueue.sol";
+import {EulerAggregationVaultFactory} from "../../src/EulerAggregationVaultFactory.sol";
+import {Strategy} from "../../src/module/Strategy.sol";
 // libs
-import {ErrorsLib} from "../../src/core/lib/ErrorsLib.sol";
-import {ErrorsLib} from "../../src/core/lib/ErrorsLib.sol";
-import {AmountCapLib as AggAmountCapLib, AmountCap as AggAmountCap} from "../../src/core/lib/AmountCapLib.sol";
+import {ErrorsLib} from "../../src/lib/ErrorsLib.sol";
+import {ErrorsLib} from "../../src/lib/ErrorsLib.sol";
+import {AmountCapLib as AggAmountCapLib, AmountCap as AggAmountCap} from "../../src/lib/AmountCapLib.sol";
 
 contract EulerAggregationVaultBase is EVaultTestBase {
     using AggAmountCapLib for AggAmountCap;
