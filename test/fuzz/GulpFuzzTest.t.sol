@@ -50,13 +50,12 @@ contract GulpFuzzTest is EulerAggregationVaultBase {
 
         eulerAggregationVault.gulp();
 
-        EulerAggregationVault.AggregationVaultSavingRate memory aggregationVaultSavingRate =
-            eulerAggregationVault.getAggregationVaultSavingRate();
+        (,, uint168 interestLeft) = eulerAggregationVault.getAggregationVaultSavingRate();
 
         if (_interestAmount <= type(uint168).max) {
-            assertEq(aggregationVaultSavingRate.interestLeft, _interestAmount);
+            assertEq(interestLeft, _interestAmount);
         } else {
-            assertEq(aggregationVaultSavingRate.interestLeft, type(uint168).max);
+            assertEq(interestLeft, type(uint168).max);
         }
     }
 
@@ -74,9 +73,8 @@ contract GulpFuzzTest is EulerAggregationVaultBase {
         eulerAggregationVault.gulp();
         skip(eulerAggregationVault.INTEREST_SMEAR());
 
-        EulerAggregationVault.AggregationVaultSavingRate memory aggregationVaultSavingRate =
-            eulerAggregationVault.getAggregationVaultSavingRate();
+        (,, uint168 interestLeft) = eulerAggregationVault.getAggregationVaultSavingRate();
         assertEq(eulerAggregationVault.totalAssets(), depositAmount);
-        assertEq(aggregationVaultSavingRate.interestLeft, 0);
+        assertEq(interestLeft, 0);
     }
 }

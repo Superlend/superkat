@@ -243,10 +243,9 @@ contract EulerAggregationVaultHandler is Test {
         );
 
         if (success) {
-            assertEq(
-                eulerAggVault.totalAssetsAllocatable(),
-                eulerAggVault.totalAssetsDeposited() + (eulerAggVault.getAggregationVaultSavingRate()).interestLeft
-            );
+            (,, uint168 interestLeft) = eulerAggVault.getAggregationVaultSavingRate();
+
+            assertEq(eulerAggVault.totalAssetsAllocatable(), eulerAggVault.totalAssetsDeposited() + interestLeft);
         }
     }
 
@@ -368,9 +367,9 @@ contract EulerAggregationVaultHandler is Test {
         view
         returns (uint256)
     {
-        IEulerAggregationVault.AggregationVaultSavingRate memory avsr = eulerAggVault.getAggregationVaultSavingRate();
-        if (_loss > avsr.interestLeft) {
-            cachedGhostTotalAssetsDeposited -= _loss - avsr.interestLeft;
+        (,, uint168 interestLeft) = eulerAggVault.getAggregationVaultSavingRate();
+        if (_loss > interestLeft) {
+            cachedGhostTotalAssetsDeposited -= _loss - interestLeft;
         }
 
         return cachedGhostTotalAssetsDeposited;

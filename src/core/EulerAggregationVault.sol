@@ -268,16 +268,13 @@ contract EulerAggregationVault is
     }
 
     /// @notice Get saving rate data.
-    /// @return AggregationVaultSavingRate struct.
-    function getAggregationVaultSavingRate() external view returns (AggregationVaultSavingRate memory) {
+    /// @return uint40 last interest update timestamp.
+    /// @return uint40 timestamp when interest smearing end.
+    /// @return uint168 Amount of interest left to distribute.
+    function getAggregationVaultSavingRate() external view returns (uint40, uint40, uint168) {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-        AggregationVaultSavingRate memory avsr = AggregationVaultSavingRate({
-            lastInterestUpdate: $.lastInterestUpdate,
-            interestSmearEnd: $.interestSmearEnd,
-            interestLeft: $.interestLeft
-        });
 
-        return avsr;
+        return ($.lastInterestUpdate, $.interestSmearEnd, $.interestLeft);
     }
 
     /// @notice Get the total allocated amount.

@@ -56,10 +56,10 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
         eulerAggregationVault.gulp();
 
         if (eulerAggregationVault.totalSupply() >= eulerAggregationVault.MIN_SHARES_FOR_GULP()) {
+            (,, uint168 interestLeft) = eulerAggregationVault.getAggregationVaultSavingRate();
             assertEq(
                 eulerAggregationVault.totalAssetsAllocatable(),
-                eulerAggregationVault.totalAssetsDeposited()
-                    + (eulerAggregationVault.getAggregationVaultSavingRate()).interestLeft
+                eulerAggregationVault.totalAssetsDeposited() + interestLeft
             );
         }
     }
@@ -151,10 +151,9 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
 
     // the interest left should always be greater or equal current interest accrued value.
     function invariant_interestLeft() public view {
-        EulerAggregationVault.AggregationVaultSavingRate memory aggregationVaultSavingRate =
-            eulerAggregationVault.getAggregationVaultSavingRate();
+        (,, uint168 interestLeft) = eulerAggregationVault.getAggregationVaultSavingRate();
         uint256 accruedInterest = eulerAggregationVault.interestAccrued();
-        assertGe(aggregationVaultSavingRate.interestLeft, accruedInterest);
+        assertGe(interestLeft, accruedInterest);
     }
 
     function invariant_cashReserveStrategyCap() public view {
