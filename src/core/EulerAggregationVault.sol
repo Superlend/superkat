@@ -41,6 +41,7 @@ contract EulerAggregationVault is
 {
     using SafeERC20 for IERC20;
     using SafeCast for uint256;
+    using Math for uint256;
 
     uint256 public constant HARVEST_COOLDOWN = 1 days;
 
@@ -529,7 +530,7 @@ contract EulerAggregationVault is
         if (cachedFeeRecipient == address(0) || cachedPerformanceFee == 0) return;
 
         // `feeAssets` will be rounded down to 0 if `yield * performanceFee < 1e18`.
-        uint256 feeAssets = Math.mulDiv(_yield, cachedPerformanceFee, 1e18, Math.Rounding.Floor);
+        uint256 feeAssets = _yield.mulDiv(cachedPerformanceFee, 1e18, Math.Rounding.Floor);
         uint256 feeShares = _convertToShares(feeAssets, Math.Rounding.Floor);
 
         if (feeShares != 0) {
