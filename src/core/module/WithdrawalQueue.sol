@@ -13,6 +13,9 @@ import {StorageLib as Storage, AggregationVaultStorage} from "../lib/StorageLib.
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
 
+/// @title WithdrawalQueueModule contract
+/// @custom:security-contact security@euler.xyz
+/// @author Euler Labs (https://www.eulerlabs.com/)
 abstract contract WithdrawalQueueModule is Shared {
     /// @notice Swap two strategies indexes in the withdrawal queue.
     /// @dev Can only be called by an address that have the WITHDRAWAL_QUEUE_MANAGER role.

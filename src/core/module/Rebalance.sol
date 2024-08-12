@@ -15,6 +15,9 @@ import {AmountCapLib, AmountCap} from "../lib/AmountCapLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
 
+/// @title RebalanceModule contract
+/// @custom:security-contact security@euler.xyz
+/// @author Euler Labs (https://www.eulerlabs.com/)
 abstract contract RebalanceModule is Shared {
     using SafeERC20 for IERC20;
     using SafeCast for uint256;

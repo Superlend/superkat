@@ -29,8 +29,6 @@ import {EventsLib as Events} from "./lib/EventsLib.sol";
 /// @title EulerAggregationVault contract
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
-/// @dev Do NOT use with fee on transfer tokens
-/// @dev Do NOT use with rebasing tokens
 /// @dev inspired by Yearn v3 ❤️
 contract EulerAggregationVault is
     ERC4626Upgradeable,
