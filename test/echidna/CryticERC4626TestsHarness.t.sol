@@ -36,12 +36,12 @@ contract CryticERC4626TestsHarness is CryticERC4626PropertyTests {
     constructor() {
         evc = new EthereumVaultConnector();
 
-        rewardsImpl = new Rewards();
-        hooksImpl = new Hooks();
-        feeModuleImpl = new Fee();
-        strategyModuleImpl = new Strategy();
-        rebalanceModuleImpl = new Rebalance();
-        withdrawalQueueModuleImpl = new WithdrawalQueue();
+        rewardsImpl = new Rewards(address(evc));
+        hooksImpl = new Hooks(address(evc));
+        feeModuleImpl = new Fee(address(evc));
+        strategyModuleImpl = new Strategy(address(evc));
+        rebalanceModuleImpl = new Rebalance(address(evc));
+        withdrawalQueueModuleImpl = new WithdrawalQueue(address(evc));
 
         EulerAggregationVaultFactory.FactoryParams memory factoryParams = EulerAggregationVaultFactory.FactoryParams({
             owner: address(this),

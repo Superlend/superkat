@@ -48,12 +48,12 @@ contract EulerAggregationVaultBase is EVaultTestBase {
         manager = makeAddr("Manager");
 
         vm.startPrank(deployer);
-        rewardsImpl = new Rewards();
-        hooksImpl = new Hooks();
-        feeModuleImpl = new Fee();
-        strategyModuleImpl = new Strategy();
-        rebalanceModuleImpl = new Rebalance();
-        withdrawalQueueModuleImpl = new WithdrawalQueue();
+        rewardsImpl = new Rewards(address(evc));
+        hooksImpl = new Hooks(address(evc));
+        feeModuleImpl = new Fee(address(evc));
+        strategyModuleImpl = new Strategy(address(evc));
+        rebalanceModuleImpl = new Rebalance(address(evc));
+        withdrawalQueueModuleImpl = new WithdrawalQueue(address(evc));
 
         EulerAggregationVaultFactory.FactoryParams memory factoryParams = EulerAggregationVaultFactory.FactoryParams({
             owner: deployer,

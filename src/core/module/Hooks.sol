@@ -33,4 +33,6 @@ abstract contract HooksModule is Shared {
     }
 }
 
-contract Hooks is HooksModule {}
+contract Hooks is HooksModule {
+    constructor(address _evc) Shared(_evc) {}
+}

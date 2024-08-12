@@ -129,7 +129,7 @@ abstract contract StrategyModule is Shared {
 
         if (_allocationPoints == 0) revert Errors.InvalidAllocationPoints();
 
-        _callHooksTarget(ADD_STRATEGY, msg.sender);
+        _callHooksTarget(ADD_STRATEGY, _msgSender());
 
         $.strategies[_strategy] = IEulerAggregationVault.Strategy({
             allocated: 0,
@@ -161,7 +161,7 @@ abstract contract StrategyModule is Shared {
 
         if (strategyStorage.allocated > 0) revert Errors.CanNotRemoveStartegyWithAllocatedAmount();
 
-        _callHooksTarget(REMOVE_STRATEGY, msg.sender);
+        _callHooksTarget(REMOVE_STRATEGY, _msgSender());
 
         $.totalAllocationPoints -= strategyStorage.allocationPoints;
         strategyStorage.status = IEulerAggregationVault.StrategyStatus.Inactive;
@@ -183,4 +183,6 @@ abstract contract StrategyModule is Shared {
     }
 }
 
-contract Strategy is StrategyModule {}
+contract Strategy is StrategyModule {
+    constructor(address _evc) Shared(_evc) {}
+}

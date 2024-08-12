@@ -6,6 +6,9 @@ import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IEulerAggregationVault} from "../interface/IEulerAggregationVault.sol";
+// contracts
+import {ContextUpgradeable} from "@openzeppelin-upgradeable/utils/ContextUpgradeable.sol";
+import {EVCUtil} from "ethereum-vault-connector/utils/EVCUtil.sol";
 // libs
 import {HooksLib} from "../lib/HooksLib.sol";
 import {StorageLib as Storage, AggregationVaultStorage} from "../lib/StorageLib.sol";
@@ -15,7 +18,7 @@ import {EventsLib as Events} from "../lib/EventsLib.sol";
 /// @title Shared contract
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
-abstract contract Shared {
+abstract contract Shared is EVCUtil {
     using HooksLib for uint32;
 
     uint8 internal constant REENTRANCYLOCK__UNLOCKED = 1;
@@ -41,6 +44,8 @@ abstract contract Shared {
         _;
         _nonReentrantAfter();
     }
+
+    constructor(address _evc) EVCUtil(_evc) {}
 
     /// @dev Deduct _lossAmount from not-distributed amount, if not enough, socialize loss.
     /// @dev not distributed amount is amount available to gulp + interest left.
@@ -191,5 +196,9 @@ abstract contract Shared {
         }
 
         revert Errors.EmptyError();
+    }
+
+    function _msgSender() internal view virtual override (EVCUtil) returns (address) {
+        return EVCUtil._msgSender();
     }
 }

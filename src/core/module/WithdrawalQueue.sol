@@ -37,4 +37,6 @@ abstract contract WithdrawalQueueModule is Shared {
     }
 }
 
-contract WithdrawalQueue is WithdrawalQueueModule {}
+contract WithdrawalQueue is WithdrawalQueueModule {
+    constructor(address _evc) Shared(_evc) {}
+}

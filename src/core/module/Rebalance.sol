@@ -107,4 +107,6 @@ abstract contract RebalanceModule is Shared {
     }
 }
 
-contract Rebalance is RebalanceModule {}
+contract Rebalance is RebalanceModule {
+    constructor(address _evc) Shared(_evc) {}
+}
