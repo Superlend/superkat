@@ -74,7 +74,7 @@ contract ToggleStrategyEmergencyStatusE2ETest is EulerAggregationVaultBase {
         vm.stopPrank();
     }
 
-    // this to test a scneraio where a startegy `withdraw()` start reverting.
+    // this to test a scneraio where a strategy `withdraw()` start reverting.
     // Guardian will set the strategy in emergency mode, harvest and withdraw should execute,
     // user will be able to withdraw from other strategy, losses will only be in the faulty strategy.
     function testDepositRebalanceWithdrawWithFaultyStartegy() public {

@@ -73,7 +73,7 @@ abstract contract StrategyModule is Shared {
 
     /// @notice Toggle a strategy status between `Active` and `Emergency`.
     /// @dev Can only get called by an address with the `GUARDIAN` role.
-    /// @dev This should be used as a cricuit-breaker to exclude a faulty strategy from being harvest or rebalanced.
+    /// @dev This should be used as a circuit-breaker to exclude a faulty strategy from being harvest or rebalanced.
     /// It also deduct all the deposited amounts into the strategy as loss, and uses a loss socialization mechanism.
     /// This is needed, in case the aggregation vault can no longer withdraw from a certain strategy.
     /// In the case of switching a strategy from Emergency to Active again, the max withdrawable amount from the strategy
@@ -111,7 +111,7 @@ abstract contract StrategyModule is Shared {
         }
     }
 
-    /// @notice Add new strategy with it's allocation points.
+    /// @notice Add new strategy with its allocation points.
     /// @dev Can only be called by an address that have `STRATEGY_OPERATOR` role.
     /// @param _strategy Address of the strategy
     /// @param _allocationPoints Strategy's allocation points
@@ -145,7 +145,7 @@ abstract contract StrategyModule is Shared {
 
     /// @notice Remove strategy and set its allocation points to zero.
     /// @dev Can only be called by an address that have the `STRATEGY_OPERATOR` role.
-    /// A faulty startegy that has an allocated amount can not be removed, instead the startegy status
+    /// A faulty strategy that has an allocated amount can not be removed, instead the strategy status
     /// should be set as `EMERGENCY` using `toggleStrategyEmergencyStatus()`.
     /// @param _strategy Address of the strategy to remove.
     function removeStrategy(address _strategy) external virtual nonReentrant {
@@ -158,7 +158,7 @@ abstract contract StrategyModule is Shared {
             revert Errors.StrategyShouldBeActive();
         }
 
-        if (strategyStorage.allocated > 0) revert Errors.CanNotRemoveStartegyWithAllocatedAmount();
+        if (strategyStorage.allocated > 0) revert Errors.CanNotRemoveStrategyWithAllocatedAmount();
 
         _callHooksTarget(REMOVE_STRATEGY, _msgSender());
 

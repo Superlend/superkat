@@ -167,7 +167,7 @@ contract RemoveStrategyTest is EulerAggregationVaultBase {
         }
 
         vm.prank(manager);
-        vm.expectRevert(ErrorsLib.CanNotRemoveStartegyWithAllocatedAmount.selector);
+        vm.expectRevert(ErrorsLib.CanNotRemoveStrategyWithAllocatedAmount.selector);
         eulerAggregationVault.removeStrategy(address(eTST));
     }
 }

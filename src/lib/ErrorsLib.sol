@@ -19,7 +19,7 @@ library ErrorsLib {
     error InvalidHookedFns();
     error EmptyError();
     error InvalidAllocationPoints();
-    error CanNotRemoveStartegyWithAllocatedAmount();
+    error CanNotRemoveStrategyWithAllocatedAmount();
     error NoCapOnCashReserveStrategy();
     error CanNotToggleStrategyEmergencyStatus();
     error StrategyCapExceedMax();

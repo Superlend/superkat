@@ -51,7 +51,7 @@ contract EulerAggregationVault is
     bytes32 public constant STRATEGY_OPERATOR = keccak256("STRATEGY_OPERATOR");
     bytes32 public constant STRATEGY_OPERATOR_ADMIN = keccak256("STRATEGY_OPERATOR_ADMIN");
     // AGGREGATION_VAULT_MANAGER: can set performance fee and recipient, opt in&out underlying strategy rewards,
-    // including enabling, desabling and claiming those rewards, plus set hooks config.
+    // including enabling, disabling and claiming those rewards, plus set hooks config.
     bytes32 public constant AGGREGATION_VAULT_MANAGER = keccak256("AGGREGATION_VAULT_MANAGER");
     bytes32 public constant AGGREGATION_VAULT_MANAGER_ADMIN = keccak256("AGGREGATION_VAULT_MANAGER_ADMIN");
     // WITHDRAWAL_QUEUE_MANAGER: can re-order withdrawal queue array.
@@ -236,7 +236,7 @@ contract EulerAggregationVault is
         use(withdrawalQueueModule)
     {}
 
-    /// @notice Harvest all the strategies. Any positive yiled should be gupled by calling gulp() after harvesting.
+    /// @notice Harvest all the strategies. Any positive yield should be gupled by calling gulp() after harvesting.
     /// @dev This function will loop through the strategies following the withdrawal queue order and harvest all.
     /// @dev Harvest positive and negative yields will be aggregated and only net amounts will be accounted.
     function harvest() external nonReentrant {
@@ -422,7 +422,7 @@ contract EulerAggregationVault is
     }
 
     /// @dev See {IERC4626-_deposit}.
-    /// @dev Increate the total assets deposited.
+    /// @dev Increase the total assets deposited.
     function _deposit(address _caller, address _receiver, uint256 _assets, uint256 _shares) internal override {
         super._deposit(_caller, _receiver, _assets, _shares);
 
@@ -458,7 +458,7 @@ contract EulerAggregationVault is
                 // Do actual withdraw from strategy
                 IERC4626(address(strategy)).withdraw(withdrawAmount, address(this), address(this));
 
-                // update _availableAssets
+                // update assetsRetrieved
                 assetsRetrieved += withdrawAmount;
 
                 if (assetsRetrieved >= _assets) {
@@ -476,14 +476,14 @@ contract EulerAggregationVault is
         super._withdraw(_caller, _receiver, _owner, _assets, _shares);
     }
 
-    /// @dev Loop through stratgies, aggregate positive and negative yield and account for net amounts.
+    /// @dev Loop through strategies, aggregate positive and negative yield and account for net amounts.
     /// @dev Loss socialization will be taken out from interest left + amount available to gulp first, if not enough, socialize on deposits.
     /// @dev Performance fee will only be applied on net positive yield across all strategies.
-    /// @param _checkCooldown a boolean to indicate wether to check for cooldown period or not.
+    /// @param _checkCooldown a boolean to indicate whether to check for cooldown period or not.
     function _harvest(bool _checkCooldown) internal {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
-        if ((_checkCooldown) && ($.lastHarvestTimestamp + HARVEST_COOLDOWN >= block.timestamp)) {
+        if (_checkCooldown && ($.lastHarvestTimestamp + HARVEST_COOLDOWN >= block.timestamp)) {
             return;
         }
 
@@ -559,7 +559,7 @@ contract EulerAggregationVault is
         uint256 feeShares = _convertToShares(feeAssets, Math.Rounding.Floor);
 
         if (feeShares != 0) {
-            // Move feeAssets from gulpable amount to totalAssetsDeposited to not delute other depositors.
+            // Move feeAssets from gulpable amount to totalAssetsDeposited to not dilute other depositors.
             $.totalAssetsDeposited += feeAssets;
 
             _mint(cachedFeeRecipient, feeShares);
