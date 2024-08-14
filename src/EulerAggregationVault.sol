@@ -76,7 +76,8 @@ contract EulerAggregationVault is
     function init(InitParams calldata _initParams) external initializer {
         __ERC4626_init_unchained(IERC20(_initParams.asset));
         __ERC20_init_unchained(_initParams.name, _initParams.symbol);
-        __AccessControlEnumerable_init();
+        __ERC20Votes_init_unchained();
+        __AccessControlEnumerable_init_unchained();
 
         if (_initParams.initialCashAllocationPoints == 0) revert Errors.InitialAllocationPointsZero();
 
