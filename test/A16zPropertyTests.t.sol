@@ -24,12 +24,12 @@ contract A16zPropertyTests is ERC4626Test {
     address public factoryOwner;
 
     // core modules
-    Rewards rewardsImpl;
-    Hooks hooksImpl;
-    Fee feeModuleImpl;
-    Strategy strategyModuleImpl;
-    Rebalance rebalanceModuleImpl;
-    WithdrawalQueue withdrawalQueueModuleImpl;
+    Rewards rewardsModule;
+    Hooks hooksModule;
+    Fee feeModuleModule;
+    Strategy strategyModuleModule;
+    Rebalance rebalanceModuleModule;
+    WithdrawalQueue withdrawalQueueModuleModule;
 
     EulerAggregationVaultFactory eulerAggregationVaultFactory;
     EulerAggregationVault eulerAggregationVault;
@@ -38,23 +38,23 @@ contract A16zPropertyTests is ERC4626Test {
         factoryOwner = makeAddr("FACTORY_OWNER");
         evc = new EthereumVaultConnector();
 
-        rewardsImpl = new Rewards(address(evc));
-        hooksImpl = new Hooks(address(evc));
-        feeModuleImpl = new Fee(address(evc));
-        strategyModuleImpl = new Strategy(address(evc));
-        rebalanceModuleImpl = new Rebalance(address(evc));
-        withdrawalQueueModuleImpl = new WithdrawalQueue(address(evc));
+        rewardsModule = new Rewards(address(evc));
+        hooksModule = new Hooks(address(evc));
+        feeModuleModule = new Fee(address(evc));
+        strategyModuleModule = new Strategy(address(evc));
+        rebalanceModuleModule = new Rebalance(address(evc));
+        withdrawalQueueModuleModule = new WithdrawalQueue(address(evc));
 
         EulerAggregationVaultFactory.FactoryParams memory factoryParams = EulerAggregationVaultFactory.FactoryParams({
             owner: factoryOwner,
             evc: address(evc),
             balanceTracker: address(0),
-            rewardsModuleImpl: address(rewardsImpl),
-            hooksModuleImpl: address(hooksImpl),
-            feeModuleImpl: address(feeModuleImpl),
-            strategyModuleImpl: address(strategyModuleImpl),
-            rebalanceModuleImpl: address(rebalanceModuleImpl),
-            withdrawalQueueModuleImpl: address(withdrawalQueueModuleImpl)
+            rewardsModule: address(rewardsModule),
+            hooksModule: address(hooksModule),
+            feeModule: address(feeModuleModule),
+            strategyModule: address(strategyModuleModule),
+            rebalanceModule: address(rebalanceModuleModule),
+            withdrawalQueueModule: address(withdrawalQueueModuleModule)
         });
         eulerAggregationVaultFactory = new EulerAggregationVaultFactory(factoryParams);
         vm.prank(factoryOwner);

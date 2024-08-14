@@ -32,12 +32,12 @@ contract EulerAggregationVaultFactory {
         address owner;
         address evc;
         address balanceTracker;
-        address rewardsModuleImpl;
-        address hooksModuleImpl;
-        address feeModuleImpl;
-        address strategyModuleImpl;
-        address rebalanceModuleImpl;
-        address withdrawalQueueModuleImpl;
+        address rewardsModule;
+        address hooksModule;
+        address feeModule;
+        address strategyModule;
+        address rebalanceModule;
+        address withdrawalQueueModule;
     }
 
     event DeployEulerAggregationVault(address indexed _owner, address _aggregationVault, address indexed _asset);
@@ -47,12 +47,12 @@ contract EulerAggregationVaultFactory {
     constructor(FactoryParams memory _factoryParams) {
         evc = _factoryParams.evc;
         balanceTracker = _factoryParams.balanceTracker;
-        rewardsModule = Clones.clone(_factoryParams.rewardsModuleImpl);
-        hooksModule = Clones.clone(_factoryParams.hooksModuleImpl);
-        feeModule = Clones.clone(_factoryParams.feeModuleImpl);
-        strategyModule = Clones.clone(_factoryParams.strategyModuleImpl);
-        rebalanceModule = Clones.clone(_factoryParams.rebalanceModuleImpl);
-        withdrawalQueueModule = Clones.clone(_factoryParams.withdrawalQueueModuleImpl);
+        rewardsModule = _factoryParams.rewardsModule;
+        hooksModule = _factoryParams.hooksModule;
+        feeModule = _factoryParams.feeModule;
+        strategyModule = _factoryParams.strategyModule;
+        rebalanceModule = _factoryParams.rebalanceModule;
+        withdrawalQueueModule = _factoryParams.withdrawalQueueModule;
 
         IEulerAggregationVault.ConstructorParams memory aggregationVaultConstructorParams = IEulerAggregationVault
             .ConstructorParams({
