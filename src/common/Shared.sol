@@ -36,11 +36,17 @@ abstract contract Shared is EVCUtil {
     /// @dev Minimum amount of shares to exist for gulp to be enabled
     uint256 public constant MIN_SHARES_FOR_GULP = 1e7;
 
-    /// @dev Non-reentracy protection.
+    /// @dev Non-reentracy protection for state-changing functions.
     modifier nonReentrant() {
         _nonReentrantBefore();
         _;
         _nonReentrantAfter();
+    }
+
+    /// @dev Non-reentracy protection for view functions.
+    modifier nonReentrantView() {
+        _nonReentrantViewBefore();
+        _;
     }
 
     constructor(address _evc) EVCUtil(_evc) {}
@@ -173,6 +179,18 @@ abstract contract Shared is EVCUtil {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         $.locked = REENTRANCYLOCK__UNLOCKED;
+    }
+
+    /// @dev Used by the nonReentrantView before returning the execution flow to the original function.
+    function _nonReentrantViewBefore() private view {
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        if ($.locked == REENTRANCYLOCK__LOCKED) {
+            // The hook target is allowed to bypass the RO-reentrancy lock.
+            if (msg.sender != $.hooksTarget) {
+                revert Errors.Reentrancy();
+            }
+        }
     }
 
     /// @dev Revert with call error or EmptyError
