@@ -68,15 +68,15 @@ contract HarvestRedeemE2ETest is EulerAggregationVaultBase {
         uint256 aggrCurrentStrategyBalanceAfterNegYield = aggrCurrentStrategyBalance * 9e17 / 1e18;
         vm.mockCall(
             address(eTST),
-            abi.encodeWithSelector(EVault.maxWithdraw.selector, address(eulerAggregationVault)),
+            abi.encodeWithSelector(EVault.previewRedeem.selector, aggrCurrentStrategyBalance),
             abi.encode(aggrCurrentStrategyBalanceAfterNegYield)
         );
 
-        uint256 expectedAllocated = eTST.maxWithdraw(address(eulerAggregationVault));
+        uint256 expectedAllocated = eTST.previewRedeem(aggrCurrentStrategyBalance);
         IEulerAggregationVault.Strategy memory strategyBefore = eulerAggregationVault.getStrategy(address(eTST));
         assertTrue(expectedAllocated < strategyBefore.allocated);
 
-        uint256 negativeYield = strategyBefore.allocated - eTST.maxWithdraw(address(eulerAggregationVault));
+        uint256 negativeYield = strategyBefore.allocated - expectedAllocated;
 
         uint256 user1SharesBefore = eulerAggregationVault.balanceOf(user1);
         uint256 user1SocializedLoss = user1SharesBefore * negativeYield / eulerAggregationVault.totalSupply();
@@ -114,15 +114,15 @@ contract HarvestRedeemE2ETest is EulerAggregationVaultBase {
         uint256 aggrCurrentStrategyBalanceAfterNegYield = aggrCurrentStrategyBalance * 9e17 / 1e18;
         vm.mockCall(
             address(eTST),
-            abi.encodeWithSelector(EVault.maxWithdraw.selector, address(eulerAggregationVault)),
+            abi.encodeWithSelector(EVault.previewRedeem.selector, aggrCurrentStrategyBalance),
             abi.encode(aggrCurrentStrategyBalanceAfterNegYield)
         );
 
         IEulerAggregationVault.Strategy memory strategyBefore = eulerAggregationVault.getStrategy(address(eTST));
-        uint256 expectedAllocated = eTST.maxWithdraw(address(eulerAggregationVault));
+        uint256 expectedAllocated = eTST.previewRedeem(aggrCurrentStrategyBalance);
         assertTrue(expectedAllocated < strategyBefore.allocated);
 
-        uint256 negativeYield = strategyBefore.allocated - eTST.maxWithdraw(address(eulerAggregationVault));
+        uint256 negativeYield = strategyBefore.allocated - eTST.previewRedeem(aggrCurrentStrategyBalance);
         uint256 user1SharesBefore = eulerAggregationVault.balanceOf(user1);
         uint256 user1SocializedLoss = user1SharesBefore * negativeYield / eulerAggregationVault.totalSupply();
         uint256 user2SharesBefore = eulerAggregationVault.balanceOf(user2);

@@ -99,13 +99,15 @@ abstract contract StrategyModule is Shared {
 
             emit Events.ToggleStrategyEmergencyStatus(_strategy, true);
         } else {
-            uint256 vaultStrategyBalance = IERC4626(_strategy).maxWithdraw(address(this));
+            // Use `previewRedeem()` to get the actual assets amount, bypassing any limits or revert.
+            uint256 aggregatorShares = IERC4626(_strategy).balanceOf(address(this));
+            uint256 aggregatorAssets = IERC4626(_strategy).previewRedeem(aggregatorShares);
 
             $.strategies[_strategy].status = IEulerAggregationVault.StrategyStatus.Active;
-            $.strategies[_strategy].allocated = vaultStrategyBalance.toUint120();
+            $.strategies[_strategy].allocated = aggregatorAssets.toUint120();
 
             $.totalAllocationPoints += strategyCached.allocationPoints;
-            $.totalAllocated += vaultStrategyBalance;
+            $.totalAllocated += aggregatorAssets;
 
             emit Events.ToggleStrategyEmergencyStatus(_strategy, false);
         }

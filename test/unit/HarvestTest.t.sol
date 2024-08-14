@@ -79,11 +79,11 @@ contract HarvestTest is EulerAggregationVaultBase {
         uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(eulerAggregationVault));
         vm.mockCall(
             address(eTST),
-            abi.encodeWithSelector(EVault.maxWithdraw.selector, address(eulerAggregationVault)),
+            abi.encodeWithSelector(EVault.previewRedeem.selector, aggrCurrentStrategyBalance),
             abi.encode(aggrCurrentStrategyBalance * 11e17 / 1e18)
         );
 
-        uint256 expectedAllocated = eTST.maxWithdraw(address(eulerAggregationVault));
+        uint256 expectedAllocated = eTST.previewRedeem(aggrCurrentStrategyBalance);
         assertTrue(expectedAllocated > strategyBefore.allocated);
 
         vm.prank(user1);
@@ -103,13 +103,13 @@ contract HarvestTest is EulerAggregationVaultBase {
         uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(eulerAggregationVault));
         vm.mockCall(
             address(eTST),
-            abi.encodeWithSelector(EVault.maxWithdraw.selector, address(eulerAggregationVault)),
+            abi.encodeWithSelector(EVault.previewRedeem.selector, aggrCurrentStrategyBalance),
             abi.encode(aggrCurrentStrategyBalance * 9e17 / 1e18)
         );
 
         IEulerAggregationVault.Strategy memory strategyBefore = eulerAggregationVault.getStrategy(address(eTST));
 
-        uint256 expectedAllocated = eTST.maxWithdraw(address(eulerAggregationVault));
+        uint256 expectedAllocated = eTST.previewRedeem(aggrCurrentStrategyBalance);
         assertTrue(expectedAllocated < strategyBefore.allocated);
 
         uint256 expectedLoss = strategyBefore.allocated - expectedAllocated;
@@ -130,15 +130,15 @@ contract HarvestTest is EulerAggregationVaultBase {
         uint256 aggrCurrentStrategyBalanceAfterNegYield = aggrCurrentStrategyBalance * 9e17 / 1e18;
         vm.mockCall(
             address(eTST),
-            abi.encodeWithSelector(EVault.maxWithdraw.selector, address(eulerAggregationVault)),
+            abi.encodeWithSelector(EVault.previewRedeem.selector, aggrCurrentStrategyBalance),
             abi.encode(aggrCurrentStrategyBalanceAfterNegYield)
         );
 
-        uint256 expectedAllocated = eTST.maxWithdraw(address(eulerAggregationVault));
+        uint256 expectedAllocated = eTST.previewRedeem(aggrCurrentStrategyBalance);
         IEulerAggregationVault.Strategy memory strategyBefore = eulerAggregationVault.getStrategy(address(eTST));
         assertTrue(expectedAllocated < strategyBefore.allocated);
 
-        uint256 negativeYield = strategyBefore.allocated - eTST.maxWithdraw(address(eulerAggregationVault));
+        uint256 negativeYield = strategyBefore.allocated - expectedAllocated;
 
         uint256 user1SharesBefore = eulerAggregationVault.balanceOf(user1);
         uint256 user1SocializedLoss = user1SharesBefore * negativeYield / eulerAggregationVault.totalSupply();
@@ -173,15 +173,15 @@ contract HarvestTest is EulerAggregationVaultBase {
         uint256 aggrCurrentStrategyBalanceAfterNegYield = aggrCurrentStrategyBalance * 9e17 / 1e18;
         vm.mockCall(
             address(eTST),
-            abi.encodeWithSelector(EVault.maxWithdraw.selector, address(eulerAggregationVault)),
+            abi.encodeWithSelector(EVault.previewRedeem.selector, aggrCurrentStrategyBalance),
             abi.encode(aggrCurrentStrategyBalanceAfterNegYield)
         );
 
         IEulerAggregationVault.Strategy memory strategyBefore = eulerAggregationVault.getStrategy(address(eTST));
-        uint256 expectedAllocated = eTST.maxWithdraw(address(eulerAggregationVault));
+        uint256 expectedAllocated = eTST.previewRedeem(aggrCurrentStrategyBalance);
         assertTrue(expectedAllocated < strategyBefore.allocated);
 
-        uint256 negativeYield = strategyBefore.allocated - eTST.maxWithdraw(address(eulerAggregationVault));
+        uint256 negativeYield = strategyBefore.allocated - expectedAllocated;
         uint256 user1SharesBefore = eulerAggregationVault.balanceOf(user1);
         uint256 user1SocializedLoss = user1SharesBefore * negativeYield / eulerAggregationVault.totalSupply();
         uint256 user2SharesBefore = eulerAggregationVault.balanceOf(user2);
@@ -213,11 +213,11 @@ contract HarvestTest is EulerAggregationVaultBase {
         uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(eulerAggregationVault));
         vm.mockCall(
             address(eTST),
-            abi.encodeWithSelector(EVault.maxWithdraw.selector, address(eulerAggregationVault)),
+            abi.encodeWithSelector(EVault.previewRedeem.selector, aggrCurrentStrategyBalance),
             abi.encode(aggrCurrentStrategyBalance * 11e17 / 1e18)
         );
 
-        uint256 expectedAllocated = eTST.maxWithdraw(address(eulerAggregationVault));
+        uint256 expectedAllocated = eTST.previewRedeem(aggrCurrentStrategyBalance);
         assertTrue(expectedAllocated > strategyBefore.allocated);
 
         vm.prank(user1);
@@ -235,12 +235,12 @@ contract HarvestTest is EulerAggregationVaultBase {
         uint256 aggrCurrentStrategyBalanceAfterNegYield = expectedAllocated * 98e16 / 1e18;
         vm.mockCall(
             address(eTST),
-            abi.encodeWithSelector(EVault.maxWithdraw.selector, address(eulerAggregationVault)),
+            abi.encodeWithSelector(EVault.previewRedeem.selector, eTST.balanceOf(address(eulerAggregationVault))),
             abi.encode(aggrCurrentStrategyBalanceAfterNegYield)
         );
 
         strategyBefore = eulerAggregationVault.getStrategy(address(eTST));
-        expectedAllocated = eTST.maxWithdraw(address(eulerAggregationVault));
+        expectedAllocated = eTST.previewRedeem(eTST.balanceOf(address(eulerAggregationVault)));
         assertTrue(expectedAllocated < strategyBefore.allocated);
 
         uint256 user1SharesBefore = eulerAggregationVault.balanceOf(user1);

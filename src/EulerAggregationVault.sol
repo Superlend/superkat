@@ -526,20 +526,22 @@ contract EulerAggregationVault is
                 || $.strategies[_strategy].status != IEulerAggregationVault.StrategyStatus.Active
         ) return (0, 0);
 
-        uint256 underlyingBalance = IERC4626(_strategy).maxWithdraw(address(this));
-        $.strategies[_strategy].allocated = uint120(underlyingBalance);
+        // Use `previewRedeem()` to get the actual assets amount, bypassing any limits or revert.
+        uint256 aggregatorShares = IERC4626(_strategy).balanceOf(address(this));
+        uint256 aggregatorAssets = IERC4626(_strategy).previewRedeem(aggregatorShares);
+        $.strategies[_strategy].allocated = uint120(aggregatorAssets);
 
         uint256 positiveYield;
         uint256 loss;
-        if (underlyingBalance == strategyAllocatedAmount) {
+        if (aggregatorAssets == strategyAllocatedAmount) {
             return (positiveYield, loss);
-        } else if (underlyingBalance > strategyAllocatedAmount) {
-            positiveYield = underlyingBalance - strategyAllocatedAmount;
+        } else if (aggregatorAssets > strategyAllocatedAmount) {
+            positiveYield = aggregatorAssets - strategyAllocatedAmount;
         } else {
-            loss = strategyAllocatedAmount - underlyingBalance;
+            loss = strategyAllocatedAmount - aggregatorAssets;
         }
 
-        emit Events.ExecuteHarvest(_strategy, underlyingBalance, strategyAllocatedAmount);
+        emit Events.ExecuteHarvest(_strategy, aggregatorAssets, strategyAllocatedAmount);
 
         return (positiveYield, loss);
     }
