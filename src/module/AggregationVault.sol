@@ -231,16 +231,18 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
 
                 uint256 underlyingBalance = strategy.maxWithdraw(address(this));
                 uint256 desiredAssets = _assets - assetsRetrieved;
-                uint256 withdrawAmount = (underlyingBalance > desiredAssets) ? desiredAssets : underlyingBalance;
+                uint256 withdrawAmount = (underlyingBalance >= desiredAssets) ? desiredAssets : underlyingBalance;
+
+                // Do actual withdraw from strategy
+                IERC4626(address(strategy)).withdraw(withdrawAmount, address(this), address(this));
+
+                // update withdrawAmount as in some cases we may not get that amount withdrawn.
+                withdrawAmount = IERC20(asset()).balanceOf(address(this)) - assetsRetrieved;
 
                 // Update allocated assets
                 $.strategies[address(strategy)].allocated -= uint120(withdrawAmount);
                 $.totalAllocated -= withdrawAmount;
 
-                // Do actual withdraw from strategy
-                IERC4626(address(strategy)).withdraw(withdrawAmount, address(this), address(this));
-
-                // update assetsRetrieved
                 assetsRetrieved += withdrawAmount;
 
                 if (assetsRetrieved >= _assets) {

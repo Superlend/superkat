@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {AmountCap} from "../lib/AmountCapLib.sol";
 
 interface IEulerAggregationVault {
-    /// @dev Struct to pass to constrcutor.
+    /// @dev Struct to pass to constructor.
     struct ConstructorParams {
         address evc;
         address aggregationVaultModule;
