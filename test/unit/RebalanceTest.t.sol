@@ -153,6 +153,11 @@ contract RebalanceTest is EulerAggregationVaultBase {
                     address(0), true, abi.encodePacked(address(assetTST), address(oracle), unitOfAccount)
                 )
             );
+            eTSTsecondary.setHookConfig(address(0), 0);
+            eTSTsecondary.setInterestRateModel(address(new IRMTestDefault()));
+            eTSTsecondary.setMaxLiquidationDiscount(0.2e4);
+            eTSTsecondary.setFeeReceiver(feeReceiver);
+
             _addStrategy(manager, address(eTSTsecondary), eTSTsecondaryAllocationPoints);
         }
 

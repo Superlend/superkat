@@ -10,7 +10,7 @@ import {
     IRMTestDefault,
     TestERC20
 } from "../common/EulerAggregationVaultBase.t.sol";
-import {TrackingRewardStreams} from "reward-streams/TrackingRewardStreams.sol";
+import {TrackingRewardStreams} from "reward-streams/src/TrackingRewardStreams.sol";
 
 contract StrategyRewardsE2ETest is EulerAggregationVaultBase {
     uint256 user1InitialBalance = 100000e18;

@@ -7,7 +7,8 @@ import {
     IEVault,
     TestERC20,
     IEulerAggregationVault,
-    AggAmountCap
+    AggAmountCap,
+    IRMTestDefault
 } from "../common/EulerAggregationVaultBase.t.sol";
 import {Actor} from "./util/Actor.sol";
 import {Strategy} from "./util/Strategy.sol";
@@ -172,17 +173,41 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
         eTSTsecond = IEVault(
             factory.createProxy(address(0), true, abi.encodePacked(address(assetTST), address(oracle), unitOfAccount))
         );
+        eTSTsecond.setHookConfig(address(0), 0);
+        eTSTsecond.setInterestRateModel(address(new IRMTestDefault()));
+        eTSTsecond.setMaxLiquidationDiscount(0.2e4);
+        eTSTsecond.setFeeReceiver(feeReceiver);
+
         eTSTthird = IEVault(
             factory.createProxy(address(0), true, abi.encodePacked(address(assetTST), address(oracle), unitOfAccount))
         );
+        eTSTthird.setHookConfig(address(0), 0);
+        eTSTthird.setInterestRateModel(address(new IRMTestDefault()));
+        eTSTthird.setMaxLiquidationDiscount(0.2e4);
+        eTSTthird.setFeeReceiver(feeReceiver);
+
         eTSTforth = IEVault(
             factory.createProxy(address(0), true, abi.encodePacked(address(assetTST), address(oracle), unitOfAccount))
         );
+        eTSTforth.setHookConfig(address(0), 0);
+        eTSTforth.setInterestRateModel(address(new IRMTestDefault()));
+        eTSTforth.setMaxLiquidationDiscount(0.2e4);
+        eTSTforth.setFeeReceiver(feeReceiver);
+
         eTSTfifth = IEVault(
             factory.createProxy(address(0), true, abi.encodePacked(address(assetTST), address(oracle), unitOfAccount))
         );
+        eTSTfifth.setHookConfig(address(0), 0);
+        eTSTfifth.setInterestRateModel(address(new IRMTestDefault()));
+        eTSTfifth.setMaxLiquidationDiscount(0.2e4);
+        eTSTfifth.setFeeReceiver(feeReceiver);
+
         eTSTsixth = IEVault(
             factory.createProxy(address(0), true, abi.encodePacked(address(assetTST), address(oracle), unitOfAccount))
         );
+        eTSTsixth.setHookConfig(address(0), 0);
+        eTSTsixth.setInterestRateModel(address(new IRMTestDefault()));
+        eTSTsixth.setMaxLiquidationDiscount(0.2e4);
+        eTSTsixth.setFeeReceiver(feeReceiver);
     }
 }

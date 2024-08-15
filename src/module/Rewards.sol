@@ -4,8 +4,8 @@ pragma solidity ^0.8.0;
 // interfaces
 import {IBalanceForwarder} from "../interface/IBalanceForwarder.sol";
 import {IEulerAggregationVault} from "../interface/IEulerAggregationVault.sol";
-import {IBalanceTracker} from "reward-streams/interfaces/IBalanceTracker.sol";
-import {IRewardStreams} from "reward-streams/interfaces/IRewardStreams.sol";
+import {IBalanceTracker} from "reward-streams/src/interfaces/IBalanceTracker.sol";
+import {IRewardStreams} from "reward-streams/src/interfaces/IRewardStreams.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 // contracts
 import {Shared} from "../common/Shared.sol";

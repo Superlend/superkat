@@ -15,6 +15,8 @@ import {AmountCapLib, AmountCap} from "../lib/AmountCapLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
 
+import {Test, console2, stdError} from "forge-std/Test.sol";
+
 /// @title RebalanceModule contract
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
@@ -40,6 +42,8 @@ abstract contract RebalanceModule is Shared {
     ///         - If all the available cash is greater than the max deposit, deposit the max deposit
     /// @param _strategy Strategy address.
     function _rebalance(address _strategy) private {
+        console2.log("rebalancing strategy");
+
         if (_strategy == address(0)) {
             return; //nothing to rebalance as that's the cash reserve
         }
@@ -57,6 +61,8 @@ abstract contract RebalanceModule is Shared {
 
         uint120 capAmount = uint120(strategyData.cap.resolve());
         if ((strategyData.cap.toRawUint16() != 0) && (targetAllocation > capAmount)) targetAllocation = capAmount;
+
+        console2.log("targetAllocation", targetAllocation);
 
         uint256 amountToRebalance;
         bool isDeposit;
@@ -78,14 +84,17 @@ abstract contract RebalanceModule is Shared {
             uint256 cashAvailable = (currentCash > targetCash) ? currentCash - targetCash : 0;
 
             amountToRebalance = targetAllocation - strategyData.allocated;
+            console2.log("amountToRebalance1", amountToRebalance);
             if (amountToRebalance > cashAvailable) {
                 amountToRebalance = cashAvailable;
             }
+            console2.log("amountToRebalance2", amountToRebalance);
 
             uint256 maxDeposit = IERC4626(_strategy).maxDeposit(address(this));
             if (amountToRebalance > maxDeposit) {
                 amountToRebalance = maxDeposit;
             }
+            console2.log("amountToRebalance3", amountToRebalance);
 
             isDeposit = true;
         }
@@ -93,6 +102,7 @@ abstract contract RebalanceModule is Shared {
         if (amountToRebalance == 0) {
             return;
         }
+        console2.log("amountToRebalance4", amountToRebalance);
 
         if (isDeposit) {
             // Do required approval (safely) and deposit

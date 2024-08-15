@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 import {IERC4626} from "@openzeppelin-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IEulerAggregationVault} from "../interface/IEulerAggregationVault.sol";
-import {IBalanceTracker} from "reward-streams/interfaces/IBalanceTracker.sol";
+import {IBalanceTracker} from "reward-streams/src/interfaces/IBalanceTracker.sol";
 // contracts
 import {Shared} from "../common/Shared.sol";
 import {
