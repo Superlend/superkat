@@ -6,6 +6,7 @@ import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
 // contracts
 import "evk/test/unit/evault/EVaultTestBase.t.sol";
 import {EulerAggregationVault, IEulerAggregationVault} from "../../src/EulerAggregationVault.sol";
+import {AggregationVault} from "../../src/module/AggregationVault.sol";
 import {Hooks, HooksModule} from "../../src/module/Hooks.sol";
 import {Rewards} from "../../src/module/Rewards.sol";
 import {Fee} from "../../src/module/Fee.sol";
@@ -29,6 +30,7 @@ contract EulerAggregationVaultBase is EVaultTestBase {
     address manager;
 
     // core modules
+    AggregationVault aggregationVaultModule;
     Rewards rewardsModule;
     Hooks hooksModule;
     Fee feeModuleModule;
@@ -48,6 +50,7 @@ contract EulerAggregationVaultBase is EVaultTestBase {
         manager = makeAddr("Manager");
 
         vm.startPrank(deployer);
+        aggregationVaultModule = new AggregationVault(address(evc));
         rewardsModule = new Rewards(address(evc));
         hooksModule = new Hooks(address(evc));
         feeModuleModule = new Fee(address(evc));
@@ -59,6 +62,7 @@ contract EulerAggregationVaultBase is EVaultTestBase {
             owner: deployer,
             evc: address(evc),
             balanceTracker: address(0),
+            aggregationVaultModule: address(aggregationVaultModule),
             rewardsModule: address(rewardsModule),
             hooksModule: address(hooksModule),
             feeModule: address(feeModuleModule),
@@ -97,7 +101,7 @@ contract EulerAggregationVaultBase is EVaultTestBase {
     }
 
     function testInitialParams() public view {
-        EulerAggregationVault.Strategy memory cashReserve = eulerAggregationVault.getStrategy(address(0));
+        IEulerAggregationVault.Strategy memory cashReserve = eulerAggregationVault.getStrategy(address(0));
 
         assertEq(cashReserve.allocated, 0);
         assertEq(cashReserve.allocationPoints, CASH_RESERVE_ALLOCATION_POINTS);

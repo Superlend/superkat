@@ -35,6 +35,15 @@ abstract contract HooksModule is Shared {
 
         emit Events.SetHooksConfig(_hooksTarget, _hookedFns);
     }
+
+    /// @notice Get the hooks contract and the hooked functions.
+    /// @return address Hooks contract.
+    /// @return uint32 Hooked functions.
+    function getHooksConfig() public view returns (address, uint32) {
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        return ($.hooksTarget, $.hookedFns);
+    }
 }
 
 contract Hooks is HooksModule {

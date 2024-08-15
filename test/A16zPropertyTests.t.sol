@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import {ERC4626Test} from "erc4626-tests/ERC4626.test.sol";
 // contracts
 import {EulerAggregationVault} from "../src/EulerAggregationVault.sol";
+import {AggregationVault} from "../src/module/AggregationVault.sol";
 import {Hooks} from "../src/module/Hooks.sol";
 import {Rewards} from "../src/module/Rewards.sol";
 import {Fee} from "../src/module/Fee.sol";
@@ -24,6 +25,7 @@ contract A16zPropertyTests is ERC4626Test {
     address public factoryOwner;
 
     // core modules
+    AggregationVault aggregationVaultModule;
     Rewards rewardsModule;
     Hooks hooksModule;
     Fee feeModuleModule;
@@ -38,6 +40,7 @@ contract A16zPropertyTests is ERC4626Test {
         factoryOwner = makeAddr("FACTORY_OWNER");
         evc = new EthereumVaultConnector();
 
+        aggregationVaultModule = new AggregationVault(address(evc));
         rewardsModule = new Rewards(address(evc));
         hooksModule = new Hooks(address(evc));
         feeModuleModule = new Fee(address(evc));
@@ -49,6 +52,7 @@ contract A16zPropertyTests is ERC4626Test {
             owner: factoryOwner,
             evc: address(evc),
             balanceTracker: address(0),
+            aggregationVaultModule: address(aggregationVaultModule),
             rewardsModule: address(rewardsModule),
             hooksModule: address(hooksModule),
             feeModule: address(feeModuleModule),

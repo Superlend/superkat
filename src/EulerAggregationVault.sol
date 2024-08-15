@@ -4,10 +4,8 @@ pragma solidity ^0.8.0;
 // interfaces
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {IBalanceTracker} from "reward-streams/interfaces/IBalanceTracker.sol";
 import {IEulerAggregationVault} from "./interface/IEulerAggregationVault.sol";
 // contracts
-import {ContextUpgradeable} from "@openzeppelin-upgradeable/utils/ContextUpgradeable.sol";
 import {Dispatch} from "./Dispatch.sol";
 import {
     ERC20Upgradeable,
@@ -16,11 +14,10 @@ import {
 import {ERC20VotesUpgradeable} from "@openzeppelin-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
 import {AccessControlEnumerableUpgradeable} from
     "@openzeppelin-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
+import {ContextUpgradeable} from "@openzeppelin-upgradeable/utils/ContextUpgradeable.sol";
 import {Shared} from "./common/Shared.sol";
 // libs
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {StorageLib as Storage, AggregationVaultStorage} from "./lib/StorageLib.sol";
 import {AmountCap} from "./lib/AmountCapLib.sol";
 import {ErrorsLib as Errors} from "./lib/ErrorsLib.sol";
@@ -30,18 +27,8 @@ import {EventsLib as Events} from "./lib/EventsLib.sol";
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
 /// @dev inspired by Yearn v3 ❤️
-contract EulerAggregationVault is
-    ERC4626Upgradeable,
-    ERC20VotesUpgradeable,
-    AccessControlEnumerableUpgradeable,
-    Dispatch,
-    IEulerAggregationVault
-{
-    using SafeERC20 for IERC20;
+contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable {
     using SafeCast for uint256;
-    using Math for uint256;
-
-    uint256 public constant HARVEST_COOLDOWN = 1 days;
 
     // Roles and their ADMIN roles.
     // GUARDIAN: can set strategy cap, adjust strategy allocation points, set strategy status to EMERGENCY or revert it back.
@@ -59,9 +46,10 @@ contract EulerAggregationVault is
     bytes32 public constant WITHDRAWAL_QUEUE_MANAGER_ADMIN = keccak256("WITHDRAWAL_QUEUE_MANAGER_ADMIN");
 
     /// @dev Constructor.
-    constructor(ConstructorParams memory _constructorParams)
+    constructor(IEulerAggregationVault.ConstructorParams memory _constructorParams)
         Shared(_constructorParams.evc)
         Dispatch(
+            _constructorParams.aggregationVaultModule,
             _constructorParams.rewardsModule,
             _constructorParams.hooksModule,
             _constructorParams.feeModule,
@@ -73,7 +61,7 @@ contract EulerAggregationVault is
 
     /// @notice Initialize the EulerAggregationVault.
     /// @param _initParams InitParams struct.
-    function init(InitParams calldata _initParams) external initializer {
+    function init(IEulerAggregationVault.InitParams calldata _initParams) public initializer {
         __ERC4626_init_unchained(IERC20(_initParams.asset));
         __ERC20_init_unchained(_initParams.name, _initParams.symbol);
         __ERC20Votes_init_unchained();
@@ -102,501 +90,179 @@ contract EulerAggregationVault is
         _setRoleAdmin(WITHDRAWAL_QUEUE_MANAGER, WITHDRAWAL_QUEUE_MANAGER_ADMIN);
     }
 
-    /// @dev See {FeeModule-setFeeRecipient}.
+    /// @notice See {FeeModule-setFeeRecipient}.
     function setFeeRecipient(address _newFeeRecipient)
-        external
+        public
         override
         onlyRole(AGGREGATION_VAULT_MANAGER)
         onlyEVCAccountOwner
         use(feeModule)
     {}
 
-    /// @dev See {FeeModule-setPerformanceFee}.
+    /// @notice See {FeeModule-setPerformanceFee}.
     function setPerformanceFee(uint96 _newFee)
-        external
+        public
         override
         onlyRole(AGGREGATION_VAULT_MANAGER)
         onlyEVCAccountOwner
         use(feeModule)
     {}
 
-    /// @dev See {RewardsModule-optInStrategyRewards}.
+    /// @notice See {RewardsModule-optInStrategyRewards}.
     function optInStrategyRewards(address _strategy)
-        external
+        public
         override
         onlyRole(AGGREGATION_VAULT_MANAGER)
         onlyEVCAccountOwner
         use(rewardsModule)
     {}
 
-    /// @dev See {RewardsModule-optOutStrategyRewards}.
+    /// @notice See {RewardsModule-optOutStrategyRewards}.
     function optOutStrategyRewards(address _strategy)
-        external
+        public
         override
         onlyRole(AGGREGATION_VAULT_MANAGER)
         onlyEVCAccountOwner
         use(rewardsModule)
     {}
 
-    /// @dev See {RewardsModule-optOutStrategyRewards}.
+    /// @notice See {RewardsModule-optOutStrategyRewards}.
     function enableRewardForStrategy(address _strategy, address _reward)
-        external
+        public
         override
         onlyRole(AGGREGATION_VAULT_MANAGER)
         onlyEVCAccountOwner
         use(rewardsModule)
     {}
 
-    /// @dev See {RewardsModule-disableRewardForStrategy}.
+    /// @notice See {RewardsModule-disableRewardForStrategy}.
     function disableRewardForStrategy(address _strategy, address _reward, bool _forfeitRecentReward)
-        external
+        public
         override
         onlyRole(AGGREGATION_VAULT_MANAGER)
         onlyEVCAccountOwner
         use(rewardsModule)
     {}
 
-    /// @dev See {RewardsModule-claimStrategyReward}.
+    /// @notice See {RewardsModule-claimStrategyReward}.
     function claimStrategyReward(address _strategy, address _reward, address _recipient, bool _forfeitRecentReward)
-        external
+        public
         override
         onlyRole(AGGREGATION_VAULT_MANAGER)
         onlyEVCAccountOwner
         use(rewardsModule)
     {}
 
-    /// @dev See {HooksModule-setHooksConfig}.
+    /// @notice See {HooksModule-setHooksConfig}.
     function setHooksConfig(address _hooksTarget, uint32 _hookedFns)
-        external
+        public
         override
         onlyRole(AGGREGATION_VAULT_MANAGER)
         onlyEVCAccountOwner
         use(hooksModule)
     {}
 
-    /// @dev See {StrategyModule-addStrategy}.
+    /// @notice See {StrategyModule-addStrategy}.
     function addStrategy(address _strategy, uint256 _allocationPoints)
-        external
+        public
         override
         onlyRole(STRATEGY_OPERATOR)
         onlyEVCAccountOwner
         use(strategyModule)
     {}
 
-    /// @dev See {StrategyModule-removeStrategy}.
+    /// @notice See {StrategyModule-removeStrategy}.
     function removeStrategy(address _strategy)
-        external
+        public
         override
         onlyRole(STRATEGY_OPERATOR)
         onlyEVCAccountOwner
         use(strategyModule)
     {}
 
-    /// @dev See {StrategyModule-setStrategyCap}.
+    /// @notice See {StrategyModule-setStrategyCap}.
     function setStrategyCap(address _strategy, uint16 _cap)
-        external
+        public
         override
         onlyRole(GUARDIAN)
         onlyEVCAccountOwner
         use(strategyModule)
     {}
 
-    /// @dev See {StrategyModule-adjustAllocationPoints}.
+    /// @notice See {StrategyModule-adjustAllocationPoints}.
     function adjustAllocationPoints(address _strategy, uint256 _newPoints)
-        external
+        public
         override
         onlyRole(GUARDIAN)
         onlyEVCAccountOwner
         use(strategyModule)
     {}
 
-    /// @dev See {StrategyModule-toggleStrategyEmergencyStatus}.
+    /// @notice See {StrategyModule-toggleStrategyEmergencyStatus}.
     function toggleStrategyEmergencyStatus(address _strategy)
-        external
+        public
         override
         onlyRole(GUARDIAN)
         onlyEVCAccountOwner
         use(strategyModule)
     {}
 
-    /// @dev See {RewardsModule-enableBalanceForwarder}.
-    function enableBalanceForwarder() external override use(rewardsModule) {}
+    /// @notice See {RewardsModule-enableBalanceForwarder}.
+    function enableBalanceForwarder() public override use(rewardsModule) {}
 
-    /// @dev See {RewardsModule-disableBalanceForwarder}.
-    function disableBalanceForwarder() external override use(rewardsModule) {}
+    /// @notice See {RewardsModule-disableBalanceForwarder}.
+    function disableBalanceForwarder() public override use(rewardsModule) {}
 
-    /// @dev See {RebalanceModule-rebalance}.
-    function rebalance(address[] calldata _strategies) external override use(rebalanceModule) {}
+    /// @notice See {RebalanceModule-rebalance}.
+    function rebalance(address[] calldata _strategies) public override use(rebalanceModule) {}
 
-    /// @dev See {WithdrawalQueue-reorderWithdrawalQueue}.
+    /// @notice See {WithdrawalQueue-reorderWithdrawalQueue}.
     function reorderWithdrawalQueue(uint8 _index1, uint8 _index2)
-        external
+        public
         override
         onlyRole(WITHDRAWAL_QUEUE_MANAGER)
         onlyEVCAccountOwner
         use(withdrawalQueueModule)
     {}
 
-    /// @notice Harvest all the strategies. Any positive yield should be gupled by calling gulp() after harvesting.
-    /// @dev This function will loop through the strategies following the withdrawal queue order and harvest all.
-    /// @dev Harvest positive and negative yields will be aggregated and only net amounts will be accounted.
-    function harvest() external nonReentrant {
-        _updateInterestAccrued();
+    /// @notice See {VaultModule-harvest}.
+    function harvest() public override use(aggregationVaultModule) {}
 
-        _harvest(false);
-    }
+    /// @notice See {VaultModule-updateInterestAccrued}.
+    function updateInterestAccrued() public override use(aggregationVaultModule) {}
 
-    /// @notice update accrued interest
-    function updateInterestAccrued() external nonReentrant {
-        return _updateInterestAccrued();
-    }
+    /// @notice See {VaultModule-gulp}.
+    function gulp() public override use(aggregationVaultModule) {}
 
-    /// @notice gulp harvested positive yield
-    function gulp() external nonReentrant {
-        _gulp();
-    }
+    /// @notice See {VaultModule-deposit}.
+    function deposit(uint256 _assets, address _receiver)
+        public
+        override
+        use(aggregationVaultModule)
+        returns (uint256)
+    {}
 
-    /// @notice Get strategy params.
-    /// @param _strategy strategy's address
-    /// @return Strategy struct
-    function getStrategy(address _strategy) external view returns (IEulerAggregationVault.Strategy memory) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+    /// @notice See {VaultModule-mint}.
+    function mint(uint256 _shares, address _receiver) public override use(aggregationVaultModule) returns (uint256) {}
 
-        return $.strategies[_strategy];
-    }
-
-    /// @notice Return the accrued interest
-    /// @return uint256 accrued interest
-    function interestAccrued() external view returns (uint256) {
-        return _interestAccruedFromCache();
-    }
-
-    /// @notice Get saving rate data.
-    /// @return uint40 last interest update timestamp.
-    /// @return uint40 timestamp when interest smearing end.
-    /// @return uint168 Amount of interest left to distribute.
-    function getAggregationVaultSavingRate() external view returns (uint40, uint40, uint168) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-
-        return ($.lastInterestUpdate, $.interestSmearEnd, $.interestLeft);
-    }
-
-    /// @notice Get the total allocated amount.
-    /// @return uint256 Total allocated.
-    function totalAllocated() external view returns (uint256) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-
-        return $.totalAllocated;
-    }
-
-    /// @notice Get the total allocation points.
-    /// @return uint256 Total allocation points.
-    function totalAllocationPoints() external view returns (uint256) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-
-        return $.totalAllocationPoints;
-    }
-
-    /// @notice Get the total assets deposited into the aggregation vault.
-    /// @return uint256 Total assets deposited.
-    function totalAssetsDeposited() external view returns (uint256) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-
-        return $.totalAssetsDeposited;
-    }
-
-    /// @notice Get the performance fee config.
-    /// @return adddress Fee recipient.
-    /// @return uint256 Fee percentage.
-    function performanceFeeConfig() external view returns (address, uint96) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-
-        return ($.feeRecipient, $.performanceFee);
-    }
-
-    /// @notice Return the withdrawal queue.
-    /// @return uint256 length.
-    function withdrawalQueue() external view returns (address[] memory) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-
-        return $.withdrawalQueue;
-    }
-
-    function lastHarvestTimestamp() external view returns (uint256) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-
-        return $.lastHarvestTimestamp;
-    }
-
-    /// @notice Get the hooks contract and the hooked functions.
-    /// @return address Hooks contract.
-    /// @return uint32 Hooked functions.
-    function getHooksConfig() external view returns (address, uint32) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-
-        return ($.hooksTarget, $.hookedFns);
-    }
-
-    /// @notice get the total assets allocatable
-    /// @dev the total assets allocatable is the amount of assets deposited into the aggregator + assets already deposited into strategies
-    /// @return uint256 total assets
-    function totalAssetsAllocatable() external view returns (uint256) {
-        return _totalAssetsAllocatable();
-    }
-
-    /// @dev See {IERC4626-deposit}.
-    /// @dev Call DEPOSIT hook if enabled.
-    function deposit(uint256 _assets, address _receiver) public override nonReentrant returns (uint256) {
-        _callHooksTarget(DEPOSIT, _msgSender());
-
-        return super.deposit(_assets, _receiver);
-    }
-
-    /// @dev See {IERC4626-mint}.
-    /// @dev Call MINT hook if enabled.
-    function mint(uint256 _shares, address _receiver) public override nonReentrant returns (uint256) {
-        _callHooksTarget(MINT, _msgSender());
-
-        return super.mint(_shares, _receiver);
-    }
-
-    /// @dev See {IERC4626-withdraw}.
-    /// @dev this function update the accrued interest and call WITHDRAW hook.
+    /// @notice See {VaultModule-withdraw}.
     function withdraw(uint256 _assets, address _receiver, address _owner)
         public
         override
-        nonReentrant
+        use(aggregationVaultModule)
         returns (uint256 shares)
-    {
-        // Move interest to totalAssetsDeposited
-        _updateInterestAccrued();
+    {}
 
-        _callHooksTarget(WITHDRAW, _msgSender());
-
-        _harvest(true);
-
-        return super.withdraw(_assets, _receiver, _owner);
-    }
-
-    /// @dev See {IERC4626-redeem}.
-    /// @dev this function update the accrued interest and call WITHDRAW hook.
+    /// @notice See {VaultModule-redeem}.
     function redeem(uint256 _shares, address _receiver, address _owner)
         public
         override
-        nonReentrant
+        use(aggregationVaultModule)
         returns (uint256 assets)
-    {
-        // Move interest to totalAssetsDeposited
-        _updateInterestAccrued();
+    {}
 
-        _callHooksTarget(REDEEM, _msgSender());
-
-        _harvest(true);
-
-        return super.redeem(_shares, _receiver, _owner);
-    }
-
-    /// @dev See {IERC20Metadata-decimals}.
-    function decimals() public view virtual override (ERC4626Upgradeable, ERC20Upgradeable) returns (uint8) {
-        return ERC4626Upgradeable.decimals();
-    }
-
-    /// @notice Return the total amount of assets deposited, plus the accrued interest.
-    /// @return uint256 total amount
-    function totalAssets() public view override returns (uint256) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-
-        return $.totalAssetsDeposited + _interestAccruedFromCache();
-    }
-
-    /// @notice Retrieve the address of rewards contract, tracking changes in account's balances
-    /// @return The balance tracker address
-    function balanceTrackerAddress() public view override returns (address) {
-        return super.balanceTrackerAddress();
-    }
-
-    /// @notice Retrieves boolean indicating if the account opted in to forward balance changes to the rewards contract
-    /// @param _account Address to query
-    /// @return True if balance forwarder is enabled
-    function balanceForwarderEnabled(address _account) public view override returns (bool) {
-        return super.balanceForwarderEnabled(_account);
-    }
-
-    /// @dev See {IERC4626-_deposit}.
-    /// @dev Increase the total assets deposited.
-    function _deposit(address _caller, address _receiver, uint256 _assets, uint256 _shares) internal override {
-        super._deposit(_caller, _receiver, _assets, _shares);
-
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-        $.totalAssetsDeposited += _assets;
-    }
-
-    /// @dev See {IERC4626-_withdraw}.
-    /// @dev If cash reserve is not enough for withdraw, this function will loop through the withdrawal queue
-    ///      and do withdraws till the amount is retrieved, or revert with NotEnoughAssets() error.
-    function _withdraw(address _caller, address _receiver, address _owner, uint256 _assets, uint256 _shares)
-        internal
-        override
-    {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-        uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
-
-        if (assetsRetrieved < _assets) {
-            uint256 numStrategies = $.withdrawalQueue.length;
-            for (uint256 i; i < numStrategies; ++i) {
-                IERC4626 strategy = IERC4626($.withdrawalQueue[i]);
-
-                if ($.strategies[address(strategy)].status != IEulerAggregationVault.StrategyStatus.Active) continue;
-
-                uint256 underlyingBalance = strategy.maxWithdraw(address(this));
-                uint256 desiredAssets = _assets - assetsRetrieved;
-                uint256 withdrawAmount = (underlyingBalance > desiredAssets) ? desiredAssets : underlyingBalance;
-
-                // Update allocated assets
-                $.strategies[address(strategy)].allocated -= uint120(withdrawAmount);
-                $.totalAllocated -= withdrawAmount;
-
-                // Do actual withdraw from strategy
-                IERC4626(address(strategy)).withdraw(withdrawAmount, address(this), address(this));
-
-                // update assetsRetrieved
-                assetsRetrieved += withdrawAmount;
-
-                if (assetsRetrieved >= _assets) {
-                    break;
-                }
-            }
-        }
-
-        if (assetsRetrieved < _assets) {
-            revert Errors.NotEnoughAssets();
-        }
-
-        $.totalAssetsDeposited -= _assets;
-
-        super._withdraw(_caller, _receiver, _owner, _assets, _shares);
-    }
-
-    /// @dev Loop through strategies, aggregate positive and negative yield and account for net amounts.
-    /// @dev Loss socialization will be taken out from interest left + amount available to gulp first, if not enough, socialize on deposits.
-    /// @dev Performance fee will only be applied on net positive yield across all strategies.
-    /// @param _checkCooldown a boolean to indicate whether to check for cooldown period or not.
-    function _harvest(bool _checkCooldown) internal {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-
-        if (_checkCooldown && ($.lastHarvestTimestamp + HARVEST_COOLDOWN >= block.timestamp)) {
-            return;
-        }
-
-        uint256 totalPositiveYield;
-        uint256 totalNegativeYield;
-        for (uint256 i; i < $.withdrawalQueue.length; ++i) {
-            (uint256 positiveYield, uint256 loss) = _executeHarvest($.withdrawalQueue[i]);
-
-            totalPositiveYield += positiveYield;
-            totalNegativeYield += loss;
-        }
-
-        // we should deduct loss before updating totalAllocated to not underflow
-        if (totalNegativeYield > totalPositiveYield) {
-            _deductLoss(totalNegativeYield - totalPositiveYield);
-        } else if (totalNegativeYield < totalPositiveYield) {
-            _accruePerformanceFee(totalPositiveYield - totalNegativeYield);
-        }
-
-        $.totalAllocated = $.totalAllocated + totalPositiveYield - totalNegativeYield;
-        $.lastHarvestTimestamp = block.timestamp;
-
-        _gulp();
-
-        emit Events.Harvest($.totalAllocated, totalPositiveYield, totalNegativeYield);
-    }
-
-    /// @dev Execute harvest on a single strategy.
-    /// @param _strategy Strategy address.
-    /// @return uint256 Amount of positive yield if any, else 0.
-    /// @return uint256 Amount of loss if any, else 0.
-    function _executeHarvest(address _strategy) internal returns (uint256, uint256) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-
-        uint120 strategyAllocatedAmount = $.strategies[_strategy].allocated;
-
-        if (
-            strategyAllocatedAmount == 0
-                || $.strategies[_strategy].status != IEulerAggregationVault.StrategyStatus.Active
-        ) return (0, 0);
-
-        // Use `previewRedeem()` to get the actual assets amount, bypassing any limits or revert.
-        uint256 aggregatorShares = IERC4626(_strategy).balanceOf(address(this));
-        uint256 aggregatorAssets = IERC4626(_strategy).previewRedeem(aggregatorShares);
-        $.strategies[_strategy].allocated = uint120(aggregatorAssets);
-
-        uint256 positiveYield;
-        uint256 loss;
-        if (aggregatorAssets == strategyAllocatedAmount) {
-            return (positiveYield, loss);
-        } else if (aggregatorAssets > strategyAllocatedAmount) {
-            positiveYield = aggregatorAssets - strategyAllocatedAmount;
-        } else {
-            loss = strategyAllocatedAmount - aggregatorAssets;
-        }
-
-        emit Events.ExecuteHarvest(_strategy, aggregatorAssets, strategyAllocatedAmount);
-
-        return (positiveYield, loss);
-    }
-
-    /// @dev Accrue performace fee on aggregated harvested positive yield.
-    /// @dev Fees will be minted as shares to fee recipient.
-    /// @param _yield Net positive yield.
-    function _accruePerformanceFee(uint256 _yield) internal {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-
-        address cachedFeeRecipient = $.feeRecipient;
-        uint96 cachedPerformanceFee = $.performanceFee;
-
-        if (cachedFeeRecipient == address(0) || cachedPerformanceFee == 0) return;
-
-        // `feeAssets` will be rounded down to 0 if `yield * performanceFee < 1e18`.
-        uint256 feeAssets = _yield.mulDiv(cachedPerformanceFee, 1e18, Math.Rounding.Floor);
-        uint256 feeShares = _convertToShares(feeAssets, Math.Rounding.Floor);
-
-        if (feeShares != 0) {
-            // Move feeAssets from gulpable amount to totalAssetsDeposited to not dilute other depositors.
-            $.totalAssetsDeposited += feeAssets;
-
-            _mint(cachedFeeRecipient, feeShares);
-        }
-
-        emit Events.AccruePerformanceFee(cachedFeeRecipient, _yield, feeShares);
-    }
-
-    /// @dev Override _afterTokenTransfer hook to call IBalanceTracker.balanceTrackerHook()
-    /// @dev Calling .balanceTrackerHook() passing the address total balance
-    /// @param from Address sending the amount
-    /// @param to Address receiving the amount
-    function _update(address from, address to, uint256 value)
-        internal
-        override (ERC20VotesUpgradeable, ERC20Upgradeable)
-    {
-        ERC20VotesUpgradeable._update(from, to, value);
-
-        if (from == to) return;
-
-        IBalanceTracker balanceTracker = IBalanceTracker(_balanceTrackerAddress());
-
-        if ((from != address(0)) && (_balanceForwarderEnabled(from))) {
-            balanceTracker.balanceTrackerHook(from, super.balanceOf(from), false);
-        }
-
-        if ((to != address(0)) && (_balanceForwarderEnabled(to))) {
-            balanceTracker.balanceTrackerHook(to, super.balanceOf(to), false);
-        }
-    }
-
-    /// @dev Override _msgSender() to recognize EVC authentication.
-    /// @return address Sender address.
-    function _msgSender() internal view override (ContextUpgradeable, Shared) returns (address) {
-        return Shared._msgSender();
+    /// @dev Overriding _msgSender().
+    function _msgSender() internal view override (Dispatch, ContextUpgradeable) returns (address) {
+        return Dispatch._msgSender();
     }
 }

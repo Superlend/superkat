@@ -7,6 +7,7 @@ interface IEulerAggregationVault {
     /// @dev Struct to pass to constrcutor.
     struct ConstructorParams {
         address evc;
+        address aggregationVaultModule;
         address rewardsModule;
         address hooksModule;
         address feeModule;

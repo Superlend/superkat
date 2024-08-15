@@ -27,7 +27,7 @@ abstract contract StrategyModule is Shared {
     /// @dev Can only be called by an address that have the `GUARDIAN` role.
     /// @param _strategy address of strategy
     /// @param _newPoints new strategy's points
-    function adjustAllocationPoints(address _strategy, uint256 _newPoints) external virtual nonReentrant {
+    function adjustAllocationPoints(address _strategy, uint256 _newPoints) public virtual nonReentrant {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
         IEulerAggregationVault.Strategy memory strategyDataCache = $.strategies[_strategy];
 
@@ -50,7 +50,7 @@ abstract contract StrategyModule is Shared {
     ///      By default, cap is set to 0.
     /// @param _strategy Strategy address.
     /// @param _cap Cap amount
-    function setStrategyCap(address _strategy, uint16 _cap) external virtual nonReentrant {
+    function setStrategyCap(address _strategy, uint16 _cap) public virtual nonReentrant {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         if ($.strategies[_strategy].status != IEulerAggregationVault.StrategyStatus.Active) {
@@ -78,7 +78,7 @@ abstract contract StrategyModule is Shared {
     /// This is needed, in case the aggregation vault can no longer withdraw from a certain strategy.
     /// In the case of switching a strategy from Emergency to Active again, the max withdrawable amount from the strategy
     /// will be set as the allocated amount, and will be immediately available to gulp.
-    function toggleStrategyEmergencyStatus(address _strategy) external virtual nonReentrant {
+    function toggleStrategyEmergencyStatus(address _strategy) public virtual nonReentrant {
         if (_strategy == address(0)) revert Errors.CanNotToggleStrategyEmergencyStatus();
 
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
@@ -117,7 +117,7 @@ abstract contract StrategyModule is Shared {
     /// @dev Can only be called by an address that have `STRATEGY_OPERATOR` role.
     /// @param _strategy Address of the strategy
     /// @param _allocationPoints Strategy's allocation points
-    function addStrategy(address _strategy, uint256 _allocationPoints) external virtual nonReentrant {
+    function addStrategy(address _strategy, uint256 _allocationPoints) public virtual nonReentrant {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         if ($.strategies[_strategy].status != IEulerAggregationVault.StrategyStatus.Inactive) {
@@ -150,7 +150,7 @@ abstract contract StrategyModule is Shared {
     /// A faulty strategy that has an allocated amount can not be removed, instead the strategy status
     /// should be set as `EMERGENCY` using `toggleStrategyEmergencyStatus()`.
     /// @param _strategy Address of the strategy to remove.
-    function removeStrategy(address _strategy) external virtual nonReentrant {
+    function removeStrategy(address _strategy) public virtual nonReentrant {
         if (_strategy == address(0)) revert Errors.CanNotRemoveCashReserve();
 
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
@@ -181,6 +181,23 @@ abstract contract StrategyModule is Shared {
         $.withdrawalQueue.pop();
 
         emit Events.RemoveStrategy(_strategy);
+    }
+
+    /// @notice Get strategy params.
+    /// @param _strategy strategy's address
+    /// @return Strategy struct
+    function getStrategy(address _strategy) public view returns (IEulerAggregationVault.Strategy memory) {
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        return $.strategies[_strategy];
+    }
+
+    /// @notice Get the total allocation points.
+    /// @return uint256 Total allocation points.
+    function totalAllocationPoints() public view returns (uint256) {
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        return $.totalAllocationPoints;
     }
 }
 

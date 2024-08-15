@@ -29,6 +29,7 @@ contract BalanceForwarderE2ETest is EulerAggregationVaultBase {
             owner: deployer,
             evc: address(evc),
             balanceTracker: trackingReward,
+            aggregationVaultModule: address(aggregationVaultModule),
             rewardsModule: address(rewardsModule),
             hooksModule: address(hooksModule),
             feeModule: address(feeModuleModule),

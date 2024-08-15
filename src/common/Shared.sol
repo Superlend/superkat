@@ -165,6 +165,23 @@ abstract contract Shared is EVCUtil {
         return EVCUtil._msgSender();
     }
 
+    /// @notice Retrieves boolean indicating if the account opted in to forward balance changes to the rewards contract
+    /// @param _account Address to query
+    /// @return True if balance forwarder is enabled
+    function _balanceForwarderEnabled(address _account) internal view returns (bool) {
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        return $.isBalanceForwarderEnabled[_account];
+    }
+
+    /// @notice Retrieve the address of rewards contract, tracking changes in account's balances
+    /// @return The balance tracker address
+    function _balanceTrackerAddress() internal view returns (address) {
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        return address($.balanceTracker);
+    }
+
     /// @dev Used by the nonReentrant before returning the execution flow to the original function.
     function _nonReentrantBefore() private {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
@@ -187,7 +204,7 @@ abstract contract Shared is EVCUtil {
 
         if ($.locked == REENTRANCYLOCK__LOCKED) {
             // The hook target is allowed to bypass the RO-reentrancy lock.
-            if (msg.sender != $.hooksTarget) {
+            if (msg.sender != $.hooksTarget && msg.sender != address(this)) {
                 revert Errors.Reentrancy();
             }
         }

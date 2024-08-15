@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import {CryticERC4626PropertyTests} from "crytic-properties/ERC4626/ERC4626PropertyTests.sol";
 // contracts
 import {EulerAggregationVault} from "../../src/EulerAggregationVault.sol";
+import {AggregationVault} from "../../src/module/AggregationVault.sol";
 import {Hooks} from "../../src/module/Hooks.sol";
 import {Rewards} from "../../src/module/Rewards.sol";
 import {Fee} from "../../src/module/Fee.sol";
@@ -23,6 +24,7 @@ contract CryticERC4626TestsHarness is CryticERC4626PropertyTests {
     address factoryDeployer;
 
     // core modules
+    AggregationVault aggregationVaultModule;
     Rewards rewardsModule;
     Hooks hooksModule;
     Fee feeModuleModule;
@@ -36,6 +38,7 @@ contract CryticERC4626TestsHarness is CryticERC4626PropertyTests {
     constructor() {
         evc = new EthereumVaultConnector();
 
+        aggregationVaultModule = new AggregationVault(address(evc));
         rewardsModule = new Rewards(address(evc));
         hooksModule = new Hooks(address(evc));
         feeModuleModule = new Fee(address(evc));
@@ -47,6 +50,7 @@ contract CryticERC4626TestsHarness is CryticERC4626PropertyTests {
             owner: address(this),
             evc: address(evc),
             balanceTracker: address(0),
+            aggregationVaultModule: address(aggregationVaultModule),
             rewardsModule: address(rewardsModule),
             hooksModule: address(hooksModule),
             feeModule: address(feeModuleModule),

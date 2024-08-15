@@ -16,6 +16,7 @@ contract EulerAggregationVaultFactory {
     address public immutable evc;
     address public immutable balanceTracker;
     /// core modules implementations addresses
+    address public immutable aggregationVaultModule;
     address public immutable rewardsModule;
     address public immutable hooksModule;
     address public immutable feeModule;
@@ -32,6 +33,7 @@ contract EulerAggregationVaultFactory {
         address owner;
         address evc;
         address balanceTracker;
+        address aggregationVaultModule;
         address rewardsModule;
         address hooksModule;
         address feeModule;
@@ -47,6 +49,7 @@ contract EulerAggregationVaultFactory {
     constructor(FactoryParams memory _factoryParams) {
         evc = _factoryParams.evc;
         balanceTracker = _factoryParams.balanceTracker;
+        aggregationVaultModule = _factoryParams.aggregationVaultModule;
         rewardsModule = _factoryParams.rewardsModule;
         hooksModule = _factoryParams.hooksModule;
         feeModule = _factoryParams.feeModule;
@@ -57,6 +60,7 @@ contract EulerAggregationVaultFactory {
         IEulerAggregationVault.ConstructorParams memory aggregationVaultConstructorParams = IEulerAggregationVault
             .ConstructorParams({
             evc: evc,
+            aggregationVaultModule: aggregationVaultModule,
             rewardsModule: rewardsModule,
             hooksModule: hooksModule,
             feeModule: feeModule,

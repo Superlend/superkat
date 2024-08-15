@@ -38,6 +38,14 @@ abstract contract WithdrawalQueueModule is Shared {
 
         emit Events.ReorderWithdrawalQueue(_index1, _index2);
     }
+
+    /// @notice Return the withdrawal queue.
+    /// @return uint256 length.
+    function withdrawalQueue() public view returns (address[] memory) {
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        return $.withdrawalQueue;
+    }
 }
 
 contract WithdrawalQueue is WithdrawalQueueModule {

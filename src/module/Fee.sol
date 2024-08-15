@@ -39,6 +39,15 @@ abstract contract FeeModule is Shared {
 
         $.performanceFee = _newFee;
     }
+
+    /// @notice Get the performance fee config.
+    /// @return adddress Fee recipient.
+    /// @return uint256 Fee percentage.
+    function performanceFeeConfig() public view returns (address, uint96) {
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        return ($.feeRecipient, $.performanceFee);
+    }
 }
 
 contract Fee is FeeModule {

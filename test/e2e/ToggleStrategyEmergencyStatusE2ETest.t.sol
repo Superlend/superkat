@@ -304,7 +304,7 @@ contract ToggleStrategyEmergencyStatusE2ETest is EulerAggregationVaultBase {
             assertEq(assetTST.balanceOf(user2), user2AssetTSTBalanceBefore + expectedAssets);
         }
 
-        EulerAggregationVault.Strategy memory eTSTsecondaryStrategy =
+        IEulerAggregationVault.Strategy memory eTSTsecondaryStrategy =
             eulerAggregationVault.getStrategy(address(eTSTsecondary));
         (,, uint168 interestLeft) = eulerAggregationVault.getAggregationVaultSavingRate();
 

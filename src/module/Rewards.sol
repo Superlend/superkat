@@ -112,7 +112,7 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
 
     /// @notice Retrieve the address of rewards contract, tracking changes in account's balances
     /// @return The balance tracker address
-    function balanceTrackerAddress() public view virtual returns (address) {
+    function balanceTrackerAddress() public view returns (address) {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         return address($.balanceTracker);
@@ -121,7 +121,7 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
     /// @notice Retrieves boolean indicating if the account opted in to forward balance changes to the rewards contract
     /// @param _account Address to query
     /// @return True if balance forwarder is enabled
-    function balanceForwarderEnabled(address _account) public view virtual returns (bool) {
+    function balanceForwarderEnabled(address _account) public view returns (bool) {
         return _balanceForwarderEnabled(_account);
     }
 
@@ -153,23 +153,6 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
         balanceTrackerCached.balanceTrackerHook(_sender, 0, false);
 
         emit Events.DisableBalanceForwarder(_sender);
-    }
-
-    /// @notice Retrieves boolean indicating if the account opted in to forward balance changes to the rewards contract
-    /// @param _account Address to query
-    /// @return True if balance forwarder is enabled
-    function _balanceForwarderEnabled(address _account) internal view returns (bool) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-
-        return $.isBalanceForwarderEnabled[_account];
-    }
-
-    /// @notice Retrieve the address of rewards contract, tracking changes in account's balances
-    /// @return The balance tracker address
-    function _balanceTrackerAddress() internal view returns (address) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-
-        return address($.balanceTracker);
     }
 }
 
