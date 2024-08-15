@@ -56,7 +56,7 @@ abstract contract RebalanceModule is Shared {
             totalAssetsAllocatableCache * strategyData.allocationPoints / totalAllocationPointsCache;
 
         uint120 capAmount = uint120(strategyData.cap.resolve());
-        if ((capAmount != 0) && (targetAllocation > capAmount)) targetAllocation = capAmount;
+        if ((strategyData.cap.toRawUint16() != 0) && (targetAllocation > capAmount)) targetAllocation = capAmount;
 
         uint256 amountToRebalance;
         bool isDeposit;
