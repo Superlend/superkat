@@ -1,12 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-// interfaces
-import {IERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
-import {IEulerAggregationVault} from "../interface/IEulerAggregationVault.sol";
 // contracts
-import {AccessControlEnumerableUpgradeable} from
-    "@openzeppelin-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
 import {Shared} from "../common/Shared.sol";
 // libs
 import {StorageLib as Storage, AggregationVaultStorage} from "../lib/StorageLib.sol";

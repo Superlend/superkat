@@ -26,4 +26,18 @@ library ErrorsLib {
     error OutOfBounds();
     error SameIndexes();
     error NotEnoughAssets();
+
+    /// ERC4626Upgradeable.sol errors
+    /// @dev Attempted to deposit more assets than the max amount for `receiver`.
+    error ERC4626ExceededMaxDeposit(address receiver, uint256 assets, uint256 max);
+    /// @dev Attempted to mint more shares than the max amount for `receiver`.
+    error ERC4626ExceededMaxMint(address receiver, uint256 shares, uint256 max);
+    /// @dev Attempted to withdraw more assets than the max amount for `receiver`.
+    error ERC4626ExceededMaxWithdraw(address owner, uint256 assets, uint256 max);
+    /// @dev Attempted to redeem more shares than the max amount for `receiver`.
+    error ERC4626ExceededMaxRedeem(address owner, uint256 shares, uint256 max);
+
+    /// ERC20VotesUpgradeable.sol errors
+    /// @dev Total supply cap has been exceeded, introducing a risk of votes overflowing.
+    error ERC20ExceededSafeSupply(uint256 increasedSupply, uint256 cap);
 }

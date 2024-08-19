@@ -39,7 +39,7 @@ struct AggregationVaultStorage {
     mapping(address => bool) isBalanceForwarderEnabled;
     
     
-    /// @dev storing the hooks target and kooked functions.
+    /// @dev storing the hooks target and hooked functions.
     address hooksTarget;
     uint32 hookedFns;
 }

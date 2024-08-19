@@ -23,6 +23,8 @@ abstract contract RebalanceModule is Shared {
     using SafeCast for uint256;
     using AmountCapLib for AmountCap;
 
+    address public constant CASH_RESERVE = address(0);
+
     /// @notice Rebalance strategies allocation.
     /// @param _strategies Strategies addresses.
     function rebalance(address[] calldata _strategies) external virtual nonReentrant {
@@ -40,7 +42,7 @@ abstract contract RebalanceModule is Shared {
     ///         - If all the available cash is greater than the max deposit, deposit the max deposit
     /// @param _strategy Strategy address.
     function _rebalance(address _strategy) private {
-        if (_strategy == address(0)) {
+        if (_strategy == CASH_RESERVE) {
             return; //nothing to rebalance as that's the cash reserve
         }
 
@@ -71,7 +73,7 @@ abstract contract RebalanceModule is Shared {
         } else if (strategyData.allocated < targetAllocation) {
             // Deposit
             uint256 targetCash =
-                totalAssetsAllocatableCache * $.strategies[address(0)].allocationPoints / totalAllocationPointsCache;
+                totalAssetsAllocatableCache * $.strategies[CASH_RESERVE].allocationPoints / totalAllocationPointsCache;
             uint256 currentCash = totalAssetsAllocatableCache - $.totalAllocated;
 
             // Calculate available cash to put in strategies

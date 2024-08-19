@@ -56,7 +56,7 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
 
         uint256 maxAssets = _maxDeposit();
         if (_assets > maxAssets) {
-            revert ERC4626ExceededMaxDeposit(_receiver, _assets, maxAssets);
+            revert Errors.ERC4626ExceededMaxDeposit(_receiver, _assets, maxAssets);
         }
 
         uint256 shares = _convertToShares(_assets, Math.Rounding.Floor);
@@ -72,7 +72,7 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
 
         uint256 maxShares = _maxMint();
         if (_shares > maxShares) {
-            revert ERC4626ExceededMaxMint(_receiver, _shares, maxShares);
+            revert Errors.ERC4626ExceededMaxMint(_receiver, _shares, maxShares);
         }
 
         uint256 assets = _convertToAssets(_shares, Math.Rounding.Ceil);
@@ -82,7 +82,7 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
     }
 
     /// @dev See {IERC4626-withdraw}.
-    /// @dev this function update the accrued interest and call WITHDRAW hook.
+    /// @dev Update the accrued interest and call WITHDRAW hook.
     function withdraw(uint256 _assets, address _receiver, address _owner)
         public
         virtual
@@ -99,7 +99,7 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
 
         uint256 maxAssets = _convertToAssets(_balanceOf(_owner), Math.Rounding.Floor);
         if (_assets > maxAssets) {
-            revert ERC4626ExceededMaxWithdraw(_owner, _assets, maxAssets);
+            revert Errors.ERC4626ExceededMaxWithdraw(_owner, _assets, maxAssets);
         }
 
         uint256 shares = _convertToShares(_assets, Math.Rounding.Ceil);
@@ -109,7 +109,7 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
     }
 
     /// @dev See {IERC4626-redeem}.
-    /// @dev this function update the accrued interest and call WITHDRAW hook.
+    /// @dev Update the accrued interest and call REDEEM hook.
     function redeem(uint256 _shares, address _receiver, address _owner)
         public
         virtual
@@ -126,7 +126,7 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
 
         uint256 maxShares = _balanceOf(_owner);
         if (_shares > maxShares) {
-            revert ERC4626ExceededMaxRedeem(_owner, _shares, maxShares);
+            revert Errors.ERC4626ExceededMaxRedeem(_owner, _shares, maxShares);
         }
 
         uint256 assets = _convertToAssets(_shares, Math.Rounding.Floor);
@@ -289,7 +289,7 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
                 uint256 withdrawAmount = (underlyingBalance >= desiredAssets) ? desiredAssets : underlyingBalance;
 
                 // Do actual withdraw from strategy
-                IERC4626(address(strategy)).withdraw(withdrawAmount, address(this), address(this));
+                strategy.withdraw(withdrawAmount, address(this), address(this));
 
                 // update withdrawAmount as in some cases we may not get that amount withdrawn.
                 withdrawAmount = IERC20(asset()).balanceOf(address(this)) - assetsRetrieved;
@@ -323,13 +323,15 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
         internal
         override (ERC20VotesUpgradeable, ERC20Upgradeable)
     {
+        /// call `_update()` on ERC20Upgradeable
         ERC20Upgradeable._update(from, to, value);
 
+        /// ERC20VotesUpgradeable `_update()`
         if (from == address(0)) {
             uint256 supply = _totalSupply();
             uint256 cap = _maxSupply();
             if (supply > cap) {
-                revert ERC20ExceededSafeSupply(supply, cap);
+                revert Errors.ERC20ExceededSafeSupply(supply, cap);
             }
         }
         _transferVotingUnits(from, to, value);
