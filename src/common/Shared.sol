@@ -6,6 +6,7 @@ import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 // contracts
 import {EVCUtil} from "ethereum-vault-connector/utils/EVCUtil.sol";
+import {ERC20Upgradeable} from "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 // libs
 import {HooksLib} from "../lib/HooksLib.sol";
 import {StorageLib as Storage, AggregationVaultStorage} from "../lib/StorageLib.sol";
@@ -18,6 +19,10 @@ import {EventsLib as Events} from "../lib/EventsLib.sol";
 /// @author Euler Labs (https://www.eulerlabs.com/)
 abstract contract Shared is EVCUtil {
     using HooksLib for uint32;
+
+    // This is copied from ERC20Upgradeable OZ implementation.
+    // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.ERC20")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant ERC20StorageLocation = 0x52c63247e1f47db19d5ce0460030c497f067ca4cebf71ba98eeadabe20bace00;
 
     // Hookable functions code.
     uint32 public constant DEPOSIT = 1 << 0;
@@ -94,7 +99,7 @@ abstract contract Shared is EVCUtil {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         // Do not gulp if total supply is too low
-        if (IERC4626(address(this)).totalSupply() < MIN_SHARES_FOR_GULP) return;
+        if (_totalSupply() < MIN_SHARES_FOR_GULP) return;
 
         uint256 toGulp = _totalAssetsAllocatable() - $.totalAssetsDeposited - $.interestLeft;
         if (toGulp == 0) return;
@@ -182,6 +187,16 @@ abstract contract Shared is EVCUtil {
         return address($.balanceTracker);
     }
 
+    function _balanceOf(address account) internal view returns (uint256) {
+        ERC20Upgradeable.ERC20Storage storage $ = _getInheritedERC20Storage();
+        return $._balances[account];
+    }
+
+    function _totalSupply() internal view returns (uint256) {
+        ERC20Upgradeable.ERC20Storage storage $ = _getInheritedERC20Storage();
+        return $._totalSupply;
+    }
+
     /// @dev Used by the nonReentrant before returning the execution flow to the original function.
     function _nonReentrantBefore() private {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
@@ -207,6 +222,12 @@ abstract contract Shared is EVCUtil {
             if (msg.sender != $.hooksTarget && msg.sender != address(this)) {
                 revert Errors.Reentrancy();
             }
+        }
+    }
+
+    function _getInheritedERC20Storage() private pure returns (ERC20Upgradeable.ERC20Storage storage $) {
+        assembly {
+            $.slot := ERC20StorageLocation
         }
     }
 
