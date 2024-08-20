@@ -39,7 +39,7 @@ abstract contract HooksModule is Shared {
     /// @notice Get the hooks contract and the hooked functions.
     /// @return address Hooks contract.
     /// @return uint32 Hooked functions.
-    function getHooksConfig() public view returns (address, uint32) {
+    function getHooksConfig() public view virtual nonReentrantView returns (address, uint32) {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         return ($.hooksTarget, $.hookedFns);

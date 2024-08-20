@@ -36,7 +36,7 @@ abstract contract WithdrawalQueueModule is Shared {
 
     /// @notice Return the withdrawal queue.
     /// @return uint256 length.
-    function withdrawalQueue() public view returns (address[] memory) {
+    function withdrawalQueue() public view virtual nonReentrantView returns (address[] memory) {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         return $.withdrawalQueue;

@@ -43,7 +43,7 @@ abstract contract FeeModule is Shared {
     /// @notice Get the performance fee config.
     /// @return adddress Fee recipient.
     /// @return uint256 Fee percentage.
-    function performanceFeeConfig() public view returns (address, uint96) {
+    function performanceFeeConfig() public view virtual nonReentrantView returns (address, uint96) {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         return ($.feeRecipient, $.performanceFee);

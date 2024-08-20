@@ -137,7 +137,7 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
 
     /// @notice Return the accrued interest
     /// @return uint256 accrued interest
-    function interestAccrued() public view nonReentrantView returns (uint256) {
+    function interestAccrued() public view virtual nonReentrantView returns (uint256) {
         return _interestAccruedFromCache();
     }
 
@@ -145,7 +145,7 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
     /// @return uint40 last interest update timestamp.
     /// @return uint40 timestamp when interest smearing end.
     /// @return uint168 Amount of interest left to distribute.
-    function getAggregationVaultSavingRate() public view nonReentrantView returns (uint40, uint40, uint168) {
+    function getAggregationVaultSavingRate() public view virtual nonReentrantView returns (uint40, uint40, uint168) {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         return ($.lastInterestUpdate, $.interestSmearEnd, $.interestLeft);
@@ -153,7 +153,7 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
 
     /// @notice Get the total allocated amount.
     /// @return uint256 Total allocated.
-    function totalAllocated() public view nonReentrantView returns (uint256) {
+    function totalAllocated() public view virtual nonReentrantView returns (uint256) {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         return $.totalAllocated;
@@ -161,7 +161,7 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
 
     /// @notice Get the total assets deposited into the aggregation vault.
     /// @return uint256 Total assets deposited.
-    function totalAssetsDeposited() public view nonReentrantView returns (uint256) {
+    function totalAssetsDeposited() public view virtual nonReentrantView returns (uint256) {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         return $.totalAssetsDeposited;
@@ -169,7 +169,7 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
 
     /// @notice Get the latest harvest timestamp.
     /// @return uint256 Latest harvest timestamp.
-    function lastHarvestTimestamp() public view nonReentrantView returns (uint256) {
+    function lastHarvestTimestamp() public view virtual nonReentrantView returns (uint256) {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         return $.lastHarvestTimestamp;
@@ -178,59 +178,60 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
     /// @notice get the total assets allocatable
     /// @dev the total assets allocatable is the amount of assets deposited into the aggregator + assets already deposited into strategies
     /// @return uint256 total assets
-    function totalAssetsAllocatable() public view nonReentrantView returns (uint256) {
+    function totalAssetsAllocatable() public view virtual nonReentrantView returns (uint256) {
         return _totalAssetsAllocatable();
     }
 
     /// @notice Return the total amount of assets deposited, plus the accrued interest.
     /// @return uint256 total amount
-    function totalAssets() public view override nonReentrantView returns (uint256) {
+    function totalAssets() public view virtual override nonReentrantView returns (uint256) {
         return _totalAssets();
     }
 
     /// @dev See {IERC4626-convertToShares}.
-    function convertToShares(uint256 _assets) public view override nonReentrantView returns (uint256) {
+    function convertToShares(uint256 _assets) public view virtual override nonReentrantView returns (uint256) {
         return _convertToShares(_assets, Math.Rounding.Floor);
     }
 
     /// @dev See {IERC4626-convertToAssets}.
-    function convertToAssets(uint256 _shares) public view override nonReentrantView returns (uint256) {
+    function convertToAssets(uint256 _shares) public view virtual override nonReentrantView returns (uint256) {
         return _convertToAssets(_shares, Math.Rounding.Floor);
     }
 
     /// @dev See {IERC4626-maxWithdraw}.
-    function maxWithdraw(address _owner) public view override nonReentrantView returns (uint256) {
+    function maxWithdraw(address _owner) public view virtual override nonReentrantView returns (uint256) {
         return _convertToAssets(_balanceOf(_owner), Math.Rounding.Floor);
     }
 
     /// @dev See {IERC4626-maxRedeem}.
-    function maxRedeem(address _owner) public view override nonReentrantView returns (uint256) {
+    function maxRedeem(address _owner) public view virtual override nonReentrantView returns (uint256) {
         return _balanceOf(_owner);
     }
 
     /// @dev See {IERC4626-previewDeposit}.
-    function previewDeposit(uint256 _assets) public view override nonReentrantView returns (uint256) {
+    function previewDeposit(uint256 _assets) public view virtual override nonReentrantView returns (uint256) {
         return _convertToShares(_assets, Math.Rounding.Floor);
     }
 
     /// @dev See {IERC4626-previewMint}.
-    function previewMint(uint256 _shares) public view override nonReentrantView returns (uint256) {
+    function previewMint(uint256 _shares) public view virtual override nonReentrantView returns (uint256) {
         return _convertToAssets(_shares, Math.Rounding.Ceil);
     }
 
     /// @dev See {IERC4626-previewWithdraw}.
-    function previewWithdraw(uint256 _assets) public view override nonReentrantView returns (uint256) {
+    function previewWithdraw(uint256 _assets) public view virtual override nonReentrantView returns (uint256) {
         return _convertToShares(_assets, Math.Rounding.Ceil);
     }
 
     /// @dev See {IERC4626-previewRedeem}.
-    function previewRedeem(uint256 _shares) public view override nonReentrantView returns (uint256) {
+    function previewRedeem(uint256 _shares) public view virtual override nonReentrantView returns (uint256) {
         return _convertToAssets(_shares, Math.Rounding.Floor);
     }
 
     function balanceOf(address account)
         public
         view
+        virtual
         override (ERC20Upgradeable, IERC20)
         nonReentrantView
         returns (uint256)
@@ -238,7 +239,7 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
         return _balanceOf(account);
     }
 
-    function totalSupply() public view override (ERC20Upgradeable, IERC20) nonReentrantView returns (uint256) {
+    function totalSupply() public view virtual override (ERC20Upgradeable, IERC20) nonReentrantView returns (uint256) {
         return _totalSupply();
     }
 
@@ -247,14 +248,14 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
         return ERC4626Upgradeable.decimals();
     }
 
-    function maxDeposit(address) public view override nonReentrantView returns (uint256) {
+    function maxDeposit(address) public view virtual override nonReentrantView returns (uint256) {
         return _maxDeposit();
     }
 
     /**
      * @dev See {IERC4626-maxMint}.
      */
-    function maxMint(address) public view override nonReentrantView returns (uint256) {
+    function maxMint(address) public view virtual override nonReentrantView returns (uint256) {
         return _maxMint();
     }
 

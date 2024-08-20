@@ -186,7 +186,13 @@ abstract contract StrategyModule is Shared {
     /// @notice Get strategy params.
     /// @param _strategy strategy's address
     /// @return Strategy struct
-    function getStrategy(address _strategy) public view returns (IEulerAggregationVault.Strategy memory) {
+    function getStrategy(address _strategy)
+        public
+        view
+        virtual
+        nonReentrantView
+        returns (IEulerAggregationVault.Strategy memory)
+    {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         return $.strategies[_strategy];
@@ -194,7 +200,7 @@ abstract contract StrategyModule is Shared {
 
     /// @notice Get the total allocation points.
     /// @return uint256 Total allocation points.
-    function totalAllocationPoints() public view returns (uint256) {
+    function totalAllocationPoints() public view virtual nonReentrantView returns (uint256) {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         return $.totalAllocationPoints;
