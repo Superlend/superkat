@@ -44,7 +44,7 @@ contract EulerAggregationVaultFactory {
 
     event DeployEulerAggregationVault(address indexed _owner, address _aggregationVault, address indexed _asset);
 
-    /// @notice Constructor.
+    /// @dev Constructor.
     /// @param _factoryParams FactoryParams struct.
     constructor(FactoryParams memory _factoryParams) {
         evc = _factoryParams.evc;
@@ -72,14 +72,11 @@ contract EulerAggregationVaultFactory {
     }
 
     /// @notice Deploy a new aggregation vault.
-    /// @dev This will clone a new WithdrawalQueue plugin instance for the aggregation vault.
-    /// @dev  This will use the defaut Rebalancer plugin configured in this factory.
-    /// @dev Both plugins are possible to change by the aggregation vault manager.
     /// @param _asset Aggreation vault' asset address.
     /// @param _name Vaut name.
     /// @param _symbol Vault symbol.
     /// @param _initialCashAllocationPoints The amount of points to initally allocate for cash reserve.
-    /// @return eulerAggregationVault The address of the new deployed aggregation vault.
+    /// @return The address of the new deployed aggregation vault.
     function deployEulerAggregationVault(
         address _asset,
         string memory _name,
@@ -114,7 +111,7 @@ contract EulerAggregationVaultFactory {
     /// @notice Get a slice of the deployed aggregation vaults array.
     /// @param _start Start index of the slice.
     /// @param _end End index of the slice.
-    /// @return aggregationVaultsList An array containing the slice of the deployed aggregation vaults list.
+    /// @return An array containing the slice of the deployed aggregation vaults list.
     function getAggregationVaultsListSlice(uint256 _start, uint256 _end) external view returns (address[] memory) {
         uint256 length = aggregationVaults.length;
         if (_end == type(uint256).max) _end = length;

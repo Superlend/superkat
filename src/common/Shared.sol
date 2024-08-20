@@ -132,7 +132,7 @@ abstract contract Shared is EVCUtil {
     }
 
     /// @dev Get accrued interest without updating it.
-    /// @return uint256 Accrued interest.
+    /// @return Accrued interest.
     function _interestAccruedFromCache() internal view returns (uint256) {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
@@ -157,7 +157,7 @@ abstract contract Shared is EVCUtil {
 
     /// @dev Return total assets allocatable.
     /// @dev The total assets allocatable is the current balanceOf + total amount already allocated.
-    /// @return uint256 total assets allocatable.
+    /// @return total assets allocatable.
     function _totalAssetsAllocatable() internal view returns (uint256) {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
@@ -165,7 +165,7 @@ abstract contract Shared is EVCUtil {
     }
 
     /// @dev Override for _msgSender() to use the EVC authentication.
-    /// @return address Sender address.
+    /// @return Sender address.
     function _msgSender() internal view virtual override (EVCUtil) returns (address) {
         return EVCUtil._msgSender();
     }
@@ -179,19 +179,23 @@ abstract contract Shared is EVCUtil {
         return $.isBalanceForwarderEnabled[_account];
     }
 
-    /// @notice Retrieve the address of rewards contract, tracking changes in account's balances
-    /// @return The balance tracker address
+    /// @notice Retrieve the address of rewards contract, tracking changes in account's balances.
+    /// @return The balance tracker address.
     function _balanceTrackerAddress() internal view returns (address) {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         return address($.balanceTracker);
     }
 
-    function _balanceOf(address account) internal view returns (uint256) {
+    /// @dev Read `_balances` from storage.
+    /// @return _account balance.
+    function _balanceOf(address _account) internal view returns (uint256) {
         ERC20Upgradeable.ERC20Storage storage $ = _getInheritedERC20Storage();
-        return $._balances[account];
+        return $._balances[_account];
     }
 
+    /// @dev Read `_totalSupply` from storage.
+    /// @return Yield aggregator total supply.
     function _totalSupply() internal view returns (uint256) {
         ERC20Upgradeable.ERC20Storage storage $ = _getInheritedERC20Storage();
         return $._totalSupply;
@@ -225,6 +229,7 @@ abstract contract Shared is EVCUtil {
         }
     }
 
+    /// @dev Return ERC20StorageLocation pointer.
     function _getInheritedERC20Storage() private pure returns (ERC20Upgradeable.ERC20Storage storage $) {
         assembly {
             $.slot := ERC20StorageLocation

@@ -20,8 +20,8 @@ import {EventsLib as Events} from "../lib/EventsLib.sol";
 /// @notice A module to provide balancer tracking for reward streams and to integrate with strategies rewards.
 /// @dev See https://github.com/euler-xyz/reward-streams.
 abstract contract RewardsModule is IBalanceForwarder, Shared {
-    /// @notice Opt in to strategy rewards
-    /// @param _strategy Strategy address
+    /// @notice Opt in to strategy rewards.
+    /// @param _strategy Strategy address.
     function optInStrategyRewards(address _strategy) external virtual nonReentrant {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
@@ -103,24 +103,24 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
         _enableBalanceForwarder(_msgSender(), userBalance);
     }
 
-    /// @notice Disables balance forwarding for the authenticated account
-    /// @dev Only the authenticated account can disable balance forwarding for itself
-    /// @dev Should call the IBalanceTracker hook with the account's balance of 0
+    /// @notice Disables balance forwarding for the authenticated account.
+    /// @dev Only the authenticated account can disable balance forwarding for itself.
+    /// @dev Should call the IBalanceTracker hook with the account's balance of 0.
     function disableBalanceForwarder() external virtual nonReentrant {
         _disableBalanceForwarder(_msgSender());
     }
 
-    /// @notice Retrieve the address of rewards contract, tracking changes in account's balances
-    /// @return The balance tracker address
+    /// @notice Retrieve the address of rewards contract, tracking changes in account's balances.
+    /// @return The balance tracker address.
     function balanceTrackerAddress() public view virtual nonReentrantView returns (address) {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         return address($.balanceTracker);
     }
 
-    /// @notice Retrieves boolean indicating if the account opted in to forward balance changes to the rewards contract
-    /// @param _account Address to query
-    /// @return True if balance forwarder is enabled
+    /// @notice Retrieves boolean indicating if the account opted in to forward balance changes to the rewards contract.
+    /// @param _account Address to query.
+    /// @return True if balance forwarder is enabled.
     function balanceForwarderEnabled(address _account) public view virtual nonReentrantView returns (bool) {
         return _balanceForwarderEnabled(_account);
     }
@@ -139,9 +139,9 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
         emit Events.EnableBalanceForwarder(_sender);
     }
 
-    /// @notice Disables balance forwarding for the authenticated account
-    /// @dev Only the authenticated account can disable balance forwarding for itself
-    /// @dev Should call the IBalanceTracker hook with the account's balance of 0
+    /// @notice Disables balance forwarding for the authenticated account.
+    /// @dev Only the authenticated account can disable balance forwarding for itself.
+    /// @dev Should call the IBalanceTracker hook with the account's balance of 0.
     function _disableBalanceForwarder(address _sender) internal {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
         IBalanceTracker balanceTrackerCached = IBalanceTracker($.balanceTracker);
