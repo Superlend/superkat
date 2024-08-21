@@ -77,7 +77,7 @@ abstract contract Shared is EVCUtil {
         }
     }
 
-    /// @notice Checks whether a hook has been installed for the function and if so, invokes the hook target.
+    /// @dev Checks whether a hook has been installed for the function and if so, invokes the hook target.
     /// @param _fn Function to call the hook for.
     /// @param _caller Caller's address.
     function _callHooksTarget(uint32 _fn, address _caller) internal {
@@ -114,7 +114,7 @@ abstract contract Shared is EVCUtil {
         emit Events.Gulp($.interestLeft, $.interestSmearEnd);
     }
 
-    /// @notice update accrued interest.
+    /// @dev update accrued interest.
     function _updateInterestAccrued() internal {
         uint256 accruedInterest = _interestAccruedFromCache();
 
@@ -170,7 +170,7 @@ abstract contract Shared is EVCUtil {
         return EVCUtil._msgSender();
     }
 
-    /// @notice Retrieves boolean indicating if the account opted in to forward balance changes to the rewards contract
+    /// @dev Retrieves boolean indicating if the account opted in to forward balance changes to the rewards contract
     /// @param _account Address to query
     /// @return True if balance forwarder is enabled
     function _balanceForwarderEnabled(address _account) internal view returns (bool) {
@@ -179,7 +179,7 @@ abstract contract Shared is EVCUtil {
         return $.isBalanceForwarderEnabled[_account];
     }
 
-    /// @notice Retrieve the address of rewards contract, tracking changes in account's balances.
+    /// @dev Retrieve the address of rewards contract, tracking changes in account's balances.
     /// @return The balance tracker address.
     function _balanceTrackerAddress() internal view returns (address) {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
