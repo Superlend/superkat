@@ -27,7 +27,8 @@ library AmountCapLib {
         }
     }
 
-    ///
+    /// @dev Convert `AmountCap` type to uint16.
+    /// @return Cap amount in uint16.
     function toRawUint16(AmountCap self) internal pure returns (uint16) {
         return AmountCap.unwrap(self);
     }

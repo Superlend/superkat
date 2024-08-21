@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {TrackingRewardStreams} from "reward-streams/TrackingRewardStreams.sol";
+import {TrackingRewardStreams} from "reward-streams/src/TrackingRewardStreams.sol";
 import {
     EulerAggregationVaultBase,
     EulerAggregationVault,
@@ -29,12 +29,13 @@ contract BalanceForwarderE2ETest is EulerAggregationVaultBase {
             owner: deployer,
             evc: address(evc),
             balanceTracker: trackingReward,
-            rewardsModuleImpl: address(rewardsImpl),
-            hooksModuleImpl: address(hooksImpl),
-            feeModuleImpl: address(feeModuleImpl),
-            strategyModuleImpl: address(strategyModuleImpl),
-            rebalanceModuleImpl: address(rebalanceModuleImpl),
-            withdrawalQueueModuleImpl: address(withdrawalQueueModuleImpl)
+            aggregationVaultModule: address(aggregationVaultModule),
+            rewardsModule: address(rewardsModule),
+            hooksModule: address(hooksModule),
+            feeModule: address(feeModuleModule),
+            strategyModule: address(strategyModuleModule),
+            rebalanceModule: address(rebalanceModuleModule),
+            withdrawalQueueModule: address(withdrawalQueueModuleModule)
         });
         eulerAggregationVaultFactory = new EulerAggregationVaultFactory(factoryParams);
 

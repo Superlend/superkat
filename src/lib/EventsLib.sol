@@ -9,7 +9,7 @@ library EventsLib {
 
     /// @dev EulerAggregationVault.sol events
     event AccruePerformanceFee(address indexed feeRecipient, uint256 yield, uint256 feeShares);
-    event ExecuteHarvest(address indexed strategy, uint256 strategyBalanceAmount, uint256 strategyAllocatedAmount);
+    event ExecuteHarvest(address indexed strategy, uint256 aggregatorAssetsAmount, uint256 strategyAllocatedAmount);
     event Harvest(uint256 totalAllocated, uint256 totlaYield, uint256 totalLoss);
 
     /// @dev Strategy.sol events

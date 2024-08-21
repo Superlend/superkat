@@ -6,6 +6,7 @@ import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 // contracts
 import {EVCUtil} from "ethereum-vault-connector/utils/EVCUtil.sol";
+import {ERC20Upgradeable} from "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 // libs
 import {HooksLib} from "../lib/HooksLib.sol";
 import {StorageLib as Storage, AggregationVaultStorage} from "../lib/StorageLib.sol";
@@ -18,6 +19,10 @@ import {EventsLib as Events} from "../lib/EventsLib.sol";
 /// @author Euler Labs (https://www.eulerlabs.com/)
 abstract contract Shared is EVCUtil {
     using HooksLib for uint32;
+
+    // This is copied from ERC20Upgradeable OZ implementation.
+    // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.ERC20")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant ERC20StorageLocation = 0x52c63247e1f47db19d5ce0460030c497f067ca4cebf71ba98eeadabe20bace00;
 
     // Hookable functions code.
     uint32 public constant DEPOSIT = 1 << 0;
@@ -36,11 +41,17 @@ abstract contract Shared is EVCUtil {
     /// @dev Minimum amount of shares to exist for gulp to be enabled
     uint256 public constant MIN_SHARES_FOR_GULP = 1e7;
 
-    /// @dev Non-reentracy protection.
+    /// @dev Non-reentracy protection for state-changing functions.
     modifier nonReentrant() {
         _nonReentrantBefore();
         _;
         _nonReentrantAfter();
+    }
+
+    /// @dev Non-reentracy protection for view functions.
+    modifier nonReentrantView() {
+        _nonReentrantViewBefore();
+        _;
     }
 
     constructor(address _evc) EVCUtil(_evc) {}
@@ -66,7 +77,7 @@ abstract contract Shared is EVCUtil {
         }
     }
 
-    /// @notice Checks whether a hook has been installed for the function and if so, invokes the hook target.
+    /// @dev Checks whether a hook has been installed for the function and if so, invokes the hook target.
     /// @param _fn Function to call the hook for.
     /// @param _caller Caller's address.
     function _callHooksTarget(uint32 _fn, address _caller) internal {
@@ -88,7 +99,7 @@ abstract contract Shared is EVCUtil {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         // Do not gulp if total supply is too low
-        if (IERC4626(address(this)).totalSupply() < MIN_SHARES_FOR_GULP) return;
+        if (_totalSupply() < MIN_SHARES_FOR_GULP) return;
 
         uint256 toGulp = _totalAssetsAllocatable() - $.totalAssetsDeposited - $.interestLeft;
         if (toGulp == 0) return;
@@ -103,7 +114,7 @@ abstract contract Shared is EVCUtil {
         emit Events.Gulp($.interestLeft, $.interestSmearEnd);
     }
 
-    /// @notice update accrued interest.
+    /// @dev update accrued interest.
     function _updateInterestAccrued() internal {
         uint256 accruedInterest = _interestAccruedFromCache();
 
@@ -121,7 +132,7 @@ abstract contract Shared is EVCUtil {
     }
 
     /// @dev Get accrued interest without updating it.
-    /// @return uint256 Accrued interest.
+    /// @return Accrued interest.
     function _interestAccruedFromCache() internal view returns (uint256) {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
@@ -146,7 +157,7 @@ abstract contract Shared is EVCUtil {
 
     /// @dev Return total assets allocatable.
     /// @dev The total assets allocatable is the current balanceOf + total amount already allocated.
-    /// @return uint256 total assets allocatable.
+    /// @return total assets allocatable.
     function _totalAssetsAllocatable() internal view returns (uint256) {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
@@ -154,9 +165,40 @@ abstract contract Shared is EVCUtil {
     }
 
     /// @dev Override for _msgSender() to use the EVC authentication.
-    /// @return address Sender address.
+    /// @return Sender address.
     function _msgSender() internal view virtual override (EVCUtil) returns (address) {
         return EVCUtil._msgSender();
+    }
+
+    /// @dev Retrieves boolean indicating if the account opted in to forward balance changes to the rewards contract
+    /// @param _account Address to query
+    /// @return True if balance forwarder is enabled
+    function _balanceForwarderEnabled(address _account) internal view returns (bool) {
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        return $.isBalanceForwarderEnabled[_account];
+    }
+
+    /// @dev Retrieve the address of rewards contract, tracking changes in account's balances.
+    /// @return The balance tracker address.
+    function _balanceTrackerAddress() internal view returns (address) {
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        return address($.balanceTracker);
+    }
+
+    /// @dev Read `_balances` from storage.
+    /// @return _account balance.
+    function _balanceOf(address _account) internal view returns (uint256) {
+        ERC20Upgradeable.ERC20Storage storage $ = _getInheritedERC20Storage();
+        return $._balances[_account];
+    }
+
+    /// @dev Read `_totalSupply` from storage.
+    /// @return Yield aggregator total supply.
+    function _totalSupply() internal view returns (uint256) {
+        ERC20Upgradeable.ERC20Storage storage $ = _getInheritedERC20Storage();
+        return $._totalSupply;
     }
 
     /// @dev Used by the nonReentrant before returning the execution flow to the original function.
@@ -173,6 +215,25 @@ abstract contract Shared is EVCUtil {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
         $.locked = REENTRANCYLOCK__UNLOCKED;
+    }
+
+    /// @dev Used by the nonReentrantView before returning the execution flow to the original function.
+    function _nonReentrantViewBefore() private view {
+        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+
+        if ($.locked == REENTRANCYLOCK__LOCKED) {
+            // The hook target is allowed to bypass the RO-reentrancy lock.
+            if (msg.sender != $.hooksTarget && msg.sender != address(this)) {
+                revert Errors.Reentrancy();
+            }
+        }
+    }
+
+    /// @dev Return ERC20StorageLocation pointer.
+    function _getInheritedERC20Storage() private pure returns (ERC20Upgradeable.ERC20Storage storage $) {
+        assembly {
+            $.slot := ERC20StorageLocation
+        }
     }
 
     /// @dev Revert with call error or EmptyError

@@ -7,7 +7,7 @@ pragma solidity ^0.8.0;
 /// @notice Library for `Hooks` custom type
 /// @dev This is copied from https://github.com/euler-xyz/euler-vault-kit/blob/30b0b9e36b0a912fe430c7482e9b3bb12d180a4e/src/EVault/shared/types/Flags.sol
 library HooksLib {
-    /// @dev Are *none* of the Hooks in bitMask set?
+    /// @dev Are *none* of the Hooks in _fn set?
     function isNotSet(uint32 _hookedFns, uint32 _fn) internal pure returns (bool) {
         return (_hookedFns & _fn) == 0;
     }
