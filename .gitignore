@@ -8,7 +8,7 @@ out/
 /broadcast/**/dry-run/
 
 # Docs
-docs/
+foundry-docs/
 
 # Dotenv file
 .env

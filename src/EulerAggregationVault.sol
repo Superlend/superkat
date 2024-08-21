@@ -40,18 +40,18 @@ import {EventsLib as Events} from "./lib/EventsLib.sol";
 contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, IEulerAggregationVault {
     using SafeCast for uint256;
 
-    /// @dev Roles and their ADMIN roles.
-    // GUARDIAN: can set strategy cap, adjust strategy allocation points, set strategy status to EMERGENCY or revert it back.
+    // Roles and their ADMIN roles.
+    /// @dev GUARDIAN: can set strategy cap, adjust strategy allocation points, set strategy status to EMERGENCY or revert it back.
     bytes32 public constant GUARDIAN = keccak256("GUARDIAN");
     bytes32 public constant GUARDIAN_ADMIN = keccak256("GUARDIAN_ADMIN");
-    // STRATEGY_OPERATOR: can add and remove strategy.
+    /// @dev STRATEGY_OPERATOR: can add and remove strategy.
     bytes32 public constant STRATEGY_OPERATOR = keccak256("STRATEGY_OPERATOR");
     bytes32 public constant STRATEGY_OPERATOR_ADMIN = keccak256("STRATEGY_OPERATOR_ADMIN");
-    // AGGREGATION_VAULT_MANAGER: can set performance fee and recipient, opt in&out underlying strategy rewards,
-    // including enabling, disabling and claiming those rewards, plus set hooks config.
+    /// @dev AGGREGATION_VAULT_MANAGER: can set performance fee and recipient, opt in&out underlying strategy rewards,
+    /// including enabling, disabling and claiming those rewards, plus set hooks config.
     bytes32 public constant AGGREGATION_VAULT_MANAGER = keccak256("AGGREGATION_VAULT_MANAGER");
     bytes32 public constant AGGREGATION_VAULT_MANAGER_ADMIN = keccak256("AGGREGATION_VAULT_MANAGER_ADMIN");
-    // WITHDRAWAL_QUEUE_MANAGER: can re-order withdrawal queue array.
+    /// @dev WITHDRAWAL_QUEUE_MANAGER: can re-order withdrawal queue array.
     bytes32 public constant WITHDRAWAL_QUEUE_MANAGER = keccak256("WITHDRAWAL_QUEUE_MANAGER");
     bytes32 public constant WITHDRAWAL_QUEUE_MANAGER_ADMIN = keccak256("WITHDRAWAL_QUEUE_MANAGER_ADMIN");
 
