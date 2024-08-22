@@ -5,7 +5,7 @@ description: An open source protocol for permissionless risk curation on top of 
 
 # Yield Aggregator Whitepaper
 
-Haythem Sellami & Mick de Graaf.
+Mick de Graaf & Haythem Sellami.
 
 <!-- TOC FOLLOWS -->
 <!-- START OF TOC -->
