@@ -33,12 +33,12 @@ Mick de Graaf & Haythem Sellami.
 
 ## Introduction
 
-The YieldAggregatorVault is an open source protocol for permissionless risk curation on top of [ERC4626 vaults](https://eips.ethereum.org/EIPS/eip-4626)(strategies). Although it is initially designed to be integrated with [Euler V2 vaults](https://github.com/euler-xyz/euler-vault-kit), technically it supports any other vault as long as it is ERC4626 compliant.
-The yield aggregator in itself is an ERC4626 vault, and any risk curator can deploy one through the factory. Each vault has one loan asset and can allocate deposits to multiple strategies. The aggregator vaults are noncustodial and immutable instances, and offer users an easy way to provide liquidity and passively earn yield. 
+The YieldAggregatorVault is an open source protocol for permissionless risk curation on top of [ERC4626 vaults](https://eips.ethereum.org/EIPS/eip-4626) (strategies). Although it is initially designed to be integrated with [Euler V2 vaults](https://github.com/euler-xyz/euler-vault-kit), technically it supports any other vault as long as it is ERC4626 compliant.
+The yield aggregator in itself is an ERC4626 vault, and any risk curator can deploy one through the factory. Each vault has one underlying asset and can allocate deposits to multiple strategies. The aggregator vaults are noncustodial and immutable instances, and offer users an easy way to provide liquidity and passively earn yield. 
 
 ## Motivation
 
-Euler V2 is a lending and borrowing protocol built on top of the EVC primitive, prioritising modularity, efficiency and flexibility. On Euler V2, lenders must consider multiple factors, including the loan-to-value ratio, the used oracles, caps, the type of vault(borrowable, escrow)...etc. For that reason, interacting with the lending vaults directly is more suited to sophisticated and knowledgeable lenders than passive ones, that’s why we introduce Euler Yield Aggregator vault, to provide a passive yield for users, and to manage the risk on their behalf.
+Euler V2 is a lending and borrowing protocol built on top of the EVC primitive, prioritising modularity, efficiency and flexibility. On Euler V2, lenders must consider multiple factors, including the loan-to-value ratio, the used oracles, caps, the type of vault(borrowable, escrow)...etc. For that reason, interacting with lending vaults directly is more suited to sophisticated and knowledgeable lenders than passive ones. That’s why we introduce Euler Yield Aggregator vault, to provide a passive yield for users, and to manage the risk on their behalf.
 
 ## Permissionless Yield Aggregation & Risk Management
 
@@ -75,7 +75,7 @@ The user's deposited assets are allocated across the yield aggregator vault’s 
 
 Harvesting strategies are required to count for accrued yield, and this can be executed in a permissionless way by any user.
 During harvesting, the aggregator vault goes through all the strategies to calculate the net yield amount, and that happens according to the order of the strategies in the withdrawal queue.
-In the case of positive net yield, a performance fee is accrued, if applicable. In the case of negative net yield, a loss deduction mechanism is applied.
+In case of positive net yield, a performance fee is accrued, if applicable. In case of negative net yield, a loss deduction mechanism is applied.
 
 ### Performance Fee
 
@@ -83,16 +83,16 @@ A performance fee can be accrued for the aggregated net yield amount, by convert
 
 ### Loss Deduction
 
-A loss deduction mechanism is implemented in the case of harvesting a negative net yield amount. The net negative yield amount will be first deducted from the interest left to accrue, if not enough to cover that, the rest will be socialised across depositors.
+A loss deduction mechanism is implemented in case of harvesting a negative net yield amount. The net negative yield amount will be first deducted from the interest left to accrue, if not enough to cover that, the rest will be socialised across depositors.
 
 ### Yield Gulping & Smearing 
 
-Harvested positive yield is not instantly added to the aggregator total deposits, instead, it gets gulped as an interest to be distributed(smeared) along the smearing period(2 weeks), and that prevents sudden jumps in the yield aggregator vault’s exchange rate.
+Harvested positive yield is not instantly added to the aggregator total deposits, instead, it gets gulped as an interest to be distributed (smeared) along the smearing period (2 weeks), and that prevents sudden jumps in the yield aggregator vault’s exchange rate.
 
 ### Withdrawal Queue
 
 A queue of strategies addresses, mainly used during yield harvesting and executing withdrawal requests from the yield aggregator.
-Strategies are pushed into the withdrawal queue and removed from it when the add or removing strategy operation is called. Only an address that holds the withdrawal queue manager role can re-order it.
+Strategies are pushed into the withdrawal queue and removed from it when the add or removing strategy operation is called. Only the address that holds the withdrawal queue manager role can re-order it.
 
 ### Roles
 

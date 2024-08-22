@@ -23,18 +23,18 @@ Haythem Sellami & Mick de Graaf.
 
 ## Strategy
 
-The goal from implementing the Yield Aggregator is to provide to provide a passive yield for users, and to manage the risk on their behalf. The source of yield are the strategies that the aggregator vault allocate funds into. 
+The goal of implementing the Yield Aggregator is to provide to provide a passive yield for users, and to manage the risk on their behalf. The source of yield are the strategies that the aggregator vault allocates funds into. 
 A strategy is any ERC4626 compliant contract, can be added and removed by the address that has the `STRATEGY_OPERATOR` role.
 
-Removing a strategy that has an allocated amount greater than 0 is not possible, therefore an adjustment in its allocation points to 0, and then a rebalance trigger is required to remove such strategy.
+Removing a strategy that has an allocated amount greater than 0 is not possible, therefore an adjustment in its allocation points to 0, and then a rebalance trigger is required to remove such a strategy.
 
 ### Cash Reserve
 
-The strategy with `address(0)` is reserved for the `CASH_RESERVE` strategy, which act as the first source of liquidity for withdrawals. The amount fo funds set a side for the `cash reserve` is based on the number of allocation points set for it.
+The strategy with `address(0)` is reserved for the `CASH_RESERVE` strategy, which acts as the first source of liquidity for withdrawals. The amount of funds set aside for the `cash reserve` is based on the number of allocation points set for it.
 
 ### Allocation Points
 
-When adding a strategy, the `STRATEGY_OPERATOR` need to set an `allocation points` for the given strategy, which define the amount of assets to be allocated into that strategy via rebalancing.
+When adding a strategy, the `STRATEGY_OPERATOR` needs to set `allocation points` for the given strategy, which define the amount of assets to be allocated into that strategy via rebalancing.
 
 For the `cash reserve` strategy, the allocation points amount is defined at the deployment time.
 
@@ -50,7 +50,7 @@ It is not possible to set a cap on the amount reserved for the `cash reserve` st
 
 In the scenario where the yield aggregator vault can not interact with a strategy that has some allocated amount, the `GUARDIAN` can set the strategy status as `Emergency`. This will basically allow the `rebalance` and `harvest` functionalities to execute as expected without actually removing that strategy from the [withdrawal queue array](#withdrawal-queue). 
 
-Once a strategy is set as `Emergency` the `totalAllocationPoints` and the `totalAllocated` are decreased by the `strategy allocation points` and the `strategy allocated amount`, which leads to counting that allocated amount as a loss, and deducting it following the [`loss deduction mechanism`](#loss-deduction--socialisation).
+Once the strategy is set as `Emergency`, the `totalAllocationPoints` and the `totalAllocated` are decreased by the `strategy allocation points` and the `strategy allocated amount`, which leads to counting that allocated amount as a loss, and deducting it following the [`loss deduction mechanism`](#loss-deduction--socialisation).
 
 The `GUARDIAN` can revert back the strategy to active anytime, once that's done, the acutal aggregator assets amount in that strategy will be calculated using `strategy.previewRedeem()`, and assigned back along with the strategy allocation points, respectively, to the `totalAllocated` and `totalAllocationPoints`.
 
@@ -58,26 +58,26 @@ The strategy allocated amount will be immediatly available for [`gulping`](#gulp
 
 ### Withdrawal Queue
 
-Strategies addresses are stored in a `Withdrawal Queue` array based on their order of insertion.
+Strategies addresses are stored in the `Withdrawal Queue` array based on their order of insertion.
 The withdrawal queue order is mainly used during the `withdraw` and `harvest` operations.
 
-An address that has the `WITHDRAWAL_QUEUE_MANAGER` role can re-order the withdrawal queue array. It is expected to have the strategies with the most allocated amounts in the beginning of the array, for a more gas-efficient withdraws.
+An address that has the `WITHDRAWAL_QUEUE_MANAGER` role can re-order the withdrawal queue array. It is expected to have the strategies with the most allocated amounts in the beginning of the array, for more gas-efficient withdraws.
 
 ## Deposits & Withdraws
 
-When an amount of asset get deposited into the yield aggregator by the user, those funds do not get allocated immediatly to the strategies, instead we just increase the `totalAssetsDeposited`. The funds in the yield aggregator get allocated into the strategies through an operation called [`Rebalancing`](#rebalance).
+When the assets get deposited into the yield aggregator by the user, those funds do not get allocated immediatly to the strategies, instead we just increase the `totalAssetsDeposited`. The funds in the yield aggregator get allocated into the strategies through the operation called [`Rebalancing`](#rebalance).
 
 For withdraws, if the amount of asset to withdraw can not be covered by the funds in the `cash reserve`, the yield aggregator will loop through the `withdrawal queue array`, and withdraw from the strategies one by one till the requested amount to withdraw is filled. If for some reason the funds can not be taken from the strategies, the withdraw operation will fail with `NotEnoughAssets` error.
 
-The withdraw operation do trigger a [`harvest operation`](#harvest) if the `HARVEST_COOLDOWN` period has passed.
+The withdraw operation does trigger a [`harvest operation`](#harvest) if the `HARVEST_COOLDOWN` period has passed.
 
 ## Rebalance
 
 A `rebalance` operation can be initiated by any address by calling the `rebalance()` function, giving an array of strategies addresses to rebalance.
 
-During rebalance, we calculate a startegy target allocation amount `total assets allocatable * startegy allocation points / total allocation points` and compare that with the staretgy current allocated amount, if that target allocation is greater, the yield aggregator will try to hit that target amount by depositing more into the strategy, if it less, a withdraw from that strategy will occur to reach that target amount.
+During rebalance, we calculate the startegy target allocation amount `total assets allocatable * startegy allocation points / total allocation points` and compare that with the strategy current allocated amount. If that target allocation is greater, the yield aggregator will try to hit that target amount by depositing more into the strategy, if it's less, a withdrawal from that strategy will occur to reach that target amount.
 
-For both cases, the amount to rebalance is restricted by few factors...For the deposit, it includes: 
+For both cases, the amount to rebalance is restricted by a few factors...For the deposit, it includes: 
 - The amount of cash available, which is any surpluss in the cash reserve compared to its target allocation.
 - The max deposit for that specific strategy.
 
@@ -86,21 +86,21 @@ For the withdraw case:
 
 ## Harvest
 
-Once funds are allocated, the yield aggregator vault has no awarness for the yielg generated from those strategies, that's why a harvesting operation is needed.
+Once funds are allocated, the yield aggregator vault has no awarness for the yield generated from those strategies, that's why a harvesting operation is needed.
 
-The `harvest()` function can be initiated as well by any address, and it does follow the withdrawal queue array order in its loop. The harvest operation aggregate all the positive yield and negative yield accrued from the strategies, and account only for the net amount. The yield is calculated by comparing the current allocated amount in a strategy and the yield aggregator assets in that strategy if a redeem of all the shares will occur, using the `strategy.previewRedeem()` call.
+The `harvest()` function can be initiated as well by any address, and it does follow the withdrawal queue array order in its loop. The harvest operation aggregates all the positive and negative yield accrued from the strategies, and account only for the net amount. The yield is calculated by comparing the current allocated amount in the strategy and the yield aggregator assets in that strategy if the redemption of all the shares were to occur, using the `strategy.previewRedeem()` call.
 
-In the case of having a positive net yield amount, a [`performance fee`](#performance-fee) if applicable will be taken. The positive yield amount will not be instantly added to `totalAssetsDeposited` but will be only added to the `totalAllocated` amount, and this will make the yield available for [`gulping`](#gulping--smearing-period).
+In the case of having a positive net yield amount, the [`performance fee`](#performance-fee), if applicable, will be taken. The positive yield amount will not be instantly added to `totalAssetsDeposited` but will be only added to the `totalAllocated` amount, and this will make the yield available for [`gulping`](#gulping--smearing-period).
 
 In the case of a negative net yield amount, the yield aggregator has a [`loss deduction mechanism`](#loss-deduction--socialisation) implemented.
 
-A `HARVEST_COOLDOWN` period is set to `1 day` which basically allow a harvest execution during a `withdraw()` call only if the last executed harvest was 1 day before. A direct call to `harvest()` do ignore the cooldown period check.
+A `HARVEST_COOLDOWN` period is set to `1 day` which only allows the harvest execution during a `withdraw()` call if the last executed harvest was at least 1 day before. A direct call to `harvest()` ignores the cooldown period check.
 
 ### Performance Fee
 
-An address that has the role `AGGREGATION_VAULT_MANAGER` can set a fee recipient address and a performance fee. A `MAX_PERFORMANCE_FEE` is set to 50%.
+An address that has the role `AGGREGATION_VAULT_MANAGER` can set the fee recipient address and the performance fee. The `MAX_PERFORMANCE_FEE` is set to 50%.
 
-During the `harvest` operation, if the net yield amount is positive and a performance fee is set, then that fee is accrued from the net yield amount, get converted to `shares` amount and minted to the `feeRecipient`.
+During the `harvest` operation, if the net yield amount is positive and the performance fee is set, then that fee is accrued from the net yield amount, gets converted to `shares` amount and minted to the `feeRecipient`.
 
 ## Loss Deduction & Socialisation
 
@@ -108,14 +108,12 @@ The yield aggregator vault can suffer losses in two scenarios:
 - During a `harvest` operation, if the harvested net yield amount is negative.
 - If a circuit-breaker for a strategy is activated by marking its status as `Emergency`, using the `toggleStrategyEmergencyStatus()` function.
 
-For those scenarios, a loss deduction mechanism is implemented. The yield aggregator vault will first deduct the loss amount from any past-harvest-yield that remains to be distributed as interest, if the loss is bigger than that, the remaining amount will be socialised to all current depositors in the aggregator vault. Although opportunistic depositors could frontrun loss socialisation by withdrawing earlier, but that could only work if `harvest` will no tbe triggered during a withdraw because the `HARVEST_COOLDOWN` period didn't pass yet.
+For those scenarios, the loss deduction mechanism is implemented. The yield aggregator vault will first deduct the loss amount from any past-harvest-yield that remains to be distributed as interest. If the loss is bigger than that, the remaining amount will be socialised amongst all current depositors in the aggregator vault. Although opportunistic depositors could frontrun loss socialisation by withdrawing earlier, that would only work if `harvest` is not triggered during the withdrawal because the `HARVEST_COOLDOWN` period hasn't pass yet.
 
 ## Gulping & Smearing Period
 
-The yield aggregator vault implement a similar mechanism to 
+As mentionned in the harvest section, the harvested positive yield is not immediately distributed to depositors, but it does get added to the `totalAllocated` amount, therefore it becomes available to `gulp()`. Gulping is the mechanism which distributes it to share holders in the vault over a "smeared" two week period. Accrued interest is added to the `totalAssetsDeposited` of the aggregator vault, adjusting the exchange rate accordingly. On deposit and redeem accrued interest is added to the totalDeposited variable which tracks all deposits in the vault in a donation attack resistent manner.
 
-As mentionned in the harvest section, the harvested positivie yield is not immidiatly distributed to depositors, but it does get added to the `totalAllocated` amount, therefore it become available to `gulp()`. Gulping is the mechanism which will distribute it to share holders in the vault over a "smeared" two week period. Accrued interest is added to the `totalAssetsDeposited` of the aggregator vault, adjusting the exchange rate accordingly. On deposit and redeem accrued interest is added to the totalDeposited variable which tracks all deposits in the vault in a donation attack resistent manner.
+On gulp, any interest which has not been distributed, is smeared for an additional two weeks. In theory this means that interest could be smeared indefinitely by continiously calling gulp, in practice it is expected that the interest will keep accruing, negating any negative side effects which may come from the smearing mechanism.
 
-On gulp any interest which has not been distributed is smeared for an additional two weeks, in theory this means that interest could be smeared indefinitely by continiously calling gulp, in practice it is expected that the interest will keep accruing, negating any negative side effects which may come from the smearing mechanism.
-
-The gulping mechanims implemented here is the same one that was implemented in the [`EulerSavingsRate` contract](https://docs.euler.finance/euler-vault-kit-white-paper/#eulersavingsrate).
+The gulping mechanism implemented here is the same one that was implemented in the [`EulerSavingsRate` contract](https://docs.euler.finance/euler-vault-kit-white-paper/#eulersavingsrate).
