@@ -1,7 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {EulerAggregationVaultBase, EulerAggregationVault, ErrorsLib} from "../common/EulerAggregationVaultBase.t.sol";
+import {
+    EulerAggregationVaultBase,
+    EulerAggregationVault,
+    ErrorsLib,
+    IEVault,
+    IRMTestDefault
+} from "../common/EulerAggregationVaultBase.t.sol";
 
 contract AddStrategyTest is EulerAggregationVaultBase {
     function setUp() public virtual override {
@@ -58,5 +64,26 @@ contract AddStrategyTest is EulerAggregationVaultBase {
 
         vm.expectRevert(ErrorsLib.InvalidAllocationPoints.selector);
         _addStrategy(manager, address(eTST), allocationPoints);
+    }
+
+    function testAddStrategy_MaxStrategiesExceeded() public {
+        IEVault[] memory strategies = new IEVault[](11);
+
+        uint256 allocationPoints = 500e18;
+        for (uint256 i; i < 10; i++) {
+            strategies[i] = IEVault(
+                factory.createProxy(
+                    address(0), true, abi.encodePacked(address(assetTST), address(oracle), unitOfAccount)
+                )
+            );
+
+            _addStrategy(manager, address(strategies[i]), allocationPoints);
+        }
+
+        strategies[10] = IEVault(
+            factory.createProxy(address(0), true, abi.encodePacked(address(assetTST), address(oracle), unitOfAccount))
+        );
+        vm.expectRevert(ErrorsLib.MaxStrategiesExceeded.selector);
+        _addStrategy(manager, address(strategies[10]), allocationPoints);
     }
 }

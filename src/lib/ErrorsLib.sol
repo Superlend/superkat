@@ -26,6 +26,7 @@ library ErrorsLib {
     error OutOfBounds();
     error SameIndexes();
     error NotEnoughAssets();
+    error MaxStrategiesExceeded();
 
     /// ERC4626Upgradeable.sol errors
     /// @dev Attempted to deposit more assets than the max amount for `receiver`.

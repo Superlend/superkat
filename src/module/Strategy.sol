@@ -114,6 +114,8 @@ abstract contract StrategyModule is Shared {
     function addStrategy(address _strategy, uint256 _allocationPoints) public virtual nonReentrant {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
+        if ($.withdrawalQueue.length == Constants.MAX_STRATEGIES) revert Errors.MaxStrategiesExceeded();
+
         if ($.strategies[_strategy].status != IEulerAggregationVault.StrategyStatus.Inactive) {
             revert Errors.StrategyAlreadyExist();
         }

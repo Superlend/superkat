@@ -29,8 +29,11 @@ library ConstantsLib {
     /// @dev address(0) set for cash reserve strategy.
     address public constant CASH_RESERVE = address(0);
 
-    // Max cap amount, which is the same as the max amount `Strategy.allocated` can hold.
+    /// @dev Max cap amount, which is the same as the max amount `Strategy.allocated` can hold.
     uint256 public constant MAX_CAP_AMOUNT = type(uint120).max;
+
+    /// @dev Max number of strategies in withdrawal queue.
+    uint256 public constant MAX_STRATEGIES = 10;
 
     // Roles and their ADMIN roles.
     /// @dev GUARDIAN: can set strategy cap, adjust strategy allocation points, set strategy status to EMERGENCY or revert it back.
