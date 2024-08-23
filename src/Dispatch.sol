@@ -76,7 +76,8 @@ abstract contract Dispatch is
         }
     }
 
+    /// @dev Override for _msgSender() to use the EVC authentication.
     function _msgSender() internal view virtual override (AggregationVaultModule, Shared) returns (address) {
-        return AggregationVaultModule._msgSender();
+        return Shared._msgSender();
     }
 }

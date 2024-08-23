@@ -7,14 +7,12 @@ import {Shared} from "../common/Shared.sol";
 import {StorageLib as Storage, AggregationVaultStorage} from "../lib/StorageLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
+import {ConstantsLib as Constants} from "../lib/ConstantsLib.sol";
 
 /// @title FeeModule contract
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
 abstract contract FeeModule is Shared {
-    /// @dev The maximum performance fee the vault can have is 50%
-    uint96 internal constant MAX_PERFORMANCE_FEE = 0.5e18;
-
     /// @notice Set performance fee recipient address.
     /// @param _newFeeRecipient Recipient address.
     function setFeeRecipient(address _newFeeRecipient) external virtual nonReentrant {
@@ -32,7 +30,7 @@ abstract contract FeeModule is Shared {
 
         uint96 performanceFeeCached = $.performanceFee;
 
-        if (_newFee > MAX_PERFORMANCE_FEE) revert Errors.MaxPerformanceFeeExceeded();
+        if (_newFee > Constants.MAX_PERFORMANCE_FEE) revert Errors.MaxPerformanceFeeExceeded();
         if ($.feeRecipient == address(0)) revert Errors.FeeRecipientNotSet();
 
         emit Events.SetPerformanceFee(performanceFeeCached, _newFee);

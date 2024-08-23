@@ -14,7 +14,8 @@ import {
     ErrorsLib,
     IERC4626,
     AggAmountCapLib,
-    AggAmountCap
+    AggAmountCap,
+    ConstantsLib
 } from "../../common/EulerAggregationVaultBase.t.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Actor} from "../util/Actor.sol";
@@ -102,7 +103,7 @@ contract EulerAggregationVaultHandler is Test {
         address strategyAddr = strategyUtil.fetchStrategy(_strategyIndexSeed);
 
         uint256 strategyCapAmount = AggAmountCap.wrap(_cap).resolve();
-        vm.assume(strategyCapAmount <= eulerAggVault.MAX_CAP_AMOUNT());
+        vm.assume(strategyCapAmount <= ConstantsLib.MAX_CAP_AMOUNT);
 
         IEulerAggregationVault.Strategy memory strategyBefore = eulerAggVault.getStrategy(strategyAddr);
 
@@ -256,7 +257,7 @@ contract EulerAggregationVaultHandler is Test {
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
 
         if (eulerAggVault.totalSupply() == 0) {
-            uint256 minAssets = eulerAggVault.previewMint(eulerAggVault.MIN_SHARES_FOR_GULP());
+            uint256 minAssets = eulerAggVault.previewMint(ConstantsLib.MIN_SHARES_FOR_GULP);
             vm.assume(_assets >= minAssets);
         }
         _fillBalance(currentActor, eulerAggVault.asset(), _assets);
@@ -280,7 +281,7 @@ contract EulerAggregationVaultHandler is Test {
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
 
         if (eulerAggVault.totalSupply() == 0) {
-            vm.assume(_shares >= eulerAggVault.MIN_SHARES_FOR_GULP());
+            vm.assume(_shares >= ConstantsLib.MIN_SHARES_FOR_GULP);
         }
 
         uint256 assets = eulerAggVault.previewMint(_shares);
@@ -315,7 +316,7 @@ contract EulerAggregationVaultHandler is Test {
         );
 
         if (success) {
-            if (block.timestamp > previousHarvestTimestamp + eulerAggVault.HARVEST_COOLDOWN()) {
+            if (block.timestamp > previousHarvestTimestamp + ConstantsLib.HARVEST_COOLDOWN) {
                 (address feeRecipient,) = eulerAggVault.performanceFeeConfig();
                 ghost_accumulatedPerformanceFeePerRecipient[feeRecipient] = expectedAccumulatedPerformanceFee;
                 ghost_totalAssetsDeposited = expectedTotalAssetsDeposited;

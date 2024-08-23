@@ -18,6 +18,7 @@ import {Strategy} from "../../src/module/Strategy.sol";
 import {ErrorsLib} from "../../src/lib/ErrorsLib.sol";
 import {ErrorsLib} from "../../src/lib/ErrorsLib.sol";
 import {AmountCapLib as AggAmountCapLib, AmountCap as AggAmountCap} from "../../src/lib/AmountCapLib.sol";
+import {ConstantsLib} from "../../src/lib/ConstantsLib.sol";
 
 contract EulerAggregationVaultBase is EVaultTestBase {
     using AggAmountCapLib for AggAmountCap;
@@ -78,16 +79,16 @@ contract EulerAggregationVaultBase is EVaultTestBase {
         );
 
         // grant admin roles to deployer
-        eulerAggregationVault.grantRole(eulerAggregationVault.GUARDIAN_ADMIN(), deployer);
-        eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_OPERATOR_ADMIN(), deployer);
-        eulerAggregationVault.grantRole(eulerAggregationVault.AGGREGATION_VAULT_MANAGER_ADMIN(), deployer);
-        eulerAggregationVault.grantRole(eulerAggregationVault.WITHDRAWAL_QUEUE_MANAGER_ADMIN(), deployer);
+        eulerAggregationVault.grantRole(ConstantsLib.GUARDIAN_ADMIN, deployer);
+        eulerAggregationVault.grantRole(ConstantsLib.STRATEGY_OPERATOR_ADMIN, deployer);
+        eulerAggregationVault.grantRole(ConstantsLib.AGGREGATION_VAULT_MANAGER_ADMIN, deployer);
+        eulerAggregationVault.grantRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER_ADMIN, deployer);
 
         // grant roles to manager
-        eulerAggregationVault.grantRole(eulerAggregationVault.GUARDIAN(), manager);
-        eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_OPERATOR(), manager);
-        eulerAggregationVault.grantRole(eulerAggregationVault.AGGREGATION_VAULT_MANAGER(), manager);
-        eulerAggregationVault.grantRole(eulerAggregationVault.WITHDRAWAL_QUEUE_MANAGER(), manager);
+        eulerAggregationVault.grantRole(ConstantsLib.GUARDIAN, manager);
+        eulerAggregationVault.grantRole(ConstantsLib.STRATEGY_OPERATOR, manager);
+        eulerAggregationVault.grantRole(ConstantsLib.AGGREGATION_VAULT_MANAGER, manager);
+        eulerAggregationVault.grantRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER, manager);
 
         vm.stopPrank();
 
@@ -108,25 +109,24 @@ contract EulerAggregationVaultBase is EVaultTestBase {
         assertEq(cashReserve.status == IEulerAggregationVault.StrategyStatus.Active, true);
 
         assertEq(
-            eulerAggregationVault.getRoleAdmin(eulerAggregationVault.STRATEGY_OPERATOR()),
-            eulerAggregationVault.STRATEGY_OPERATOR_ADMIN()
+            eulerAggregationVault.getRoleAdmin(ConstantsLib.STRATEGY_OPERATOR), ConstantsLib.STRATEGY_OPERATOR_ADMIN
         );
         assertEq(
-            eulerAggregationVault.getRoleAdmin(eulerAggregationVault.AGGREGATION_VAULT_MANAGER()),
-            eulerAggregationVault.AGGREGATION_VAULT_MANAGER_ADMIN()
+            eulerAggregationVault.getRoleAdmin(ConstantsLib.AGGREGATION_VAULT_MANAGER),
+            ConstantsLib.AGGREGATION_VAULT_MANAGER_ADMIN
         );
         assertEq(
-            eulerAggregationVault.getRoleAdmin(eulerAggregationVault.WITHDRAWAL_QUEUE_MANAGER()),
-            eulerAggregationVault.WITHDRAWAL_QUEUE_MANAGER_ADMIN()
+            eulerAggregationVault.getRoleAdmin(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER),
+            ConstantsLib.WITHDRAWAL_QUEUE_MANAGER_ADMIN
         );
 
-        assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.STRATEGY_OPERATOR_ADMIN(), deployer));
-        assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.AGGREGATION_VAULT_MANAGER_ADMIN(), deployer));
-        assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.WITHDRAWAL_QUEUE_MANAGER_ADMIN(), deployer));
+        assertTrue(eulerAggregationVault.hasRole(ConstantsLib.STRATEGY_OPERATOR_ADMIN, deployer));
+        assertTrue(eulerAggregationVault.hasRole(ConstantsLib.AGGREGATION_VAULT_MANAGER_ADMIN, deployer));
+        assertTrue(eulerAggregationVault.hasRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER_ADMIN, deployer));
 
-        assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.STRATEGY_OPERATOR(), manager));
-        assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.AGGREGATION_VAULT_MANAGER(), manager));
-        assertTrue(eulerAggregationVault.hasRole(eulerAggregationVault.WITHDRAWAL_QUEUE_MANAGER(), manager));
+        assertTrue(eulerAggregationVault.hasRole(ConstantsLib.STRATEGY_OPERATOR, manager));
+        assertTrue(eulerAggregationVault.hasRole(ConstantsLib.AGGREGATION_VAULT_MANAGER, manager));
+        assertTrue(eulerAggregationVault.hasRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER, manager));
 
         assertEq(eulerAggregationVaultFactory.getAggregationVaultsListLength(), 1);
         address[] memory aggregationVaultsList = eulerAggregationVaultFactory.getAggregationVaultsListSlice(0, 1);

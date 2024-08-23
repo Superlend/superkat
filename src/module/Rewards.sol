@@ -6,7 +6,6 @@ import {IBalanceForwarder} from "../interface/IBalanceForwarder.sol";
 import {IEulerAggregationVault} from "../interface/IEulerAggregationVault.sol";
 import {IBalanceTracker} from "reward-streams/src/interfaces/IBalanceTracker.sol";
 import {IRewardStreams} from "reward-streams/src/interfaces/IRewardStreams.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 // contracts
 import {Shared} from "../common/Shared.sol";
 // libs
@@ -98,7 +97,7 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
     /// @dev Only the authenticated account can enable balance forwarding for itself
     /// @dev Should call the IBalanceTracker hook with the current account's balance
     function enableBalanceForwarder() external virtual nonReentrant {
-        uint256 userBalance = IERC20(address(this)).balanceOf(_msgSender());
+        uint256 userBalance = _balanceOf(_msgSender());
 
         _enableBalanceForwarder(_msgSender(), userBalance);
     }

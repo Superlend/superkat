@@ -12,6 +12,7 @@ import {StorageLib as Storage, AggregationVaultStorage} from "../lib/StorageLib.
 import {AmountCapLib, AmountCap} from "../lib/AmountCapLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
+import {ConstantsLib as Constants} from "../lib/ConstantsLib.sol";
 
 /// @title StrategyModule contract
 /// @custom:security-contact security@euler.xyz
@@ -19,9 +20,6 @@ import {EventsLib as Events} from "../lib/EventsLib.sol";
 abstract contract StrategyModule is Shared {
     using SafeCast for uint256;
     using AmountCapLib for AmountCap;
-
-    // Max cap amount, which is the same as the max amount `Strategy.allocated` can hold.
-    uint256 public constant MAX_CAP_AMOUNT = type(uint120).max;
 
     /// @notice Adjust a certain strategy's allocation points.
     /// @param _strategy address of strategy
@@ -34,7 +32,7 @@ abstract contract StrategyModule is Shared {
             revert Errors.StrategyShouldBeActive();
         }
 
-        if (_strategy == address(0) && _newPoints == 0) {
+        if (_strategy == Constants.CASH_RESERVE && _newPoints == 0) {
             revert Errors.InvalidAllocationPoints();
         }
 
@@ -55,14 +53,14 @@ abstract contract StrategyModule is Shared {
             revert Errors.StrategyShouldBeActive();
         }
 
-        if (_strategy == address(0)) {
+        if (_strategy == Constants.CASH_RESERVE) {
             revert Errors.NoCapOnCashReserveStrategy();
         }
 
         AmountCap strategyCap = AmountCap.wrap(_cap);
         // The raw uint16 cap amount == 0 is a special value. See comments in AmountCapLib.sol
         // Max cap is max amount that can be allocated into strategy (max uint120).
-        if (_cap != 0 && strategyCap.resolve() > MAX_CAP_AMOUNT) revert Errors.StrategyCapExceedMax();
+        if (_cap != 0 && strategyCap.resolve() > Constants.MAX_CAP_AMOUNT) revert Errors.StrategyCapExceedMax();
 
         $.strategies[_strategy].cap = strategyCap;
 
@@ -76,7 +74,7 @@ abstract contract StrategyModule is Shared {
     ///      In the case of switching a strategy from Emergency to Active again, the max withdrawable amount from the strategy
     ///      will be set as the allocated amount, and will be immediately available to gulp.
     function toggleStrategyEmergencyStatus(address _strategy) public virtual nonReentrant {
-        if (_strategy == address(0)) revert Errors.CanNotToggleStrategyEmergencyStatus();
+        if (_strategy == Constants.CASH_RESERVE) revert Errors.CanNotToggleStrategyEmergencyStatus();
 
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
         IEulerAggregationVault.Strategy memory strategyCached = $.strategies[_strategy];
@@ -126,7 +124,7 @@ abstract contract StrategyModule is Shared {
 
         if (_allocationPoints == 0) revert Errors.InvalidAllocationPoints();
 
-        _callHooksTarget(ADD_STRATEGY, _msgSender());
+        _callHooksTarget(Constants.ADD_STRATEGY, _msgSender());
 
         $.strategies[_strategy] = IEulerAggregationVault.Strategy({
             allocated: 0,
@@ -146,7 +144,7 @@ abstract contract StrategyModule is Shared {
     ///      should be set as `EMERGENCY` using `toggleStrategyEmergencyStatus()`.
     /// @param _strategy Address of the strategy to remove.
     function removeStrategy(address _strategy) public virtual nonReentrant {
-        if (_strategy == address(0)) revert Errors.CanNotRemoveCashReserve();
+        if (_strategy == Constants.CASH_RESERVE) revert Errors.CanNotRemoveCashReserve();
 
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
         IEulerAggregationVault.Strategy storage strategyStorage = $.strategies[_strategy];
@@ -157,7 +155,7 @@ abstract contract StrategyModule is Shared {
 
         if (strategyStorage.allocated > 0) revert Errors.CanNotRemoveStrategyWithAllocatedAmount();
 
-        _callHooksTarget(REMOVE_STRATEGY, _msgSender());
+        _callHooksTarget(Constants.REMOVE_STRATEGY, _msgSender());
 
         $.totalAllocationPoints -= strategyStorage.allocationPoints;
         strategyStorage.status = IEulerAggregationVault.StrategyStatus.Inactive;

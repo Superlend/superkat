@@ -9,13 +9,12 @@ import {Shared} from "../common/Shared.sol";
 import {StorageLib as Storage, AggregationVaultStorage} from "../lib/StorageLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
+import {ConstantsLib as Constants} from "../lib/ConstantsLib.sol";
 
 /// @title HooksModule contract
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
 abstract contract HooksModule is Shared {
-    uint32 constant ACTIONS_COUNTER = 1 << 6;
-
     /// @notice Set hooks contract and hooked functions.
     /// @param _hooksTarget Hooks contract.
     /// @param _hookedFns Hooked functions.
@@ -27,7 +26,7 @@ abstract contract HooksModule is Shared {
         {
             revert Errors.NotHooksContract();
         }
-        if (_hookedFns >= ACTIONS_COUNTER) revert Errors.InvalidHookedFns();
+        if (_hookedFns >= Constants.ACTIONS_COUNTER) revert Errors.InvalidHookedFns();
 
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
         $.hooksTarget = _hooksTarget;

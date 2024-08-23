@@ -8,7 +8,8 @@ import {
     TestERC20,
     IEulerAggregationVault,
     AggAmountCap,
-    IRMTestDefault
+    IRMTestDefault,
+    ConstantsLib
 } from "../common/EulerAggregationVaultBase.t.sol";
 import {Actor} from "./util/Actor.sol";
 import {Strategy} from "./util/Strategy.sol";
@@ -56,7 +57,7 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
     function invariant_gulp() public {
         eulerAggregationVault.gulp();
 
-        if (eulerAggregationVault.totalSupply() >= eulerAggregationVault.MIN_SHARES_FOR_GULP()) {
+        if (eulerAggregationVault.totalSupply() >= ConstantsLib.MIN_SHARES_FOR_GULP) {
             (,, uint168 interestLeft) = eulerAggregationVault.getAggregationVaultSavingRate();
             assertEq(
                 eulerAggregationVault.totalAssetsAllocatable(),
@@ -68,10 +69,10 @@ contract EulerAggregationVaultInvariants is EulerAggregationVaultBase {
     // totalAssetsDeposited should be equal to the totalAssetsAllocatable after SMEAR has passed.
     function invariant_totalAssets() public {
         eulerAggregationVault.gulp();
-        skip(eulerAggregationVault.INTEREST_SMEAR()); // make sure smear has passed
+        skip(ConstantsLib.INTEREST_SMEAR); // make sure smear has passed
         eulerAggregationVault.updateInterestAccrued();
 
-        if (eulerAggregationVault.totalSupply() >= eulerAggregationVault.MIN_SHARES_FOR_GULP()) {
+        if (eulerAggregationVault.totalSupply() >= ConstantsLib.MIN_SHARES_FOR_GULP) {
             assertEq(eulerAggregationVault.totalAssets(), eulerAggregationVault.totalAssetsAllocatable());
         }
     }

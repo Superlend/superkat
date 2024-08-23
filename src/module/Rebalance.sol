@@ -14,6 +14,7 @@ import {StorageLib as Storage, AggregationVaultStorage} from "../lib/StorageLib.
 import {AmountCapLib, AmountCap} from "../lib/AmountCapLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
+import {ConstantsLib as Constants} from "../lib/ConstantsLib.sol";
 
 /// @title RebalanceModule contract
 /// @custom:security-contact security@euler.xyz
@@ -22,8 +23,6 @@ abstract contract RebalanceModule is Shared {
     using SafeERC20 for IERC20;
     using SafeCast for uint256;
     using AmountCapLib for AmountCap;
-
-    address public constant CASH_RESERVE = address(0);
 
     /// @notice Rebalance strategies allocation.
     /// @param _strategies Strategies addresses.
@@ -42,7 +41,7 @@ abstract contract RebalanceModule is Shared {
     ///         - If all the available cash is greater than the max deposit, deposit the max deposit
     /// @param _strategy Strategy address.
     function _rebalance(address _strategy) private {
-        if (_strategy == CASH_RESERVE) {
+        if (_strategy == Constants.CASH_RESERVE) {
             return; //nothing to rebalance as that's the cash reserve
         }
 
@@ -72,8 +71,8 @@ abstract contract RebalanceModule is Shared {
             }
         } else if (strategyData.allocated < targetAllocation) {
             // Deposit
-            uint256 targetCash =
-                totalAssetsAllocatableCache * $.strategies[CASH_RESERVE].allocationPoints / totalAllocationPointsCache;
+            uint256 targetCash = totalAssetsAllocatableCache * $.strategies[Constants.CASH_RESERVE].allocationPoints
+                / totalAllocationPointsCache;
             uint256 currentCash = totalAssetsAllocatableCache - $.totalAllocated;
 
             // Calculate available cash to put in strategies

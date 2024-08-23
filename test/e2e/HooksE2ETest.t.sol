@@ -10,7 +10,8 @@ import {
     IRMTestDefault,
     TestERC20,
     IHookTarget,
-    ErrorsLib
+    ErrorsLib,
+    ConstantsLib
 } from "../common/EulerAggregationVaultBase.t.sol";
 
 contract HooksE2ETest is EulerAggregationVaultBase {
@@ -26,8 +27,8 @@ contract HooksE2ETest is EulerAggregationVaultBase {
     }
 
     function testSetHooksConfig() public {
-        uint32 expectedHookedFns = eulerAggregationVault.DEPOSIT() | eulerAggregationVault.WITHDRAW()
-            | eulerAggregationVault.ADD_STRATEGY() | eulerAggregationVault.REMOVE_STRATEGY();
+        uint32 expectedHookedFns =
+            ConstantsLib.DEPOSIT | ConstantsLib.WITHDRAW | ConstantsLib.ADD_STRATEGY | ConstantsLib.REMOVE_STRATEGY;
 
         vm.startPrank(manager);
         address hooksContract = address(new HooksContract());
@@ -41,8 +42,8 @@ contract HooksE2ETest is EulerAggregationVaultBase {
     }
 
     function testSetHooksConfigWithAddressZero() public {
-        uint32 expectedHookedFns = eulerAggregationVault.DEPOSIT() | eulerAggregationVault.WITHDRAW()
-            | eulerAggregationVault.ADD_STRATEGY() | eulerAggregationVault.REMOVE_STRATEGY();
+        uint32 expectedHookedFns =
+            ConstantsLib.DEPOSIT | ConstantsLib.WITHDRAW | ConstantsLib.ADD_STRATEGY | ConstantsLib.REMOVE_STRATEGY;
 
         vm.startPrank(manager);
         vm.expectRevert(ErrorsLib.InvalidHooksTarget.selector);
@@ -51,8 +52,8 @@ contract HooksE2ETest is EulerAggregationVaultBase {
     }
 
     function testSetHooksConfigWithNotHooksContract() public {
-        uint32 expectedHookedFns = eulerAggregationVault.DEPOSIT() | eulerAggregationVault.WITHDRAW()
-            | eulerAggregationVault.ADD_STRATEGY() | eulerAggregationVault.REMOVE_STRATEGY();
+        uint32 expectedHookedFns =
+            ConstantsLib.DEPOSIT | ConstantsLib.WITHDRAW | ConstantsLib.ADD_STRATEGY | ConstantsLib.REMOVE_STRATEGY;
 
         vm.startPrank(manager);
         address hooksContract = address(new NotHooksContract());
@@ -71,7 +72,7 @@ contract HooksE2ETest is EulerAggregationVaultBase {
     }
 
     function testHookedDeposit() public {
-        uint32 expectedHookedFns = eulerAggregationVault.DEPOSIT();
+        uint32 expectedHookedFns = ConstantsLib.DEPOSIT;
         vm.startPrank(manager);
         address hooksContract = address(new HooksContract());
         eulerAggregationVault.setHooksConfig(hooksContract, expectedHookedFns);

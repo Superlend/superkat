@@ -15,21 +15,17 @@ import {
 import {ERC20VotesUpgradeable} from "@openzeppelin-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
 import {ContextUpgradeable} from "@openzeppelin-upgradeable/utils/ContextUpgradeable.sol";
 // libs
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {StorageLib as Storage, AggregationVaultStorage} from "../lib/StorageLib.sol";
-import {AmountCapLib, AmountCap} from "../lib/AmountCapLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
+import {ConstantsLib as Constants} from "../lib/ConstantsLib.sol";
 
 /// @title AggregationVaultModule contract
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
 abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgradeable, Shared {
     using Math for uint256;
-
-    /// @dev Cool down period for harvest call during withdraw operation.
-    uint256 public constant HARVEST_COOLDOWN = 1 days;
 
     /// @notice Harvest all the strategies.
     /// @dev This function will loop through the strategies following the withdrawal queue order and harvest all.
@@ -56,7 +52,7 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
     /// @dev This function will call DEPOSIT hook if enabled.
     /// @return Amount of shares minted.
     function deposit(uint256 _assets, address _receiver) public virtual override nonReentrant returns (uint256) {
-        _callHooksTarget(DEPOSIT, _msgSender());
+        _callHooksTarget(Constants.DEPOSIT, _msgSender());
 
         uint256 maxAssets = _maxDeposit();
         if (_assets > maxAssets) {
@@ -74,7 +70,7 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
     /// @dev This function will call MINT hook if enabled.
     /// @return Amount of assets deposited.
     function mint(uint256 _shares, address _receiver) public virtual override nonReentrant returns (uint256) {
-        _callHooksTarget(MINT, _msgSender());
+        _callHooksTarget(Constants.MINT, _msgSender());
 
         uint256 maxShares = _maxMint();
         if (_shares > maxShares) {
@@ -101,7 +97,7 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
     {
         _updateInterestAccrued();
 
-        _callHooksTarget(WITHDRAW, _msgSender());
+        _callHooksTarget(Constants.WITHDRAW, _msgSender());
 
         _harvest(true);
 
@@ -130,7 +126,7 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
     {
         _updateInterestAccrued();
 
-        _callHooksTarget(REDEEM, _msgSender());
+        _callHooksTarget(Constants.REDEEM, _msgSender());
 
         _harvest(true);
 
@@ -419,7 +415,7 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
     function _harvest(bool _checkCooldown) private {
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
 
-        if (_checkCooldown && ($.lastHarvestTimestamp + HARVEST_COOLDOWN >= block.timestamp)) {
+        if (_checkCooldown && ($.lastHarvestTimestamp + Constants.HARVEST_COOLDOWN >= block.timestamp)) {
             return;
         }
 

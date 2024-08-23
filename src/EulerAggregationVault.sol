@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 // interfaces
-import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IEulerAggregationVault} from "./interface/IEulerAggregationVault.sol";
 // contracts
@@ -17,11 +16,6 @@ import {
     WithdrawalQueueModule,
     RebalanceModule
 } from "./Dispatch.sol";
-import {
-    ERC20Upgradeable,
-    ERC4626Upgradeable
-} from "@openzeppelin-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
-import {ERC20VotesUpgradeable} from "@openzeppelin-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
 import {AccessControlEnumerableUpgradeable} from
     "@openzeppelin-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
 import {ContextUpgradeable} from "@openzeppelin-upgradeable/utils/ContextUpgradeable.sol";
@@ -31,7 +25,7 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {StorageLib as Storage, AggregationVaultStorage} from "./lib/StorageLib.sol";
 import {AmountCap} from "./lib/AmountCapLib.sol";
 import {ErrorsLib as Errors} from "./lib/ErrorsLib.sol";
-import {EventsLib as Events} from "./lib/EventsLib.sol";
+import {ConstantsLib as Constants} from "./lib/ConstantsLib.sol";
 
 /// @title EulerAggregationVault contract
 /// @custom:security-contact security@euler.xyz
@@ -39,21 +33,6 @@ import {EventsLib as Events} from "./lib/EventsLib.sol";
 /// @dev inspired by Yearn v3 ❤️
 contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, IEulerAggregationVault {
     using SafeCast for uint256;
-
-    // Roles and their ADMIN roles.
-    /// @dev GUARDIAN: can set strategy cap, adjust strategy allocation points, set strategy status to EMERGENCY or revert it back.
-    bytes32 public constant GUARDIAN = keccak256("GUARDIAN");
-    bytes32 public constant GUARDIAN_ADMIN = keccak256("GUARDIAN_ADMIN");
-    /// @dev STRATEGY_OPERATOR: can add and remove strategy.
-    bytes32 public constant STRATEGY_OPERATOR = keccak256("STRATEGY_OPERATOR");
-    bytes32 public constant STRATEGY_OPERATOR_ADMIN = keccak256("STRATEGY_OPERATOR_ADMIN");
-    /// @dev AGGREGATION_VAULT_MANAGER: can set performance fee and recipient, opt in&out underlying strategy rewards,
-    /// including enabling, disabling and claiming those rewards, plus set hooks config.
-    bytes32 public constant AGGREGATION_VAULT_MANAGER = keccak256("AGGREGATION_VAULT_MANAGER");
-    bytes32 public constant AGGREGATION_VAULT_MANAGER_ADMIN = keccak256("AGGREGATION_VAULT_MANAGER_ADMIN");
-    /// @dev WITHDRAWAL_QUEUE_MANAGER: can re-order withdrawal queue array.
-    bytes32 public constant WITHDRAWAL_QUEUE_MANAGER = keccak256("WITHDRAWAL_QUEUE_MANAGER");
-    bytes32 public constant WITHDRAWAL_QUEUE_MANAGER_ADMIN = keccak256("WITHDRAWAL_QUEUE_MANAGER_ADMIN");
 
     /// @dev Constructor.
     constructor(IEulerAggregationVault.ConstructorParams memory _constructorParams)
@@ -80,7 +59,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
         if (_initParams.initialCashAllocationPoints == 0) revert Errors.InitialAllocationPointsZero();
 
         AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-        $.locked = REENTRANCYLOCK__UNLOCKED;
+        $.locked = Constants.REENTRANCYLOCK__UNLOCKED;
         $.balanceTracker = _initParams.balanceTracker;
         $.strategies[address(0)] = IEulerAggregationVault.Strategy({
             allocated: 0,
@@ -94,17 +73,17 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
         _grantRole(DEFAULT_ADMIN_ROLE, _initParams.aggregationVaultOwner);
 
         // Setup role admins
-        _setRoleAdmin(GUARDIAN, GUARDIAN_ADMIN);
-        _setRoleAdmin(STRATEGY_OPERATOR, STRATEGY_OPERATOR_ADMIN);
-        _setRoleAdmin(AGGREGATION_VAULT_MANAGER, AGGREGATION_VAULT_MANAGER_ADMIN);
-        _setRoleAdmin(WITHDRAWAL_QUEUE_MANAGER, WITHDRAWAL_QUEUE_MANAGER_ADMIN);
+        _setRoleAdmin(Constants.GUARDIAN, Constants.GUARDIAN_ADMIN);
+        _setRoleAdmin(Constants.STRATEGY_OPERATOR, Constants.STRATEGY_OPERATOR_ADMIN);
+        _setRoleAdmin(Constants.AGGREGATION_VAULT_MANAGER, Constants.AGGREGATION_VAULT_MANAGER_ADMIN);
+        _setRoleAdmin(Constants.WITHDRAWAL_QUEUE_MANAGER, Constants.WITHDRAWAL_QUEUE_MANAGER_ADMIN);
     }
 
     /// @dev See {FeeModule-setFeeRecipient}.
     function setFeeRecipient(address _newFeeRecipient)
         public
         override (IEulerAggregationVault, FeeModule)
-        onlyRole(AGGREGATION_VAULT_MANAGER)
+        onlyRole(Constants.AGGREGATION_VAULT_MANAGER)
         onlyEVCAccountOwner
         use(feeModule)
     {}
@@ -113,7 +92,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function setPerformanceFee(uint96 _newFee)
         public
         override (IEulerAggregationVault, FeeModule)
-        onlyRole(AGGREGATION_VAULT_MANAGER)
+        onlyRole(Constants.AGGREGATION_VAULT_MANAGER)
         onlyEVCAccountOwner
         use(feeModule)
     {}
@@ -122,7 +101,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function optInStrategyRewards(address _strategy)
         public
         override (IEulerAggregationVault, RewardsModule)
-        onlyRole(AGGREGATION_VAULT_MANAGER)
+        onlyRole(Constants.AGGREGATION_VAULT_MANAGER)
         onlyEVCAccountOwner
         use(rewardsModule)
     {}
@@ -131,7 +110,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function optOutStrategyRewards(address _strategy)
         public
         override (IEulerAggregationVault, RewardsModule)
-        onlyRole(AGGREGATION_VAULT_MANAGER)
+        onlyRole(Constants.AGGREGATION_VAULT_MANAGER)
         onlyEVCAccountOwner
         use(rewardsModule)
     {}
@@ -140,7 +119,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function enableRewardForStrategy(address _strategy, address _reward)
         public
         override (IEulerAggregationVault, RewardsModule)
-        onlyRole(AGGREGATION_VAULT_MANAGER)
+        onlyRole(Constants.AGGREGATION_VAULT_MANAGER)
         onlyEVCAccountOwner
         use(rewardsModule)
     {}
@@ -149,7 +128,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function disableRewardForStrategy(address _strategy, address _reward, bool _forfeitRecentReward)
         public
         override (IEulerAggregationVault, RewardsModule)
-        onlyRole(AGGREGATION_VAULT_MANAGER)
+        onlyRole(Constants.AGGREGATION_VAULT_MANAGER)
         onlyEVCAccountOwner
         use(rewardsModule)
     {}
@@ -158,7 +137,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function claimStrategyReward(address _strategy, address _reward, address _recipient, bool _forfeitRecentReward)
         public
         override (IEulerAggregationVault, RewardsModule)
-        onlyRole(AGGREGATION_VAULT_MANAGER)
+        onlyRole(Constants.AGGREGATION_VAULT_MANAGER)
         onlyEVCAccountOwner
         use(rewardsModule)
     {}
@@ -167,7 +146,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function setHooksConfig(address _hooksTarget, uint32 _hookedFns)
         public
         override (IEulerAggregationVault, HooksModule)
-        onlyRole(AGGREGATION_VAULT_MANAGER)
+        onlyRole(Constants.AGGREGATION_VAULT_MANAGER)
         onlyEVCAccountOwner
         use(hooksModule)
     {}
@@ -176,7 +155,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function addStrategy(address _strategy, uint256 _allocationPoints)
         public
         override (IEulerAggregationVault, StrategyModule)
-        onlyRole(STRATEGY_OPERATOR)
+        onlyRole(Constants.STRATEGY_OPERATOR)
         onlyEVCAccountOwner
         use(strategyModule)
     {}
@@ -185,7 +164,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function removeStrategy(address _strategy)
         public
         override (IEulerAggregationVault, StrategyModule)
-        onlyRole(STRATEGY_OPERATOR)
+        onlyRole(Constants.STRATEGY_OPERATOR)
         onlyEVCAccountOwner
         use(strategyModule)
     {}
@@ -194,7 +173,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function setStrategyCap(address _strategy, uint16 _cap)
         public
         override (IEulerAggregationVault, StrategyModule)
-        onlyRole(GUARDIAN)
+        onlyRole(Constants.GUARDIAN)
         onlyEVCAccountOwner
         use(strategyModule)
     {}
@@ -203,7 +182,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function adjustAllocationPoints(address _strategy, uint256 _newPoints)
         public
         override (IEulerAggregationVault, StrategyModule)
-        onlyRole(GUARDIAN)
+        onlyRole(Constants.GUARDIAN)
         onlyEVCAccountOwner
         use(strategyModule)
     {}
@@ -212,7 +191,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function toggleStrategyEmergencyStatus(address _strategy)
         public
         override (IEulerAggregationVault, StrategyModule)
-        onlyRole(GUARDIAN)
+        onlyRole(Constants.GUARDIAN)
         onlyEVCAccountOwner
         use(strategyModule)
     {}
@@ -234,7 +213,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function reorderWithdrawalQueue(uint8 _index1, uint8 _index2)
         public
         override (IEulerAggregationVault, WithdrawalQueueModule)
-        onlyRole(WITHDRAWAL_QUEUE_MANAGER)
+        onlyRole(Constants.WITHDRAWAL_QUEUE_MANAGER)
         onlyEVCAccountOwner
         use(withdrawalQueueModule)
     {}

@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {EulerAggregationVaultBase, EulerAggregationVault} from "../common/EulerAggregationVaultBase.t.sol";
+import {
+    EulerAggregationVaultBase, EulerAggregationVault, ConstantsLib
+} from "../common/EulerAggregationVaultBase.t.sol";
 
 contract GulpFuzzTest is EulerAggregationVaultBase {
     function setUp() public virtual override {
@@ -71,7 +73,7 @@ contract GulpFuzzTest is EulerAggregationVaultBase {
         // Mint interest directly into the contract
         assetTST.mint(address(eulerAggregationVault), interestAmount);
         eulerAggregationVault.gulp();
-        skip(eulerAggregationVault.INTEREST_SMEAR());
+        skip(ConstantsLib.INTEREST_SMEAR);
 
         (,, uint168 interestLeft) = eulerAggregationVault.getAggregationVaultSavingRate();
         assertEq(eulerAggregationVault.totalAssets(), depositAmount);
