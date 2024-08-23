@@ -25,7 +25,7 @@ foundryup
 To clone the repo:
 
 ```sh
-git clone https://github.com/euler-xyz/euler-aggregation-vault.git
+git clone https://github.com/euler-xyz/yield-aggregator.git
 ```
 
 ### Build
