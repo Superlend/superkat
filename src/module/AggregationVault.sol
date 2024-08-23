@@ -436,7 +436,7 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
         }
 
         $.totalAllocated = $.totalAllocated + totalPositiveYield - totalNegativeYield;
-        $.lastHarvestTimestamp = block.timestamp;
+        $.lastHarvestTimestamp = uint40(block.timestamp);
 
         _gulp();
 

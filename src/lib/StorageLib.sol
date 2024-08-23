@@ -12,6 +12,7 @@ struct AggregationVaultStorage {
     uint256 totalAllocated;
     /// Total amount of allocation points across all strategies including the cash reserve.
     uint256 totalAllocationPoints;
+    // 1 slot: 96 + 160
     /// fee rate
     uint96 performanceFee;
     /// fee recipient address
@@ -20,9 +21,8 @@ struct AggregationVaultStorage {
     mapping(address => IEulerAggregationVault.Strategy) strategies;
     /// @dev An array of strategy addresses to withdraw from
     address[] withdrawalQueue;
-    /// @dev Last harvest timestamp
-    uint256 lastHarvestTimestamp;
 
+    // 1 slot: 40 + 40 + 168 + 8
     /// lastInterestUpdate: last timestamp where interest was updated.
     uint40 lastInterestUpdate;
     /// interestSmearEnd: timestamp when the smearing of interest end.
@@ -38,10 +38,13 @@ struct AggregationVaultStorage {
     /// A mapping to check if a user address enabled balance forwarding for reward streams integration.
     mapping(address => bool) isBalanceForwarderEnabled;
     
-    
+    // 1 slot: 160 + 32 + 40
     /// @dev storing the hooks target and hooked functions.
     address hooksTarget;
     uint32 hookedFns;
+
+    /// @dev Last harvest timestamp
+    uint40 lastHarvestTimestamp;
 }
 
 library StorageLib {
