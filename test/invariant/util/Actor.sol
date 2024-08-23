@@ -5,22 +5,22 @@ import {IVotes} from "@openzeppelin/contracts/governance/utils/IVotes.sol";
 import {Test} from "forge-std/Test.sol";
 
 contract Actor is Test {
-    address eulerAggregationVault;
+    address eulerYieldAggregatorVault;
 
-    /// @dev actor[0] will always be a manager address that have access to all EulerAggregationVault roles.
+    /// @dev actor[0] will always be a manager address that have access to all YieldAggregator roles.
     address[] public actors;
     /// @dev using a mapping to detect fee receiver, just for cleaner and expected test results.
     mapping(address => bool) public isFeeReceiver;
 
-    constructor(address _eulerAggregationVault) {
-        eulerAggregationVault = _eulerAggregationVault;
+    constructor(address _eulerYieldAggregatorVault) {
+        eulerYieldAggregatorVault = _eulerYieldAggregatorVault;
     }
 
     function includeActor(address _actor) external {
         actors.push(_actor);
 
         vm.prank(_actor);
-        IVotes(eulerAggregationVault).delegate(_actor);
+        IVotes(eulerYieldAggregatorVault).delegate(_actor);
     }
 
     function initiateExactActorCall(uint256 _actorIndex, address _target, bytes memory _calldata)

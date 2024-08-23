@@ -98,7 +98,7 @@ A `HARVEST_COOLDOWN` period is set to `1 day` which only allows the harvest exec
 
 ### Performance Fee
 
-An address that has the role `AGGREGATION_VAULT_MANAGER` can set the fee recipient address and the performance fee. The `MAX_PERFORMANCE_FEE` is set to 50%.
+An address that has the role `YIELD_AGGREGATOR_MANAGER` can set the fee recipient address and the performance fee. The `MAX_PERFORMANCE_FEE` is set to 50%.
 
 During the `harvest` operation, if the net yield amount is positive and the performance fee is set, then that fee is accrued from the net yield amount, gets converted to `shares` amount and minted to the `feeRecipient`.
 

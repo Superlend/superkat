@@ -6,7 +6,7 @@ import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
 // contracts
 import {Shared} from "../common/Shared.sol";
 // libs
-import {StorageLib as Storage, AggregationVaultStorage} from "../lib/StorageLib.sol";
+import {StorageLib as Storage, YieldAggregatorStorage} from "../lib/StorageLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {ConstantsLib as Constants} from "../lib/ConstantsLib.sol";
@@ -28,7 +28,7 @@ abstract contract HooksModule is Shared {
         }
         if (_hookedFns >= Constants.ACTIONS_COUNTER) revert Errors.InvalidHookedFns();
 
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
         $.hooksTarget = _hooksTarget;
         $.hookedFns = _hookedFns;
 
@@ -39,7 +39,7 @@ abstract contract HooksModule is Shared {
     /// @return Hooks contract.
     /// @return Hooked functions.
     function getHooksConfig() public view virtual nonReentrantView returns (address, uint32) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         return ($.hooksTarget, $.hookedFns);
     }

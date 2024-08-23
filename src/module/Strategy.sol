@@ -3,12 +3,12 @@ pragma solidity ^0.8.0;
 
 // interfaces
 import {IERC4626} from "@openzeppelin-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
-import {IEulerAggregationVault} from "../interface/IEulerAggregationVault.sol";
+import {IYieldAggregator} from "../interface/IYieldAggregator.sol";
 // contracts
 import {Shared} from "../common/Shared.sol";
 // libs
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {StorageLib as Storage, AggregationVaultStorage} from "../lib/StorageLib.sol";
+import {StorageLib as Storage, YieldAggregatorStorage} from "../lib/StorageLib.sol";
 import {AmountCapLib, AmountCap} from "../lib/AmountCapLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
@@ -25,10 +25,10 @@ abstract contract StrategyModule is Shared {
     /// @param _strategy address of strategy
     /// @param _newPoints new strategy's points
     function adjustAllocationPoints(address _strategy, uint256 _newPoints) public virtual nonReentrant {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-        IEulerAggregationVault.Strategy memory strategyDataCache = $.strategies[_strategy];
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        IYieldAggregator.Strategy memory strategyDataCache = $.strategies[_strategy];
 
-        if (strategyDataCache.status != IEulerAggregationVault.StrategyStatus.Active) {
+        if (strategyDataCache.status != IYieldAggregator.StrategyStatus.Active) {
             revert Errors.StrategyShouldBeActive();
         }
 
@@ -47,9 +47,9 @@ abstract contract StrategyModule is Shared {
     /// @param _strategy Strategy address.
     /// @param _cap Cap amount
     function setStrategyCap(address _strategy, uint16 _cap) public virtual nonReentrant {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
-        if ($.strategies[_strategy].status != IEulerAggregationVault.StrategyStatus.Active) {
+        if ($.strategies[_strategy].status != IYieldAggregator.StrategyStatus.Active) {
             revert Errors.StrategyShouldBeActive();
         }
 
@@ -70,19 +70,19 @@ abstract contract StrategyModule is Shared {
     /// @notice Toggle a strategy status between `Active` and `Emergency`.
     /// @dev This should be used as a circuit-breaker to exclude a faulty strategy from being harvest or rebalanced.
     ///      It also deduct all the deposited amounts into the strategy as loss, and uses a loss socialization mechanism.
-    ///      This is needed, in case the aggregation vault can no longer withdraw from a certain strategy.
+    ///      This is needed, in case the Yield Aggregator can no longer withdraw from a certain strategy.
     ///      In the case of switching a strategy from Emergency to Active again, the max withdrawable amount from the strategy
     ///      will be set as the allocated amount, and will be immediately available to gulp.
     function toggleStrategyEmergencyStatus(address _strategy) public virtual nonReentrant {
         if (_strategy == Constants.CASH_RESERVE) revert Errors.CanNotToggleStrategyEmergencyStatus();
 
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-        IEulerAggregationVault.Strategy memory strategyCached = $.strategies[_strategy];
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        IYieldAggregator.Strategy memory strategyCached = $.strategies[_strategy];
 
-        if (strategyCached.status == IEulerAggregationVault.StrategyStatus.Inactive) {
+        if (strategyCached.status == IYieldAggregator.StrategyStatus.Inactive) {
             revert Errors.InactiveStrategy();
-        } else if (strategyCached.status == IEulerAggregationVault.StrategyStatus.Active) {
-            $.strategies[_strategy].status = IEulerAggregationVault.StrategyStatus.Emergency;
+        } else if (strategyCached.status == IYieldAggregator.StrategyStatus.Active) {
+            $.strategies[_strategy].status = IYieldAggregator.StrategyStatus.Emergency;
 
             // we should deduct loss before decrease totalAllocated to not underflow
             _deductLoss(strategyCached.allocated);
@@ -98,7 +98,7 @@ abstract contract StrategyModule is Shared {
             uint256 aggregatorShares = IERC4626(_strategy).balanceOf(address(this));
             uint256 aggregatorAssets = IERC4626(_strategy).previewRedeem(aggregatorShares);
 
-            $.strategies[_strategy].status = IEulerAggregationVault.StrategyStatus.Active;
+            $.strategies[_strategy].status = IYieldAggregator.StrategyStatus.Active;
             $.strategies[_strategy].allocated = aggregatorAssets.toUint120();
 
             $.totalAllocationPoints += strategyCached.allocationPoints;
@@ -112,11 +112,11 @@ abstract contract StrategyModule is Shared {
     /// @param _strategy Address of the strategy
     /// @param _allocationPoints Strategy's allocation points
     function addStrategy(address _strategy, uint256 _allocationPoints) public virtual nonReentrant {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         if ($.withdrawalQueue.length == Constants.MAX_STRATEGIES) revert Errors.MaxStrategiesExceeded();
 
-        if ($.strategies[_strategy].status != IEulerAggregationVault.StrategyStatus.Inactive) {
+        if ($.strategies[_strategy].status != IYieldAggregator.StrategyStatus.Inactive) {
             revert Errors.StrategyAlreadyExist();
         }
 
@@ -128,10 +128,10 @@ abstract contract StrategyModule is Shared {
 
         _callHooksTarget(Constants.ADD_STRATEGY, _msgSender());
 
-        $.strategies[_strategy] = IEulerAggregationVault.Strategy({
+        $.strategies[_strategy] = IYieldAggregator.Strategy({
             allocated: 0,
             allocationPoints: _allocationPoints.toUint96(),
-            status: IEulerAggregationVault.StrategyStatus.Active,
+            status: IYieldAggregator.StrategyStatus.Active,
             cap: AmountCap.wrap(0)
         });
 
@@ -148,10 +148,10 @@ abstract contract StrategyModule is Shared {
     function removeStrategy(address _strategy) public virtual nonReentrant {
         if (_strategy == Constants.CASH_RESERVE) revert Errors.CanNotRemoveCashReserve();
 
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
-        IEulerAggregationVault.Strategy storage strategyStorage = $.strategies[_strategy];
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        IYieldAggregator.Strategy storage strategyStorage = $.strategies[_strategy];
 
-        if (strategyStorage.status != IEulerAggregationVault.StrategyStatus.Active) {
+        if (strategyStorage.status != IYieldAggregator.StrategyStatus.Active) {
             revert Errors.StrategyShouldBeActive();
         }
 
@@ -160,7 +160,7 @@ abstract contract StrategyModule is Shared {
         _callHooksTarget(Constants.REMOVE_STRATEGY, _msgSender());
 
         $.totalAllocationPoints -= strategyStorage.allocationPoints;
-        strategyStorage.status = IEulerAggregationVault.StrategyStatus.Inactive;
+        strategyStorage.status = IYieldAggregator.StrategyStatus.Inactive;
         strategyStorage.allocationPoints = 0;
         strategyStorage.cap = AmountCap.wrap(0);
 
@@ -186,9 +186,9 @@ abstract contract StrategyModule is Shared {
         view
         virtual
         nonReentrantView
-        returns (IEulerAggregationVault.Strategy memory)
+        returns (IYieldAggregator.Strategy memory)
     {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         return $.strategies[_strategy];
     }
@@ -196,7 +196,7 @@ abstract contract StrategyModule is Shared {
     /// @notice Get the total allocation points.
     /// @return Total allocation points.
     function totalAllocationPoints() public view virtual nonReentrantView returns (uint256) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         return $.totalAllocationPoints;
     }

@@ -11,9 +11,9 @@ library ErrorsLib {
     error MaxPerformanceFeeExceeded();
     error FeeRecipientNotSet();
     error CanNotRemoveCashReserve();
-    error AggVaultRewardsNotSupported();
-    error AggVaultRewardsAlreadyEnabled();
-    error AggVaultRewardsAlreadyDisabled();
+    error YieldAggregatorRewardsNotSupported();
+    error YieldAggregatorRewardsAlreadyEnabled();
+    error YieldAggregatorRewardsAlreadyDisabled();
     error InvalidHooksTarget();
     error NotHooksContract();
     error InvalidHookedFns();

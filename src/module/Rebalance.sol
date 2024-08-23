@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 // interfaces
-import {IEulerAggregationVault} from "../interface/IEulerAggregationVault.sol";
+import {IYieldAggregator} from "../interface/IYieldAggregator.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 // contracts
@@ -10,7 +10,7 @@ import {Shared} from "../common/Shared.sol";
 // libs
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {StorageLib as Storage, AggregationVaultStorage} from "../lib/StorageLib.sol";
+import {StorageLib as Storage, YieldAggregatorStorage} from "../lib/StorageLib.sol";
 import {AmountCapLib, AmountCap} from "../lib/AmountCapLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
@@ -45,11 +45,11 @@ abstract contract RebalanceModule is Shared {
             return; //nothing to rebalance as that's the cash reserve
         }
 
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
-        IEulerAggregationVault.Strategy memory strategyData = $.strategies[_strategy];
+        IYieldAggregator.Strategy memory strategyData = $.strategies[_strategy];
 
-        if (strategyData.status != IEulerAggregationVault.StrategyStatus.Active) return;
+        if (strategyData.status != IYieldAggregator.StrategyStatus.Active) return;
 
         uint256 totalAllocationPointsCache = $.totalAllocationPoints;
         uint256 totalAssetsAllocatableCache = _totalAssetsAllocatable();

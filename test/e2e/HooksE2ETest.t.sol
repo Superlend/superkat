@@ -2,8 +2,8 @@
 pragma solidity ^0.8.0;
 
 import {
-    EulerAggregationVaultBase,
-    EulerAggregationVault,
+    YieldAggregatorBase,
+    YieldAggregator,
     console2,
     EVault,
     IEVault,
@@ -12,9 +12,9 @@ import {
     IHookTarget,
     ErrorsLib,
     ConstantsLib
-} from "../common/EulerAggregationVaultBase.t.sol";
+} from "../common/YieldAggregatorBase.t.sol";
 
-contract HooksE2ETest is EulerAggregationVaultBase {
+contract HooksE2ETest is YieldAggregatorBase {
     uint256 user1InitialBalance = 100000e18;
 
     function setUp() public virtual override {
@@ -32,10 +32,10 @@ contract HooksE2ETest is EulerAggregationVaultBase {
 
         vm.startPrank(manager);
         address hooksContract = address(new HooksContract());
-        eulerAggregationVault.setHooksConfig(hooksContract, expectedHookedFns);
+        eulerYieldAggregatorVault.setHooksConfig(hooksContract, expectedHookedFns);
         vm.stopPrank();
 
-        (address hookTarget, uint32 hookedFns) = eulerAggregationVault.getHooksConfig();
+        (address hookTarget, uint32 hookedFns) = eulerYieldAggregatorVault.getHooksConfig();
 
         assertEq(hookTarget, hooksContract);
         assertEq(hookedFns, expectedHookedFns);
@@ -47,7 +47,7 @@ contract HooksE2ETest is EulerAggregationVaultBase {
 
         vm.startPrank(manager);
         vm.expectRevert(ErrorsLib.InvalidHooksTarget.selector);
-        eulerAggregationVault.setHooksConfig(address(0), expectedHookedFns);
+        eulerYieldAggregatorVault.setHooksConfig(address(0), expectedHookedFns);
         vm.stopPrank();
     }
 
@@ -58,7 +58,7 @@ contract HooksE2ETest is EulerAggregationVaultBase {
         vm.startPrank(manager);
         address hooksContract = address(new NotHooksContract());
         vm.expectRevert(ErrorsLib.NotHooksContract.selector);
-        eulerAggregationVault.setHooksConfig(hooksContract, expectedHookedFns);
+        eulerYieldAggregatorVault.setHooksConfig(hooksContract, expectedHookedFns);
         vm.stopPrank();
     }
 
@@ -67,7 +67,7 @@ contract HooksE2ETest is EulerAggregationVaultBase {
         vm.startPrank(manager);
         address hooksContract = address(new HooksContract());
         vm.expectRevert(ErrorsLib.InvalidHookedFns.selector);
-        eulerAggregationVault.setHooksConfig(hooksContract, expectedHookedFns);
+        eulerYieldAggregatorVault.setHooksConfig(hooksContract, expectedHookedFns);
         vm.stopPrank();
     }
 
@@ -75,25 +75,25 @@ contract HooksE2ETest is EulerAggregationVaultBase {
         uint32 expectedHookedFns = ConstantsLib.DEPOSIT;
         vm.startPrank(manager);
         address hooksContract = address(new HooksContract());
-        eulerAggregationVault.setHooksConfig(hooksContract, expectedHookedFns);
+        eulerYieldAggregatorVault.setHooksConfig(hooksContract, expectedHookedFns);
         vm.stopPrank();
 
         uint256 amountToDeposit = 10000e18;
         // deposit into aggregator
         {
-            uint256 balanceBefore = eulerAggregationVault.balanceOf(user1);
-            uint256 totalSupplyBefore = eulerAggregationVault.totalSupply();
-            uint256 totalAssetsDepositedBefore = eulerAggregationVault.totalAssetsDeposited();
+            uint256 balanceBefore = eulerYieldAggregatorVault.balanceOf(user1);
+            uint256 totalSupplyBefore = eulerYieldAggregatorVault.totalSupply();
+            uint256 totalAssetsDepositedBefore = eulerYieldAggregatorVault.totalAssetsDeposited();
             uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
 
             vm.startPrank(user1);
-            assetTST.approve(address(eulerAggregationVault), amountToDeposit);
-            eulerAggregationVault.deposit(amountToDeposit, user1);
+            assetTST.approve(address(eulerYieldAggregatorVault), amountToDeposit);
+            eulerYieldAggregatorVault.deposit(amountToDeposit, user1);
             vm.stopPrank();
 
-            assertEq(eulerAggregationVault.balanceOf(user1), balanceBefore + amountToDeposit);
-            assertEq(eulerAggregationVault.totalSupply(), totalSupplyBefore + amountToDeposit);
-            assertEq(eulerAggregationVault.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
+            assertEq(eulerYieldAggregatorVault.balanceOf(user1), balanceBefore + amountToDeposit);
+            assertEq(eulerYieldAggregatorVault.totalSupply(), totalSupplyBefore + amountToDeposit);
+            assertEq(eulerYieldAggregatorVault.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
             assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - amountToDeposit);
         }
     }

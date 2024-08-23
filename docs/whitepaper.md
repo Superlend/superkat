@@ -48,7 +48,7 @@ Anyone can use the factory to create a YieldAggregator vault, including DAOs, pr
 
 ### Strategy
 
-An ERC4626 compatible contract in which the aggregation layer vault will deposit assets. A single aggregator vault can have many strategies.
+An ERC4626 compatible contract in which the yield aggregator vault will deposit assets. A single aggregator vault can have many strategies.
 
 A strategy can be any ERC4626 compliant vault:
 - Euler V2 lending protocol vaults.
@@ -96,8 +96,8 @@ Strategies are pushed into the withdrawal queue and removed from it when the add
 
 ### Roles
 
-Governance over the aggregation layer vault can be granularly managed. Both fully ungoverned or completely governed are both easily achieved through access control management.
-An Euler aggregation layer can have different managers each serving a specific role. Setting up the vaults can be set in a manner which makes sure no entity is able to take user funds from the vault.
+Governance over the yield aggregator vault can be granularly managed. Both fully ungoverned or completely governed are both easily achieved through access control management.
+A Yield Aggregator can have different managers each serving a specific role. Setting up the vaults can be set in a manner which makes sure no entity is able to take user funds from the vault.
 Each role has their own specific `Admin role`, the holder of the Admin role can assign the role. The `Default Admin` role has ownership of all other admin roles.
 
 - Default Admin:

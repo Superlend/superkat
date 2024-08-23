@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 // contracts
 import {Shared} from "../common/Shared.sol";
 // libs
-import {StorageLib as Storage, AggregationVaultStorage} from "../lib/StorageLib.sol";
+import {StorageLib as Storage, YieldAggregatorStorage} from "../lib/StorageLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
 import {ConstantsLib as Constants} from "../lib/ConstantsLib.sol";
@@ -16,7 +16,7 @@ abstract contract FeeModule is Shared {
     /// @notice Set performance fee recipient address.
     /// @param _newFeeRecipient Recipient address.
     function setFeeRecipient(address _newFeeRecipient) external virtual nonReentrant {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         emit Events.SetFeeRecipient($.feeRecipient, _newFeeRecipient);
 
@@ -26,7 +26,7 @@ abstract contract FeeModule is Shared {
     /// @notice Set performance fee (1e18 == 100%).
     /// @param _newFee Fee rate.
     function setPerformanceFee(uint96 _newFee) external virtual nonReentrant {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         uint96 performanceFeeCached = $.performanceFee;
 
@@ -42,7 +42,7 @@ abstract contract FeeModule is Shared {
     /// @return Fee recipient.
     /// @return Fee percentage.
     function performanceFeeConfig() public view virtual nonReentrantView returns (address, uint96) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         return ($.feeRecipient, $.performanceFee);
     }

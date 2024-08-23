@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 // interfaces
 import {IERC4626} from "@openzeppelin-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {IEulerAggregationVault} from "../interface/IEulerAggregationVault.sol";
+import {IYieldAggregator} from "../interface/IYieldAggregator.sol";
 import {IBalanceTracker} from "reward-streams/src/interfaces/IBalanceTracker.sol";
 // contracts
 import {Shared} from "../common/Shared.sol";
@@ -16,15 +16,15 @@ import {ERC20VotesUpgradeable} from "@openzeppelin-upgradeable/token/ERC20/exten
 import {ContextUpgradeable} from "@openzeppelin-upgradeable/utils/ContextUpgradeable.sol";
 // libs
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {StorageLib as Storage, AggregationVaultStorage} from "../lib/StorageLib.sol";
+import {StorageLib as Storage, YieldAggregatorStorage} from "../lib/StorageLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
 import {ConstantsLib as Constants} from "../lib/ConstantsLib.sol";
 
-/// @title AggregationVaultModule contract
+/// @title YieldAggregatorVaultModule contract
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
-abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgradeable, Shared {
+abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUpgradeable, Shared {
     using Math for uint256;
 
     /// @notice Harvest all the strategies.
@@ -151,8 +151,8 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
     /// @return Last interest update timestamp.
     /// @return Timestamp when interest smearing end.
     /// @return Amount of interest left to distribute.
-    function getAggregationVaultSavingRate() public view virtual nonReentrantView returns (uint40, uint40, uint168) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+    function getYieldAggregatorSavingRate() public view virtual nonReentrantView returns (uint40, uint40, uint168) {
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         return ($.lastInterestUpdate, $.interestSmearEnd, $.interestLeft);
     }
@@ -160,15 +160,15 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
     /// @notice Get the total allocated amount.
     /// @return Total allocated amount.
     function totalAllocated() public view virtual nonReentrantView returns (uint256) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         return $.totalAllocated;
     }
 
-    /// @notice Get the total assets deposited into the aggregation vault.
+    /// @notice Get the total assets deposited into the yield aggregator.
     /// @return Total assets deposited.
     function totalAssetsDeposited() public view virtual nonReentrantView returns (uint256) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         return $.totalAssetsDeposited;
     }
@@ -176,7 +176,7 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
     /// @notice Get the latest harvest timestamp.
     /// @return Latest harvest timestamp.
     function lastHarvestTimestamp() public view virtual nonReentrantView returns (uint256) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         return $.lastHarvestTimestamp;
     }
@@ -298,7 +298,7 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
     function _deposit(address _caller, address _receiver, uint256 _assets, uint256 _shares) internal override {
         super._deposit(_caller, _receiver, _assets, _shares);
 
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
         $.totalAssetsDeposited += _assets;
     }
 
@@ -310,7 +310,7 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
         internal
         override
     {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
         uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
 
         if (assetsRetrieved < _assets) {
@@ -318,7 +318,7 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
             for (uint256 i; i < numStrategies; ++i) {
                 IERC4626 strategy = IERC4626($.withdrawalQueue[i]);
 
-                if ($.strategies[address(strategy)].status != IEulerAggregationVault.StrategyStatus.Active) continue;
+                if ($.strategies[address(strategy)].status != IYieldAggregator.StrategyStatus.Active) continue;
 
                 uint256 underlyingBalance = strategy.maxWithdraw(address(this));
                 uint256 desiredAssets = _assets - assetsRetrieved;
@@ -413,7 +413,7 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
     /// @dev Performance fee will only be applied on net positive yield across all strategies.
     /// @param _checkCooldown a boolean to indicate whether to check for cooldown period or not.
     function _harvest(bool _checkCooldown) private {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         if (_checkCooldown && ($.lastHarvestTimestamp + Constants.HARVEST_COOLDOWN >= block.timestamp)) {
             return;
@@ -448,14 +448,13 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
     /// @return Amount of positive yield if any, else 0.
     /// @return Amount of loss if any, else 0.
     function _executeHarvest(address _strategy) private returns (uint256, uint256) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         uint120 strategyAllocatedAmount = $.strategies[_strategy].allocated;
 
-        if (
-            strategyAllocatedAmount == 0
-                || $.strategies[_strategy].status != IEulerAggregationVault.StrategyStatus.Active
-        ) return (0, 0);
+        if (strategyAllocatedAmount == 0 || $.strategies[_strategy].status != IYieldAggregator.StrategyStatus.Active) {
+            return (0, 0);
+        }
 
         // Use `previewRedeem()` to get the actual assets amount, bypassing any limits or revert.
         uint256 aggregatorShares = IERC4626(_strategy).balanceOf(address(this));
@@ -481,7 +480,7 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
     /// @dev Fees will be minted as shares to fee recipient.
     /// @param _yield Net positive yield.
     function _accruePerformanceFee(uint256 _yield) private {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         address cachedFeeRecipient = $.feeRecipient;
         uint96 cachedPerformanceFee = $.performanceFee;
@@ -505,7 +504,7 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
     /// @notice Return the total amount of assets deposited, plus the accrued interest.
     /// @return total asset amount.
     function _totalAssets() private view returns (uint256) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         return $.totalAssetsDeposited + _interestAccruedFromCache();
     }
@@ -523,6 +522,6 @@ abstract contract AggregationVaultModule is ERC4626Upgradeable, ERC20VotesUpgrad
     }
 }
 
-contract AggregationVault is AggregationVaultModule {
+contract YieldAggregatorVault is YieldAggregatorVaultModule {
     constructor(address _evc) Shared(_evc) {}
 }

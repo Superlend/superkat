@@ -2,11 +2,11 @@
 pragma solidity ^0.8.0;
 
 // interfaces
-import {IEulerAggregationVault} from "../interface/IEulerAggregationVault.sol";
+import {IYieldAggregator} from "../interface/IYieldAggregator.sol";
 
-/// @custom:storage-location erc7201:euler_aggregation_vault.storage.AggregationVault
-struct AggregationVaultStorage {
-    /// Total amount of _asset deposited into EulerAggregationVault contract
+/// @custom:storage-location erc7201:euler_yield_aggregator.storage.YieldAggregator
+struct YieldAggregatorStorage {
+    /// Total amount of _asset deposited into YieldAggregator contract
     uint256 totalAssetsDeposited;
     /// Total amount of _asset deposited across all strategies.
     uint256 totalAllocated;
@@ -18,7 +18,7 @@ struct AggregationVaultStorage {
     /// fee recipient address
     address feeRecipient;
     /// Mapping between a strategy address and it's allocation config
-    mapping(address => IEulerAggregationVault.Strategy) strategies;
+    mapping(address => IYieldAggregator.Strategy) strategies;
     /// @dev An array of strategy addresses to withdraw from
     address[] withdrawalQueue;
 
@@ -48,14 +48,14 @@ struct AggregationVaultStorage {
 }
 
 library StorageLib {
-    // keccak256(abi.encode(uint256(keccak256("euler_aggregation_vault.storage.AggregationVault")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 private constant AggregationVaultStorageLocation =
-        0x7da5ece5aff94f3377324d715703a012d3253da37511270103c646f171c0aa00;
+    // keccak256(abi.encode(uint256(keccak256("euler_yield_aggregator.storage.YieldAggregator")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant YieldAggregatorStorageLocation =
+        0xac0b522cbeffc7768e2fa69372227b3c347a154761ba132cbe29d024b3f8eb00;
 
-    /// @dev A function to return a pointer for the AggregationVaultStorageLocation.
-    function _getAggregationVaultStorage() internal pure returns (AggregationVaultStorage storage $) {
+    /// @dev A function to return a pointer for the YieldAggregatorStorageLocation.
+    function _getYieldAggregatorStorage() internal pure returns (YieldAggregatorStorage storage $) {
         assembly {
-            $.slot := AggregationVaultStorageLocation
+            $.slot := YieldAggregatorStorageLocation
         }
     }
 }

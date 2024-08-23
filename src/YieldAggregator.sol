@@ -3,12 +3,12 @@ pragma solidity ^0.8.0;
 
 // interfaces
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {IEulerAggregationVault} from "./interface/IEulerAggregationVault.sol";
+import {IYieldAggregator} from "./interface/IYieldAggregator.sol";
 // contracts
 import {
     Dispatch,
     StrategyModule,
-    AggregationVaultModule,
+    YieldAggregatorVaultModule,
     FeeModule,
     RewardsModule,
     HooksModule,
@@ -22,23 +22,23 @@ import {ContextUpgradeable} from "@openzeppelin-upgradeable/utils/ContextUpgrade
 import {Shared} from "./common/Shared.sol";
 // libs
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {StorageLib as Storage, AggregationVaultStorage} from "./lib/StorageLib.sol";
+import {StorageLib as Storage, YieldAggregatorStorage} from "./lib/StorageLib.sol";
 import {AmountCap} from "./lib/AmountCapLib.sol";
 import {ErrorsLib as Errors} from "./lib/ErrorsLib.sol";
 import {ConstantsLib as Constants} from "./lib/ConstantsLib.sol";
 
-/// @title EulerAggregationVault contract
+/// @title YieldAggregator contract
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
 /// @dev inspired by Yearn v3 ❤️
-contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, IEulerAggregationVault {
+contract YieldAggregator is Dispatch, AccessControlEnumerableUpgradeable, IYieldAggregator {
     using SafeCast for uint256;
 
     /// @dev Constructor.
-    constructor(IEulerAggregationVault.ConstructorParams memory _constructorParams)
+    constructor(IYieldAggregator.ConstructorParams memory _constructorParams)
         Shared(_constructorParams.evc)
         Dispatch(
-            _constructorParams.aggregationVaultModule,
+            _constructorParams.yieldAggregatorVaultModule,
             _constructorParams.rewardsModule,
             _constructorParams.hooksModule,
             _constructorParams.feeModule,
@@ -48,9 +48,9 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
         )
     {}
 
-    /// @dev Initialize the EulerAggregationVault.
+    /// @dev Initialize the YieldAggregator.
     /// @param _initParams InitParams struct.
-    function init(IEulerAggregationVault.InitParams calldata _initParams) public initializer {
+    function init(IYieldAggregator.InitParams calldata _initParams) public initializer {
         __ERC4626_init_unchained(IERC20(_initParams.asset));
         __ERC20_init_unchained(_initParams.name, _initParams.symbol);
         __ERC20Votes_init_unchained();
@@ -58,32 +58,32 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
 
         if (_initParams.initialCashAllocationPoints == 0) revert Errors.InitialAllocationPointsZero();
 
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
         $.locked = Constants.REENTRANCYLOCK__UNLOCKED;
         $.balanceTracker = _initParams.balanceTracker;
-        $.strategies[address(0)] = IEulerAggregationVault.Strategy({
+        $.strategies[address(0)] = IYieldAggregator.Strategy({
             allocated: 0,
             allocationPoints: _initParams.initialCashAllocationPoints.toUint96(),
-            status: IEulerAggregationVault.StrategyStatus.Active,
+            status: IYieldAggregator.StrategyStatus.Active,
             cap: AmountCap.wrap(0)
         });
         $.totalAllocationPoints = _initParams.initialCashAllocationPoints;
 
         // Setup DEFAULT_ADMIN
-        _grantRole(DEFAULT_ADMIN_ROLE, _initParams.aggregationVaultOwner);
+        _grantRole(DEFAULT_ADMIN_ROLE, _initParams.yieldAggregatorVaultOwner);
 
         // Setup role admins
         _setRoleAdmin(Constants.GUARDIAN, Constants.GUARDIAN_ADMIN);
         _setRoleAdmin(Constants.STRATEGY_OPERATOR, Constants.STRATEGY_OPERATOR_ADMIN);
-        _setRoleAdmin(Constants.AGGREGATION_VAULT_MANAGER, Constants.AGGREGATION_VAULT_MANAGER_ADMIN);
+        _setRoleAdmin(Constants.YIELD_AGGREGATOR_MANAGER, Constants.YIELD_AGGREGATOR_MANAGER_ADMIN);
         _setRoleAdmin(Constants.WITHDRAWAL_QUEUE_MANAGER, Constants.WITHDRAWAL_QUEUE_MANAGER_ADMIN);
     }
 
     /// @dev See {FeeModule-setFeeRecipient}.
     function setFeeRecipient(address _newFeeRecipient)
         public
-        override (IEulerAggregationVault, FeeModule)
-        onlyRole(Constants.AGGREGATION_VAULT_MANAGER)
+        override (IYieldAggregator, FeeModule)
+        onlyRole(Constants.YIELD_AGGREGATOR_MANAGER)
         onlyEVCAccountOwner
         use(feeModule)
     {}
@@ -91,8 +91,8 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     /// @dev See {FeeModule-setPerformanceFee}.
     function setPerformanceFee(uint96 _newFee)
         public
-        override (IEulerAggregationVault, FeeModule)
-        onlyRole(Constants.AGGREGATION_VAULT_MANAGER)
+        override (IYieldAggregator, FeeModule)
+        onlyRole(Constants.YIELD_AGGREGATOR_MANAGER)
         onlyEVCAccountOwner
         use(feeModule)
     {}
@@ -100,8 +100,8 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     /// @dev See {RewardsModule-optInStrategyRewards}.
     function optInStrategyRewards(address _strategy)
         public
-        override (IEulerAggregationVault, RewardsModule)
-        onlyRole(Constants.AGGREGATION_VAULT_MANAGER)
+        override (IYieldAggregator, RewardsModule)
+        onlyRole(Constants.YIELD_AGGREGATOR_MANAGER)
         onlyEVCAccountOwner
         use(rewardsModule)
     {}
@@ -109,8 +109,8 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     /// @dev See {RewardsModule-optOutStrategyRewards}.
     function optOutStrategyRewards(address _strategy)
         public
-        override (IEulerAggregationVault, RewardsModule)
-        onlyRole(Constants.AGGREGATION_VAULT_MANAGER)
+        override (IYieldAggregator, RewardsModule)
+        onlyRole(Constants.YIELD_AGGREGATOR_MANAGER)
         onlyEVCAccountOwner
         use(rewardsModule)
     {}
@@ -118,8 +118,8 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     /// @dev See {RewardsModule-optOutStrategyRewards}.
     function enableRewardForStrategy(address _strategy, address _reward)
         public
-        override (IEulerAggregationVault, RewardsModule)
-        onlyRole(Constants.AGGREGATION_VAULT_MANAGER)
+        override (IYieldAggregator, RewardsModule)
+        onlyRole(Constants.YIELD_AGGREGATOR_MANAGER)
         onlyEVCAccountOwner
         use(rewardsModule)
     {}
@@ -127,8 +127,8 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     /// @dev See {RewardsModule-disableRewardForStrategy}.
     function disableRewardForStrategy(address _strategy, address _reward, bool _forfeitRecentReward)
         public
-        override (IEulerAggregationVault, RewardsModule)
-        onlyRole(Constants.AGGREGATION_VAULT_MANAGER)
+        override (IYieldAggregator, RewardsModule)
+        onlyRole(Constants.YIELD_AGGREGATOR_MANAGER)
         onlyEVCAccountOwner
         use(rewardsModule)
     {}
@@ -136,8 +136,8 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     /// @dev See {RewardsModule-claimStrategyReward}.
     function claimStrategyReward(address _strategy, address _reward, address _recipient, bool _forfeitRecentReward)
         public
-        override (IEulerAggregationVault, RewardsModule)
-        onlyRole(Constants.AGGREGATION_VAULT_MANAGER)
+        override (IYieldAggregator, RewardsModule)
+        onlyRole(Constants.YIELD_AGGREGATOR_MANAGER)
         onlyEVCAccountOwner
         use(rewardsModule)
     {}
@@ -145,8 +145,8 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     /// @dev See {HooksModule-setHooksConfig}.
     function setHooksConfig(address _hooksTarget, uint32 _hookedFns)
         public
-        override (IEulerAggregationVault, HooksModule)
-        onlyRole(Constants.AGGREGATION_VAULT_MANAGER)
+        override (IYieldAggregator, HooksModule)
+        onlyRole(Constants.YIELD_AGGREGATOR_MANAGER)
         onlyEVCAccountOwner
         use(hooksModule)
     {}
@@ -154,7 +154,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     /// @dev See {StrategyModule-addStrategy}.
     function addStrategy(address _strategy, uint256 _allocationPoints)
         public
-        override (IEulerAggregationVault, StrategyModule)
+        override (IYieldAggregator, StrategyModule)
         onlyRole(Constants.STRATEGY_OPERATOR)
         onlyEVCAccountOwner
         use(strategyModule)
@@ -163,7 +163,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     /// @dev See {StrategyModule-removeStrategy}.
     function removeStrategy(address _strategy)
         public
-        override (IEulerAggregationVault, StrategyModule)
+        override (IYieldAggregator, StrategyModule)
         onlyRole(Constants.STRATEGY_OPERATOR)
         onlyEVCAccountOwner
         use(strategyModule)
@@ -172,7 +172,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     /// @dev See {StrategyModule-setStrategyCap}.
     function setStrategyCap(address _strategy, uint16 _cap)
         public
-        override (IEulerAggregationVault, StrategyModule)
+        override (IYieldAggregator, StrategyModule)
         onlyRole(Constants.GUARDIAN)
         onlyEVCAccountOwner
         use(strategyModule)
@@ -181,7 +181,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     /// @dev See {StrategyModule-adjustAllocationPoints}.
     function adjustAllocationPoints(address _strategy, uint256 _newPoints)
         public
-        override (IEulerAggregationVault, StrategyModule)
+        override (IYieldAggregator, StrategyModule)
         onlyRole(Constants.GUARDIAN)
         onlyEVCAccountOwner
         use(strategyModule)
@@ -190,101 +190,96 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     /// @dev See {StrategyModule-toggleStrategyEmergencyStatus}.
     function toggleStrategyEmergencyStatus(address _strategy)
         public
-        override (IEulerAggregationVault, StrategyModule)
+        override (IYieldAggregator, StrategyModule)
         onlyRole(Constants.GUARDIAN)
         onlyEVCAccountOwner
         use(strategyModule)
     {}
 
     /// @dev See {RewardsModule-enableBalanceForwarder}.
-    function enableBalanceForwarder() public override (IEulerAggregationVault, RewardsModule) use(rewardsModule) {}
+    function enableBalanceForwarder() public override (IYieldAggregator, RewardsModule) use(rewardsModule) {}
 
     /// @dev See {RewardsModule-disableBalanceForwarder}.
-    function disableBalanceForwarder() public override (IEulerAggregationVault, RewardsModule) use(rewardsModule) {}
+    function disableBalanceForwarder() public override (IYieldAggregator, RewardsModule) use(rewardsModule) {}
 
     /// @dev See {RebalanceModule-rebalance}.
     function rebalance(address[] calldata _strategies)
         public
-        override (IEulerAggregationVault, RebalanceModule)
+        override (IYieldAggregator, RebalanceModule)
         use(rebalanceModule)
     {}
 
     /// @dev See {WithdrawalQueue-reorderWithdrawalQueue}.
     function reorderWithdrawalQueue(uint8 _index1, uint8 _index2)
         public
-        override (IEulerAggregationVault, WithdrawalQueueModule)
+        override (IYieldAggregator, WithdrawalQueueModule)
         onlyRole(Constants.WITHDRAWAL_QUEUE_MANAGER)
         onlyEVCAccountOwner
         use(withdrawalQueueModule)
     {}
 
     /// @dev See {VaultModule-harvest}.
-    function harvest() public override (IEulerAggregationVault, AggregationVaultModule) use(aggregationVaultModule) {}
+    function harvest() public override (IYieldAggregator, YieldAggregatorVaultModule) use(yieldAggregatorVaultModule) {}
 
     /// @dev See {VaultModule-updateInterestAccrued}.
     function updateInterestAccrued()
         public
-        override (IEulerAggregationVault, AggregationVaultModule)
-        use(aggregationVaultModule)
+        override (IYieldAggregator, YieldAggregatorVaultModule)
+        use(yieldAggregatorVaultModule)
     {}
 
     /// @dev See {VaultModule-gulp}.
-    function gulp() public override (IEulerAggregationVault, AggregationVaultModule) use(aggregationVaultModule) {}
+    function gulp() public override (IYieldAggregator, YieldAggregatorVaultModule) use(yieldAggregatorVaultModule) {}
 
     /// @dev See {VaultModule-deposit}.
     function deposit(uint256 _assets, address _receiver)
         public
-        override (IEulerAggregationVault, AggregationVaultModule)
-        use(aggregationVaultModule)
+        override (IYieldAggregator, YieldAggregatorVaultModule)
+        use(yieldAggregatorVaultModule)
         returns (uint256)
     {}
 
     /// @dev See {VaultModule-mint}.
     function mint(uint256 _shares, address _receiver)
         public
-        override (IEulerAggregationVault, AggregationVaultModule)
-        use(aggregationVaultModule)
+        override (IYieldAggregator, YieldAggregatorVaultModule)
+        use(yieldAggregatorVaultModule)
         returns (uint256)
     {}
 
     /// @dev See {VaultModule-withdraw}.
     function withdraw(uint256 _assets, address _receiver, address _owner)
         public
-        override (IEulerAggregationVault, AggregationVaultModule)
-        use(aggregationVaultModule)
+        override (IYieldAggregator, YieldAggregatorVaultModule)
+        use(yieldAggregatorVaultModule)
         returns (uint256 shares)
     {}
 
     /// @dev See {VaultModule-redeem}.
     function redeem(uint256 _shares, address _receiver, address _owner)
         public
-        override (IEulerAggregationVault, AggregationVaultModule)
-        use(aggregationVaultModule)
+        override (IYieldAggregator, YieldAggregatorVaultModule)
+        use(yieldAggregatorVaultModule)
         returns (uint256 assets)
     {}
 
     /// @dev See {VaultModule-interestAccrued}.
-    function interestAccrued()
-        public
-        view
-        override (IEulerAggregationVault, AggregationVaultModule)
-        returns (uint256)
-    {
+    function interestAccrued() public view override (IYieldAggregator, YieldAggregatorVaultModule) returns (uint256) {
         return super.interestAccrued();
     }
 
-    /// @dev See {VaultModule-getAggregationVaultSavingRate}.
-    function getAggregationVaultSavingRate()
+    /// @dev See {VaultModule-getYieldAggregatorSavingRate}.
+    function getYieldAggregatorSavingRate()
         public
         view
-        override (IEulerAggregationVault, AggregationVaultModule)
+        override (IYieldAggregator, YieldAggregatorVaultModule)
         returns (uint40, uint40, uint168)
     {
-        return super.getAggregationVaultSavingRate();
+        return super.getYieldAggregatorSavingRate();
     }
 
     /// @dev See {VaultModule-totalAllocated}.
-    function totalAllocated() public view override (IEulerAggregationVault, AggregationVaultModule) returns (uint256) {
+    function totalAllocated() public view override (IYieldAggregator, YieldAggregatorVaultModule) returns (uint256) {
         return super.totalAllocated();
     }
 
@@ -292,7 +287,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function totalAssetsDeposited()
         public
         view
-        override (IEulerAggregationVault, AggregationVaultModule)
+        override (IYieldAggregator, YieldAggregatorVaultModule)
         returns (uint256)
     {
         return super.totalAssetsDeposited();
@@ -302,7 +297,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function lastHarvestTimestamp()
         public
         view
-        override (IEulerAggregationVault, AggregationVaultModule)
+        override (IYieldAggregator, YieldAggregatorVaultModule)
         returns (uint256)
     {
         return super.lastHarvestTimestamp();
@@ -312,14 +307,14 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function totalAssetsAllocatable()
         public
         view
-        override (IEulerAggregationVault, AggregationVaultModule)
+        override (IYieldAggregator, YieldAggregatorVaultModule)
         returns (uint256)
     {
         return super.totalAssetsAllocatable();
     }
 
     /// @dev See {VaultModule-totalAssets}.
-    function totalAssets() public view override (IEulerAggregationVault, AggregationVaultModule) returns (uint256) {
+    function totalAssets() public view override (IYieldAggregator, YieldAggregatorVaultModule) returns (uint256) {
         return super.totalAssets();
     }
 
@@ -327,7 +322,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function convertToShares(uint256 _assets)
         public
         view
-        override (IEulerAggregationVault, AggregationVaultModule)
+        override (IYieldAggregator, YieldAggregatorVaultModule)
         returns (uint256)
     {
         return super.convertToShares(_assets);
@@ -337,7 +332,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function convertToAssets(uint256 _shares)
         public
         view
-        override (IEulerAggregationVault, AggregationVaultModule)
+        override (IYieldAggregator, YieldAggregatorVaultModule)
         returns (uint256)
     {
         return super.convertToAssets(_shares);
@@ -347,7 +342,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function maxWithdraw(address _owner)
         public
         view
-        override (IEulerAggregationVault, AggregationVaultModule)
+        override (IYieldAggregator, YieldAggregatorVaultModule)
         returns (uint256)
     {
         return super.maxWithdraw(_owner);
@@ -357,7 +352,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function maxRedeem(address _owner)
         public
         view
-        override (IEulerAggregationVault, AggregationVaultModule)
+        override (IYieldAggregator, YieldAggregatorVaultModule)
         returns (uint256)
     {
         return super.maxRedeem(_owner);
@@ -367,7 +362,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function previewDeposit(uint256 _assets)
         public
         view
-        override (IEulerAggregationVault, AggregationVaultModule)
+        override (IYieldAggregator, YieldAggregatorVaultModule)
         returns (uint256)
     {
         return super.previewDeposit(_assets);
@@ -377,7 +372,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function previewMint(uint256 _shares)
         public
         view
-        override (IEulerAggregationVault, AggregationVaultModule)
+        override (IYieldAggregator, YieldAggregatorVaultModule)
         returns (uint256)
     {
         return super.previewMint(_shares);
@@ -387,7 +382,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function previewWithdraw(uint256 _assets)
         public
         view
-        override (IEulerAggregationVault, AggregationVaultModule)
+        override (IYieldAggregator, YieldAggregatorVaultModule)
         returns (uint256)
     {
         return super.previewWithdraw(_assets);
@@ -397,7 +392,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function previewRedeem(uint256 _shares)
         public
         view
-        override (IEulerAggregationVault, AggregationVaultModule)
+        override (IYieldAggregator, YieldAggregatorVaultModule)
         returns (uint256)
     {
         return super.previewRedeem(_shares);
@@ -407,19 +402,19 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function balanceOf(address _account)
         public
         view
-        override (IEulerAggregationVault, AggregationVaultModule)
+        override (IYieldAggregator, YieldAggregatorVaultModule)
         returns (uint256)
     {
         return super.balanceOf(_account);
     }
 
     /// @dev See {VaultModule-totalSupply}.
-    function totalSupply() public view override (IEulerAggregationVault, AggregationVaultModule) returns (uint256) {
+    function totalSupply() public view override (IYieldAggregator, YieldAggregatorVaultModule) returns (uint256) {
         return super.totalSupply();
     }
 
     /// @dev See {VaultModule-decimals}.
-    function decimals() public view override (IEulerAggregationVault, AggregationVaultModule) returns (uint8) {
+    function decimals() public view override (IYieldAggregator, YieldAggregatorVaultModule) returns (uint8) {
         return super.decimals();
     }
 
@@ -427,7 +422,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function maxDeposit(address _owner)
         public
         view
-        override (IEulerAggregationVault, AggregationVaultModule)
+        override (IYieldAggregator, YieldAggregatorVaultModule)
         returns (uint256)
     {
         return super.maxDeposit(_owner);
@@ -437,7 +432,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function maxMint(address _owner)
         public
         view
-        override (IEulerAggregationVault, AggregationVaultModule)
+        override (IYieldAggregator, YieldAggregatorVaultModule)
         returns (uint256)
     {
         return super.maxMint(_owner);
@@ -447,34 +442,29 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function getStrategy(address _strategy)
         public
         view
-        override (IEulerAggregationVault, StrategyModule)
-        returns (IEulerAggregationVault.Strategy memory)
+        override (IYieldAggregator, StrategyModule)
+        returns (IYieldAggregator.Strategy memory)
     {
         return super.getStrategy(_strategy);
     }
 
     /// @dev See {StrategyModule-totalAllocationPoints}.
-    function totalAllocationPoints() public view override (IEulerAggregationVault, StrategyModule) returns (uint256) {
+    function totalAllocationPoints() public view override (IYieldAggregator, StrategyModule) returns (uint256) {
         return super.totalAllocationPoints();
     }
 
     /// @dev See {FeeModule-performanceFeeConfig}.
-    function performanceFeeConfig()
-        public
-        view
-        override (IEulerAggregationVault, FeeModule)
-        returns (address, uint96)
-    {
+    function performanceFeeConfig() public view override (IYieldAggregator, FeeModule) returns (address, uint96) {
         return super.performanceFeeConfig();
     }
 
     /// @dev See {HooksModule-getHooksConfig}.
-    function getHooksConfig() public view override (IEulerAggregationVault, HooksModule) returns (address, uint32) {
+    function getHooksConfig() public view override (IYieldAggregator, HooksModule) returns (address, uint32) {
         return super.getHooksConfig();
     }
 
     /// @dev See {RewardsModule-balanceTrackerAddress}.
-    function balanceTrackerAddress() public view override (IEulerAggregationVault, RewardsModule) returns (address) {
+    function balanceTrackerAddress() public view override (IYieldAggregator, RewardsModule) returns (address) {
         return super.balanceTrackerAddress();
     }
 
@@ -482,7 +472,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function balanceForwarderEnabled(address _account)
         public
         view
-        override (IEulerAggregationVault, RewardsModule)
+        override (IYieldAggregator, RewardsModule)
         returns (bool)
     {
         return super.balanceForwarderEnabled(_account);
@@ -492,7 +482,7 @@ contract EulerAggregationVault is Dispatch, AccessControlEnumerableUpgradeable, 
     function withdrawalQueue()
         public
         view
-        override (IEulerAggregationVault, WithdrawalQueueModule)
+        override (IYieldAggregator, WithdrawalQueueModule)
         returns (address[] memory)
     {
         return super.withdrawalQueue();

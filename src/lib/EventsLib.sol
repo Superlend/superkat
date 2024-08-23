@@ -7,7 +7,7 @@ library EventsLib {
     event DeductLoss(uint256 socializedAmount);
     event InterestUpdated(uint256 interestAccrued, uint256 interestLeft);
 
-    /// @dev EulerAggregationVault.sol events
+    /// @dev YieldAggregator.sol events
     event AccruePerformanceFee(address indexed feeRecipient, uint256 yield, uint256 feeShares);
     event ExecuteHarvest(address indexed strategy, uint256 aggregatorAssetsAmount, uint256 strategyAllocatedAmount);
     event Harvest(uint256 totalAllocated, uint256 totlaYield, uint256 totalLoss);
