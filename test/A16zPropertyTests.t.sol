@@ -4,14 +4,14 @@ pragma solidity ^0.8.0;
 // a16z properties tests
 import {ERC4626Test} from "erc4626-tests/ERC4626.test.sol";
 // contracts
-import {EulerAggregationVault} from "../src/EulerAggregationVault.sol";
-import {AggregationVault} from "../src/module/AggregationVault.sol";
+import {YieldAggregator} from "../src/YieldAggregator.sol";
+import {YieldAggregatorVault} from "../src/module/YieldAggregatorVault.sol";
 import {Hooks} from "../src/module/Hooks.sol";
 import {Rewards} from "../src/module/Rewards.sol";
 import {Fee} from "../src/module/Fee.sol";
 import {Rebalance} from "../src/module/Rebalance.sol";
 import {WithdrawalQueue} from "../src/module/WithdrawalQueue.sol";
-import {EulerAggregationVaultFactory} from "../src/EulerAggregationVaultFactory.sol";
+import {YieldAggregatorFactory} from "../src/YieldAggregatorFactory.sol";
 import {Strategy} from "../src/module/Strategy.sol";
 // mocks
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
@@ -25,7 +25,7 @@ contract A16zPropertyTests is ERC4626Test {
     address public factoryOwner;
 
     // core modules
-    AggregationVault aggregationVaultModule;
+    YieldAggregatorVault yieldAggregatorVaultModule;
     Rewards rewardsModule;
     Hooks hooksModule;
     Fee feeModuleModule;
@@ -33,14 +33,14 @@ contract A16zPropertyTests is ERC4626Test {
     Rebalance rebalanceModuleModule;
     WithdrawalQueue withdrawalQueueModuleModule;
 
-    EulerAggregationVaultFactory eulerAggregationVaultFactory;
-    EulerAggregationVault eulerAggregationVault;
+    YieldAggregatorFactory eulerYieldAggregatorVaultFactory;
+    YieldAggregator eulerYieldAggregatorVault;
 
     function setUp() public override {
         factoryOwner = makeAddr("FACTORY_OWNER");
         evc = new EthereumVaultConnector();
 
-        aggregationVaultModule = new AggregationVault(address(evc));
+        yieldAggregatorVaultModule = new YieldAggregatorVault(address(evc));
         rewardsModule = new Rewards(address(evc));
         hooksModule = new Hooks(address(evc));
         feeModuleModule = new Fee(address(evc));
@@ -48,11 +48,11 @@ contract A16zPropertyTests is ERC4626Test {
         rebalanceModuleModule = new Rebalance(address(evc));
         withdrawalQueueModuleModule = new WithdrawalQueue(address(evc));
 
-        EulerAggregationVaultFactory.FactoryParams memory factoryParams = EulerAggregationVaultFactory.FactoryParams({
+        YieldAggregatorFactory.FactoryParams memory factoryParams = YieldAggregatorFactory.FactoryParams({
             owner: factoryOwner,
             evc: address(evc),
             balanceTracker: address(0),
-            aggregationVaultModule: address(aggregationVaultModule),
+            yieldAggregatorVaultModule: address(yieldAggregatorVaultModule),
             rewardsModule: address(rewardsModule),
             hooksModule: address(hooksModule),
             feeModule: address(feeModuleModule),
@@ -60,11 +60,11 @@ contract A16zPropertyTests is ERC4626Test {
             rebalanceModule: address(rebalanceModuleModule),
             withdrawalQueueModule: address(withdrawalQueueModuleModule)
         });
-        eulerAggregationVaultFactory = new EulerAggregationVaultFactory(factoryParams);
+        eulerYieldAggregatorVaultFactory = new YieldAggregatorFactory(factoryParams);
         vm.prank(factoryOwner);
 
         _underlying_ = address(new ERC20Mock());
-        _vault_ = eulerAggregationVaultFactory.deployEulerAggregationVault(
+        _vault_ = eulerYieldAggregatorVaultFactory.deployYieldAggregator(
             _underlying_, "E20M_Agg", "E20M_Agg", CASH_RESERVE_ALLOCATION_POINTS
         );
         _delta_ = 0;

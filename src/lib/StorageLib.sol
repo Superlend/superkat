@@ -2,27 +2,27 @@
 pragma solidity ^0.8.0;
 
 // interfaces
-import {IEulerAggregationVault} from "../interface/IEulerAggregationVault.sol";
+import {IYieldAggregator} from "../interface/IYieldAggregator.sol";
 
-/// @custom:storage-location erc7201:euler_aggregation_vault.storage.AggregationVault
-struct AggregationVaultStorage {
-    /// Total amount of _asset deposited into EulerAggregationVault contract
+/// @custom:storage-location erc7201:euler_yield_aggregator.storage.YieldAggregator
+struct YieldAggregatorStorage {
+    /// Total amount of _asset deposited into YieldAggregator contract
     uint256 totalAssetsDeposited;
     /// Total amount of _asset deposited across all strategies.
     uint256 totalAllocated;
     /// Total amount of allocation points across all strategies including the cash reserve.
     uint256 totalAllocationPoints;
+    // 1 slot: 96 + 160
     /// fee rate
     uint96 performanceFee;
     /// fee recipient address
     address feeRecipient;
     /// Mapping between a strategy address and it's allocation config
-    mapping(address => IEulerAggregationVault.Strategy) strategies;
+    mapping(address => IYieldAggregator.Strategy) strategies;
     /// @dev An array of strategy addresses to withdraw from
     address[] withdrawalQueue;
-    /// @dev Last harvest timestamp
-    uint256 lastHarvestTimestamp;
 
+    // 1 slot: 40 + 40 + 168 + 8
     /// lastInterestUpdate: last timestamp where interest was updated.
     uint40 lastInterestUpdate;
     /// interestSmearEnd: timestamp when the smearing of interest end.
@@ -38,21 +38,24 @@ struct AggregationVaultStorage {
     /// A mapping to check if a user address enabled balance forwarding for reward streams integration.
     mapping(address => bool) isBalanceForwarderEnabled;
     
-    
+    // 1 slot: 160 + 32 + 40
     /// @dev storing the hooks target and hooked functions.
     address hooksTarget;
     uint32 hookedFns;
+
+    /// @dev Last harvest timestamp
+    uint40 lastHarvestTimestamp;
 }
 
 library StorageLib {
-    // keccak256(abi.encode(uint256(keccak256("euler_aggregation_vault.storage.AggregationVault")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 private constant AggregationVaultStorageLocation =
-        0x7da5ece5aff94f3377324d715703a012d3253da37511270103c646f171c0aa00;
+    // keccak256(abi.encode(uint256(keccak256("euler_yield_aggregator.storage.YieldAggregator")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant YieldAggregatorStorageLocation =
+        0xac0b522cbeffc7768e2fa69372227b3c347a154761ba132cbe29d024b3f8eb00;
 
-    /// @dev A function to return a pointer for the AggregationVaultStorageLocation.
-    function _getAggregationVaultStorage() internal pure returns (AggregationVaultStorage storage $) {
+    /// @dev A function to return a pointer for the YieldAggregatorStorageLocation.
+    function _getYieldAggregatorStorage() internal pure returns (YieldAggregatorStorage storage $) {
         assembly {
-            $.slot := AggregationVaultStorageLocation
+            $.slot := YieldAggregatorStorageLocation
         }
     }
 }

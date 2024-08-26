@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 // interfaces
-import {IEulerAggregationVault} from "../interface/IEulerAggregationVault.sol";
+import {IYieldAggregator} from "../interface/IYieldAggregator.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 // contracts
@@ -10,10 +10,11 @@ import {Shared} from "../common/Shared.sol";
 // libs
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {StorageLib as Storage, AggregationVaultStorage} from "../lib/StorageLib.sol";
+import {StorageLib as Storage, YieldAggregatorStorage} from "../lib/StorageLib.sol";
 import {AmountCapLib, AmountCap} from "../lib/AmountCapLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
+import {ConstantsLib as Constants} from "../lib/ConstantsLib.sol";
 
 /// @title RebalanceModule contract
 /// @custom:security-contact security@euler.xyz
@@ -22,8 +23,6 @@ abstract contract RebalanceModule is Shared {
     using SafeERC20 for IERC20;
     using SafeCast for uint256;
     using AmountCapLib for AmountCap;
-
-    address public constant CASH_RESERVE = address(0);
 
     /// @notice Rebalance strategies allocation.
     /// @param _strategies Strategies addresses.
@@ -42,15 +41,15 @@ abstract contract RebalanceModule is Shared {
     ///         - If all the available cash is greater than the max deposit, deposit the max deposit
     /// @param _strategy Strategy address.
     function _rebalance(address _strategy) private {
-        if (_strategy == CASH_RESERVE) {
+        if (_strategy == Constants.CASH_RESERVE) {
             return; //nothing to rebalance as that's the cash reserve
         }
 
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
-        IEulerAggregationVault.Strategy memory strategyData = $.strategies[_strategy];
+        IYieldAggregator.Strategy memory strategyData = $.strategies[_strategy];
 
-        if (strategyData.status != IEulerAggregationVault.StrategyStatus.Active) return;
+        if (strategyData.status != IYieldAggregator.StrategyStatus.Active) return;
 
         uint256 totalAllocationPointsCache = $.totalAllocationPoints;
         uint256 totalAssetsAllocatableCache = _totalAssetsAllocatable();
@@ -58,7 +57,8 @@ abstract contract RebalanceModule is Shared {
             totalAssetsAllocatableCache * strategyData.allocationPoints / totalAllocationPointsCache;
 
         uint120 capAmount = uint120(strategyData.cap.resolve());
-        if ((strategyData.cap.toRawUint16() != 0) && (targetAllocation > capAmount)) targetAllocation = capAmount;
+        // capAmount will be max uint256 if no cap is set
+        if (targetAllocation > capAmount) targetAllocation = capAmount;
 
         uint256 amountToRebalance;
         bool isDeposit;
@@ -72,8 +72,8 @@ abstract contract RebalanceModule is Shared {
             }
         } else if (strategyData.allocated < targetAllocation) {
             // Deposit
-            uint256 targetCash =
-                totalAssetsAllocatableCache * $.strategies[CASH_RESERVE].allocationPoints / totalAllocationPointsCache;
+            uint256 targetCash = totalAssetsAllocatableCache * $.strategies[Constants.CASH_RESERVE].allocationPoints
+                / totalAllocationPointsCache;
             uint256 currentCash = totalAssetsAllocatableCache - $.totalAllocated;
 
             // Calculate available cash to put in strategies

@@ -9,9 +9,10 @@ import {EVCUtil} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {ERC20Upgradeable} from "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 // libs
 import {HooksLib} from "../lib/HooksLib.sol";
-import {StorageLib as Storage, AggregationVaultStorage} from "../lib/StorageLib.sol";
+import {StorageLib as Storage, YieldAggregatorStorage} from "../lib/StorageLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
+import {ConstantsLib as Constants} from "../lib/ConstantsLib.sol";
 
 /// @title Shared contract
 /// @dev Have common functions that is used in different contracts.
@@ -19,27 +20,6 @@ import {EventsLib as Events} from "../lib/EventsLib.sol";
 /// @author Euler Labs (https://www.eulerlabs.com/)
 abstract contract Shared is EVCUtil {
     using HooksLib for uint32;
-
-    // This is copied from ERC20Upgradeable OZ implementation.
-    // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.ERC20")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 private constant ERC20StorageLocation = 0x52c63247e1f47db19d5ce0460030c497f067ca4cebf71ba98eeadabe20bace00;
-
-    // Hookable functions code.
-    uint32 public constant DEPOSIT = 1 << 0;
-    uint32 public constant WITHDRAW = 1 << 1;
-    uint32 public constant MINT = 1 << 2;
-    uint32 public constant REDEEM = 1 << 3;
-    uint32 public constant ADD_STRATEGY = 1 << 4;
-    uint32 public constant REMOVE_STRATEGY = 1 << 5;
-
-    // Re-entrancy protection
-    uint8 internal constant REENTRANCYLOCK__UNLOCKED = 1;
-    uint8 internal constant REENTRANCYLOCK__LOCKED = 2;
-
-    /// @dev Interest rate smearing period
-    uint256 public constant INTEREST_SMEAR = 2 weeks;
-    /// @dev Minimum amount of shares to exist for gulp to be enabled
-    uint256 public constant MIN_SHARES_FOR_GULP = 1e7;
 
     /// @dev Non-reentracy protection for state-changing functions.
     modifier nonReentrant() {
@@ -60,7 +40,7 @@ abstract contract Shared is EVCUtil {
     /// @dev The not distributed amount is amount available to gulp + interest left.
     /// @param _lossAmount Amount lost.
     function _deductLoss(uint256 _lossAmount) internal {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         uint256 totalAssetsDepositedCache = $.totalAssetsDeposited;
         uint256 totalNotDistributed = _totalAssetsAllocatable() - totalAssetsDepositedCache;
@@ -81,7 +61,7 @@ abstract contract Shared is EVCUtil {
     /// @param _fn Function to call the hook for.
     /// @param _caller Caller's address.
     function _callHooksTarget(uint32 _fn, address _caller) internal {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         (address target, uint32 hookedFns) = ($.hooksTarget, $.hookedFns);
 
@@ -96,10 +76,10 @@ abstract contract Shared is EVCUtil {
     function _gulp() internal {
         _updateInterestAccrued();
 
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         // Do not gulp if total supply is too low
-        if (_totalSupply() < MIN_SHARES_FOR_GULP) return;
+        if (_totalSupply() < Constants.MIN_SHARES_FOR_GULP) return;
 
         uint256 toGulp = _totalAssetsAllocatable() - $.totalAssetsDeposited - $.interestLeft;
         if (toGulp == 0) return;
@@ -108,7 +88,7 @@ abstract contract Shared is EVCUtil {
         if (toGulp > maxGulp) toGulp = maxGulp; // cap interest, allowing the vault to function
 
         $.lastInterestUpdate = uint40(block.timestamp);
-        $.interestSmearEnd = uint40(block.timestamp + INTEREST_SMEAR);
+        $.interestSmearEnd = uint40(block.timestamp + Constants.INTEREST_SMEAR);
         $.interestLeft += uint168(toGulp); // toGulp <= maxGulp <= max uint168
 
         emit Events.Gulp($.interestLeft, $.interestSmearEnd);
@@ -119,7 +99,7 @@ abstract contract Shared is EVCUtil {
         uint256 accruedInterest = _interestAccruedFromCache();
 
         if (accruedInterest > 0) {
-            AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+            YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
             // it's safe to down-cast because the accrued interest is a fraction of interest left
             $.interestLeft -= uint168(accruedInterest);
             $.lastInterestUpdate = uint40(block.timestamp);
@@ -134,7 +114,7 @@ abstract contract Shared is EVCUtil {
     /// @dev Get accrued interest without updating it.
     /// @return Accrued interest.
     function _interestAccruedFromCache() internal view returns (uint256) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         uint40 interestSmearEndCached = $.interestSmearEnd;
         // If distribution ended, full amount is accrued
@@ -159,7 +139,7 @@ abstract contract Shared is EVCUtil {
     /// @dev The total assets allocatable is the current balanceOf + total amount already allocated.
     /// @return total assets allocatable.
     function _totalAssetsAllocatable() internal view returns (uint256) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         return IERC20(IERC4626(address(this)).asset()).balanceOf(address(this)) + $.totalAllocated;
     }
@@ -174,7 +154,7 @@ abstract contract Shared is EVCUtil {
     /// @param _account Address to query
     /// @return True if balance forwarder is enabled
     function _balanceForwarderEnabled(address _account) internal view returns (bool) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         return $.isBalanceForwarderEnabled[_account];
     }
@@ -182,7 +162,7 @@ abstract contract Shared is EVCUtil {
     /// @dev Retrieve the address of rewards contract, tracking changes in account's balances.
     /// @return The balance tracker address.
     function _balanceTrackerAddress() internal view returns (address) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         return address($.balanceTracker);
     }
@@ -203,25 +183,25 @@ abstract contract Shared is EVCUtil {
 
     /// @dev Used by the nonReentrant before returning the execution flow to the original function.
     function _nonReentrantBefore() private {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
-        if ($.locked == REENTRANCYLOCK__LOCKED) revert Errors.Reentrancy();
+        if ($.locked == Constants.REENTRANCYLOCK__LOCKED) revert Errors.Reentrancy();
 
-        $.locked = REENTRANCYLOCK__LOCKED;
+        $.locked = Constants.REENTRANCYLOCK__LOCKED;
     }
 
     /// @dev Used by the nonReentrant after returning the execution flow to the original function.
     function _nonReentrantAfter() private {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
-        $.locked = REENTRANCYLOCK__UNLOCKED;
+        $.locked = Constants.REENTRANCYLOCK__UNLOCKED;
     }
 
     /// @dev Used by the nonReentrantView before returning the execution flow to the original function.
     function _nonReentrantViewBefore() private view {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
-        if ($.locked == REENTRANCYLOCK__LOCKED) {
+        if ($.locked == Constants.REENTRANCYLOCK__LOCKED) {
             // The hook target is allowed to bypass the RO-reentrancy lock.
             if (msg.sender != $.hooksTarget && msg.sender != address(this)) {
                 revert Errors.Reentrancy();
@@ -230,9 +210,11 @@ abstract contract Shared is EVCUtil {
     }
 
     /// @dev Return ERC20StorageLocation pointer.
+    ///      This is copied from ERC20Upgradeable OZ implementation to be able to access ERC20 storage and override functions.
+    ///      keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.ERC20")) - 1)) & ~bytes32(uint256(0xff))
     function _getInheritedERC20Storage() private pure returns (ERC20Upgradeable.ERC20Storage storage $) {
         assembly {
-            $.slot := ERC20StorageLocation
+            $.slot := 0x52c63247e1f47db19d5ce0460030c497f067ca4cebf71ba98eeadabe20bace00
         }
     }
 

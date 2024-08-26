@@ -4,11 +4,11 @@ pragma solidity ^0.8.0;
 // libs
 import {AmountCap} from "../lib/AmountCapLib.sol";
 
-interface IEulerAggregationVault {
+interface IYieldAggregator {
     /// @dev Struct to pass to constructor.
     struct ConstructorParams {
         address evc;
-        address aggregationVaultModule;
+        address yieldAggregatorVaultModule;
         address rewardsModule;
         address hooksModule;
         address feeModule;
@@ -19,7 +19,7 @@ interface IEulerAggregationVault {
 
     /// @dev Struct to pass init() call params.
     struct InitParams {
-        address aggregationVaultOwner;
+        address yieldAggregatorVaultOwner;
         address asset;
         address balanceTracker;
         string name;
@@ -43,7 +43,7 @@ interface IEulerAggregationVault {
     /// An inactive strategy is a strategy that is not added to and recognized by the withdrawal queue.
     /// An active strategy is a well-functional strategy that is added in the withdrawal queue, can be rebalanced and harvested.
     /// A strategy status set as Emergency, if when the strategy for some reasons can no longer be withdrawn from or deposited into it,
-    /// this will be used as a circuit-breaker to ensure that the aggregation vault can continue functioning as intended,
+    /// this will be used as a circuit-breaker to ensure that the Yield Aggregator can continue functioning as intended,
     /// and the only impacted strategy will be the one set as Emergency.
     enum StrategyStatus {
         Inactive,
@@ -81,7 +81,7 @@ interface IEulerAggregationVault {
 
     /// view functions
     function interestAccrued() external view returns (uint256);
-    function getAggregationVaultSavingRate() external view returns (uint40, uint40, uint168);
+    function getYieldAggregatorSavingRate() external view returns (uint40, uint40, uint168);
     function totalAllocated() external view returns (uint256);
     function totalAssetsDeposited() external view returns (uint256);
     function lastHarvestTimestamp() external view returns (uint256);
