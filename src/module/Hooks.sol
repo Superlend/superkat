@@ -6,16 +6,15 @@ import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
 // contracts
 import {Shared} from "../common/Shared.sol";
 // libs
-import {StorageLib as Storage, AggregationVaultStorage} from "../lib/StorageLib.sol";
+import {StorageLib as Storage, YieldAggregatorStorage} from "../lib/StorageLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
+import {ConstantsLib as Constants} from "../lib/ConstantsLib.sol";
 
 /// @title HooksModule contract
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
 abstract contract HooksModule is Shared {
-    uint32 constant ACTIONS_COUNTER = 1 << 6;
-
     /// @notice Set hooks contract and hooked functions.
     /// @param _hooksTarget Hooks contract.
     /// @param _hookedFns Hooked functions.
@@ -27,9 +26,9 @@ abstract contract HooksModule is Shared {
         {
             revert Errors.NotHooksContract();
         }
-        if (_hookedFns >= ACTIONS_COUNTER) revert Errors.InvalidHookedFns();
+        if (_hookedFns >= Constants.ACTIONS_COUNTER) revert Errors.InvalidHookedFns();
 
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
         $.hooksTarget = _hooksTarget;
         $.hookedFns = _hookedFns;
 
@@ -40,7 +39,7 @@ abstract contract HooksModule is Shared {
     /// @return Hooks contract.
     /// @return Hooked functions.
     function getHooksConfig() public view virtual nonReentrantView returns (address, uint32) {
-        AggregationVaultStorage storage $ = Storage._getAggregationVaultStorage();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         return ($.hooksTarget, $.hookedFns);
     }

@@ -2,38 +2,38 @@
 pragma solidity ^0.8.0;
 
 // contracts
-import {EulerAggregationVault, IEulerAggregationVault} from "./EulerAggregationVault.sol";
+import {YieldAggregator, IYieldAggregator} from "./YieldAggregator.sol";
 // libs
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
-/// @title EulerAggregationVaultFactory contract
+/// @title YieldAggregatorFactory contract
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
-contract EulerAggregationVaultFactory {
+contract YieldAggregatorFactory {
     error InvalidQuery();
 
     /// core dependencies
     address public immutable evc;
     address public immutable balanceTracker;
     /// core modules implementations addresses
-    address public immutable aggregationVaultModule;
+    address public immutable yieldAggregatorVaultModule;
     address public immutable rewardsModule;
     address public immutable hooksModule;
     address public immutable feeModule;
     address public immutable strategyModule;
     address public immutable rebalanceModule;
     address public immutable withdrawalQueueModule;
-    /// aggregation vault implementation address
-    address public immutable aggregationVaultImpl;
+    /// yield aggregator implementation address
+    address public immutable yieldAggregatorImpl;
 
-    address[] public aggregationVaults;
+    address[] public yieldAggregatorVaults;
 
     /// @dev Init params struct.
     struct FactoryParams {
         address owner;
         address evc;
         address balanceTracker;
-        address aggregationVaultModule;
+        address yieldAggregatorVaultModule;
         address rewardsModule;
         address hooksModule;
         address feeModule;
@@ -42,14 +42,14 @@ contract EulerAggregationVaultFactory {
         address withdrawalQueueModule;
     }
 
-    event DeployEulerAggregationVault(address indexed _owner, address _aggregationVault, address indexed _asset);
+    event DeployYieldAggregator(address indexed _owner, address _yieldAggregatorVault, address indexed _asset);
 
     /// @dev Constructor.
     /// @param _factoryParams FactoryParams struct.
     constructor(FactoryParams memory _factoryParams) {
         evc = _factoryParams.evc;
         balanceTracker = _factoryParams.balanceTracker;
-        aggregationVaultModule = _factoryParams.aggregationVaultModule;
+        yieldAggregatorVaultModule = _factoryParams.yieldAggregatorVaultModule;
         rewardsModule = _factoryParams.rewardsModule;
         hooksModule = _factoryParams.hooksModule;
         feeModule = _factoryParams.feeModule;
@@ -57,10 +57,10 @@ contract EulerAggregationVaultFactory {
         rebalanceModule = _factoryParams.rebalanceModule;
         withdrawalQueueModule = _factoryParams.withdrawalQueueModule;
 
-        IEulerAggregationVault.ConstructorParams memory aggregationVaultConstructorParams = IEulerAggregationVault
+        IYieldAggregator.ConstructorParams memory yieldAggregatorVaultConstructorParams = IYieldAggregator
             .ConstructorParams({
             evc: evc,
-            aggregationVaultModule: aggregationVaultModule,
+            yieldAggregatorVaultModule: yieldAggregatorVaultModule,
             rewardsModule: rewardsModule,
             hooksModule: hooksModule,
             feeModule: feeModule,
@@ -68,60 +68,60 @@ contract EulerAggregationVaultFactory {
             rebalanceModule: rebalanceModule,
             withdrawalQueueModule: withdrawalQueueModule
         });
-        aggregationVaultImpl = address(new EulerAggregationVault(aggregationVaultConstructorParams));
+        yieldAggregatorImpl = address(new YieldAggregator(yieldAggregatorVaultConstructorParams));
     }
 
-    /// @notice Deploy a new aggregation vault.
+    /// @notice Deploy a new yield aggregator vault.
     /// @param _asset Aggreation vault' asset address.
     /// @param _name Vaut name.
     /// @param _symbol Vault symbol.
     /// @param _initialCashAllocationPoints The amount of points to initally allocate for cash reserve.
-    /// @return The address of the new deployed aggregation vault.
-    function deployEulerAggregationVault(
+    /// @return The address of the new deployed yield aggregator.
+    function deployYieldAggregator(
         address _asset,
         string memory _name,
         string memory _symbol,
         uint256 _initialCashAllocationPoints
     ) external returns (address) {
-        address eulerAggregationVault = Clones.clone(aggregationVaultImpl);
+        address eulerYieldAggregatorVault = Clones.clone(yieldAggregatorImpl);
 
-        IEulerAggregationVault.InitParams memory aggregationVaultInitParams = IEulerAggregationVault.InitParams({
-            aggregationVaultOwner: msg.sender,
+        IYieldAggregator.InitParams memory yieldAggregatorVaultInitParams = IYieldAggregator.InitParams({
+            yieldAggregatorVaultOwner: msg.sender,
             asset: _asset,
             balanceTracker: balanceTracker,
             name: _name,
             symbol: _symbol,
             initialCashAllocationPoints: _initialCashAllocationPoints
         });
-        IEulerAggregationVault(eulerAggregationVault).init(aggregationVaultInitParams);
+        IYieldAggregator(eulerYieldAggregatorVault).init(yieldAggregatorVaultInitParams);
 
-        aggregationVaults.push(address(eulerAggregationVault));
+        yieldAggregatorVaults.push(address(eulerYieldAggregatorVault));
 
-        emit DeployEulerAggregationVault(msg.sender, address(eulerAggregationVault), _asset);
+        emit DeployYieldAggregator(msg.sender, address(eulerYieldAggregatorVault), _asset);
 
-        return eulerAggregationVault;
+        return eulerYieldAggregatorVault;
     }
 
-    /// @notice Fetch the length of the deployed aggregation vaults list.
-    /// @return The length of the aggregation vaults list array.
-    function getAggregationVaultsListLength() external view returns (uint256) {
-        return aggregationVaults.length;
+    /// @notice Fetch the length of the deployed yield aggregator vaults list.
+    /// @return The length of the yield aggregator vaults list array.
+    function getYieldAggregatorVaultsListLength() external view returns (uint256) {
+        return yieldAggregatorVaults.length;
     }
 
-    /// @notice Get a slice of the deployed aggregation vaults array.
+    /// @notice Get a slice of the deployed yield aggregator vaults array.
     /// @param _start Start index of the slice.
     /// @param _end End index of the slice.
-    /// @return An array containing the slice of the deployed aggregation vaults list.
-    function getAggregationVaultsListSlice(uint256 _start, uint256 _end) external view returns (address[] memory) {
-        uint256 length = aggregationVaults.length;
+    /// @return An array containing the slice of the deployed yield aggregator vaults list.
+    function getYieldAggregatorVaultsListSlice(uint256 _start, uint256 _end) external view returns (address[] memory) {
+        uint256 length = yieldAggregatorVaults.length;
         if (_end == type(uint256).max) _end = length;
         if (_end < _start || _end > length) revert InvalidQuery();
 
-        address[] memory aggregationVaultsList = new address[](_end - _start);
+        address[] memory yieldAggregatorVaultsList = new address[](_end - _start);
         for (uint256 i; i < _end - _start; ++i) {
-            aggregationVaultsList[i] = aggregationVaults[_start + i];
+            yieldAggregatorVaultsList[i] = yieldAggregatorVaults[_start + i];
         }
 
-        return aggregationVaultsList;
+        return yieldAggregatorVaultsList;
     }
 }

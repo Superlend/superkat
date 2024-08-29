@@ -72,4 +72,8 @@ yul = true
 stackAllocation = true
 optimizerSteps = ''
 
+[doc]
+out = "foundry-docs/"
+title = "Euler Yield Aggregator Contracts Documentation"
+
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

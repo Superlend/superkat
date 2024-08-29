@@ -8,7 +8,7 @@ out/
 /broadcast/**/dry-run/
 
 # Docs
-docs/
+foundry-docs/
 
 # Dotenv file
 .env
@@ -26,3 +26,6 @@ crytic-export/
 
 # slither
 slither.db.json
+
+# md-toc https://github.com/hoytech/md-toc
+md-toc

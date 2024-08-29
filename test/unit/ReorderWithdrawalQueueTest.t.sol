@@ -2,14 +2,14 @@
 pragma solidity ^0.8.0;
 
 import {
-    EulerAggregationVaultBase,
-    EulerAggregationVault,
+    YieldAggregatorBase,
+    YieldAggregator,
     IEVault,
     WithdrawalQueue,
     ErrorsLib
-} from "../common/EulerAggregationVaultBase.t.sol";
+} from "../common/YieldAggregatorBase.t.sol";
 
-contract ReorderWithdrawalQueueTest is EulerAggregationVaultBase {
+contract ReorderWithdrawalQueueTest is YieldAggregatorBase {
     uint256 eTSTAllocationPoints = 500e18;
     uint256 eTSTsecondaryAllocationPoints = 700e18;
 
@@ -31,31 +31,33 @@ contract ReorderWithdrawalQueueTest is EulerAggregationVaultBase {
     }
 
     function testReorderWithdrawalQueue() public {
-        assertEq(eulerAggregationVault.getStrategy(_getWithdrawalQueue()[0]).allocationPoints, eTSTAllocationPoints);
+        assertEq(eulerYieldAggregatorVault.getStrategy(_getWithdrawalQueue()[0]).allocationPoints, eTSTAllocationPoints);
         assertEq(
-            eulerAggregationVault.getStrategy(_getWithdrawalQueue()[1]).allocationPoints, eTSTsecondaryAllocationPoints
+            eulerYieldAggregatorVault.getStrategy(_getWithdrawalQueue()[1]).allocationPoints,
+            eTSTsecondaryAllocationPoints
         );
 
         vm.prank(manager);
-        eulerAggregationVault.reorderWithdrawalQueue(0, 1);
+        eulerYieldAggregatorVault.reorderWithdrawalQueue(0, 1);
 
         assertEq(
-            eulerAggregationVault.getStrategy(_getWithdrawalQueue()[0]).allocationPoints, eTSTsecondaryAllocationPoints
+            eulerYieldAggregatorVault.getStrategy(_getWithdrawalQueue()[0]).allocationPoints,
+            eTSTsecondaryAllocationPoints
         );
-        assertEq(eulerAggregationVault.getStrategy(_getWithdrawalQueue()[1]).allocationPoints, eTSTAllocationPoints);
+        assertEq(eulerYieldAggregatorVault.getStrategy(_getWithdrawalQueue()[1]).allocationPoints, eTSTAllocationPoints);
     }
 
     function testReorderWithdrawalQueueWhenOutOfBounds() public {
         vm.startPrank(manager);
         vm.expectRevert(ErrorsLib.OutOfBounds.selector);
-        eulerAggregationVault.reorderWithdrawalQueue(0, 3);
+        eulerYieldAggregatorVault.reorderWithdrawalQueue(0, 3);
         vm.stopPrank();
     }
 
     function testReorderWithdrawalQueueWhenSameIndex() public {
         vm.startPrank(manager);
         vm.expectRevert(ErrorsLib.SameIndexes.selector);
-        eulerAggregationVault.reorderWithdrawalQueue(0, 0);
+        eulerYieldAggregatorVault.reorderWithdrawalQueue(0, 0);
         vm.stopPrank();
     }
 }

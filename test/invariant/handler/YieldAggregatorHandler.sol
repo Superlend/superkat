@@ -3,29 +3,30 @@ pragma solidity ^0.8.0;
 
 import {
     Test,
-    EulerAggregationVaultBase,
-    EulerAggregationVault,
+    YieldAggregatorBase,
+    YieldAggregator,
     console2,
     EVault,
     IEVault,
     IRMTestDefault,
     TestERC20,
-    IEulerAggregationVault,
+    IYieldAggregator,
     ErrorsLib,
     IERC4626,
     AggAmountCapLib,
-    AggAmountCap
-} from "../../common/EulerAggregationVaultBase.t.sol";
+    AggAmountCap,
+    ConstantsLib
+} from "../../common/YieldAggregatorBase.t.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Actor} from "../util/Actor.sol";
 import {Strategy} from "../util/Strategy.sol";
 
-contract EulerAggregationVaultHandler is Test {
+contract YieldAggregatorHandler is Test {
     using AggAmountCapLib for AggAmountCap;
 
     Actor internal actorUtil;
     Strategy internal strategyUtil;
-    EulerAggregationVault internal eulerAggVault;
+    YieldAggregator internal yieldAggregator;
 
     // ghost vars
     uint256 public ghost_totalAllocationPoints;
@@ -41,13 +42,13 @@ contract EulerAggregationVaultHandler is Test {
     bool success;
     bytes returnData;
 
-    constructor(EulerAggregationVault _eulerAggVault, Actor _actor, Strategy _strategy) {
-        eulerAggVault = _eulerAggVault;
+    constructor(YieldAggregator _yieldAggregator, Actor _actor, Strategy _strategy) {
+        yieldAggregator = _yieldAggregator;
         actorUtil = _actor;
         strategyUtil = _strategy;
 
         // initiating ghost total allocation points to match count cash reserve.
-        ghost_totalAllocationPoints += eulerAggVault.totalAllocationPoints();
+        ghost_totalAllocationPoints += yieldAggregator.totalAllocationPoints();
         ghost_allocationPoints[address(0)] = ghost_totalAllocationPoints;
     }
 
@@ -56,24 +57,24 @@ contract EulerAggregationVaultHandler is Test {
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             0,
-            address(eulerAggVault),
-            abi.encodeWithSelector(EulerAggregationVault.setFeeRecipient.selector, feeRecipientAddr)
+            address(yieldAggregator),
+            abi.encodeWithSelector(YieldAggregator.setFeeRecipient.selector, feeRecipientAddr)
         );
 
         if (success) {
             ghost_feeRecipients.push(feeRecipientAddr);
             actorUtil.setAsFeeReceiver(feeRecipientAddr);
         }
-        (address feeRecipient,) = eulerAggVault.performanceFeeConfig();
+        (address feeRecipient,) = yieldAggregator.performanceFeeConfig();
         assertEq(feeRecipient, feeRecipientAddr);
     }
 
     function setPerformanceFee(uint96 _newFee) external {
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
-            0, address(eulerAggVault), abi.encodeWithSelector(EulerAggregationVault.setPerformanceFee.selector, _newFee)
+            0, address(yieldAggregator), abi.encodeWithSelector(YieldAggregator.setPerformanceFee.selector, _newFee)
         );
 
-        (, uint96 fee) = eulerAggVault.performanceFeeConfig();
+        (, uint96 fee) = yieldAggregator.performanceFeeConfig();
 
         assertEq(_newFee, fee);
     }
@@ -81,20 +82,20 @@ contract EulerAggregationVaultHandler is Test {
     function adjustAllocationPoints(uint256 _strategyIndexSeed, uint256 _newPoints) external {
         address strategyAddr = strategyUtil.fetchStrategy(_strategyIndexSeed);
 
-        IEulerAggregationVault.Strategy memory strategyBefore = eulerAggVault.getStrategy(strategyAddr);
+        IYieldAggregator.Strategy memory strategyBefore = yieldAggregator.getStrategy(strategyAddr);
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             0,
-            address(eulerAggVault),
-            abi.encodeWithSelector(EulerAggregationVault.adjustAllocationPoints.selector, strategyAddr, _newPoints)
+            address(yieldAggregator),
+            abi.encodeWithSelector(YieldAggregator.adjustAllocationPoints.selector, strategyAddr, _newPoints)
         );
 
         if (success) {
             ghost_totalAllocationPoints = ghost_totalAllocationPoints + _newPoints - strategyBefore.allocationPoints;
             ghost_allocationPoints[strategyAddr] = _newPoints;
         }
-        IEulerAggregationVault.Strategy memory strategyAfter = eulerAggVault.getStrategy(strategyAddr);
-        assertEq(eulerAggVault.totalAllocationPoints(), ghost_totalAllocationPoints);
+        IYieldAggregator.Strategy memory strategyAfter = yieldAggregator.getStrategy(strategyAddr);
+        assertEq(yieldAggregator.totalAllocationPoints(), ghost_totalAllocationPoints);
         assertEq(strategyAfter.allocationPoints, ghost_allocationPoints[strategyAddr]);
     }
 
@@ -102,17 +103,17 @@ contract EulerAggregationVaultHandler is Test {
         address strategyAddr = strategyUtil.fetchStrategy(_strategyIndexSeed);
 
         uint256 strategyCapAmount = AggAmountCap.wrap(_cap).resolve();
-        vm.assume(strategyCapAmount <= eulerAggVault.MAX_CAP_AMOUNT());
+        vm.assume(strategyCapAmount <= ConstantsLib.MAX_CAP_AMOUNT);
 
-        IEulerAggregationVault.Strategy memory strategyBefore = eulerAggVault.getStrategy(strategyAddr);
+        IYieldAggregator.Strategy memory strategyBefore = yieldAggregator.getStrategy(strategyAddr);
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             0,
-            address(eulerAggVault),
-            abi.encodeWithSelector(EulerAggregationVault.setStrategyCap.selector, strategyAddr, _cap)
+            address(yieldAggregator),
+            abi.encodeWithSelector(YieldAggregator.setStrategyCap.selector, strategyAddr, _cap)
         );
 
-        IEulerAggregationVault.Strategy memory strategyAfter = eulerAggVault.getStrategy(strategyAddr);
+        IYieldAggregator.Strategy memory strategyAfter = yieldAggregator.getStrategy(strategyAddr);
         if (success) {
             assertEq(AggAmountCap.unwrap(strategyAfter.cap), _cap);
         } else {
@@ -124,22 +125,22 @@ contract EulerAggregationVaultHandler is Test {
         address strategyAddr = strategyUtil.fetchStrategy(_strategyIndexSeed);
 
         // simulating loss when switching strategy to emergency status
-        IEulerAggregationVault.Strategy memory strategyBefore = eulerAggVault.getStrategy(strategyAddr);
+        IYieldAggregator.Strategy memory strategyBefore = yieldAggregator.getStrategy(strategyAddr);
         uint256 cached_ghost_totalAssetsDeposited =
             _simulateLossSocialization(ghost_totalAssetsDeposited, strategyBefore.allocated);
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             0,
-            address(eulerAggVault),
-            abi.encodeWithSelector(EulerAggregationVault.toggleStrategyEmergencyStatus.selector, strategyAddr)
+            address(yieldAggregator),
+            abi.encodeWithSelector(YieldAggregator.toggleStrategyEmergencyStatus.selector, strategyAddr)
         );
 
-        IEulerAggregationVault.Strategy memory strategyAfter = eulerAggVault.getStrategy(strategyAddr);
+        IYieldAggregator.Strategy memory strategyAfter = yieldAggregator.getStrategy(strategyAddr);
         if (success) {
-            if (strategyAfter.status == IEulerAggregationVault.StrategyStatus.Emergency) {
+            if (strategyAfter.status == IYieldAggregator.StrategyStatus.Emergency) {
                 ghost_totalAllocationPoints -= strategyAfter.allocationPoints;
                 ghost_totalAssetsDeposited = cached_ghost_totalAssetsDeposited;
-            } else if (strategyAfter.status == IEulerAggregationVault.StrategyStatus.Active) {
+            } else if (strategyAfter.status == IYieldAggregator.StrategyStatus.Active) {
                 ghost_totalAllocationPoints += strategyAfter.allocationPoints;
                 ghost_totalAssetsDeposited += strategyAfter.allocated;
             }
@@ -151,8 +152,8 @@ contract EulerAggregationVaultHandler is Test {
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             0,
-            address(eulerAggVault),
-            abi.encodeWithSelector(EulerAggregationVault.addStrategy.selector, strategyAddr, _allocationPoints)
+            address(yieldAggregator),
+            abi.encodeWithSelector(YieldAggregator.addStrategy.selector, strategyAddr, _allocationPoints)
         );
 
         if (success) {
@@ -160,20 +161,18 @@ contract EulerAggregationVaultHandler is Test {
             ghost_allocationPoints[strategyAddr] = _allocationPoints;
             ghost_withdrawalQueueLength += 1;
         }
-        IEulerAggregationVault.Strategy memory strategyAfter = eulerAggVault.getStrategy(strategyAddr);
-        assertEq(eulerAggVault.totalAllocationPoints(), ghost_totalAllocationPoints);
+        IYieldAggregator.Strategy memory strategyAfter = yieldAggregator.getStrategy(strategyAddr);
+        assertEq(yieldAggregator.totalAllocationPoints(), ghost_totalAllocationPoints);
         assertEq(strategyAfter.allocationPoints, ghost_allocationPoints[strategyAddr]);
     }
 
     function removeStrategy(uint256 _strategyIndexSeed) external {
         address strategyAddr = strategyUtil.fetchStrategy(_strategyIndexSeed);
 
-        IEulerAggregationVault.Strategy memory strategyBefore = eulerAggVault.getStrategy(strategyAddr);
+        IYieldAggregator.Strategy memory strategyBefore = yieldAggregator.getStrategy(strategyAddr);
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
-            0,
-            address(eulerAggVault),
-            abi.encodeWithSelector(EulerAggregationVault.removeStrategy.selector, strategyAddr)
+            0, address(yieldAggregator), abi.encodeWithSelector(YieldAggregator.removeStrategy.selector, strategyAddr)
         );
 
         if (success) {
@@ -182,33 +181,33 @@ contract EulerAggregationVaultHandler is Test {
             ghost_withdrawalQueueLength -= 1;
         }
 
-        IEulerAggregationVault.Strategy memory strategyAfter = eulerAggVault.getStrategy(strategyAddr);
+        IYieldAggregator.Strategy memory strategyAfter = yieldAggregator.getStrategy(strategyAddr);
         assertEq(strategyAfter.allocationPoints, ghost_allocationPoints[strategyAddr]);
-        assertEq(eulerAggVault.totalAllocationPoints(), ghost_totalAllocationPoints);
+        assertEq(yieldAggregator.totalAllocationPoints(), ghost_totalAllocationPoints);
     }
 
     function reorderWithdrawalQueue(uint8 _index1, uint8 _index2) external {
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             0,
-            address(eulerAggVault),
-            abi.encodeWithSelector(EulerAggregationVault.reorderWithdrawalQueue.selector, _index1, _index2)
+            address(yieldAggregator),
+            abi.encodeWithSelector(YieldAggregator.reorderWithdrawalQueue.selector, _index1, _index2)
         );
     }
 
     function rebalance(uint256 _actorIndexSeed) external {
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
 
-        (address[] memory strategiesToRebalance) = eulerAggVault.withdrawalQueue();
+        (address[] memory strategiesToRebalance) = yieldAggregator.withdrawalQueue();
         (currentActor, success, returnData) = actorUtil.initiateActorCall(
             _actorIndexSeed,
-            address(eulerAggVault),
-            abi.encodeWithSelector(EulerAggregationVault.rebalance.selector, strategiesToRebalance)
+            address(yieldAggregator),
+            abi.encodeWithSelector(YieldAggregator.rebalance.selector, strategiesToRebalance)
         );
 
         for (uint256 i; i < strategiesToRebalance.length; i++) {
             assertEq(
-                IERC4626(strategiesToRebalance[i]).maxWithdraw(address(eulerAggVault)),
-                (eulerAggVault.getStrategy(strategiesToRebalance[i])).allocated
+                IERC4626(strategiesToRebalance[i]).maxWithdraw(address(yieldAggregator)),
+                (yieldAggregator.getStrategy(strategiesToRebalance[i])).allocated
             );
         }
     }
@@ -219,11 +218,11 @@ contract EulerAggregationVaultHandler is Test {
 
         // simulate loss
         (, success, returnData) = actorUtil.initiateActorCall(
-            _actorIndexSeed, address(eulerAggVault), abi.encodeWithSelector(IEulerAggregationVault.harvest.selector)
+            _actorIndexSeed, address(yieldAggregator), abi.encodeWithSelector(IYieldAggregator.harvest.selector)
         );
 
         if (success) {
-            (address feeRecipient,) = eulerAggVault.performanceFeeConfig();
+            (address feeRecipient,) = yieldAggregator.performanceFeeConfig();
             ghost_accumulatedPerformanceFeePerRecipient[feeRecipient] = expectedAccumulatedPerformanceFee;
             ghost_totalAssetsDeposited = expectedTotalAssetsDeposited;
         }
@@ -232,20 +231,20 @@ contract EulerAggregationVaultHandler is Test {
     function updateInterestAccrued(uint256 _actorIndexSeed) external {
         (, success, returnData) = actorUtil.initiateActorCall(
             _actorIndexSeed,
-            address(eulerAggVault),
-            abi.encodeWithSelector(EulerAggregationVault.updateInterestAccrued.selector)
+            address(yieldAggregator),
+            abi.encodeWithSelector(YieldAggregator.updateInterestAccrued.selector)
         );
     }
 
     function gulp(uint256 _actorIndexSeed) external {
         (, success, returnData) = actorUtil.initiateActorCall(
-            _actorIndexSeed, address(eulerAggVault), abi.encodeWithSelector(EulerAggregationVault.gulp.selector)
+            _actorIndexSeed, address(yieldAggregator), abi.encodeWithSelector(YieldAggregator.gulp.selector)
         );
 
         if (success) {
-            (,, uint168 interestLeft) = eulerAggVault.getAggregationVaultSavingRate();
+            (,, uint168 interestLeft) = yieldAggregator.getYieldAggregatorSavingRate();
 
-            assertEq(eulerAggVault.totalAssetsAllocatable(), eulerAggVault.totalAssetsDeposited() + interestLeft);
+            assertEq(yieldAggregator.totalAssetsAllocatable(), yieldAggregator.totalAssetsDeposited() + interestLeft);
         }
     }
 
@@ -255,22 +254,22 @@ contract EulerAggregationVaultHandler is Test {
 
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
 
-        if (eulerAggVault.totalSupply() == 0) {
-            uint256 minAssets = eulerAggVault.previewMint(eulerAggVault.MIN_SHARES_FOR_GULP());
+        if (yieldAggregator.totalSupply() == 0) {
+            uint256 minAssets = yieldAggregator.previewMint(ConstantsLib.MIN_SHARES_FOR_GULP);
             vm.assume(_assets >= minAssets);
         }
-        _fillBalance(currentActor, eulerAggVault.asset(), _assets);
+        _fillBalance(currentActor, yieldAggregator.asset(), _assets);
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             currentActorIndex,
-            address(eulerAggVault),
+            address(yieldAggregator),
             abi.encodeWithSelector(IERC4626.deposit.selector, _assets, _receiver)
         );
 
         if (success) {
             ghost_totalAssetsDeposited += _assets;
         }
-        assertEq(eulerAggVault.totalAssetsDeposited(), ghost_totalAssetsDeposited);
+        assertEq(yieldAggregator.totalAssetsDeposited(), ghost_totalAssetsDeposited);
     }
 
     function mint(uint256 _actorIndexSeed, uint256 _shares, address _receiver) external {
@@ -279,30 +278,30 @@ contract EulerAggregationVaultHandler is Test {
 
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
 
-        if (eulerAggVault.totalSupply() == 0) {
-            vm.assume(_shares >= eulerAggVault.MIN_SHARES_FOR_GULP());
+        if (yieldAggregator.totalSupply() == 0) {
+            vm.assume(_shares >= ConstantsLib.MIN_SHARES_FOR_GULP);
         }
 
-        uint256 assets = eulerAggVault.previewMint(_shares);
-        _fillBalance(currentActor, eulerAggVault.asset(), assets);
+        uint256 assets = yieldAggregator.previewMint(_shares);
+        _fillBalance(currentActor, yieldAggregator.asset(), assets);
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             currentActorIndex,
-            address(eulerAggVault),
+            address(yieldAggregator),
             abi.encodeWithSelector(IERC4626.mint.selector, _shares, _receiver)
         );
 
         if (success) {
             ghost_totalAssetsDeposited += assets;
         }
-        assertEq(eulerAggVault.totalAssetsDeposited(), ghost_totalAssetsDeposited);
+        assertEq(yieldAggregator.totalAssetsDeposited(), ghost_totalAssetsDeposited);
     }
 
     function withdraw(uint256 _actorIndexSeed, uint256 _assets, address _receiver) external {
         vm.assume(_receiver != address(0));
         vm.assume(!actorUtil.isFeeReceiver(_receiver));
 
-        uint256 previousHarvestTimestamp = eulerAggVault.lastHarvestTimestamp();
+        uint256 previousHarvestTimestamp = yieldAggregator.lastHarvestTimestamp();
         (uint256 expectedAccumulatedPerformanceFee, uint256 expectedTotalAssetsDeposited) =
             _simulateFeeAndLossSocialization();
 
@@ -310,20 +309,20 @@ contract EulerAggregationVaultHandler is Test {
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             currentActorIndex,
-            address(eulerAggVault),
+            address(yieldAggregator),
             abi.encodeWithSelector(IERC4626.withdraw.selector, _assets, _receiver, currentActor)
         );
 
         if (success) {
-            if (block.timestamp > previousHarvestTimestamp + eulerAggVault.HARVEST_COOLDOWN()) {
-                (address feeRecipient,) = eulerAggVault.performanceFeeConfig();
+            if (block.timestamp > previousHarvestTimestamp + ConstantsLib.HARVEST_COOLDOWN) {
+                (address feeRecipient,) = yieldAggregator.performanceFeeConfig();
                 ghost_accumulatedPerformanceFeePerRecipient[feeRecipient] = expectedAccumulatedPerformanceFee;
                 ghost_totalAssetsDeposited = expectedTotalAssetsDeposited;
             }
 
             ghost_totalAssetsDeposited -= _assets;
         }
-        assertEq(eulerAggVault.totalAssetsDeposited(), ghost_totalAssetsDeposited);
+        assertEq(yieldAggregator.totalAssetsDeposited(), ghost_totalAssetsDeposited);
     }
 
     function redeem(uint256 _actorIndexSeed, uint256 _shares, address _receiver) external {
@@ -334,7 +333,7 @@ contract EulerAggregationVaultHandler is Test {
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             currentActorIndex,
-            address(eulerAggVault),
+            address(yieldAggregator),
             abi.encodeWithSelector(IERC4626.redeem.selector, _shares, _receiver, currentActor)
         );
 
@@ -342,7 +341,7 @@ contract EulerAggregationVaultHandler is Test {
             uint256 assets = abi.decode(returnData, (uint256));
             ghost_totalAssetsDeposited -= assets;
         }
-        assertEq(eulerAggVault.totalAssetsDeposited(), ghost_totalAssetsDeposited);
+        assertEq(yieldAggregator.totalAssetsDeposited(), ghost_totalAssetsDeposited);
     }
 
     function ghostFeeRecipientsLength() external view returns (uint256) {
@@ -357,7 +356,7 @@ contract EulerAggregationVaultHandler is Test {
             asset.mint(currentActor, _amount - actorCurrentBalance);
         }
         vm.prank(_actor);
-        asset.approve(address(eulerAggVault), _amount);
+        asset.approve(address(yieldAggregator), _amount);
     }
 
     // This function simulate loss socialization, the part related to decreasing totalAssetsDeposited only.
@@ -367,7 +366,7 @@ contract EulerAggregationVaultHandler is Test {
         view
         returns (uint256)
     {
-        (,, uint168 interestLeft) = eulerAggVault.getAggregationVaultSavingRate();
+        (,, uint168 interestLeft) = yieldAggregator.getYieldAggregatorSavingRate();
         if (_loss > interestLeft) {
             cachedGhostTotalAssetsDeposited -= _loss - interestLeft;
         }
@@ -380,16 +379,16 @@ contract EulerAggregationVaultHandler is Test {
         uint256 totalYield;
         uint256 totalLoss;
         // check if performance fee is on; store received fee per recipient if call is succesfull
-        (address feeRecipient, uint256 performanceFee) = eulerAggVault.performanceFeeConfig();
+        (address feeRecipient, uint256 performanceFee) = yieldAggregator.performanceFeeConfig();
         uint256 accumulatedPerformanceFee;
         uint256 cached_ghost_totalAssetsDeposited = ghost_totalAssetsDeposited;
         if (feeRecipient != address(0) && performanceFee > 0) {
             accumulatedPerformanceFee = ghost_accumulatedPerformanceFeePerRecipient[feeRecipient];
-            address[] memory withdrawalQueueArray = eulerAggVault.withdrawalQueue();
+            address[] memory withdrawalQueueArray = yieldAggregator.withdrawalQueue();
 
             for (uint256 i; i < withdrawalQueueArray.length; i++) {
-                uint256 allocated = (eulerAggVault.getStrategy(withdrawalQueueArray[i])).allocated;
-                uint256 underlying = IERC4626(withdrawalQueueArray[i]).maxWithdraw(address(eulerAggVault));
+                uint256 allocated = (yieldAggregator.getStrategy(withdrawalQueueArray[i])).allocated;
+                uint256 underlying = IERC4626(withdrawalQueueArray[i]).maxWithdraw(address(yieldAggregator));
                 if (underlying >= allocated) {
                     totalYield += underlying - allocated;
                 } else {
@@ -400,7 +399,7 @@ contract EulerAggregationVaultHandler is Test {
             if (totalYield > totalLoss) {
                 uint256 performancefeeAssets = Math.mulDiv(totalYield, performanceFee, 1e18, Math.Rounding.Floor);
 
-                accumulatedPerformanceFee = eulerAggVault.previewDeposit(performancefeeAssets);
+                accumulatedPerformanceFee = yieldAggregator.previewDeposit(performancefeeAssets);
                 cached_ghost_totalAssetsDeposited += performancefeeAssets;
             } else if (totalYield < totalLoss) {
                 cached_ghost_totalAssetsDeposited =
