@@ -11,7 +11,7 @@ import {
     ConstantsLib
 } from "../common/YieldAggregatorBase.t.sol";
 
-contract MyTokenTest is YieldAggregatorBase, SymTest {
+contract YieldAggregatorSymbolicTest is YieldAggregatorBase, SymTest {
     function setUp() public override {
         super.setUp();
 
