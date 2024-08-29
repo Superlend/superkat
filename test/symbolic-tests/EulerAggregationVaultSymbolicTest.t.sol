@@ -1,49 +1,40 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-
 import {SymTest} from "halmos-cheatcodes/SymTest.sol";
 import {
-    EulerAggregationVaultBase,
-    EulerAggregationVault,
-    IWithdrawalQueue,
+    YieldAggregatorBase,
+    YieldAggregator,
     IEVault,
     TestERC20,
-    IEulerAggregationVault,
-    WithdrawalQueue
-} from "../common/EulerAggregationVaultBase.t.sol";
+    IYieldAggregator,
+    ConstantsLib
+} from "../common/YieldAggregatorBase.t.sol";
 
-contract MyTokenTest is EulerAggregationVaultBase, SymTest {
-
+contract MyTokenTest is YieldAggregatorBase, SymTest {
     function setUp() public override {
         super.setUp();
-        
-        uint256 initialCashReservePointsAllocation = svm.createUint256('initialCashReservePointsAllocation');
+
+        uint256 initialCashReservePointsAllocation = svm.createUint256("initialCashReservePointsAllocation");
         vm.assume(1 <= initialCashReservePointsAllocation && initialCashReservePointsAllocation <= type(uint120).max);
 
         vm.startPrank(deployer);
-        eulerAggregationVault = EulerAggregationVault(
-            eulerAggregationVaultFactory.deployEulerAggregationVault(
-                address(withdrawalQueueImpl),
-                address(assetTST),
-                "assetTST_Agg",
-                "assetTST_Agg",
-                CASH_RESERVE_ALLOCATION_POINTS
+        eulerYieldAggregatorVault = YieldAggregator(
+            eulerYieldAggregatorVaultFactory.deployYieldAggregator(
+                address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS
             )
         );
-        withdrawalQueue = WithdrawalQueue(eulerAggregationVault.withdrawalQueue());
-
         // grant admin roles to deployer
-        eulerAggregationVault.grantRole(eulerAggregationVault.GUARDIAN_ADMIN(), deployer);
-        eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_OPERATOR_ADMIN(), deployer);
-        eulerAggregationVault.grantRole(eulerAggregationVault.AGGREGATION_VAULT_MANAGER_ADMIN(), deployer);
-        withdrawalQueue.grantRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER_ADMIN(), deployer);
+        eulerYieldAggregatorVault.grantRole(ConstantsLib.GUARDIAN_ADMIN, deployer);
+        eulerYieldAggregatorVault.grantRole(ConstantsLib.STRATEGY_OPERATOR_ADMIN, deployer);
+        eulerYieldAggregatorVault.grantRole(ConstantsLib.YIELD_AGGREGATOR_MANAGER_ADMIN, deployer);
+        eulerYieldAggregatorVault.grantRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER_ADMIN, deployer);
 
         // grant roles to manager
-        eulerAggregationVault.grantRole(eulerAggregationVault.GUARDIAN(), manager);
-        eulerAggregationVault.grantRole(eulerAggregationVault.STRATEGY_OPERATOR(), manager);
-        eulerAggregationVault.grantRole(eulerAggregationVault.AGGREGATION_VAULT_MANAGER(), manager);
-        withdrawalQueue.grantRole(withdrawalQueue.WITHDRAW_QUEUE_MANAGER(), manager);
+        eulerYieldAggregatorVault.grantRole(ConstantsLib.GUARDIAN, manager);
+        eulerYieldAggregatorVault.grantRole(ConstantsLib.STRATEGY_OPERATOR, manager);
+        eulerYieldAggregatorVault.grantRole(ConstantsLib.YIELD_AGGREGATOR_MANAGER, manager);
+        eulerYieldAggregatorVault.grantRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER, manager);
         vm.stopPrank();
     }
 
@@ -55,6 +46,6 @@ contract MyTokenTest is EulerAggregationVaultBase, SymTest {
         vm.assume(newPoints <= type(uint120).max);
 
         vm.prank(manager);
-        eulerAggregationVault.adjustAllocationPoints(strategy, newPoints);
+        eulerYieldAggregatorVault.adjustAllocationPoints(strategy, newPoints);
     }
 }
