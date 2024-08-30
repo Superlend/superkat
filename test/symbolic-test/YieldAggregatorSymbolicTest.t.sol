@@ -178,4 +178,26 @@ contract YieldAggregatorSymbolicTest is YieldAggregatorBase, SymTest {
         assertEq(strategy.allocated, 0);
         assertEq(strategy.allocationPoints, allocationPoints);
     }
+
+    function check_setStrategyCap() public {
+        // add the strategy first
+        address strategyAddr = address(
+            IEVault(
+                factory.createProxy(
+                    address(0), true, abi.encodePacked(address(assetTST), address(oracle), unitOfAccount)
+                )
+            )
+        );
+        uint256 allocationPoints = svm.createUint256("allocationPoints");
+        vm.assume(allocationPoints <= type(uint120).max);
+        vm.prank(manager);
+        eulerYieldAggregatorVault.addStrategy(strategyAddr, allocationPoints);
+
+        // set cap
+        uint256 cap = svm.createUint256("cap");
+        vm.assume(cap <= type(uint16).max);
+
+        vm.prank(manager);
+        eulerYieldAggregatorVault.setStrategyCap(strategyAddr, uint16(cap));
+    }
 }
