@@ -136,7 +136,6 @@ contract YieldAggregatorSymbolicTest is YieldAggregatorBase, SymTest {
         uint256 initialCashReservePointsAllocation = svm.createUint256("initialCashReservePointsAllocation");
         vm.assume(1 <= initialCashReservePointsAllocation && initialCashReservePointsAllocation <= type(uint120).max);
 
-        vm.startPrank(deployer);
         eulerYieldAggregatorVault = YieldAggregator(
             eulerYieldAggregatorVaultFactory.deployYieldAggregator(
                 address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS
@@ -158,18 +157,25 @@ contract YieldAggregatorSymbolicTest is YieldAggregatorBase, SymTest {
 
     // Strategy module's functions
     function check_addStrategy() public {
-        // address strategy = address(
-        //     IEVault(
-        //         factory.createProxy(
-        //             address(0), true, abi.encodePacked(address(assetTST), address(oracle), unitOfAccount)
-        //         )
-        //     )
-        // );
-        // uint256 newPoints = svm.createUint256("newPoints");
+        address strategyAddr = address(
+            IEVault(
+                factory.createProxy(
+                    address(0), true, abi.encodePacked(address(assetTST), address(oracle), unitOfAccount)
+                )
+            )
+        );
+        uint256 allocationPoints = svm.createUint256("allocationPoints");
+        vm.assume(allocationPoints <= type(uint120).max);
 
-        // vm.assume(newPoints <= type(uint120).max);
+        uint256 totalAllocationPointsBefore = eulerYieldAggregatorVault.totalAllocationPoints();
 
-        // vm.prank(manager);
-        // eulerYieldAggregatorVault.addStrategy(strategy, newPoints);
+        vm.prank(manager);
+        eulerYieldAggregatorVault.addStrategy(strategyAddr, allocationPoints);
+
+        IYieldAggregator.Strategy memory strategy = eulerYieldAggregatorVault.getStrategy(strategyAddr);
+
+        assertEq(eulerYieldAggregatorVault.totalAllocationPoints(), allocationPoints + totalAllocationPointsBefore);
+        assertEq(strategy.allocated, 0);
+        assertEq(strategy.allocationPoints, allocationPoints);
     }
 }

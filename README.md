@@ -30,50 +30,56 @@ git clone https://github.com/euler-xyz/yield-aggregator.git
 
 ### Build
 
-```shell
-$ forge build
+```sh
+forge build
 ```
 
 ### Test
 To run the unit-tests and the e2e test:
-```shell
-$ FOUNDRY_PROFILE=test forge test
+```sh
+FOUNDRY_PROFILE=test forge test
 ```
 
 To run the fuzz tests:
-```shell
-$ FOUNDRY_PROFILE=fuzz forge test
+```sh
+FOUNDRY_PROFILE=fuzz forge test
 ```
 
 To run the invariants tests:
-```shell
-$ FOUNDRY_PROFILE=invariant forge test
+```sh
+FOUNDRY_PROFILE=invariant forge test
 ```
 
 To run foundry coverage:
-```shell
-$ FOUNDRY_PROFILE=coverage forge coverage --report summary
+```sh
+FOUNDRY_PROFILE=coverage forge coverage --report summary
 ```
 
 To run echidna based fuzzing:
-```shell
-$ echidna test/echidna/CryticERC4626TestsHarness.t.sol --contract CryticERC4626TestsHarness --config test/echidna/config/echidna.config.yaml
+```sh
+echidna test/echidna/CryticERC4626TestsHarness.t.sol --contract CryticERC4626TestsHarness --config test/echidna/config/echidna.config.yaml
 ```
+
+To run symbolic tests using [`Halmos`](https://github.com/a16z/halmos):
+```sh
+halmos --match-contract YieldAggregatorSymbolicTest --storage-layout=generic
+```
+
 ### Format
 
-```shell
-$ forge fmt
+```sh
+forge fmt
 ```
 
 ### Gas Snapshots
 
-```shell
-$ forge snapshot
+```sh
+forge snapshot
 ```
 ## Smart Contracts Documentation
 
-```shell
-$ forge doc --serve --port 4000
+```sh
+forge doc --serve --port 4000
 ```
 
 ## Deployment
