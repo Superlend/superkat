@@ -151,7 +151,7 @@ contract YieldAggregatorInvariants is YieldAggregatorBase {
         }
     }
 
-    // the interest left should always be greater or equal current interest accrued value.
+    // The interest left should always be greater or equal current interest accrued value.
     function invariant_interestLeft() public view {
         (,, uint168 interestLeft) = eulerYieldAggregatorVault.getYieldAggregatorSavingRate();
         uint256 accruedInterest = eulerYieldAggregatorVault.interestAccrued();
@@ -162,6 +162,8 @@ contract YieldAggregatorInvariants is YieldAggregatorBase {
         assertEq(AggAmountCap.unwrap(eulerYieldAggregatorVault.getStrategy(address(0)).cap), 0);
     }
 
+    // All actors voting power should always be equal to their shares balance.
+    // All actor by default are self delegating.
     function invariant_votingPower() public view {
         address[] memory actorsList = actorUtil.getActors();
 
@@ -170,6 +172,14 @@ contract YieldAggregatorInvariants is YieldAggregatorBase {
                 eulerYieldAggregatorVault.balanceOf(actorsList[i]), eulerYieldAggregatorVault.getVotes(actorsList[i])
             );
         }
+    }
+
+    // lastHarvestTimestamp should always be equal to the expected ghost_lastHarvestTimestamp variable.
+    function invariant_lastHarvestTimestamp() public view {
+        assertEq(
+            eulerYieldAggregatorVault.lastHarvestTimestamp(),
+            eulerYieldAggregatorVaultHandler.ghost_lastHarvestTimestamp()
+        );
     }
 
     function _deployOtherStrategies() private {

@@ -133,6 +133,7 @@ contract YieldAggregatorBase is EVaultTestBase {
             eulerYieldAggregatorVaultFactory.getYieldAggregatorVaultsListSlice(0, 1);
         assertEq(yieldAggregatorVaultsList.length, 1);
         assertEq(address(yieldAggregatorVaultsList[0]), address(eulerYieldAggregatorVault));
+        assertEq(eulerYieldAggregatorVault.decimals(), assetTST.decimals());
     }
 
     function testDeployYieldAggregatorWithInvalidInitialCashAllocationPoints() public {

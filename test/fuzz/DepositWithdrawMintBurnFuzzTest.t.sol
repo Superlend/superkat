@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {console2, YieldAggregatorBase, YieldAggregator} from "../common/YieldAggregatorBase.t.sol";
+import {YieldAggregatorBase, YieldAggregator, ErrorsLib} from "../common/YieldAggregatorBase.t.sol";
 
 contract DepositWithdrawMintBurnFuzzTest is YieldAggregatorBase {
     uint256 constant MAX_ALLOWED = type(uint208).max;
@@ -45,6 +45,15 @@ contract DepositWithdrawMintBurnFuzzTest is YieldAggregatorBase {
         assetTST.mint(user1, _assetsToDeposit);
         _deposit(user1, _assetsToDeposit);
         vm.warp(block.timestamp + _timestampAfterDeposit);
+
+        // test revert scenario
+        uint256 assets = eulerYieldAggregatorVault.previewRedeem(eulerYieldAggregatorVault.balanceOf(user1));
+        vm.startPrank(user1);
+        vm.expectRevert(
+            abi.encodeWithSelector(ErrorsLib.ERC4626ExceededMaxWithdraw.selector, user1, assets + 1, assets)
+        );
+        eulerYieldAggregatorVault.withdraw(assets + 1, user1, user1);
+        vm.stopPrank();
 
         // fuzz partial & full withdraws
         uint256 balanceBefore = eulerYieldAggregatorVault.balanceOf(user1);
@@ -96,6 +105,14 @@ contract DepositWithdrawMintBurnFuzzTest is YieldAggregatorBase {
         _sharesToRedeem = bound(_sharesToRedeem, 0, _sharesToMint);
         _mint(user1, assetsToDeposit, _sharesToMint);
         vm.warp(block.timestamp + 86400);
+
+        // test revert scenario
+        vm.startPrank(user1);
+        vm.expectRevert(
+            abi.encodeWithSelector(ErrorsLib.ERC4626ExceededMaxRedeem.selector, user1, _sharesToMint + 1, _sharesToMint)
+        );
+        eulerYieldAggregatorVault.redeem(_sharesToMint + 1, user1, user1);
+        vm.stopPrank();
 
         // fuzz partial & full redeem
         uint256 balanceBefore = eulerYieldAggregatorVault.balanceOf(user1);

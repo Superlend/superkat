@@ -94,6 +94,7 @@ contract HarvestTest is YieldAggregatorBase {
             eulerYieldAggregatorVault.totalAllocated(),
             totalAllocatedBefore + (expectedAllocated - strategyBefore.allocated)
         );
+        assertEq(eulerYieldAggregatorVault.lastHarvestTimestamp(), block.timestamp);
     }
 
     function testHarvestNegativeYieldBiggerThanInterestLeft() public {

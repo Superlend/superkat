@@ -56,6 +56,12 @@ contract StrategyCapE2ETest is YieldAggregatorBase {
         eulerYieldAggregatorVault.setStrategyCap(address(0), 1);
     }
 
+    function testSetCapExceedingMax() public {
+        vm.prank(manager);
+        vm.expectRevert(ErrorsLib.StrategyCapExceedMax.selector);
+        eulerYieldAggregatorVault.setStrategyCap(address(eTST), 51238);
+    }
+
     function testRebalanceAfterHittingCap() public {
         address[] memory strategiesToRebalance = new address[](1);
 

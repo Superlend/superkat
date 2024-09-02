@@ -35,6 +35,7 @@ contract YieldAggregatorHandler is Test {
     address[] public ghost_feeRecipients;
     mapping(address => uint256) public ghost_accumulatedPerformanceFeePerRecipient;
     uint256 public ghost_withdrawalQueueLength;
+    uint40 public ghost_lastHarvestTimestamp;
 
     // last function call state
     address currentActor;
@@ -225,6 +226,7 @@ contract YieldAggregatorHandler is Test {
             (address feeRecipient,) = yieldAggregator.performanceFeeConfig();
             ghost_accumulatedPerformanceFeePerRecipient[feeRecipient] = expectedAccumulatedPerformanceFee;
             ghost_totalAssetsDeposited = expectedTotalAssetsDeposited;
+            ghost_lastHarvestTimestamp = uint40(block.timestamp);
         }
     }
 
@@ -306,7 +308,6 @@ contract YieldAggregatorHandler is Test {
             _simulateFeeAndLossSocialization();
 
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
-
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             currentActorIndex,
             address(yieldAggregator),
@@ -318,6 +319,8 @@ contract YieldAggregatorHandler is Test {
                 (address feeRecipient,) = yieldAggregator.performanceFeeConfig();
                 ghost_accumulatedPerformanceFeePerRecipient[feeRecipient] = expectedAccumulatedPerformanceFee;
                 ghost_totalAssetsDeposited = expectedTotalAssetsDeposited;
+
+                ghost_lastHarvestTimestamp = uint40(block.timestamp);
             }
 
             ghost_totalAssetsDeposited -= _assets;
