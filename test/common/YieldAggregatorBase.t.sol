@@ -16,7 +16,7 @@ import {YieldAggregatorFactory} from "../../src/YieldAggregatorFactory.sol";
 import {Strategy} from "../../src/module/Strategy.sol";
 // libs
 import {ErrorsLib} from "../../src/lib/ErrorsLib.sol";
-import {ErrorsLib} from "../../src/lib/ErrorsLib.sol";
+import {EventsLib} from "../../src/lib/EventsLib.sol";
 import {AmountCapLib as AggAmountCapLib, AmountCap as AggAmountCap} from "../../src/lib/AmountCapLib.sol";
 import {ConstantsLib} from "../../src/lib/ConstantsLib.sol";
 

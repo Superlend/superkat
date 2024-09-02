@@ -130,12 +130,12 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
         IBalanceTracker balanceTrackerCached = IBalanceTracker($.balanceTracker);
 
         if (address(balanceTrackerCached) == address(0)) revert Errors.YieldAggregatorRewardsNotSupported();
-        if ($.isBalanceForwarderEnabled[_sender]) revert Errors.YieldAggregatorRewardsAlreadyEnabled();
+        bool wasBalanceForwarderEnabled = $.isBalanceForwarderEnabled[_sender];
 
         $.isBalanceForwarderEnabled[_sender] = true;
         balanceTrackerCached.balanceTrackerHook(_sender, _senderBalance, false);
 
-        emit Events.EnableBalanceForwarder(_sender);
+        if (!wasBalanceForwarderEnabled) emit Events.EnableBalanceForwarder(_sender);
     }
 
     /// @notice Disables balance forwarding for the authenticated account.
@@ -146,12 +146,13 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
         IBalanceTracker balanceTrackerCached = IBalanceTracker($.balanceTracker);
 
         if (address(balanceTrackerCached) == address(0)) revert Errors.YieldAggregatorRewardsNotSupported();
-        if (!$.isBalanceForwarderEnabled[_sender]) revert Errors.YieldAggregatorRewardsAlreadyDisabled();
+
+        bool wasBalanceForwarderEnabled = $.isBalanceForwarderEnabled[_sender];
 
         $.isBalanceForwarderEnabled[_sender] = false;
         balanceTrackerCached.balanceTrackerHook(_sender, 0, false);
 
-        emit Events.DisableBalanceForwarder(_sender);
+        if (wasBalanceForwarderEnabled) emit Events.DisableBalanceForwarder(_sender);
     }
 }
 
