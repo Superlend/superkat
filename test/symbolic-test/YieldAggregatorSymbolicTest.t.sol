@@ -134,7 +134,7 @@ contract YieldAggregatorSymbolicTest is YieldAggregatorBase, SymTest {
         eulerYieldAggregatorVaultFactory = new YieldAggregatorFactory(factoryParams);
 
         uint256 initialCashReservePointsAllocation = svm.createUint256("initialCashReservePointsAllocation");
-        vm.assume(1 <= initialCashReservePointsAllocation && initialCashReservePointsAllocation <= type(uint120).max);
+        vm.assume(initialCashReservePointsAllocation > 0 && initialCashReservePointsAllocation <= type(uint120).max);
 
         eulerYieldAggregatorVault = YieldAggregator(
             eulerYieldAggregatorVaultFactory.deployYieldAggregator(
@@ -199,5 +199,47 @@ contract YieldAggregatorSymbolicTest is YieldAggregatorBase, SymTest {
 
         vm.prank(manager);
         eulerYieldAggregatorVault.setStrategyCap(strategyAddr, uint16(cap));
+    }
+
+    // Rebalance module's functions
+    function check_rebalance() public {
+        uint256 numOfStrategies = svm.createUint256("numOfStrategies");
+        vm.assume(numOfStrategies <= ConstantsLib.MAX_STRATEGIES);
+
+        // add strategies
+        for (uint256 i; i < numOfStrategies; i++) {
+            address strategyAddr = address(
+                IEVault(
+                    factory.createProxy(
+                        address(0), true, abi.encodePacked(address(assetTST), address(oracle), unitOfAccount)
+                    )
+                )
+            );
+
+            uint256 allocationPoints = svm.createUint256("allocationPoints");
+            vm.assume(allocationPoints <= type(uint120).max);
+            vm.prank(manager);
+            eulerYieldAggregatorVault.addStrategy(strategyAddr, allocationPoints);
+        }
+    }
+
+    // YieldAggregatorVault module's functions
+    function check_deposit() public {
+        uint256 amountToDeposit = svm.createUint256("amountToDeposit");
+        assetTST.mint(user1, amountToDeposit);
+
+        uint256 totalSupplyBefore = eulerYieldAggregatorVault.totalSupply();
+        uint256 totalAssetsDepositedBefore = eulerYieldAggregatorVault.totalAssetsDeposited();
+        uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
+
+        vm.startPrank(user1);
+        assetTST.approve(address(eulerYieldAggregatorVault), amountToDeposit);
+        uint256 mintedShares = eulerYieldAggregatorVault.deposit(amountToDeposit, user1);
+        vm.stopPrank();
+
+        assertEq(eulerYieldAggregatorVault.balanceOf(user1), mintedShares);
+        assertEq(eulerYieldAggregatorVault.totalSupply(), totalSupplyBefore + mintedShares);
+        assertEq(eulerYieldAggregatorVault.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
+        // assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - amountToDeposit);
     }
 }
