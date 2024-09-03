@@ -7,3 +7,4 @@ openzeppelin-contracts/=lib/reward-streams/lib/openzeppelin-contracts/contracts
 @openzeppelin/=lib/openzeppelin-contracts/
 @openzeppelin-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
 crytic-properties/=lib/properties/contracts/
+halmos-cheatcodes/=lib/halmos-cheatcodes/src/

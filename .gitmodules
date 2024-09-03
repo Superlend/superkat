@@ -23,3 +23,6 @@
 [submodule "lib/properties"]
 	path = lib/properties
 	url = https://github.com/crytic/properties
+[submodule "lib/halmos-cheatcodes"]
+	path = lib/halmos-cheatcodes
+	url = https://github.com/a16z/halmos-cheatcodes
