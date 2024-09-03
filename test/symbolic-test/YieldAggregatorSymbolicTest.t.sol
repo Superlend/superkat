@@ -5,7 +5,6 @@ import {SymTest} from "halmos-cheatcodes/SymTest.sol";
 import "../common/YieldAggregatorBase.t.sol";
 
 contract YieldAggregatorSymbolicTest is YieldAggregatorBase, SymTest {
-
     function setUp() public override {
         admin = address(0x1);
         feeReceiver = address(0x2);
