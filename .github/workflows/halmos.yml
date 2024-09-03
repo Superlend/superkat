@@ -1,0 +1,36 @@
+name: Halmos Symbolic Tests
+
+on:
+    push:
+        branches:
+            - main
+    pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:      
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: nightly
+
+    - name: Set up PythonQ
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+
+    - name: Install halmos
+      run: python3 -m pip install --upgrade halmos
+
+    - name: Run halmos
+      run: halmos --match-contract YieldAggregatorSymbolicTest --storage-layout=generic --test-parallel --solver-parallel  --solver-timeout-assertion 0
