@@ -12,7 +12,9 @@ import {
     TestERC20,
     YieldAggregatorFactory,
     Rewards,
-    ConstantsLib
+    ConstantsLib,
+    EventsLib,
+    ErrorsLib
 } from "../common/YieldAggregatorBase.t.sol";
 
 contract BalanceForwarderE2ETest is YieldAggregatorBase {

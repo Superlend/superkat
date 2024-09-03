@@ -68,7 +68,7 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         if ($.strategies[_strategy].status == IYieldAggregator.StrategyStatus.Inactive) {
-            revert Errors.InactiveStrategy();
+            revert Errors.StrategyShouldBeActive();
         }
 
         IRewardStreams(IBalanceForwarder(_strategy).balanceTrackerAddress()).disableReward(
@@ -91,6 +91,8 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
         address rewardStreams = IBalanceForwarder(_strategy).balanceTrackerAddress();
 
         IRewardStreams(rewardStreams).claimReward(_strategy, _reward, _recipient, _forfeitRecentReward);
+
+        emit Events.ClaimStrategyReward(_strategy, _reward, _recipient, _forfeitRecentReward);
     }
 
     /// @notice Enables balance forwarding for the authenticated account.
