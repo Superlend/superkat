@@ -62,7 +62,7 @@ echidna test/echidna/CryticERC4626TestsHarness.t.sol --contract CryticERC4626Tes
 
 To run symbolic tests using [`Halmos`](https://github.com/a16z/halmos):
 ```sh
-halmos --match-contract YieldAggregatorSymbolicTest --storage-layout=generic
+halmos --match-contract YieldAggregatorSymbolicTest --storage-layout=generic --test-parallel --solver-parallel --solver-timeout-assertion 0
 ```
 
 ### Format
