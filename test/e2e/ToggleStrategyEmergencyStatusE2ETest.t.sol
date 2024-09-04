@@ -218,8 +218,6 @@ contract ToggleStrategyEmergencyStatusE2ETest is YieldAggregatorBase {
 
             assertTrue(expectedeTSTStrategyCash != 0);
             assertTrue(expectedeTSTsecondaryStrategyCash != 0);
-            console2.log("expectedeTSTStrategyCash", expectedeTSTStrategyCash);
-            console2.log("expectedeTSTsecondaryStrategyCash", expectedeTSTsecondaryStrategyCash);
 
             address[] memory strategiesToRebalance = new address[](2);
             strategiesToRebalance[0] = address(eTST);
@@ -230,85 +228,85 @@ contract ToggleStrategyEmergencyStatusE2ETest is YieldAggregatorBase {
             assertEq(
                 eulerYieldAggregatorVault.totalAllocated(), expectedeTSTStrategyCash + expectedeTSTsecondaryStrategyCash
             );
-            // assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerYieldAggregatorVault))), expectedeTSTStrategyCash);
-            // assertEq(
-            //     eTSTsecondary.convertToAssets(eTSTsecondary.balanceOf(address(eulerYieldAggregatorVault))),
-            //     expectedeTSTsecondaryStrategyCash
-            // );
-            // assertEq((eulerYieldAggregatorVault.getStrategy(address(eTST))).allocated, expectedeTSTStrategyCash);
-            // assertEq(
-            //     (eulerYieldAggregatorVault.getStrategy(address(eTSTsecondary))).allocated, expectedeTSTsecondaryStrategyCash
-            // );
-            // assertEq(
-            //     assetTST.balanceOf(address(eulerYieldAggregatorVault)),
-            //     amountToDeposit * 2 - (expectedeTSTStrategyCash + expectedeTSTsecondaryStrategyCash)
-            // );
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerYieldAggregatorVault))), expectedeTSTStrategyCash);
+            assertEq(
+                eTSTsecondary.convertToAssets(eTSTsecondary.balanceOf(address(eulerYieldAggregatorVault))),
+                expectedeTSTsecondaryStrategyCash
+            );
+            assertEq((eulerYieldAggregatorVault.getStrategy(address(eTST))).allocated, expectedeTSTStrategyCash);
+            assertEq(
+                (eulerYieldAggregatorVault.getStrategy(address(eTSTsecondary))).allocated, expectedeTSTsecondaryStrategyCash
+            );
+            assertEq(
+                assetTST.balanceOf(address(eulerYieldAggregatorVault)),
+                amountToDeposit * 2 - (expectedeTSTStrategyCash + expectedeTSTsecondaryStrategyCash)
+            );
         }
 
         // set eTST in emergency mode
-        // uint256 totalAllocationBefore = eulerYieldAggregatorVault.totalAllocationPoints();
-        // vm.prank(manager);
-        // eulerYieldAggregatorVault.toggleStrategyEmergencyStatus(address(eTST));
-        // assertEq(
-        //     eulerYieldAggregatorVault.totalAllocationPoints(),
-        //     totalAllocationBefore - (eulerYieldAggregatorVault.getStrategy(address(eTST))).allocationPoints
-        // );
+        uint256 totalAllocationBefore = eulerYieldAggregatorVault.totalAllocationPoints();
+        vm.prank(manager);
+        eulerYieldAggregatorVault.toggleStrategyEmergencyStatus(address(eTST));
+        assertEq(
+            eulerYieldAggregatorVault.totalAllocationPoints(),
+            totalAllocationBefore - (eulerYieldAggregatorVault.getStrategy(address(eTST))).allocationPoints
+        );
 
         // // user 1 full withdraw, will have to withdraw from strategy as cash reserve is not enough, user should be able to withdraw
-        // {
-        //     uint256 amountToWithdraw = eulerYieldAggregatorVault.balanceOf(user1);
-        //     uint256 user1AssetTSTBalanceBefore = assetTST.balanceOf(user1);
-        //     uint256 user2AssetTSTBalanceBefore = assetTST.balanceOf(user2);
-        //     uint256 expectedAssets = eulerYieldAggregatorVault.convertToAssets(amountToWithdraw);
-        //     uint256 totalAssetsDepositedBefore = eulerYieldAggregatorVault.totalAssetsDeposited();
+        {
+            uint256 amountToWithdraw = eulerYieldAggregatorVault.balanceOf(user1);
+            uint256 user1AssetTSTBalanceBefore = assetTST.balanceOf(user1);
+            uint256 user2AssetTSTBalanceBefore = assetTST.balanceOf(user2);
+            uint256 expectedAssets = eulerYieldAggregatorVault.convertToAssets(amountToWithdraw);
+            uint256 totalAssetsDepositedBefore = eulerYieldAggregatorVault.totalAssetsDeposited();
 
-        //     assertTrue(totalAssetsDepositedBefore != 0);
+            assertTrue(totalAssetsDepositedBefore != 0);
 
-        //     vm.prank(user1);
-        //     eulerYieldAggregatorVault.redeem(amountToWithdraw, user1, user1);
+            vm.prank(user1);
+            eulerYieldAggregatorVault.redeem(amountToWithdraw, user1, user1);
 
-        //     assertTrue(eTST.balanceOf(address(eulerYieldAggregatorVault)) != 0);
-        //     assertEq(eulerYieldAggregatorVault.totalAssetsDeposited(), totalAssetsDepositedBefore - expectedAssets);
-        //     assertEq(eulerYieldAggregatorVault.totalSupply(), eulerYieldAggregatorVault.balanceOf(user2));
-        //     assertEq(assetTST.balanceOf(user1), user1AssetTSTBalanceBefore + expectedAssets);
-        //     assertEq(assetTST.balanceOf(user2), user2AssetTSTBalanceBefore);
-        // }
+            assertTrue(eTST.balanceOf(address(eulerYieldAggregatorVault)) != 0);
+            assertEq(eulerYieldAggregatorVault.totalAssetsDeposited(), totalAssetsDepositedBefore - expectedAssets);
+            assertEq(eulerYieldAggregatorVault.totalSupply(), eulerYieldAggregatorVault.balanceOf(user2));
+            assertEq(assetTST.balanceOf(user1), user1AssetTSTBalanceBefore + expectedAssets);
+            assertEq(assetTST.balanceOf(user2), user2AssetTSTBalanceBefore);
+        }
 
-        // vm.warp(block.timestamp + 86400);
+        vm.warp(block.timestamp + 86400);
 
         // re-activate eTST back again
-        // totalAllocationBefore = eulerYieldAggregatorVault.totalAllocationPoints();
-        // vm.prank(manager);
-        // eulerYieldAggregatorVault.toggleStrategyEmergencyStatus(address(eTST));
-        // assertEq(
-        //     eulerYieldAggregatorVault.totalAllocationPoints(),
-        //     totalAllocationBefore + (eulerYieldAggregatorVault.getStrategy(address(eTST))).allocationPoints
-        // );
+        totalAllocationBefore = eulerYieldAggregatorVault.totalAllocationPoints();
+        vm.prank(manager);
+        eulerYieldAggregatorVault.toggleStrategyEmergencyStatus(address(eTST));
+        assertEq(
+            eulerYieldAggregatorVault.totalAllocationPoints(),
+            totalAllocationBefore + (eulerYieldAggregatorVault.getStrategy(address(eTST))).allocationPoints
+        );
 
-        // eulerYieldAggregatorVault.gulp();
+        eulerYieldAggregatorVault.gulp();
 
         // user 2 full withdraw
-        // {
-        //     uint256 amountToWithdraw = eulerYieldAggregatorVault.balanceOf(user2);
-        //     uint256 user2AssetTSTBalanceBefore = assetTST.balanceOf(user2);
-        //     uint256 expectedAssets = eulerYieldAggregatorVault.convertToAssets(amountToWithdraw);
-        //     uint256 totalAssetsDepositedBefore = eulerYieldAggregatorVault.totalAssetsDeposited();
+        {
+            uint256 amountToWithdraw = eulerYieldAggregatorVault.balanceOf(user2);
+            uint256 user2AssetTSTBalanceBefore = assetTST.balanceOf(user2);
+            uint256 expectedAssets = eulerYieldAggregatorVault.convertToAssets(amountToWithdraw);
+            uint256 totalAssetsDepositedBefore = eulerYieldAggregatorVault.totalAssetsDeposited();
 
-        //     assertTrue(totalAssetsDepositedBefore != 0);
+            assertTrue(totalAssetsDepositedBefore != 0);
 
-        //     vm.prank(user2);
-        //     eulerYieldAggregatorVault.redeem(amountToWithdraw, user2, user2);
+            vm.prank(user2);
+            eulerYieldAggregatorVault.redeem(amountToWithdraw, user2, user2);
 
-        //     assertEq(eTST.balanceOf(address(eulerYieldAggregatorVault)), 0);
-        //     assertEq(eulerYieldAggregatorVault.totalAssetsDeposited(), 0);
-        //     assertEq(eulerYieldAggregatorVault.totalSupply(), 0);
-        //     assertEq(assetTST.balanceOf(user2), user2AssetTSTBalanceBefore + expectedAssets);
-        // }
+            assertEq(eTST.balanceOf(address(eulerYieldAggregatorVault)), 0);
+            assertEq(eulerYieldAggregatorVault.totalAssetsDeposited(), 0);
+            assertEq(eulerYieldAggregatorVault.totalSupply(), 0);
+            assertEq(assetTST.balanceOf(user2), user2AssetTSTBalanceBefore + expectedAssets);
+        }
 
-        // IYieldAggregator.Strategy memory eTSTsecondaryStrategy =
-        //     eulerYieldAggregatorVault.getStrategy(address(eTSTsecondary));
-        // (,, uint168 interestLeft) = eulerYieldAggregatorVault.getYieldAggregatorSavingRate();
+        IYieldAggregator.Strategy memory eTSTsecondaryStrategy =
+            eulerYieldAggregatorVault.getStrategy(address(eTSTsecondary));
+        (,, uint168 interestLeft) = eulerYieldAggregatorVault.getYieldAggregatorSavingRate();
 
-        // assertEq(interestLeft, eTSTsecondaryStrategy.allocated);
+        assertEq(interestLeft, eTSTsecondaryStrategy.allocated);
     }
 }
