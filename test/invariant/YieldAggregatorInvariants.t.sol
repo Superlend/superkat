@@ -1,23 +1,14 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {
-    YieldAggregatorBase,
-    YieldAggregator,
-    IEVault,
-    TestERC20,
-    IYieldAggregator,
-    AggAmountCap,
-    IRMTestDefault,
-    ConstantsLib
-} from "../common/YieldAggregatorBase.t.sol";
-import {Actor} from "./util/Actor.sol";
-import {Strategy} from "./util/Strategy.sol";
+import "../common/YieldAggregatorBase.t.sol";
+import {ActorUtil} from "./util/ActorUtil.sol";
+import {StrategyUtil} from "./util/StrategyUtil.sol";
 import {YieldAggregatorHandler} from "./handler/YieldAggregatorHandler.sol";
 
 contract YieldAggregatorInvariants is YieldAggregatorBase {
-    Actor internal actorUtil;
-    Strategy internal strategyUtil;
+    ActorUtil internal actorUtil;
+    StrategyUtil internal strategyUtil;
 
     YieldAggregatorHandler internal eulerYieldAggregatorVaultHandler;
 
@@ -31,13 +22,13 @@ contract YieldAggregatorInvariants is YieldAggregatorBase {
     function setUp() public override {
         super.setUp();
 
-        actorUtil = new Actor(address(eulerYieldAggregatorVault));
+        actorUtil = new ActorUtil(address(eulerYieldAggregatorVault));
         actorUtil.includeActor(manager);
         actorUtil.includeActor(deployer);
         actorUtil.includeActor(user1);
         actorUtil.includeActor(user2);
 
-        strategyUtil = new Strategy();
+        strategyUtil = new StrategyUtil();
         strategyUtil.includeStrategy(address(eTST));
         _deployOtherStrategies();
         strategyUtil.includeStrategy(address(eTSTsecond));

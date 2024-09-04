@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {YieldAggregatorBase, YieldAggregator, IYieldAggregator, ErrorsLib} from "../common/YieldAggregatorBase.t.sol";
+import "../common/YieldAggregatorBase.t.sol";
 
 contract AdjustAllocationsPointsTest is YieldAggregatorBase {
     uint256 initialStrategyAllocationPoints = 500e18;

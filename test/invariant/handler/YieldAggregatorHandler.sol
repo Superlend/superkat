@@ -1,31 +1,16 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {
-    Test,
-    YieldAggregatorBase,
-    YieldAggregator,
-    console2,
-    EVault,
-    IEVault,
-    IRMTestDefault,
-    TestERC20,
-    IYieldAggregator,
-    ErrorsLib,
-    IERC4626,
-    AggAmountCapLib,
-    AggAmountCap,
-    ConstantsLib
-} from "../../common/YieldAggregatorBase.t.sol";
+import "../../common/YieldAggregatorBase.t.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {Actor} from "../util/Actor.sol";
-import {Strategy} from "../util/Strategy.sol";
+import {ActorUtil} from "../util/ActorUtil.sol";
+import {StrategyUtil} from "../util/StrategyUtil.sol";
 
 contract YieldAggregatorHandler is Test {
     using AggAmountCapLib for AggAmountCap;
 
-    Actor internal actorUtil;
-    Strategy internal strategyUtil;
+    ActorUtil internal actorUtil;
+    StrategyUtil internal strategyUtil;
     YieldAggregator internal yieldAggregator;
 
     // ghost vars
@@ -43,7 +28,7 @@ contract YieldAggregatorHandler is Test {
     bool success;
     bytes returnData;
 
-    constructor(YieldAggregator _yieldAggregator, Actor _actor, Strategy _strategy) {
+    constructor(YieldAggregator _yieldAggregator, ActorUtil _actor, StrategyUtil _strategy) {
         yieldAggregator = _yieldAggregator;
         actorUtil = _actor;
         strategyUtil = _strategy;

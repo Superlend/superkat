@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import {Test} from "forge-std/Test.sol";
 
-contract Strategy is Test {
+contract StrategyUtil is Test {
     address[] public strategies;
 
     function includeStrategy(address _strategy) external {
