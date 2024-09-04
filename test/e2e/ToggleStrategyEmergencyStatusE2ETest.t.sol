@@ -235,7 +235,8 @@ contract ToggleStrategyEmergencyStatusE2ETest is YieldAggregatorBase {
             );
             assertEq((eulerYieldAggregatorVault.getStrategy(address(eTST))).allocated, expectedeTSTStrategyCash);
             assertEq(
-                (eulerYieldAggregatorVault.getStrategy(address(eTSTsecondary))).allocated, expectedeTSTsecondaryStrategyCash
+                (eulerYieldAggregatorVault.getStrategy(address(eTSTsecondary))).allocated,
+                expectedeTSTsecondaryStrategyCash
             );
             assertEq(
                 assetTST.balanceOf(address(eulerYieldAggregatorVault)),
