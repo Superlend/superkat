@@ -51,7 +51,7 @@ match_contract = "Fuzz"
 [profile.invariant]
 runs = 256
 depth = 500
-fail_on_revert = false
+fail_on_revert = true
 call_override = false
 dictionary_weight = 80
 include_storage = true

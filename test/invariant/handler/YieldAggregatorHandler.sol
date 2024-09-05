@@ -55,7 +55,24 @@ contract YieldAggregatorHandler is Test {
         assertEq(feeRecipient, feeRecipientAddr);
     }
 
-    function setPerformanceFee(uint96 _newFee) external {
+    function setPerformanceFee(uint96 _newFee, string calldata _feeRecipientSeed) external {
+        _newFee = uint96(bound(_newFee, 0, ConstantsLib.MAX_PERFORMANCE_FEE));
+
+        if (_newFee > 0) {
+            address feeRecipientAddr = makeAddr(_feeRecipientSeed);
+
+            (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
+                0,
+                address(yieldAggregator),
+                abi.encodeWithSelector(YieldAggregator.setFeeRecipient.selector, feeRecipientAddr)
+            );
+
+            if (success) {
+                ghost_feeRecipients.push(feeRecipientAddr);
+                actorUtil.setAsFeeReceiver(feeRecipientAddr);
+            }
+        }
+
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             0, address(yieldAggregator), abi.encodeWithSelector(YieldAggregator.setPerformanceFee.selector, _newFee)
         );
@@ -66,7 +83,8 @@ contract YieldAggregatorHandler is Test {
     }
 
     function adjustAllocationPoints(uint256 _strategyIndexSeed, uint256 _newPoints) external {
-        address strategyAddr = strategyUtil.fetchStrategy(_strategyIndexSeed);
+        // allow strategyAddr == address(0) for cash reserve
+        address strategyAddr = strategyUtil.fetchActiveStrategy(_strategyIndexSeed);
 
         IYieldAggregator.Strategy memory strategyBefore = yieldAggregator.getStrategy(strategyAddr);
 
@@ -86,10 +104,12 @@ contract YieldAggregatorHandler is Test {
     }
 
     function setStrategyCap(uint256 _strategyIndexSeed, uint16 _cap) external {
-        address strategyAddr = strategyUtil.fetchStrategy(_strategyIndexSeed);
+        address strategyAddr = strategyUtil.fetchActiveStrategy(_strategyIndexSeed);
+
+        if (strategyAddr == address(0)) return;
 
         uint256 strategyCapAmount = AggAmountCap.wrap(_cap).resolve();
-        vm.assume(strategyCapAmount <= ConstantsLib.MAX_CAP_AMOUNT);
+        if (strategyCapAmount > ConstantsLib.MAX_CAP_AMOUNT) strategyCapAmount = ConstantsLib.MAX_CAP_AMOUNT;
 
         IYieldAggregator.Strategy memory strategyBefore = yieldAggregator.getStrategy(strategyAddr);
 
@@ -107,13 +127,22 @@ contract YieldAggregatorHandler is Test {
         }
     }
 
-    function toggleStrategyEmergencyStatus(uint256 _strategyIndexSeed) external {
-        address strategyAddr = strategyUtil.fetchStrategy(_strategyIndexSeed);
+    function toggleStrategyEmergencyStatus(uint256 _strategyIndexSeed, bool _isInitiallyActive) external {
+        address strategyAddr = strategyUtil.fetchActiveOrEmergencyStrategy(_strategyIndexSeed, _isInitiallyActive);
+        if (strategyAddr == address(0)) {
+            _isInitiallyActive = !_isInitiallyActive;
+            strategyAddr = strategyUtil.fetchActiveOrEmergencyStrategy(_strategyIndexSeed, _isInitiallyActive);
+        }
+
+        if (strategyAddr == address(0)) return;
 
         // simulating loss when switching strategy to emergency status
-        IYieldAggregator.Strategy memory strategyBefore = yieldAggregator.getStrategy(strategyAddr);
-        uint256 cached_ghost_totalAssetsDeposited =
-            _simulateLossSocialization(ghost_totalAssetsDeposited, strategyBefore.allocated);
+        uint256 expected_ghost_totalAssetsDeposited;
+        if (_isInitiallyActive) {
+            IYieldAggregator.Strategy memory strategyBefore = yieldAggregator.getStrategy(strategyAddr);
+            expected_ghost_totalAssetsDeposited =
+                _simulateLossDeduction(ghost_totalAssetsDeposited, strategyBefore.allocated);
+        }
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             0,
@@ -125,16 +154,25 @@ contract YieldAggregatorHandler is Test {
         if (success) {
             if (strategyAfter.status == IYieldAggregator.StrategyStatus.Emergency) {
                 ghost_totalAllocationPoints -= strategyAfter.allocationPoints;
-                ghost_totalAssetsDeposited = cached_ghost_totalAssetsDeposited;
+                ghost_totalAssetsDeposited = expected_ghost_totalAssetsDeposited;
+
+                strategyUtil.fromActiveToEmergency(strategyAddr);
             } else if (strategyAfter.status == IYieldAggregator.StrategyStatus.Active) {
                 ghost_totalAllocationPoints += strategyAfter.allocationPoints;
-                ghost_totalAssetsDeposited += strategyAfter.allocated;
+
+                strategyUtil.fromEmergencyToActive(strategyAddr);
             }
         }
     }
 
     function addStrategy(uint256 _strategyIndexSeed, uint256 _allocationPoints) external {
-        address strategyAddr = strategyUtil.fetchStrategy(_strategyIndexSeed);
+        address[] memory withdrawalQueue = yieldAggregator.withdrawalQueue();
+        if (withdrawalQueue.length == ConstantsLib.MAX_STRATEGIES) return;
+
+        address strategyAddr = strategyUtil.fetchNonActiveStrategy(_strategyIndexSeed);
+        if (strategyAddr == address(0)) return;
+
+        _allocationPoints = bound(_allocationPoints, 1, type(uint96).max);
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             0,
@@ -146,14 +184,18 @@ contract YieldAggregatorHandler is Test {
             ghost_totalAllocationPoints += _allocationPoints;
             ghost_allocationPoints[strategyAddr] = _allocationPoints;
             ghost_withdrawalQueueLength += 1;
+
+            strategyUtil.fromNonActiveToActive(strategyAddr);
         }
+
         IYieldAggregator.Strategy memory strategyAfter = yieldAggregator.getStrategy(strategyAddr);
         assertEq(yieldAggregator.totalAllocationPoints(), ghost_totalAllocationPoints);
         assertEq(strategyAfter.allocationPoints, ghost_allocationPoints[strategyAddr]);
     }
 
     function removeStrategy(uint256 _strategyIndexSeed) external {
-        address strategyAddr = strategyUtil.fetchStrategy(_strategyIndexSeed);
+        address strategyAddr = strategyUtil.fetchActiveStrategy(_strategyIndexSeed);
+        if (strategyAddr == address(0)) return;
 
         IYieldAggregator.Strategy memory strategyBefore = yieldAggregator.getStrategy(strategyAddr);
 
@@ -165,6 +207,8 @@ contract YieldAggregatorHandler is Test {
             ghost_totalAllocationPoints -= strategyBefore.allocationPoints;
             ghost_allocationPoints[strategyAddr] = 0;
             ghost_withdrawalQueueLength -= 1;
+
+            strategyUtil.fromActiveToNonActive(strategyAddr);
         }
 
         IYieldAggregator.Strategy memory strategyAfter = yieldAggregator.getStrategy(strategyAddr);
@@ -199,8 +243,9 @@ contract YieldAggregatorHandler is Test {
     }
 
     function harvest(uint256 _actorIndexSeed) external {
+        uint256 expectedInterestRate = yieldAggregator.interestAccrued();
         (uint256 expectedAccumulatedPerformanceFee, uint256 expectedTotalAssetsDeposited) =
-            _simulateFeeAndLossSocialization();
+            _simulateHarvest(ghost_totalAssetsDeposited + expectedInterestRate);
 
         // simulate loss
         (, success, returnData) = actorUtil.initiateActorCall(
@@ -228,7 +273,7 @@ contract YieldAggregatorHandler is Test {
             _actorIndexSeed, address(yieldAggregator), abi.encodeWithSelector(YieldAggregator.gulp.selector)
         );
 
-        if (success) {
+        if (success && yieldAggregator.totalSupply() >= ConstantsLib.MIN_SHARES_FOR_GULP) {
             (,, uint168 interestLeft) = yieldAggregator.getYieldAggregatorSavingRate();
 
             assertEq(yieldAggregator.totalAssetsAllocatable(), yieldAggregator.totalAssetsDeposited() + interestLeft);
@@ -237,13 +282,14 @@ contract YieldAggregatorHandler is Test {
 
     function deposit(uint256 _actorIndexSeed, uint256 _assets, address _receiver) external {
         vm.assume(_receiver != address(0));
-        vm.assume(!actorUtil.isFeeReceiver(_receiver));
+        vm.assume(actorUtil.isFeeReceiver(_receiver) == false);
 
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
 
         if (yieldAggregator.totalSupply() == 0) {
             uint256 minAssets = yieldAggregator.previewMint(ConstantsLib.MIN_SHARES_FOR_GULP);
-            vm.assume(_assets >= minAssets);
+
+            if (minAssets < _assets) _assets = minAssets + 1;
         }
         _fillBalance(currentActor, yieldAggregator.asset(), _assets);
 
@@ -261,12 +307,12 @@ contract YieldAggregatorHandler is Test {
 
     function mint(uint256 _actorIndexSeed, uint256 _shares, address _receiver) external {
         vm.assume(_receiver != address(0));
-        vm.assume(!actorUtil.isFeeReceiver(_receiver));
+        vm.assume(actorUtil.isFeeReceiver(_receiver) == false);
 
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
 
         if (yieldAggregator.totalSupply() == 0) {
-            vm.assume(_shares >= ConstantsLib.MIN_SHARES_FOR_GULP);
+            _shares = bound(_shares, ConstantsLib.MIN_SHARES_FOR_GULP, type(uint256).max);
         }
 
         uint256 assets = yieldAggregator.previewMint(_shares);
@@ -288,11 +334,16 @@ contract YieldAggregatorHandler is Test {
         vm.assume(_receiver != address(0));
         vm.assume(!actorUtil.isFeeReceiver(_receiver));
 
-        uint256 previousHarvestTimestamp = yieldAggregator.lastHarvestTimestamp();
+        uint256 expectedInterestRate = yieldAggregator.interestAccrued();
         (uint256 expectedAccumulatedPerformanceFee, uint256 expectedTotalAssetsDeposited) =
-            _simulateFeeAndLossSocialization();
+            _simulateHarvest(ghost_totalAssetsDeposited + expectedInterestRate);
+
+        uint256 previousHarvestTimestamp = yieldAggregator.lastHarvestTimestamp();
 
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
+
+        _assets = bound(_assets, 0, yieldAggregator.convertToAssets(yieldAggregator.balanceOf(currentActor)));
+
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             currentActorIndex,
             address(yieldAggregator),
@@ -317,7 +368,16 @@ contract YieldAggregatorHandler is Test {
         vm.assume(_receiver != address(0));
         vm.assume(!actorUtil.isFeeReceiver(_receiver));
 
+        uint256 expectedInterestRate = yieldAggregator.interestAccrued();
+
+        (uint256 expectedAccumulatedPerformanceFee, uint256 expectedTotalAssetsDeposited) =
+            _simulateHarvest(ghost_totalAssetsDeposited + expectedInterestRate);
+
+        uint256 previousHarvestTimestamp = yieldAggregator.lastHarvestTimestamp();
+
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
+
+        _shares = bound(_shares, 0, yieldAggregator.balanceOf(currentActor));
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             currentActorIndex,
@@ -326,6 +386,14 @@ contract YieldAggregatorHandler is Test {
         );
 
         if (success) {
+            if (block.timestamp > previousHarvestTimestamp + ConstantsLib.HARVEST_COOLDOWN) {
+                (address feeRecipient,) = yieldAggregator.performanceFeeConfig();
+                ghost_accumulatedPerformanceFeePerRecipient[feeRecipient] = expectedAccumulatedPerformanceFee;
+                ghost_totalAssetsDeposited = expectedTotalAssetsDeposited;
+
+                ghost_lastHarvestTimestamp = uint40(block.timestamp);
+            }
+
             uint256 assets = abi.decode(returnData, (uint256));
             ghost_totalAssetsDeposited -= assets;
         }
@@ -349,52 +417,53 @@ contract YieldAggregatorHandler is Test {
 
     // This function simulate loss socialization, the part related to decreasing totalAssetsDeposited only.
     // Return the expected ghost_totalAssetsDeposited after loss socialization.
-    function _simulateLossSocialization(uint256 cachedGhostTotalAssetsDeposited, uint256 _loss)
+    function _simulateLossDeduction(uint256 cachedGhostTotalAssetsDeposited, uint256 _loss)
         private
         view
         returns (uint256)
     {
-        (,, uint168 interestLeft) = yieldAggregator.getYieldAggregatorSavingRate();
-        if (_loss > interestLeft) {
-            cachedGhostTotalAssetsDeposited -= _loss - interestLeft;
+        // (,, uint168 interestLeft) = yieldAggregator.getYieldAggregatorSavingRate();
+        uint256 totalNotDistributed = yieldAggregator.totalAssetsAllocatable() - cachedGhostTotalAssetsDeposited;
+
+        if (_loss > totalNotDistributed) {
+            cachedGhostTotalAssetsDeposited -= (_loss - totalNotDistributed);
         }
 
         return cachedGhostTotalAssetsDeposited;
     }
 
-    function _simulateFeeAndLossSocialization() private view returns (uint256, uint256) {
+    function _simulateHarvest(uint256 _totalAssetsDeposited) private view returns (uint256, uint256) {
         // track total yield and total loss to simulate loss socialization
         uint256 totalYield;
         uint256 totalLoss;
+
         // check if performance fee is on; store received fee per recipient if call is succesfull
         (address feeRecipient, uint256 performanceFee) = yieldAggregator.performanceFeeConfig();
-        uint256 accumulatedPerformanceFee;
-        uint256 cached_ghost_totalAssetsDeposited = ghost_totalAssetsDeposited;
-        if (feeRecipient != address(0) && performanceFee > 0) {
-            accumulatedPerformanceFee = ghost_accumulatedPerformanceFeePerRecipient[feeRecipient];
-            address[] memory withdrawalQueueArray = yieldAggregator.withdrawalQueue();
+        uint256 accumulatedPerformanceFee = ghost_accumulatedPerformanceFeePerRecipient[feeRecipient];
 
-            for (uint256 i; i < withdrawalQueueArray.length; i++) {
-                uint256 allocated = (yieldAggregator.getStrategy(withdrawalQueueArray[i])).allocated;
-                uint256 underlying = IERC4626(withdrawalQueueArray[i]).maxWithdraw(address(yieldAggregator));
-                if (underlying >= allocated) {
-                    totalYield += underlying - allocated;
-                } else {
-                    totalLoss += allocated - underlying;
-                }
-            }
-
-            if (totalYield > totalLoss) {
-                uint256 performancefeeAssets = Math.mulDiv(totalYield, performanceFee, 1e18, Math.Rounding.Floor);
-
-                accumulatedPerformanceFee = yieldAggregator.previewDeposit(performancefeeAssets);
-                cached_ghost_totalAssetsDeposited += performancefeeAssets;
-            } else if (totalYield < totalLoss) {
-                cached_ghost_totalAssetsDeposited =
-                    _simulateLossSocialization(cached_ghost_totalAssetsDeposited, totalLoss);
+        address[] memory withdrawalQueueArray = yieldAggregator.withdrawalQueue();
+        for (uint256 i; i < withdrawalQueueArray.length; i++) {
+            uint256 allocated = (yieldAggregator.getStrategy(withdrawalQueueArray[i])).allocated;
+            uint256 underlying = IERC4626(withdrawalQueueArray[i]).maxWithdraw(address(yieldAggregator));
+            if (underlying >= allocated) {
+                totalYield += underlying - allocated;
+            } else {
+                totalLoss += allocated - underlying;
             }
         }
 
-        return (accumulatedPerformanceFee, cached_ghost_totalAssetsDeposited);
+        if (totalYield > totalLoss) {
+            if (feeRecipient != address(0) && performanceFee > 0) {
+                uint256 performancefeeAssets =
+                    Math.mulDiv(totalYield - totalLoss, performanceFee, 1e18, Math.Rounding.Floor);
+                accumulatedPerformanceFee = yieldAggregator.previewDeposit(performancefeeAssets);
+
+                _totalAssetsDeposited += performancefeeAssets;
+            }
+        } else if (totalYield < totalLoss) {
+            _totalAssetsDeposited = _simulateLossDeduction(_totalAssetsDeposited, totalLoss - totalYield);
+        }
+
+        return (accumulatedPerformanceFee, _totalAssetsDeposited);
     }
 }
