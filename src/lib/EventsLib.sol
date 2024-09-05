@@ -33,6 +33,9 @@ library EventsLib {
     event DisableRewardForStrategy(address indexed strategy, address indexed reward, bool forfeitRecentReward);
     event EnableBalanceForwarder(address indexed user);
     event DisableBalanceForwarder(address indexed user);
+    event ClaimStrategyReward(
+        address indexed strategy, address indexed reward, address indexed recipient, bool forfeitRecentReward
+    );
 
     /// @dev Rebalance.sol events
     event Rebalance(address indexed strategy, uint256 amountToRebalance, bool isDeposit);

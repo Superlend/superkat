@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {IVotes} from "@openzeppelin/contracts/governance/utils/IVotes.sol";
 import {Test} from "forge-std/Test.sol";
 
-contract Actor is Test {
+contract ActorUtil is Test {
     address eulerYieldAggregatorVault;
 
     /// @dev actor[0] will always be a manager address that have access to all YieldAggregator roles.

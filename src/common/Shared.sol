@@ -8,7 +8,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {EVCUtil} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {ERC20Upgradeable} from "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 // libs
-import {HooksLib} from "../lib/HooksLib.sol";
 import {StorageLib as Storage, YieldAggregatorStorage} from "../lib/StorageLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
@@ -19,8 +18,6 @@ import {ConstantsLib as Constants} from "../lib/ConstantsLib.sol";
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
 abstract contract Shared is EVCUtil {
-    using HooksLib for uint32;
-
     /// @dev Non-reentracy protection for state-changing functions.
     modifier nonReentrant() {
         _nonReentrantBefore();
@@ -65,7 +62,7 @@ abstract contract Shared is EVCUtil {
 
         (address target, uint32 hookedFns) = ($.hooksTarget, $.hookedFns);
 
-        if (hookedFns.isNotSet(_fn)) return;
+        if ((hookedFns & _fn) == 0) return;
 
         (bool success, bytes memory data) = target.call(abi.encodePacked(msg.data, _caller));
 

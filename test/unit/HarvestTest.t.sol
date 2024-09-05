@@ -1,14 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {
-    YieldAggregatorBase,
-    YieldAggregator,
-    console2,
-    EVault,
-    IYieldAggregator,
-    ErrorsLib
-} from "../common/YieldAggregatorBase.t.sol";
+import "../common/YieldAggregatorBase.t.sol";
 
 contract HarvestTest is YieldAggregatorBase {
     uint256 user1InitialBalance = 100000e18;
@@ -94,6 +87,7 @@ contract HarvestTest is YieldAggregatorBase {
             eulerYieldAggregatorVault.totalAllocated(),
             totalAllocatedBefore + (expectedAllocated - strategyBefore.allocated)
         );
+        assertEq(eulerYieldAggregatorVault.lastHarvestTimestamp(), block.timestamp);
     }
 
     function testHarvestNegativeYieldBiggerThanInterestLeft() public {

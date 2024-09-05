@@ -68,7 +68,7 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         if ($.strategies[_strategy].status == IYieldAggregator.StrategyStatus.Inactive) {
-            revert Errors.InactiveStrategy();
+            revert Errors.StrategyShouldBeActive();
         }
 
         IRewardStreams(IBalanceForwarder(_strategy).balanceTrackerAddress()).disableReward(
@@ -91,6 +91,8 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
         address rewardStreams = IBalanceForwarder(_strategy).balanceTrackerAddress();
 
         IRewardStreams(rewardStreams).claimReward(_strategy, _reward, _recipient, _forfeitRecentReward);
+
+        emit Events.ClaimStrategyReward(_strategy, _reward, _recipient, _forfeitRecentReward);
     }
 
     /// @notice Enables balance forwarding for the authenticated account.
@@ -130,12 +132,12 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
         IBalanceTracker balanceTrackerCached = IBalanceTracker($.balanceTracker);
 
         if (address(balanceTrackerCached) == address(0)) revert Errors.YieldAggregatorRewardsNotSupported();
-        if ($.isBalanceForwarderEnabled[_sender]) revert Errors.YieldAggregatorRewardsAlreadyEnabled();
+        bool wasBalanceForwarderEnabled = $.isBalanceForwarderEnabled[_sender];
 
         $.isBalanceForwarderEnabled[_sender] = true;
         balanceTrackerCached.balanceTrackerHook(_sender, _senderBalance, false);
 
-        emit Events.EnableBalanceForwarder(_sender);
+        if (!wasBalanceForwarderEnabled) emit Events.EnableBalanceForwarder(_sender);
     }
 
     /// @notice Disables balance forwarding for the authenticated account.
@@ -146,12 +148,13 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
         IBalanceTracker balanceTrackerCached = IBalanceTracker($.balanceTracker);
 
         if (address(balanceTrackerCached) == address(0)) revert Errors.YieldAggregatorRewardsNotSupported();
-        if (!$.isBalanceForwarderEnabled[_sender]) revert Errors.YieldAggregatorRewardsAlreadyDisabled();
+
+        bool wasBalanceForwarderEnabled = $.isBalanceForwarderEnabled[_sender];
 
         $.isBalanceForwarderEnabled[_sender] = false;
         balanceTrackerCached.balanceTrackerHook(_sender, 0, false);
 
-        emit Events.DisableBalanceForwarder(_sender);
+        if (wasBalanceForwarderEnabled) emit Events.DisableBalanceForwarder(_sender);
     }
 }
 

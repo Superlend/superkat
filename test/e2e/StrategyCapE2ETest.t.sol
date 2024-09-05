@@ -1,19 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {
-    YieldAggregatorBase,
-    YieldAggregator,
-    console2,
-    EVault,
-    IEVault,
-    IRMTestDefault,
-    TestERC20,
-    IYieldAggregator,
-    ErrorsLib,
-    AggAmountCapLib,
-    AggAmountCap
-} from "../common/YieldAggregatorBase.t.sol";
+import "../common/YieldAggregatorBase.t.sol";
 
 contract StrategyCapE2ETest is YieldAggregatorBase {
     uint256 user1InitialBalance = 100000e18;
@@ -54,6 +42,12 @@ contract StrategyCapE2ETest is YieldAggregatorBase {
         vm.prank(manager);
         vm.expectRevert(ErrorsLib.NoCapOnCashReserveStrategy.selector);
         eulerYieldAggregatorVault.setStrategyCap(address(0), 1);
+    }
+
+    function testSetCapExceedingMax() public {
+        vm.prank(manager);
+        vm.expectRevert(ErrorsLib.StrategyCapExceedMax.selector);
+        eulerYieldAggregatorVault.setStrategyCap(address(eTST), 51238);
     }
 
     function testRebalanceAfterHittingCap() public {
