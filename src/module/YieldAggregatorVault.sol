@@ -327,9 +327,6 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
                 // Do actual withdraw from strategy
                 strategy.withdraw(withdrawAmount, address(this), address(this));
 
-                // update withdrawAmount as in some cases we may not get that amount withdrawn.
-                withdrawAmount = IERC20(asset()).balanceOf(address(this)) - assetsRetrieved;
-
                 // Update allocated assets
                 $.strategies[address(strategy)].allocated -= uint120(withdrawAmount);
                 $.totalAllocated -= withdrawAmount;
