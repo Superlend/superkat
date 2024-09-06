@@ -65,12 +65,6 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
         virtual
         nonReentrant
     {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
-
-        if ($.strategies[_strategy].status == IYieldAggregator.StrategyStatus.Inactive) {
-            revert Errors.StrategyShouldBeActive();
-        }
-
         IRewardStreams(IBalanceForwarder(_strategy).balanceTrackerAddress()).disableReward(
             _strategy, _reward, _forfeitRecentReward
         );

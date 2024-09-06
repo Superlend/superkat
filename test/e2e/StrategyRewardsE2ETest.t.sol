@@ -173,7 +173,6 @@ contract StrategyRewardsE2ETest is YieldAggregatorBase {
         eulerYieldAggregatorVault.enableRewardForStrategy(address(eTST), address(assetTST));
 
         vm.prank(manager);
-        vm.expectRevert(ErrorsLib.StrategyShouldBeActive.selector);
         eulerYieldAggregatorVault.disableRewardForStrategy(address(nonActiveStrategy), address(assetTST), true);
 
         vm.expectEmit();
