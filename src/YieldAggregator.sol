@@ -20,6 +20,7 @@ import {IAccessControl, AccessControlUpgradeable} from "@openzeppelin-upgradeabl
 import {AccessControlEnumerableUpgradeable} from
     "@openzeppelin-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
 import {ContextUpgradeable} from "@openzeppelin-upgradeable/utils/ContextUpgradeable.sol";
+import {EIP712Upgradeable} from "@openzeppelin-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
 import {Shared} from "./common/Shared.sol";
 // libs
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -55,6 +56,7 @@ contract YieldAggregator is Dispatch, AccessControlEnumerableUpgradeable, IYield
         __ERC4626_init_unchained(IERC20(_initParams.asset));
         __ERC20_init_unchained(_initParams.name, _initParams.symbol);
         __ERC20Votes_init_unchained();
+        __EIP712_init_unchained(_initParams.name, "1");
         __AccessControlEnumerable_init_unchained();
 
         if (_initParams.initialCashAllocationPoints == 0) revert Errors.InitialAllocationPointsZero();
