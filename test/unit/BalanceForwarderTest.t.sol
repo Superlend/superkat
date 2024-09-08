@@ -29,7 +29,6 @@ contract BalanceForwarderTest is YieldAggregatorBase {
             hooksModule: address(hooksModule),
             feeModule: address(feeModuleModule),
             strategyModule: address(strategyModuleModule),
-            rebalanceModule: address(rebalanceModuleModule),
             withdrawalQueueModule: address(withdrawalQueueModuleModule)
         });
         eulerYieldAggregatorVaultFactory = new YieldAggregatorFactory(factoryParams);

@@ -9,7 +9,6 @@ import {YieldAggregatorVault} from "../../src/module/YieldAggregatorVault.sol";
 import {Hooks} from "../../src/module/Hooks.sol";
 import {Rewards} from "../../src/module/Rewards.sol";
 import {Fee} from "../../src/module/Fee.sol";
-import {Rebalance} from "../../src/module/Rebalance.sol";
 import {WithdrawalQueue} from "../../src/module/WithdrawalQueue.sol";
 import {YieldAggregatorFactory} from "../../src/YieldAggregatorFactory.sol";
 import {Strategy} from "../../src/module/Strategy.sol";
@@ -29,7 +28,6 @@ contract CryticERC4626TestsHarness is CryticERC4626PropertyTests {
     Hooks hooksModule;
     Fee feeModuleModule;
     Strategy strategyModuleModule;
-    Rebalance rebalanceModuleModule;
     WithdrawalQueue withdrawalQueueModuleModule;
 
     YieldAggregatorFactory eulerYieldAggregatorVaultFactory;
@@ -43,7 +41,6 @@ contract CryticERC4626TestsHarness is CryticERC4626PropertyTests {
         hooksModule = new Hooks(address(evc));
         feeModuleModule = new Fee(address(evc));
         strategyModuleModule = new Strategy(address(evc));
-        rebalanceModuleModule = new Rebalance(address(evc));
         withdrawalQueueModuleModule = new WithdrawalQueue(address(evc));
 
         YieldAggregatorFactory.FactoryParams memory factoryParams = YieldAggregatorFactory.FactoryParams({
@@ -55,7 +52,6 @@ contract CryticERC4626TestsHarness is CryticERC4626PropertyTests {
             hooksModule: address(hooksModule),
             feeModule: address(feeModuleModule),
             strategyModule: address(strategyModuleModule),
-            rebalanceModule: address(rebalanceModuleModule),
             withdrawalQueueModule: address(withdrawalQueueModuleModule)
         });
         eulerYieldAggregatorVaultFactory = new YieldAggregatorFactory(factoryParams);

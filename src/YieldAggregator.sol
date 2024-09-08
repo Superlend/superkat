@@ -13,8 +13,7 @@ import {
     RewardsModule,
     HooksModule,
     StrategyModule,
-    WithdrawalQueueModule,
-    RebalanceModule
+    WithdrawalQueueModule
 } from "./Dispatch.sol";
 import {IAccessControl, AccessControlUpgradeable} from "@openzeppelin-upgradeable/access/AccessControlUpgradeable.sol";
 import {AccessControlEnumerableUpgradeable} from
@@ -45,7 +44,6 @@ contract YieldAggregator is Dispatch, AccessControlEnumerableUpgradeable, IYield
             _constructorParams.hooksModule,
             _constructorParams.feeModule,
             _constructorParams.strategyModule,
-            _constructorParams.rebalanceModule,
             _constructorParams.withdrawalQueueModule
         )
     {}
@@ -205,13 +203,6 @@ contract YieldAggregator is Dispatch, AccessControlEnumerableUpgradeable, IYield
     /// @dev See {RewardsModule-disableBalanceForwarder}.
     function disableBalanceForwarder() public override (IYieldAggregator, RewardsModule) use(rewardsModule) {}
 
-    /// @dev See {RebalanceModule-rebalance}.
-    function rebalance(address[] calldata _strategies)
-        public
-        override (IYieldAggregator, RebalanceModule)
-        use(rebalanceModule)
-    {}
-
     /// @dev See {WithdrawalQueue-reorderWithdrawalQueue}.
     function reorderWithdrawalQueue(uint8 _index1, uint8 _index2)
         public
@@ -219,6 +210,13 @@ contract YieldAggregator is Dispatch, AccessControlEnumerableUpgradeable, IYield
         onlyEVCAccountOwner
         onlyRole(Constants.WITHDRAWAL_QUEUE_MANAGER)
         use(withdrawalQueueModule)
+    {}
+
+    /// @dev See {VaultModule-rebalance}.
+    function rebalance(address[] calldata _strategies)
+        public
+        override (IYieldAggregator, YieldAggregatorVaultModule)
+        use(yieldAggregatorVaultModule)
     {}
 
     /// @dev See {VaultModule-harvest}.

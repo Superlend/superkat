@@ -167,7 +167,7 @@ contract DepositRebalanceHarvestWithdrawE2ETest is YieldAggregatorBase {
         }
     }
 
-    function testMultipleStrategy_WithYield() public {
+    function testHarvestMultipleStrategy_WithYield() public {
         IEVault eTSTsecondary;
         {
             eTSTsecondary = IEVault(
@@ -254,7 +254,7 @@ contract DepositRebalanceHarvestWithdrawE2ETest is YieldAggregatorBase {
             );
         }
 
-        vm.warp(block.timestamp + 86400);
+        vm.warp(block.timestamp + 1.5 days);
         // mock an increase of aggregator balance due to yield
         uint256 aggrCurrenteTSTShareBalance = eTST.balanceOf(address(eulerYieldAggregatorVault));
         uint256 aggrCurrenteTSTUnderlyingBalance = eTST.convertToAssets(aggrCurrenteTSTShareBalance);

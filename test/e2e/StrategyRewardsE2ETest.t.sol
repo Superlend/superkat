@@ -74,7 +74,6 @@ contract StrategyRewardsE2ETest is YieldAggregatorBase {
         hooksModule = new Hooks(address(evc));
         feeModuleModule = new Fee(address(evc));
         strategyModuleModule = new Strategy(address(evc));
-        rebalanceModuleModule = new Rebalance(address(evc));
         withdrawalQueueModuleModule = new WithdrawalQueue(address(evc));
 
         YieldAggregatorFactory.FactoryParams memory factoryParams = YieldAggregatorFactory.FactoryParams({
@@ -86,7 +85,6 @@ contract StrategyRewardsE2ETest is YieldAggregatorBase {
             hooksModule: address(hooksModule),
             feeModule: address(feeModuleModule),
             strategyModule: address(strategyModuleModule),
-            rebalanceModule: address(rebalanceModuleModule),
             withdrawalQueueModule: address(withdrawalQueueModuleModule)
         });
         eulerYieldAggregatorVaultFactory = new YieldAggregatorFactory(factoryParams);

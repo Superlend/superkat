@@ -13,7 +13,6 @@ interface IYieldAggregator {
         address hooksModule;
         address feeModule;
         address strategyModule;
-        address rebalanceModule;
         address withdrawalQueueModule;
     }
 
