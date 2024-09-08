@@ -40,7 +40,7 @@ abstract contract Shared is EVCUtil {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         uint256 totalAssetsDepositedCache = $.totalAssetsDeposited;
-        uint256 totalNotDistributed = _totalAssetsAllocatable() - totalAssetsDepositedCache;
+        uint256 totalNotDistributed = _totalAssetsAllocatable($.totalAllocated) - totalAssetsDepositedCache;
 
         // set interestLeft to zero, will be updated to the right value during _gulp()
         $.interestLeft = 0;
@@ -78,7 +78,7 @@ abstract contract Shared is EVCUtil {
         // Do not gulp if total supply is too low
         if (_totalSupply() < Constants.MIN_SHARES_FOR_GULP) return;
 
-        uint256 toGulp = _totalAssetsAllocatable() - $.totalAssetsDeposited - $.interestLeft;
+        uint256 toGulp = _totalAssetsAllocatable($.totalAllocated) - $.totalAssetsDeposited - $.interestLeft;
         if (toGulp == 0) return;
 
         uint256 maxGulp = type(uint168).max - $.interestLeft;
@@ -93,10 +93,11 @@ abstract contract Shared is EVCUtil {
 
     /// @dev update accrued interest.
     function _updateInterestAccrued() internal {
-        uint256 accruedInterest = _interestAccruedFromCache();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+
+        uint256 accruedInterest = _interestAccruedFromCache($.interestLeft);
 
         if (accruedInterest > 0) {
-            YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
             // it's safe to down-cast because the accrued interest is a fraction of interest left
             $.interestLeft -= uint168(accruedInterest);
             $.lastInterestUpdate = uint40(block.timestamp);
@@ -110,13 +111,13 @@ abstract contract Shared is EVCUtil {
 
     /// @dev Get accrued interest without updating it.
     /// @return Accrued interest.
-    function _interestAccruedFromCache() internal view returns (uint256) {
+    function _interestAccruedFromCache(uint168 _interestLeft) internal view returns (uint256) {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         uint40 interestSmearEndCached = $.interestSmearEnd;
         // If distribution ended, full amount is accrued
         if (block.timestamp >= interestSmearEndCached) {
-            return $.interestLeft;
+            return _interestLeft;
         }
 
         uint40 lastInterestUpdateCached = $.lastInterestUpdate;
@@ -129,16 +130,14 @@ abstract contract Shared is EVCUtil {
         uint256 totalDuration = interestSmearEndCached - lastInterestUpdateCached;
         uint256 timePassed = block.timestamp - lastInterestUpdateCached;
 
-        return $.interestLeft * timePassed / totalDuration;
+        return _interestLeft * timePassed / totalDuration;
     }
 
     /// @dev Return total assets allocatable.
     /// @dev The total assets allocatable is the current balanceOf + total amount already allocated.
     /// @return total assets allocatable.
-    function _totalAssetsAllocatable() internal view returns (uint256) {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
-
-        return IERC20(IERC4626(address(this)).asset()).balanceOf(address(this)) + $.totalAllocated;
+    function _totalAssetsAllocatable(uint256 _totalAllocated) internal view returns (uint256) {
+        return IERC20(IERC4626(address(this)).asset()).balanceOf(address(this)) + _totalAllocated;
     }
 
     /// @dev Override for _msgSender() to use the EVC authentication.

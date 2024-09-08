@@ -162,7 +162,9 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     /// @notice Return the accrued interest.
     /// @return Accrued interest.
     function interestAccrued() public view virtual nonReentrantView returns (uint256) {
-        return _interestAccruedFromCache();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+
+        return _interestAccruedFromCache($.interestLeft);
     }
 
     /// @notice Get saving rate data.
@@ -203,7 +205,9 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     /// @dev the total assets allocatable is the amount of assets deposited into the aggregator + assets already deposited into strategies
     /// @return total assets allocatable.
     function totalAssetsAllocatable() public view virtual nonReentrantView returns (uint256) {
-        return _totalAssetsAllocatable();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+
+        return _totalAssetsAllocatable($.totalAllocated);
     }
 
     /// @notice Return the total amount of assets deposited, plus the accrued interest.
@@ -258,7 +262,14 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     /// @dev See {IERC4626-previewWithdraw}.
     /// @return Amount of shares.
     function previewWithdraw(uint256 _assets) public view virtual override nonReentrantView returns (uint256) {
-        return _convertToShares(_assets, Math.Rounding.Ceil);
+        (uint256 totalAssetsDepositedExpected, uint256 totalSupplyExpected, uint168 interestLeftExpected) =
+            previewHarvest();
+
+        return _assets.mulDiv(
+            totalSupplyExpected + 10 ** _decimalsOffset(),
+            totalAssetsDepositedExpected + _interestAccruedFromCache(interestLeftExpected) + 1,
+            Math.Rounding.Ceil
+        );
     }
 
     /// @notice Preview a redeem call and return the amount of assets to be withdrawn.
@@ -543,7 +554,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         if (strategyData.status != IYieldAggregator.StrategyStatus.Active) return;
 
         uint256 totalAllocationPointsCache = $.totalAllocationPoints;
-        uint256 totalAssetsAllocatableCache = _totalAssetsAllocatable();
+        uint256 totalAssetsAllocatableCache = _totalAssetsAllocatable($.totalAllocated);
         uint256 targetAllocation =
             totalAssetsAllocatableCache * strategyData.allocationPoints / totalAllocationPointsCache;
 
@@ -601,13 +612,76 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
 
         emit Events.Rebalance(_strategy, amountToRebalance, isDeposit);
     }
+
     /// @notice Return the total amount of assets deposited, plus the accrued interest.
     /// @return total asset amount.
-
     function _totalAssets() private view returns (uint256) {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
-        return $.totalAssetsDeposited + _interestAccruedFromCache();
+        return $.totalAssetsDeposited + _interestAccruedFromCache($.interestLeft);
+    }
+
+    function previewHarvest() private view returns (uint256, uint256, uint168) {
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+
+        uint256 totalAssetsDepositedExpected = $.totalAssetsDeposited;
+        uint256 totalSupplyExpected = _totalSupply();
+        uint168 interestLeftExpected = $.interestLeft;
+
+        if ($.lastHarvestTimestamp + Constants.HARVEST_COOLDOWN >= block.timestamp) {
+            return (totalAssetsDepositedExpected, totalSupplyExpected, interestLeftExpected);
+        }
+
+        uint256 totalPositiveYield;
+        uint256 totalNegativeYield;
+        for (uint256 i; i < $.withdrawalQueue.length; ++i) {
+            address strategy = $.withdrawalQueue[i];
+            uint120 strategyAllocatedAmount = $.strategies[strategy].allocated;
+
+            if (strategyAllocatedAmount == 0 || $.strategies[strategy].status != IYieldAggregator.StrategyStatus.Active)
+            {
+                continue;
+            }
+
+            uint256 aggregatorShares = IERC4626(strategy).balanceOf(address(this));
+            uint256 aggregatorAssets = IERC4626(strategy).previewRedeem(aggregatorShares);
+
+            uint256 positiveYield;
+            uint256 loss;
+            if (aggregatorAssets > strategyAllocatedAmount) {
+                positiveYield = aggregatorAssets - strategyAllocatedAmount;
+            } else if (aggregatorAssets < strategyAllocatedAmount) {
+                loss = strategyAllocatedAmount - aggregatorAssets;
+            }
+
+            totalPositiveYield += positiveYield;
+            totalNegativeYield += loss;
+        }
+
+        if (totalNegativeYield > totalPositiveYield) {
+            interestLeftExpected = 0;
+
+            uint256 totalNotDistributed = _totalAssetsAllocatable($.totalAllocated) - totalAssetsDepositedExpected;
+            uint256 lossAmount = totalNegativeYield - totalPositiveYield;
+            if (lossAmount > totalNotDistributed) {
+                lossAmount -= totalNotDistributed;
+
+                totalAssetsDepositedExpected -= lossAmount;
+            }
+        } else if (totalNegativeYield < totalPositiveYield && $.feeRecipient != address(0) && $.performanceFee != 0) {
+            uint256 yield = totalNegativeYield - totalPositiveYield;
+            uint256 feeAssets = yield.mulDiv($.performanceFee, 1e18, Math.Rounding.Floor);
+            uint256 feeShares = _convertToShares(feeAssets, Math.Rounding.Floor);
+
+            totalAssetsDepositedExpected += feeAssets;
+            totalSupplyExpected += feeShares;
+        }
+
+        interestLeftExpected = (interestLeftExpected == 0)
+            ? uint168(_totalAssetsAllocatable($.totalAllocated) - $.totalAssetsDeposited)
+            : interestLeftExpected;
+
+        return (totalAssetsDepositedExpected, totalSupplyExpected, interestLeftExpected);
     }
 
     /// @dev Return max deposit amount.
