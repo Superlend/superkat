@@ -166,6 +166,9 @@ contract YieldAggregatorInvariants is YieldAggregatorBase {
     }
 
     // lastHarvestTimestamp should always be equal to the expected ghost_lastHarvestTimestamp variable.
+    // lastHarvestTimestamp is only updated through a direct `harvest()` call, harvesting while withdraw or redeem.
+    // lastHarvestTimestamp does not get updated when a harvest is executed while rebalancing, as `rebalance()` does not guarantee
+    // a harvest to all the strategies in withdrawal queue.
     function invariant_lastHarvestTimestamp() public view {
         assertEq(
             eulerYieldAggregatorVault.lastHarvestTimestamp(),

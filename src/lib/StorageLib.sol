@@ -19,7 +19,7 @@ struct YieldAggregatorStorage {
     address feeRecipient;
     /// Mapping between a strategy address and it's allocation config
     mapping(address => IYieldAggregator.Strategy) strategies;
-    /// @dev An array of strategy addresses to withdraw from
+    /// An array of strategy addresses to withdraw from
     address[] withdrawalQueue;
 
     // 1 slot: 40 + 40 + 168 + 8
@@ -39,11 +39,13 @@ struct YieldAggregatorStorage {
     mapping(address => bool) isBalanceForwarderEnabled;
     
     // 1 slot: 160 + 32 + 40
-    /// @dev storing the hooks target and hooked functions.
+    /// storing the hooks target and hooked functions.
     address hooksTarget;
     uint32 hookedFns;
 
-    /// @dev Last harvest timestamp
+    /// Last harvest timestamp, this is only updated when a harvest is explicitly called,
+    /// Or when a harvest is executed while withdrawing or redeeming. An executed harvest during `rebalance()`
+    /// does not update this timestamp as rebalance do not guarantee a harvest of all the withdrawal queue strategies.
     uint40 lastHarvestTimestamp;
 }
 

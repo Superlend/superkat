@@ -434,6 +434,8 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
             return;
         }
 
+        $.lastHarvestTimestamp = uint40(block.timestamp);
+
         _executeHarvest($.withdrawalQueue);
     }
 
@@ -459,7 +461,6 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         $.totalAllocated = $.totalAllocated + totalPositiveYield - totalNegativeYield;
-        $.lastHarvestTimestamp = uint40(block.timestamp);
 
         _gulp();
 
