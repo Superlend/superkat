@@ -40,7 +40,7 @@ abstract contract Shared is EVCUtil {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         uint256 totalAssetsDepositedCache = $.totalAssetsDeposited;
-        uint256 totalNotDistributed = _totalAssetsAllocatable($.totalAllocated) - totalAssetsDepositedCache;
+        uint256 totalNotDistributed = _totalAssetsAllocatable() - totalAssetsDepositedCache;
 
         // set interestLeft to zero, will be updated to the right value during _gulp()
         $.interestLeft = 0;
@@ -73,12 +73,12 @@ abstract contract Shared is EVCUtil {
     function _gulp() internal {
         _updateInterestAccrued();
 
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
-
         // Do not gulp if total supply is too low
         if (_totalSupply() < Constants.MIN_SHARES_FOR_GULP) return;
 
-        uint256 toGulp = _totalAssetsAllocatable($.totalAllocated) - $.totalAssetsDeposited - $.interestLeft;
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+
+        uint256 toGulp = _totalAssetsAllocatable() - $.totalAssetsDeposited - $.interestLeft;
         if (toGulp == 0) return;
 
         uint256 maxGulp = type(uint168).max - $.interestLeft;
@@ -136,8 +136,10 @@ abstract contract Shared is EVCUtil {
     /// @dev Return total assets allocatable.
     /// @dev The total assets allocatable is the current balanceOf + total amount already allocated.
     /// @return total assets allocatable.
-    function _totalAssetsAllocatable(uint256 _totalAllocated) internal view returns (uint256) {
-        return IERC20(IERC4626(address(this)).asset()).balanceOf(address(this)) + _totalAllocated;
+    function _totalAssetsAllocatable() internal view returns (uint256) {
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+
+        return IERC20(IERC4626(address(this)).asset()).balanceOf(address(this)) + $.totalAllocated;
     }
 
     /// @dev Override for _msgSender() to use the EVC authentication.

@@ -205,9 +205,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     /// @dev the total assets allocatable is the amount of assets deposited into the aggregator + assets already deposited into strategies
     /// @return total assets allocatable.
     function totalAssetsAllocatable() public view virtual nonReentrantView returns (uint256) {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
-
-        return _totalAssetsAllocatable($.totalAllocated);
+        return _totalAssetsAllocatable();
     }
 
     /// @notice Return the total amount of assets deposited, plus the accrued interest.
@@ -551,7 +549,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         if (strategyData.status != IYieldAggregator.StrategyStatus.Active) return;
 
         uint256 totalAllocationPointsCache = $.totalAllocationPoints;
-        uint256 totalAssetsAllocatableCache = _totalAssetsAllocatable($.totalAllocated);
+        uint256 totalAssetsAllocatableCache = _totalAssetsAllocatable();
         uint256 targetAllocation =
             totalAssetsAllocatableCache * strategyData.allocationPoints / totalAllocationPointsCache;
 
@@ -656,7 +654,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         if (totalNegativeYield > totalPositiveYield) {
             interestLeftExpected = 0;
 
-            uint256 totalNotDistributed = _totalAssetsAllocatable($.totalAllocated) - totalAssetsDepositedExpected;
+            uint256 totalNotDistributed = _totalAssetsAllocatable() - totalAssetsDepositedExpected;
             uint256 lossAmount = totalNegativeYield - totalPositiveYield;
             if (lossAmount > totalNotDistributed) {
                 lossAmount -= totalNotDistributed;
