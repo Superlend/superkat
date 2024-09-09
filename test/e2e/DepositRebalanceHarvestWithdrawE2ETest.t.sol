@@ -500,6 +500,7 @@ contract DepositRebalanceHarvestWithdrawE2ETest is YieldAggregatorBase {
             uint256 aggregatorTotalSupplyBefore = eulerYieldAggregatorVault.totalSupply();
             uint256 user1AssetTSTBalanceBefore = assetTST.balanceOf(user1);
 
+            uint256 maxAssets = eulerYieldAggregatorVault.maxWithdraw(user1);
             uint256 previewedAssets = eulerYieldAggregatorVault.previewRedeem(amountToRedeem);
             vm.prank(user1);
             uint256 withdrawnAssets = eulerYieldAggregatorVault.redeem(amountToRedeem, user1, user1);
@@ -516,6 +517,7 @@ contract DepositRebalanceHarvestWithdrawE2ETest is YieldAggregatorBase {
             );
 
             assertEq(previewedAssets, withdrawnAssets);
+            assertEq(maxAssets, withdrawnAssets);
         }
     }
 
@@ -582,6 +584,10 @@ contract DepositRebalanceHarvestWithdrawE2ETest is YieldAggregatorBase {
         uint256 amountToRedeem = eulerYieldAggregatorVault.balanceOf(user1);
         uint256 previewedShares = eulerYieldAggregatorVault.previewWithdraw(amountToDeposit);
         assertEq(amountToRedeem, previewedShares);
+
+        uint256 previewedAssets = eulerYieldAggregatorVault.previewRedeem(amountToRedeem);
+        uint256 maxAssets = eulerYieldAggregatorVault.maxWithdraw(user1);
+        assertLt(maxAssets, previewedAssets);
 
         vm.prank(user1);
         vm.expectRevert(ErrorsLib.NotEnoughAssets.selector);
