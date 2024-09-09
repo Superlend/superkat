@@ -81,34 +81,38 @@ abstract contract Shared is EVCUtil {
 
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
-        uint256 toGulp = _totalAssetsAllocatable() - $.totalAssetsDeposited - $.interestLeft;
+        uint168 interestLeftCached = $.interestLeft;
+        uint256 toGulp = _totalAssetsAllocatable() - $.totalAssetsDeposited - interestLeftCached;
         if (toGulp == 0) return;
 
-        uint256 maxGulp = type(uint168).max - $.interestLeft;
+        uint256 maxGulp = type(uint168).max - interestLeftCached;
         if (toGulp > maxGulp) toGulp = maxGulp; // cap interest, allowing the vault to function
 
+        interestLeftCached += uint168(toGulp); // toGulp <= maxGulp <= max uint168
         $.lastInterestUpdate = uint40(block.timestamp);
         $.interestSmearEnd = uint40(block.timestamp + Constants.INTEREST_SMEAR);
-        $.interestLeft += uint168(toGulp); // toGulp <= maxGulp <= max uint168
+        $.interestLeft = interestLeftCached;
 
-        emit Events.Gulp($.interestLeft, $.interestSmearEnd);
+        emit Events.Gulp(interestLeftCached, $.interestSmearEnd);
     }
 
     /// @dev update accrued interest.
     function _updateInterestAccrued() internal {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
-        uint256 accruedInterest = _interestAccruedFromCache($.interestLeft);
+        uint168 interestLeftCached = $.interestLeft;
+        uint256 accruedInterest = _interestAccruedFromCache(interestLeftCached);
 
         if (accruedInterest > 0) {
             // it's safe to down-cast because the accrued interest is a fraction of interest left
-            $.interestLeft -= uint168(accruedInterest);
+            interestLeftCached -= uint168(accruedInterest);
+            $.interestLeft = interestLeftCached;
             $.lastInterestUpdate = uint40(block.timestamp);
 
             // Move interest accrued to totalAssetsDeposited
             $.totalAssetsDeposited += accruedInterest;
 
-            emit Events.InterestUpdated(accruedInterest, $.interestLeft);
+            emit Events.InterestUpdated(accruedInterest, interestLeftCached);
         }
     }
 
