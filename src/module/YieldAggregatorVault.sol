@@ -262,13 +262,10 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     /// @dev See {IERC4626-previewWithdraw}.
     /// @return Amount of shares.
     function previewWithdraw(uint256 _assets) public view virtual override nonReentrantView returns (uint256) {
-        (uint256 totalAssetsDepositedExpected, uint256 totalSupplyExpected, uint168 interestLeftExpected) =
-            previewHarvest();
+        (uint256 totalAssetsDepositedExpected, uint256 totalSupplyExpected) = previewHarvest();
 
         return _assets.mulDiv(
-            totalSupplyExpected + 10 ** _decimalsOffset(),
-            totalAssetsDepositedExpected + _interestAccruedFromCache(interestLeftExpected) + 1,
-            Math.Rounding.Ceil
+            totalSupplyExpected + 10 ** _decimalsOffset(), totalAssetsDepositedExpected + 1, Math.Rounding.Ceil
         );
     }
 
@@ -621,7 +618,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         return $.totalAssetsDeposited + _interestAccruedFromCache($.interestLeft);
     }
 
-    function previewHarvest() private view returns (uint256, uint256, uint168) {
+    function previewHarvest() private view returns (uint256, uint256) {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         uint256 totalAssetsDepositedExpected = $.totalAssetsDeposited;
@@ -629,7 +626,9 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         uint168 interestLeftExpected = $.interestLeft;
 
         if ($.lastHarvestTimestamp + Constants.HARVEST_COOLDOWN >= block.timestamp) {
-            return (totalAssetsDepositedExpected, totalSupplyExpected, interestLeftExpected);
+            totalAssetsDepositedExpected += _interestAccruedFromCache(interestLeftExpected);
+
+            return (totalAssetsDepositedExpected, totalSupplyExpected);
         }
 
         uint256 totalPositiveYield;
@@ -677,11 +676,10 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
             totalSupplyExpected += feeShares;
         }
 
-        interestLeftExpected = (interestLeftExpected == 0)
-            ? uint168(_totalAssetsAllocatable($.totalAllocated) - $.totalAssetsDeposited)
-            : interestLeftExpected;
-
-        return (totalAssetsDepositedExpected, totalSupplyExpected, interestLeftExpected);
+        if (interestLeftExpected != 0) {
+            totalAssetsDepositedExpected += _interestAccruedFromCache(interestLeftExpected);
+        }
+        return (totalAssetsDepositedExpected, totalSupplyExpected);
     }
 
     /// @dev Return max deposit amount.
