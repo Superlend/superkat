@@ -7,6 +7,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 // contracts
 import {EVCUtil} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {ERC20Upgradeable} from "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {ERC4626Upgradeable} from "@openzeppelin-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 // libs
 import {StorageLib as Storage, YieldAggregatorStorage} from "../lib/StorageLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
@@ -139,7 +140,7 @@ abstract contract Shared is EVCUtil {
     function _totalAssetsAllocatable() internal view returns (uint256) {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
-        return IERC20(IERC4626(address(this)).asset()).balanceOf(address(this)) + $.totalAllocated;
+        return IERC20(_asset()).balanceOf(address(this)) + $.totalAllocated;
     }
 
     /// @dev Override for _msgSender() to use the EVC authentication.
@@ -179,6 +180,11 @@ abstract contract Shared is EVCUtil {
         return $._totalSupply;
     }
 
+    function _asset() internal view returns (address) {
+        ERC4626Upgradeable.ERC4626Storage storage $ = _getInheritedERC4626Storage();
+        return address($._asset);
+    }
+
     /// @dev Used by the nonReentrant before returning the execution flow to the original function.
     function _nonReentrantBefore() private {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
@@ -204,6 +210,15 @@ abstract contract Shared is EVCUtil {
             if (msg.sender != $.hooksTarget && msg.sender != address(this)) {
                 revert Errors.Reentrancy();
             }
+        }
+    }
+
+    /// @dev Return ERC20StorageLocation pointer.
+    ///      This is copied from ERC20Upgradeable OZ implementation to be able to access ERC20 storage and override functions.
+    ///      keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.ERC4626")) - 1)) & ~bytes32(uint256(0xff))
+    function _getInheritedERC4626Storage() private pure returns (ERC4626Upgradeable.ERC4626Storage storage $) {
+        assembly {
+            $.slot := 0x0773e532dfede91f04b12a73d3d2acd361424f41f76b4fb79f090161e36b4e00
         }
     }
 
