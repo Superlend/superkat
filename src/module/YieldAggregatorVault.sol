@@ -476,9 +476,13 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
 
         // we should deduct loss before updating totalAllocated to not underflow
         if (totalNegativeYield > totalPositiveYield) {
-            _deductLoss(totalNegativeYield - totalPositiveYield);
+            unchecked {
+                _deductLoss(totalNegativeYield - totalPositiveYield);
+            }
         } else if (totalNegativeYield < totalPositiveYield) {
-            _accruePerformanceFee(totalPositiveYield - totalNegativeYield);
+            unchecked {
+                _accruePerformanceFee(totalPositiveYield - totalNegativeYield);
+            }
         }
 
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
@@ -513,9 +517,13 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         if (aggregatorAssets == strategyAllocatedAmount) {
             return (positiveYield, loss);
         } else if (aggregatorAssets > strategyAllocatedAmount) {
-            positiveYield = aggregatorAssets - strategyAllocatedAmount;
+            unchecked {
+                positiveYield = aggregatorAssets - strategyAllocatedAmount;
+            }
         } else {
-            loss = strategyAllocatedAmount - aggregatorAssets;
+            unchecked {
+                loss = strategyAllocatedAmount - aggregatorAssets;
+            }
         }
 
         emit Events.ExecuteHarvest(_strategy, aggregatorAssets, strategyAllocatedAmount);
@@ -576,7 +584,9 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         bool isDeposit;
         if (strategyData.allocated > targetAllocation) {
             // Withdraw
-            amountToRebalance = strategyData.allocated - targetAllocation;
+            unchecked {
+                amountToRebalance = strategyData.allocated - targetAllocation;
+            }
 
             uint256 maxWithdrawableFromStrategy = IERC4626(_strategy).maxWithdraw(address(this));
             if (amountToRebalance > maxWithdrawableFromStrategy) {
@@ -589,9 +599,13 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
             uint256 currentCash = totalAssetsAllocatableCache - $.totalAllocated;
 
             // Calculate available cash to put in strategies
-            uint256 cashAvailable = (currentCash > targetCash) ? currentCash - targetCash : 0;
+            uint256 cashAvailable;
+            unchecked {
+                cashAvailable = (currentCash > targetCash) ? currentCash - targetCash : 0;
 
-            amountToRebalance = targetAllocation - strategyData.allocated;
+                amountToRebalance = targetAllocation - strategyData.allocated;
+            }
+
             if (amountToRebalance > cashAvailable) {
                 amountToRebalance = cashAvailable;
             }
@@ -670,7 +684,11 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
             interestLeftExpected = 0;
 
             uint256 totalNotDistributed = _totalAssetsAllocatable() - totalAssetsDepositedExpected;
-            uint256 lossAmount = totalNegativeYield - totalPositiveYield;
+            uint256 lossAmount;
+            unchecked {
+                lossAmount = totalNegativeYield - totalPositiveYield;
+            }
+
             if (lossAmount > totalNotDistributed) {
                 lossAmount -= totalNotDistributed;
 
@@ -680,7 +698,11 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
             uint96 cachedPerformanceFee = $.performanceFee;
 
             if ($.feeRecipient != address(0) && cachedPerformanceFee != 0) {
-                uint256 yield = totalPositiveYield - totalNegativeYield;
+                uint256 yield;
+                unchecked {
+                    yield = totalPositiveYield - totalNegativeYield;
+                }
+
                 (uint256 feeAssets, uint256 feeShares) = _applyPerformanceFee(yield, cachedPerformanceFee);
 
                 totalAssetsDepositedExpected += feeAssets;
@@ -709,7 +731,12 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
                 if ($.strategies[address(strategy)].status != IYieldAggregator.StrategyStatus.Active) continue;
 
                 uint256 underlyingBalance = strategy.maxWithdraw(address(this));
-                uint256 desiredAssets = _requestedAssets - assetsRetrieved;
+
+                uint256 desiredAssets;
+                unchecked {
+                    desiredAssets = _requestedAssets - assetsRetrieved;
+                }
+
                 uint256 withdrawAmount = (underlyingBalance >= desiredAssets) ? desiredAssets : underlyingBalance;
 
                 assetsRetrieved += withdrawAmount;

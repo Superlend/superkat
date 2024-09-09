@@ -46,7 +46,9 @@ abstract contract Shared is EVCUtil {
         // set interestLeft to zero, will be updated to the right value during _gulp()
         $.interestLeft = 0;
         if (_lossAmount > totalNotDistributed) {
-            _lossAmount -= totalNotDistributed;
+            unchecked {
+                _lossAmount -= totalNotDistributed;
+            }
 
             // socialize the loss
             $.totalAssetsDeposited = totalAssetsDepositedCache - _lossAmount;
