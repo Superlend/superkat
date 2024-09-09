@@ -232,14 +232,29 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     /// @dev See {IERC4626-maxWithdraw}.
     /// @return Amount of asset to be withdrawn.
     function maxWithdraw(address _owner) public view virtual override nonReentrantView returns (uint256) {
-        return _convertToAssets(_balanceOf(_owner), Math.Rounding.Floor);
+        (uint256 totalAssetsExpected, uint256 totalSupplyExpected) = previewHarvest();
+
+        uint256 maxAssets = _balanceOf(_owner).mulDiv(
+            totalAssetsExpected + 1, totalSupplyExpected + 10 ** _decimalsOffset(), Math.Rounding.Floor
+        );
+
+        return _simulateStrategiesWithdraw(maxAssets);
     }
 
-    /// @notice Returns the maximum amount of Vault shares that can be redeemed from the owner balance in the Vault
+    /// @notice Returns the maximum amount of Vault shares that can be redeemed from the owner balance in the Vault.
     /// @dev See {IERC4626-maxRedeem}.
     /// @return Amount of shares.
     function maxRedeem(address _owner) public view virtual override nonReentrantView returns (uint256) {
-        return _balanceOf(_owner);
+        (uint256 totalAssetsExpected, uint256 totalSupplyExpected) = previewHarvest();
+
+        uint256 maxAssets = _balanceOf(_owner).mulDiv(
+            totalAssetsExpected + 1, totalSupplyExpected + 10 ** _decimalsOffset(), Math.Rounding.Floor
+        );
+
+        uint256 assets = _simulateStrategiesWithdraw(maxAssets);
+
+        return
+            assets.mulDiv(totalSupplyExpected + 10 ** _decimalsOffset(), totalAssetsExpected + 1, Math.Rounding.Floor);
     }
 
     /// @notice Preview a deposit call and return the amount of shares to be minted.
@@ -680,6 +695,34 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         }
 
         return (totalAssetsDepositedExpected, totalSupplyExpected);
+    }
+
+    function _simulateStrategiesWithdraw(uint256 _requestedAssets) private view returns (uint256) {
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
+
+        if (assetsRetrieved < _requestedAssets) {
+            uint256 numStrategies = $.withdrawalQueue.length;
+            for (uint256 i; i < numStrategies; ++i) {
+                IERC4626 strategy = IERC4626($.withdrawalQueue[i]);
+
+                if ($.strategies[address(strategy)].status != IYieldAggregator.StrategyStatus.Active) continue;
+
+                uint256 underlyingBalance = strategy.maxWithdraw(address(this));
+                uint256 desiredAssets = _requestedAssets - assetsRetrieved;
+                uint256 withdrawAmount = (underlyingBalance >= desiredAssets) ? desiredAssets : underlyingBalance;
+
+                assetsRetrieved += withdrawAmount;
+
+                if (assetsRetrieved >= _requestedAssets) {
+                    break;
+                }
+            }
+        }
+
+        if (_requestedAssets > assetsRetrieved) _requestedAssets = assetsRetrieved;
+
+        return _requestedAssets;
     }
 
     /// @dev Apply performance fee on `_yield` amount and return fee assets and shares amounts.
