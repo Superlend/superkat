@@ -103,6 +103,8 @@ contract PerformanceFeeE2ETest is YieldAggregatorBase {
         IYieldAggregator.Strategy memory strategyBeforeHarvest = eulerYieldAggregatorVault.getStrategy(address(eTST));
         uint256 totalAllocatedBefore = eulerYieldAggregatorVault.totalAllocated();
 
+        uint256 previewedAssets = eulerYieldAggregatorVault.previewRedeem(eulerYieldAggregatorVault.balanceOf(user1));
+
         // harvest
         vm.prank(user1);
         eulerYieldAggregatorVault.harvest();
@@ -125,13 +127,14 @@ contract PerformanceFeeE2ETest is YieldAggregatorBase {
                 eulerYieldAggregatorVault.convertToAssets(eulerYieldAggregatorVault.balanceOf(user1));
 
             vm.prank(user1);
-            eulerYieldAggregatorVault.redeem(amountToWithdraw, user1, user1);
+            uint256 withdrawnAssets = eulerYieldAggregatorVault.redeem(amountToWithdraw, user1, user1);
 
             assertApproxEqAbs(
                 eulerYieldAggregatorVault.totalAssetsDeposited(), totalAssetsDepositedBefore - expectedAssetTST, 1
             );
             assertEq(eulerYieldAggregatorVault.totalSupply(), aggregatorTotalSupplyBefore - amountToWithdraw);
             assertApproxEqAbs(assetTST.balanceOf(user1), user1AssetTSTBalanceBefore + expectedAssetTST, 1);
+            assertEq(withdrawnAssets, previewedAssets);
         }
 
         // full redemption of recipient fees

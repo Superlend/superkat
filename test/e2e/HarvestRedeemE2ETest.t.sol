@@ -78,9 +78,9 @@ contract HarvestRedeemE2ETest is YieldAggregatorBase {
             user1SharesBefore * amountToDeposit / eulerYieldAggregatorVault.totalSupply() - user1SocializedLoss;
         uint256 user1AssetTSTBalanceBefore = assetTST.balanceOf(user1);
 
+        uint256 previewedAssets = eulerYieldAggregatorVault.previewRedeem(user1SharesBefore);
         vm.startPrank(user1);
-        eulerYieldAggregatorVault.harvest();
-        eulerYieldAggregatorVault.redeem(user1SharesBefore, user1, user1);
+        uint256 withdrawnAssets = eulerYieldAggregatorVault.redeem(user1SharesBefore, user1, user1);
         vm.stopPrank();
 
         uint256 user1SharesAfter = eulerYieldAggregatorVault.balanceOf(user1);
@@ -88,6 +88,7 @@ contract HarvestRedeemE2ETest is YieldAggregatorBase {
         assertEq(user1SharesAfter, 0);
         assertApproxEqAbs(assetTST.balanceOf(user1), user1AssetTSTBalanceBefore + expectedUser1Assets, 1);
         assertEq(eulerYieldAggregatorVault.totalAssetsDeposited(), 0);
+        assertEq(previewedAssets, withdrawnAssets);
     }
 
     function testHarvestNegativeYieldAndRedeemMultipleUser() public {
@@ -130,13 +131,18 @@ contract HarvestRedeemE2ETest is YieldAggregatorBase {
         uint256 user1AssetTSTBalanceBefore = assetTST.balanceOf(user1);
         uint256 user2AssetTSTBalanceBefore = assetTST.balanceOf(user2);
 
+        uint256 previewedAssets = eulerYieldAggregatorVault.previewRedeem(user1SharesBefore);
         vm.startPrank(user1);
-        eulerYieldAggregatorVault.harvest();
-        eulerYieldAggregatorVault.redeem(user1SharesBefore, user1, user1);
+        uint256 withdrawnAssets = eulerYieldAggregatorVault.redeem(user1SharesBefore, user1, user1);
         vm.stopPrank();
 
+        assertEq(previewedAssets, withdrawnAssets);
+
+        previewedAssets = eulerYieldAggregatorVault.previewRedeem(user2SharesBefore);
         vm.prank(user2);
-        eulerYieldAggregatorVault.redeem(user2SharesBefore, user2, user2);
+        withdrawnAssets = eulerYieldAggregatorVault.redeem(user2SharesBefore, user2, user2);
+
+        assertEq(previewedAssets, withdrawnAssets);
 
         uint256 user1SharesAfter = eulerYieldAggregatorVault.balanceOf(user1);
         uint256 user2SharesAfter = eulerYieldAggregatorVault.balanceOf(user2);
