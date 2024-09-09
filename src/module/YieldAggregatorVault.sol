@@ -521,9 +521,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
 
         if (cachedFeeRecipient == address(0) || cachedPerformanceFee == 0) return;
 
-        // `feeAssets` will be rounded down to 0 if `yield * performanceFee < 1e18`.
-        uint256 feeAssets = _yield.mulDiv(cachedPerformanceFee, 1e18, Math.Rounding.Floor);
-        uint256 feeShares = _convertToShares(feeAssets, Math.Rounding.Floor);
+        (uint256 feeAssets, uint256 feeShares) = _applyPerformanceFee(_yield, cachedPerformanceFee);
 
         if (feeShares != 0) {
             // Move feeAssets from gulpable amount to totalAssetsDeposited to not dilute other depositors.
@@ -620,6 +618,9 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         return $.totalAssetsDeposited + _interestAccruedFromCache($.interestLeft);
     }
 
+    /// @dev Preview a harvest flow and return the expected result of `_totalAssets()` and `_totalSupply()` amount after a harvest.
+    /// @return Expected amount to be returned from `_totalAssets()` if called after a harvest.
+    /// @return Expected amount to be returned from `_totalSupply()` if called after a harvest.
     function previewHarvest() private view returns (uint256, uint256) {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
@@ -628,9 +629,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         uint168 interestLeftExpected = $.interestLeft;
 
         if ($.lastHarvestTimestamp + Constants.HARVEST_COOLDOWN >= block.timestamp) {
-            totalAssetsDepositedExpected += _interestAccruedFromCache(interestLeftExpected);
-
-            return (totalAssetsDepositedExpected, totalSupplyExpected);
+            return (totalAssetsDepositedExpected + _interestAccruedFromCache(interestLeftExpected), totalSupplyExpected);
         }
 
         uint256 totalPositiveYield;
@@ -647,16 +646,11 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
             uint256 aggregatorShares = IERC4626(strategy).balanceOf(address(this));
             uint256 aggregatorAssets = IERC4626(strategy).previewRedeem(aggregatorShares);
 
-            uint256 positiveYield;
-            uint256 loss;
             if (aggregatorAssets > strategyAllocatedAmount) {
-                positiveYield = aggregatorAssets - strategyAllocatedAmount;
+                totalPositiveYield += aggregatorAssets - strategyAllocatedAmount;
             } else if (aggregatorAssets < strategyAllocatedAmount) {
-                loss = strategyAllocatedAmount - aggregatorAssets;
+                totalNegativeYield += strategyAllocatedAmount - aggregatorAssets;
             }
-
-            totalPositiveYield += positiveYield;
-            totalNegativeYield += loss;
         }
 
         if (totalNegativeYield > totalPositiveYield) {
@@ -669,19 +663,38 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
 
                 totalAssetsDepositedExpected -= lossAmount;
             }
-        } else if (totalNegativeYield < totalPositiveYield && $.feeRecipient != address(0) && $.performanceFee != 0) {
-            uint256 yield = totalNegativeYield - totalPositiveYield;
-            uint256 feeAssets = yield.mulDiv($.performanceFee, 1e18, Math.Rounding.Floor);
-            uint256 feeShares = _convertToShares(feeAssets, Math.Rounding.Floor);
+        } else if (totalNegativeYield < totalPositiveYield) {
+            uint96 cachedPerformanceFee = $.performanceFee;
 
-            totalAssetsDepositedExpected += feeAssets;
-            totalSupplyExpected += feeShares;
+            if ($.feeRecipient != address(0) && cachedPerformanceFee != 0) {
+                uint256 yield = totalNegativeYield - totalPositiveYield;
+                (uint256 feeAssets, uint256 feeShares) = _applyPerformanceFee(yield, cachedPerformanceFee);
+
+                totalAssetsDepositedExpected += feeAssets;
+                totalSupplyExpected += feeShares;
+            }
         }
 
+        // If there was no loss deduction, apply `_interestAccruedFromCache()`
+        // We do not apply it if there was a call to `_deductLoss()` as: interestLeftExpected == 0 => _interestAccruedFromCache(interestLeftExpected) == 0
         if (interestLeftExpected != 0) {
-            totalAssetsDepositedExpected += _interestAccruedFromCache(interestLeftExpected);
+            return (totalAssetsDepositedExpected + _interestAccruedFromCache(interestLeftExpected), totalSupplyExpected);
         }
+
         return (totalAssetsDepositedExpected, totalSupplyExpected);
+    }
+
+    /// @dev Apply performance fee on `_yield` amount and return fee assets and shares amounts.
+    /// @param _yield Amount of positive yield.
+    /// @param _performanceFee Performance fee.
+    /// @return Fee assets
+    /// @return Fee shares
+    function _applyPerformanceFee(uint256 _yield, uint96 _performanceFee) private view returns (uint256, uint256) {
+        // `feeAssets` will be rounded down to 0 if `yield * performanceFee < 1e18`.
+        uint256 feeAssets = _yield.mulDiv(_performanceFee, 1e18, Math.Rounding.Floor);
+        uint256 feeShares = _convertToShares(feeAssets, Math.Rounding.Floor);
+
+        return (feeAssets, feeShares);
     }
 
     /// @dev Return max deposit amount.
