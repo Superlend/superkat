@@ -665,7 +665,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
             uint96 cachedPerformanceFee = $.performanceFee;
 
             if ($.feeRecipient != address(0) && cachedPerformanceFee != 0) {
-                uint256 yield = totalNegativeYield - totalPositiveYield;
+                uint256 yield = totalPositiveYield - totalNegativeYield;
                 (uint256 feeAssets, uint256 feeShares) = _applyPerformanceFee(yield, cachedPerformanceFee);
 
                 totalAssetsDepositedExpected += feeAssets;

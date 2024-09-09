@@ -151,13 +151,15 @@ contract ToggleStrategyEmergencyStatusE2ETest is YieldAggregatorBase {
             uint256 user1AssetTSTBalanceBefore = assetTST.balanceOf(user1);
             uint256 expectedAssets = eulerYieldAggregatorVault.convertToAssets(amountToWithdraw);
 
+            uint256 previewedAssets = eulerYieldAggregatorVault.previewRedeem(amountToWithdraw);
             vm.prank(user1);
-            eulerYieldAggregatorVault.redeem(amountToWithdraw, user1, user1);
+            uint256 withdrawnAssets = eulerYieldAggregatorVault.redeem(amountToWithdraw, user1, user1);
 
             assertTrue(eTST.balanceOf(address(eulerYieldAggregatorVault)) != 0);
             assertEq(eulerYieldAggregatorVault.totalAssetsDeposited(), 0);
             assertEq(eulerYieldAggregatorVault.totalSupply(), 0);
             assertEq(assetTST.balanceOf(user1), user1AssetTSTBalanceBefore + expectedAssets);
+            assertEq(previewedAssets, withdrawnAssets);
         }
     }
 
@@ -263,14 +265,16 @@ contract ToggleStrategyEmergencyStatusE2ETest is YieldAggregatorBase {
 
             assertTrue(totalAssetsDepositedBefore != 0);
 
+            uint256 previewedAssets = eulerYieldAggregatorVault.previewRedeem(amountToWithdraw);
             vm.prank(user1);
-            eulerYieldAggregatorVault.redeem(amountToWithdraw, user1, user1);
+            uint256 withdrawnAssets = eulerYieldAggregatorVault.redeem(amountToWithdraw, user1, user1);
 
             assertTrue(eTST.balanceOf(address(eulerYieldAggregatorVault)) != 0);
             assertEq(eulerYieldAggregatorVault.totalAssetsDeposited(), totalAssetsDepositedBefore - expectedAssets);
             assertEq(eulerYieldAggregatorVault.totalSupply(), eulerYieldAggregatorVault.balanceOf(user2));
             assertEq(assetTST.balanceOf(user1), user1AssetTSTBalanceBefore + expectedAssets);
             assertEq(assetTST.balanceOf(user2), user2AssetTSTBalanceBefore);
+            assertEq(previewedAssets, withdrawnAssets);
         }
 
         vm.warp(block.timestamp + 86400);
@@ -295,13 +299,15 @@ contract ToggleStrategyEmergencyStatusE2ETest is YieldAggregatorBase {
 
             assertTrue(totalAssetsDepositedBefore != 0);
 
+            uint256 previewedAssets = eulerYieldAggregatorVault.previewRedeem(amountToWithdraw);
             vm.prank(user2);
-            eulerYieldAggregatorVault.redeem(amountToWithdraw, user2, user2);
+            uint256 withdrawnAssets = eulerYieldAggregatorVault.redeem(amountToWithdraw, user2, user2);
 
             assertEq(eTST.balanceOf(address(eulerYieldAggregatorVault)), 0);
             assertEq(eulerYieldAggregatorVault.totalAssetsDeposited(), 0);
             assertEq(eulerYieldAggregatorVault.totalSupply(), 0);
             assertEq(assetTST.balanceOf(user2), user2AssetTSTBalanceBefore + expectedAssets);
+            assertEq(previewedAssets, withdrawnAssets);
         }
 
         IYieldAggregator.Strategy memory eTSTsecondaryStrategy =
