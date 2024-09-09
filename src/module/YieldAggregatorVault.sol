@@ -262,10 +262,10 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     /// @dev See {IERC4626-previewWithdraw}.
     /// @return Amount of shares.
     function previewWithdraw(uint256 _assets) public view virtual override nonReentrantView returns (uint256) {
-        (uint256 totalAssetsDepositedExpected, uint256 totalSupplyExpected) = previewHarvest();
+        (uint256 totalAssetsExpected, uint256 totalSupplyExpected) = previewHarvest();
 
         return _assets.mulDiv(
-            totalSupplyExpected + 10 ** _decimalsOffset(), totalAssetsDepositedExpected + 1, Math.Rounding.Ceil
+            totalSupplyExpected + 10 ** _decimalsOffset(), totalAssetsExpected + 1, Math.Rounding.Ceil
         );
     }
 
@@ -273,7 +273,9 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     /// @dev See {IERC4626-previewRedeem}.
     /// @return Amount of assets.
     function previewRedeem(uint256 _shares) public view virtual override nonReentrantView returns (uint256) {
-        return _convertToAssets(_shares, Math.Rounding.Floor);
+        (uint256 totalAssetsExpected, uint256 totalSupplyExpected) = previewHarvest();
+
+        return _shares.mulDiv(totalAssetsExpected + 1, totalSupplyExpected + 10 ** _decimalsOffset(), Math.Rounding.Floor);
     }
 
     /// @notice Return the `_account` aggregator's balance.
