@@ -17,8 +17,6 @@ library ConstantsLib {
 
     /// @dev Interest rate smearing period
     uint256 public constant INTEREST_SMEAR = 2 weeks;
-    /// @dev Minimum amount of shares to exist for gulp to be enabled
-    uint256 public constant MIN_SHARES_FOR_GULP = 1e7;
 
     /// @dev Cool down period for harvest call during withdraw operation.
     uint256 public constant HARVEST_COOLDOWN = 1 days;

@@ -76,9 +76,6 @@ abstract contract Shared is EVCUtil {
     function _gulp() internal {
         _updateInterestAccrued();
 
-        // Do not gulp if total supply is too low
-        if (_totalSupply() < Constants.MIN_SHARES_FOR_GULP) return;
-
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         uint168 interestLeftCached = $.interestLeft;
@@ -99,6 +96,9 @@ abstract contract Shared is EVCUtil {
     /// @dev update accrued interest.
     function _updateInterestAccrued() internal {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+
+        // do not update interest
+        if (_totalSupply() == 0) return;
 
         uint168 interestLeftCached = $.interestLeft;
         uint256 accruedInterest = _interestAccruedFromCache(interestLeftCached);

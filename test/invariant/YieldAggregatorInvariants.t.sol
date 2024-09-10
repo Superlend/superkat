@@ -49,7 +49,7 @@ contract YieldAggregatorInvariants is YieldAggregatorBase {
     function invariant_gulp() public {
         eulerYieldAggregatorVault.gulp();
 
-        if (eulerYieldAggregatorVault.totalSupply() >= ConstantsLib.MIN_SHARES_FOR_GULP) {
+        if (eulerYieldAggregatorVault.totalSupply() > 0) {
             (,, uint168 interestLeft) = eulerYieldAggregatorVault.getYieldAggregatorSavingRate();
             assertEq(
                 eulerYieldAggregatorVault.totalAssetsAllocatable(),
@@ -64,7 +64,7 @@ contract YieldAggregatorInvariants is YieldAggregatorBase {
         skip(ConstantsLib.INTEREST_SMEAR); // make sure smear has passed
         eulerYieldAggregatorVault.updateInterestAccrued();
 
-        if (eulerYieldAggregatorVault.totalSupply() >= ConstantsLib.MIN_SHARES_FOR_GULP) {
+        if (eulerYieldAggregatorVault.totalSupply() > 0) {
             assertEq(eulerYieldAggregatorVault.totalAssets(), eulerYieldAggregatorVault.totalAssetsAllocatable());
         }
     }
