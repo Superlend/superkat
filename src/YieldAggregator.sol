@@ -19,6 +19,7 @@ import {IAccessControl, AccessControlUpgradeable} from "@openzeppelin-upgradeabl
 import {AccessControlEnumerableUpgradeable} from
     "@openzeppelin-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
 import {ContextUpgradeable} from "@openzeppelin-upgradeable/utils/ContextUpgradeable.sol";
+import {Checkpoints} from "@openzeppelin-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
 import {EIP712Upgradeable} from "@openzeppelin-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
 import {Shared} from "./common/Shared.sol";
 // libs
@@ -78,6 +79,24 @@ contract YieldAggregator is Dispatch, AccessControlEnumerableUpgradeable, IYield
         _setRoleAdmin(Constants.STRATEGY_OPERATOR, Constants.STRATEGY_OPERATOR_ADMIN);
         _setRoleAdmin(Constants.YIELD_AGGREGATOR_MANAGER, Constants.YIELD_AGGREGATOR_MANAGER_ADMIN);
         _setRoleAdmin(Constants.WITHDRAWAL_QUEUE_MANAGER, Constants.WITHDRAWAL_QUEUE_MANAGER_ADMIN);
+    }
+
+    /// @dev Overriding grantRole().
+    function grantRole(bytes32 role, address account)
+        public
+        override (IAccessControl, AccessControlUpgradeable)
+        onlyEVCAccountOwner
+    {
+        super.grantRole(role, account);
+    }
+
+    /// @dev Overriding revokeRole().
+    function revokeRole(bytes32 role, address account)
+        public
+        override (IAccessControl, AccessControlUpgradeable)
+        onlyEVCAccountOwner
+    {
+        super.revokeRole(role, account);
     }
 
     /// @dev See {FeeModule-setFeeRecipient}.
@@ -264,6 +283,46 @@ contract YieldAggregator is Dispatch, AccessControlEnumerableUpgradeable, IYield
         returns (uint256 assets)
     {}
 
+    /// @dev See {VaultModule-redeem}.
+    function transfer(address _to, uint256 _value)
+        public
+        override (IYieldAggregator, YieldAggregatorVaultModule)
+        returns (bool)
+    {
+        return super.transfer(_to, _value);
+    }
+
+    /// @dev See {VaultModule-approve}.
+    function approve(address _spender, uint256 _value)
+        public
+        override (IYieldAggregator, YieldAggregatorVaultModule)
+        returns (bool)
+    {
+        return super.approve(_spender, _value);
+    }
+
+    /// @dev See {VaultModule-transferFrom}.
+    function transferFrom(address _from, address _to, uint256 _value)
+        public
+        override (IYieldAggregator, YieldAggregatorVaultModule)
+        returns (bool)
+    {
+        return super.transferFrom(_from, _to, _value);
+    }
+
+    /// @dev See {VaultModule-delegate}.
+    function delegate(address _delegatee) public override (IYieldAggregator, YieldAggregatorVaultModule) {
+        super.delegate(_delegatee);
+    }
+
+    /// @dev See {VaultModule-delegateBySig}.
+    function delegateBySig(address _delegatee, uint256 _nonce, uint256 _expiry, uint8 _v, bytes32 _r, bytes32 _s)
+        public
+        override (IYieldAggregator, YieldAggregatorVaultModule)
+    {
+        super.delegateBySig(_delegatee, _nonce, _expiry, _v, _r, _s);
+    }
+
     /// @dev See {VaultModule-interestAccrued}.
     function interestAccrued() public view override (IYieldAggregator, YieldAggregatorVaultModule) returns (uint256) {
         return super.interestAccrued();
@@ -439,6 +498,101 @@ contract YieldAggregator is Dispatch, AccessControlEnumerableUpgradeable, IYield
         return super.maxMint(_owner);
     }
 
+    /// @dev See {VaultModule-asset}.
+    function asset() public view override returns (address) {
+        return super.asset();
+    }
+
+    /// @dev See {VaultModule-name}.
+    function name() public view override (IYieldAggregator, YieldAggregatorVaultModule) returns (string memory) {
+        return super.name();
+    }
+
+    /// @dev See {VaultModule-symbol}.
+    function symbol() public view override (IYieldAggregator, YieldAggregatorVaultModule) returns (string memory) {
+        return super.symbol();
+    }
+
+    /// @dev See {VaultModule-allowance}.
+    function allowance(address _owner, address _spender)
+        public
+        view
+        override (IYieldAggregator, YieldAggregatorVaultModule)
+        returns (uint256)
+    {
+        return super.allowance(_owner, _spender);
+    }
+
+    /// @dev See {VaultModule-numCheckpoints}.
+    function numCheckpoints(address _account)
+        public
+        view
+        override (IYieldAggregator, YieldAggregatorVaultModule)
+        returns (uint32)
+    {
+        return super.numCheckpoints(_account);
+    }
+
+    /// @dev See {VaultModule-checkpoints}.
+    function checkpoints(address _account, uint32 _pos)
+        public
+        view
+        override (IYieldAggregator, YieldAggregatorVaultModule)
+        returns (Checkpoints.Checkpoint208 memory)
+    {
+        return super.checkpoints(_account, _pos);
+    }
+
+    /// @dev See {VaultModule-clock}.
+    function clock() public view override (IYieldAggregator, YieldAggregatorVaultModule) returns (uint48) {
+        return super.clock();
+    }
+
+    /// @dev See {VaultModule-CLOCK_MODE}.
+    function CLOCK_MODE() public view override (IYieldAggregator, YieldAggregatorVaultModule) returns (string memory) {
+        return super.CLOCK_MODE();
+    }
+
+    /// @dev See {VaultModule-getVotes}.
+    function getVotes(address _account)
+        public
+        view
+        override (IYieldAggregator, YieldAggregatorVaultModule)
+        returns (uint256)
+    {
+        return super.getVotes(_account);
+    }
+
+    /// @dev See {VaultModule-getPastVotes}.
+    function getPastVotes(address _account, uint256 _timepoint)
+        public
+        view
+        override (IYieldAggregator, YieldAggregatorVaultModule)
+        returns (uint256)
+    {
+        return super.getPastVotes(_account, _timepoint);
+    }
+
+    /// @dev See {VaultModule-getPastTotalSupply}.
+    function getPastTotalSupply(uint256 _timepoint)
+        public
+        view
+        override (IYieldAggregator, YieldAggregatorVaultModule)
+        returns (uint256)
+    {
+        return super.getPastTotalSupply(_timepoint);
+    }
+
+    /// @dev See {VaultModule-delegates}.
+    function delegates(address _account)
+        public
+        view
+        override (IYieldAggregator, YieldAggregatorVaultModule)
+        returns (address)
+    {
+        return super.delegates(_account);
+    }
+
     /// @dev See {StrategyModule-getStrategy}.
     function getStrategy(address _strategy)
         public
@@ -487,24 +641,6 @@ contract YieldAggregator is Dispatch, AccessControlEnumerableUpgradeable, IYield
         returns (address[] memory)
     {
         return super.withdrawalQueue();
-    }
-
-    /// @dev Overriding grantRole().
-    function grantRole(bytes32 role, address account)
-        public
-        override (IAccessControl, AccessControlUpgradeable)
-        onlyEVCAccountOwner
-    {
-        super.grantRole(role, account);
-    }
-
-    /// @dev Overriding revokeRole().
-    function revokeRole(bytes32 role, address account)
-        public
-        override (IAccessControl, AccessControlUpgradeable)
-        onlyEVCAccountOwner
-    {
-        super.revokeRole(role, account);
     }
 
     /// @dev Overriding _msgSender().
