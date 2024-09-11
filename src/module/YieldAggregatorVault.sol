@@ -481,7 +481,10 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
 
                 if ($.strategies[address(strategy)].status != IYieldAggregator.StrategyStatus.Active) continue;
 
+                uint120 allocatedAmountInStrategy = $.strategies[address(strategy)].allocated;
                 uint256 underlyingBalance = strategy.maxWithdraw(address(this));
+                if (underlyingBalance > allocatedAmountInStrategy) underlyingBalance = allocatedAmountInStrategy;
+
                 uint256 desiredAssets = _assets - assetsRetrieved;
                 uint256 withdrawAmount = (underlyingBalance >= desiredAssets) ? desiredAssets : underlyingBalance;
 
