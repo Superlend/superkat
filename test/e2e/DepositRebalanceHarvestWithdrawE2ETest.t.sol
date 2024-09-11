@@ -692,7 +692,6 @@ contract DepositRebalanceHarvestWithdrawE2ETest is YieldAggregatorBase {
                 amountToDeposit - (expectedeTSTStrategyCash + expectedeTSTsecondaryStrategyCash)
             );
         }
-        eulerYieldAggregatorVault.harvest();
 
         vm.warp(block.timestamp + 1 days);
         // mock an increase of aggregator balance due to yield

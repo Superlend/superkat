@@ -52,11 +52,11 @@ contract HarvestRedeemE2ETest is YieldAggregatorBase {
             assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerYieldAggregatorVault))), expectedStrategyCash);
             assertEq((eulerYieldAggregatorVault.getStrategy(address(eTST))).allocated, expectedStrategyCash);
         }
+
+        vm.warp(block.timestamp + 1.5 days);
     }
 
     function testHarvestNegativeYieldAndRedeemSingleUser() public {
-        vm.warp(block.timestamp + 86400);
-
         // mock a decrease of strategy balance by 10%
         uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(eulerYieldAggregatorVault));
         uint256 aggrCurrentStrategyBalanceAfterNegYield = aggrCurrentStrategyBalance * 9e17 / 1e18;
