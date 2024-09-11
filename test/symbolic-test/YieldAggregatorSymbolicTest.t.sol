@@ -71,7 +71,7 @@ contract YieldAggregatorSymbolicTest is YieldAggregatorBase, SymTest {
         manager = address(0x7);
 
         vm.startPrank(deployer);
-        yieldAggregatorVaultModule = new YieldAggregatorVault(address(evc));
+        yieldAggregatorVaultModule = new YieldAggregatorVault(address(evc), true);
         rewardsModule = new Rewards(address(evc));
         hooksModule = new Hooks(address(evc));
         feeModuleModule = new Fee(address(evc));

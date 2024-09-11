@@ -577,6 +577,11 @@ contract DepositRebalanceHarvestWithdrawE2ETest is YieldAggregatorBase {
         uint256 aggrCurrentStrategyBalanceAfterNegYield = aggrCurrentStrategyBalance * 9e17 / 1e18;
         vm.mockCall(
             address(eTST),
+            abi.encodeWithSelector(EVault.previewWithdraw.selector, aggrCurrentStrategyBalance),
+            abi.encode(aggrCurrentStrategyBalanceAfterNegYield)
+        );
+        vm.mockCall(
+            address(eTST),
             abi.encodeWithSelector(EVault.maxWithdraw.selector, address(eulerYieldAggregatorVault)),
             abi.encode(aggrCurrentStrategyBalanceAfterNegYield)
         );

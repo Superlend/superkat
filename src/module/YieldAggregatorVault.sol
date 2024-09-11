@@ -37,6 +37,10 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     using SafeERC20 for IERC20;
     using SafeCast for uint256;
 
+    /// @dev A boolean to whether execute the harvest cooldown period check or not.
+    ///      This is meant to be set to `False` when deploying on L2 to explicitly harvest on every withdraw/redeem.
+    bool public immutable isHarvestCoolDownCheckOn;
+
     /// @notice Rebalance strategies allocation.
     /// @dev The strategies to rebalance will be harvested.
     /// @param _strategies Strategies addresses.
@@ -110,7 +114,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
 
         _callHooksTarget(Constants.WITHDRAW, _msgSender());
 
-        _harvest(true);
+        _harvest(isHarvestCoolDownCheckOn);
 
         uint256 maxAssets = _convertToAssets(_balanceOf(_owner), Math.Rounding.Floor);
         if (_assets > maxAssets) {
@@ -139,7 +143,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
 
         _callHooksTarget(Constants.REDEEM, _msgSender());
 
-        _harvest(true);
+        _harvest(isHarvestCoolDownCheckOn);
 
         uint256 maxShares = _balanceOf(_owner);
         if (_shares > maxShares) {
@@ -883,5 +887,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
 }
 
 contract YieldAggregatorVault is YieldAggregatorVaultModule {
-    constructor(address _evc) Shared(_evc) {}
+    constructor(address _evc, bool _isHarvestCoolDownCheckOn) Shared(_evc) {
+        isHarvestCoolDownCheckOn = _isHarvestCoolDownCheckOn;
+    }
 }
