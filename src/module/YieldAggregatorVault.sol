@@ -797,15 +797,15 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     function _previewHarvestBeforeWithdraw(bool _isOnlyCashReserveWithdraw) private view returns (uint256, uint256) {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
-        uint256 totalAssetsDepositedExpected = $.totalAssetsDeposited;
-        uint256 totalSupplyExpected = _totalSupply();
         uint168 interestLeftExpected = $.interestLeft;
+        uint256 totalAssetsDepositedExpected = $.totalAssetsDeposited + _interestAccruedFromCache(interestLeftExpected);
+        uint256 totalSupplyExpected = _totalSupply();
 
         if (
             (isHarvestCoolDownCheckOn && $.lastHarvestTimestamp + Constants.HARVEST_COOLDOWN >= block.timestamp)
                 && _isOnlyCashReserveWithdraw
         ) {
-            return (totalAssetsDepositedExpected + _interestAccruedFromCache(interestLeftExpected), totalSupplyExpected);
+            return (totalAssetsDepositedExpected, totalSupplyExpected);
         }
 
         uint256 totalPositiveYield;
@@ -857,12 +857,6 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
                 totalAssetsDepositedExpected += feeAssets;
                 totalSupplyExpected += feeShares;
             }
-        }
-
-        // If there was no loss deduction, apply `_interestAccruedFromCache()`
-        // We do not apply it if there was a call to `_deductLoss()` as: interestLeftExpected == 0 => _interestAccruedFromCache(interestLeftExpected) == 0
-        if (interestLeftExpected != 0) {
-            return (totalAssetsDepositedExpected + _interestAccruedFromCache(interestLeftExpected), totalSupplyExpected);
         }
 
         return (totalAssetsDepositedExpected, totalSupplyExpected);
