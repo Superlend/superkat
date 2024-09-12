@@ -802,8 +802,8 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         uint256 totalSupplyExpected = _totalSupply();
 
         if (
-            (isHarvestCoolDownCheckOn && $.lastHarvestTimestamp + Constants.HARVEST_COOLDOWN >= block.timestamp)
-                && _isOnlyCashReserveWithdraw
+            _isOnlyCashReserveWithdraw
+                && (isHarvestCoolDownCheckOn && $.lastHarvestTimestamp + Constants.HARVEST_COOLDOWN >= block.timestamp)
         ) {
             return (totalAssetsDepositedExpected, totalSupplyExpected);
         }
@@ -830,8 +830,6 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         }
 
         if (totalNegativeYield > totalPositiveYield) {
-            interestLeftExpected = 0;
-
             uint256 totalNotDistributed = _totalAssetsAllocatable() - totalAssetsDepositedExpected;
             uint256 lossAmount;
             unchecked {
