@@ -627,6 +627,8 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         _gulp();
 
         emit Events.Harvest($.totalAllocated, totalPositiveYield, totalNegativeYield);
+
+        return true;
     }
 
     /// @dev Execute harvest on a single strategy.
