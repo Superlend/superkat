@@ -791,6 +791,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     }
 
     /// @dev Preview a harvest flow and return the expected result of `_totalAssets()` and `_totalSupply()` amount after a harvest.
+    /// @param _isOnlyCashReserveWithdraw True if the withdraw after harvest will be covered by the funds in cash reserve.
     /// @return Expected amount to be returned from `_totalAssets()` if called after a harvest.
     /// @return Expected amount to be returned from `_totalSupply()` if called after a harvest.
     function _previewHarvestBeforeWithdraw(bool _isOnlyCashReserveWithdraw) private view returns (uint256, uint256) {
