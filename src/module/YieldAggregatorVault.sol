@@ -45,6 +45,8 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     /// @dev The strategies to rebalance will be harvested.
     /// @param _strategies Strategies addresses.
     function rebalance(address[] calldata _strategies) public virtual nonReentrant {
+        _updateInterestAccrued();
+
         _harvest(false, false);
 
         for (uint256 i; i < _strategies.length; ++i) {
