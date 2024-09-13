@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
+// contracts
+import {Checkpoints} from "@openzeppelin-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
 // libs
 import {AmountCap} from "../lib/AmountCapLib.sol";
 
@@ -77,6 +79,12 @@ interface IYieldAggregator {
     function mint(uint256 _shares, address _receiver) external returns (uint256);
     function withdraw(uint256 _assets, address _receiver, address _owner) external returns (uint256 shares);
     function redeem(uint256 _shares, address _receiver, address _owner) external returns (uint256 assets);
+    function transfer(address _to, uint256 _value) external returns (bool);
+    function approve(address _spender, uint256 _value) external returns (bool);
+    function transferFrom(address _from, address _to, uint256 _value) external returns (bool);
+    function delegate(address _delegatee) external;
+    function delegateBySig(address _delegatee, uint256 _nonce, uint256 _expiry, uint8 _v, bytes32 _r, bytes32 _s)
+        external;
 
     /// view functions
     function interestAccrued() external view returns (uint256);
@@ -106,4 +114,15 @@ interface IYieldAggregator {
     function balanceTrackerAddress() external view returns (address);
     function balanceForwarderEnabled(address _account) external view returns (bool);
     function withdrawalQueue() external view returns (address[] memory);
+    function name() external view returns (string memory);
+    function symbol() external view returns (string memory);
+    function allowance(address _owner, address _spender) external view returns (uint256);
+    function numCheckpoints(address _account) external view returns (uint32);
+    function checkpoints(address _account, uint32 _pos) external view returns (Checkpoints.Checkpoint208 memory);
+    function clock() external view returns (uint48);
+    function CLOCK_MODE() external view returns (string memory);
+    function getVotes(address _account) external view returns (uint256);
+    function getPastVotes(address _account, uint256 _timepoint) external view returns (uint256);
+    function getPastTotalSupply(uint256 _timepoint) external view returns (uint256);
+    function delegates(address _account) external view returns (address);
 }

@@ -214,7 +214,7 @@ abstract contract Shared is EVCUtil {
         if ($.locked == Constants.REENTRANCYLOCK__LOCKED) {
             // The hook target is allowed to bypass the RO-reentrancy lock.
             if (msg.sender != $.hooksTarget && msg.sender != address(this)) {
-                revert Errors.Reentrancy();
+                revert Errors.ViewReentrancy();
             }
         }
     }

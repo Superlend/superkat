@@ -9,10 +9,14 @@ import {IBalanceTracker} from "reward-streams/src/interfaces/IBalanceTracker.sol
 // contracts
 import {Shared} from "../common/Shared.sol";
 import {
+    IERC20Metadata,
     ERC20Upgradeable,
     ERC4626Upgradeable
 } from "@openzeppelin-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
-import {ERC20VotesUpgradeable} from "@openzeppelin-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
+import {
+    ERC20VotesUpgradeable,
+    Checkpoints
+} from "@openzeppelin-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
 import {ContextUpgradeable} from "@openzeppelin-upgradeable/utils/ContextUpgradeable.sol";
 // libs
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -147,6 +151,45 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         _withdraw(_msgSender(), _receiver, _owner, assets, _shares);
 
         return assets;
+    }
+
+    /// @dev See {IERC20-transfer}.
+    function transfer(address _to, uint256 _value) public virtual override (ERC20Upgradeable, IERC20) returns (bool) {
+        return super.transfer(_to, _value);
+    }
+
+    /// @dev See {IERC20-approve}.
+    function approve(address _spender, uint256 _value)
+        public
+        virtual
+        override (ERC20Upgradeable, IERC20)
+        returns (bool)
+    {
+        return super.approve(_spender, _value);
+    }
+
+    /// @dev See {IERC20-transferFrom}.
+    function transferFrom(address _from, address _to, uint256 _value)
+        public
+        virtual
+        override (ERC20Upgradeable, IERC20)
+        returns (bool)
+    {
+        return super.transferFrom(_from, _to, _value);
+    }
+
+    /// @dev See {VotesUpgradeable-delegate}.
+    function delegate(address _delegatee) public virtual override {
+        super.delegate(_delegatee);
+    }
+
+    /// @dev See {VotesUpgradeable-delegateBySig}.
+    function delegateBySig(address _delegatee, uint256 _nonce, uint256 _expiry, uint8 _v, bytes32 _r, bytes32 _s)
+        public
+        virtual
+        override
+    {
+        super.delegateBySig(_delegatee, _nonce, _expiry, _v, _r, _s);
     }
 
     /// @notice Return the accrued interest.
@@ -301,27 +344,110 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     }
 
     /// @notice Return the yield aggregator token decimals.
-    function decimals()
-        public
-        view
-        virtual
-        override (ERC4626Upgradeable, ERC20Upgradeable)
-        nonReentrantView
-        returns (uint8)
-    {
+    /// @dev Not protected with `nonReentrantView()`
+    function decimals() public view virtual override (ERC4626Upgradeable, ERC20Upgradeable) returns (uint8) {
         return ERC4626Upgradeable.decimals();
     }
 
     /// @notice Returns the maximum amount of the underlying asset that can be deposited into the yield aggregator.
-    /// @dev Overriding this function to add the `nonReentrantView` modifier for consistency, even though it does not read from the state.
-    function maxDeposit(address) public view virtual override nonReentrantView returns (uint256) {
+    /// @dev Not protected with `nonReentrantView()`
+    function maxDeposit(address) public view virtual override returns (uint256) {
         return type(uint256).max;
     }
 
     /// @notice Returns the maximum amount of the Vault shares that can be minted for the receiver.
-    /// @dev Overriding this function to add the `nonReentrantView` modifier for consistency, even though it does not read from the state.
-    function maxMint(address) public view virtual override nonReentrantView returns (uint256) {
+    /// @dev Not protected with `nonReentrantView()`
+    function maxMint(address) public view virtual override returns (uint256) {
         return type(uint256).max;
+    }
+
+    /// @notice Returns the yield aggregator asset.
+    /// @dev Not protected with `nonReentrantView()`
+    /// @return Asset address.
+    function asset() public view virtual override returns (address) {
+        return _asset();
+    }
+
+    /// @notice Returns the name of the yield aggregator.
+    /// @dev Not protected with `nonReentrantView()`
+    /// @return Name.
+    function name() public view virtual override (ERC20Upgradeable, IERC20Metadata) returns (string memory) {
+        return super.name();
+    }
+
+    ///@dev Returns the symbol of the yield aggregator, usually a shorter version of the name.
+    /// @dev Not protected with `nonReentrantView()`
+    /// @return Symbol.
+    function symbol() public view virtual override (ERC20Upgradeable, IERC20Metadata) returns (string memory) {
+        return super.symbol();
+    }
+
+    /// @dev See {IERC20-allowance}.
+    /// @dev Not protected with `nonReentrantView()`
+    function allowance(address _owner, address _spender)
+        public
+        view
+        virtual
+        override (ERC20Upgradeable, IERC20)
+        returns (uint256)
+    {
+        return super.allowance(_owner, _spender);
+    }
+
+    /// @notice Get number of checkpoints for `_account`.
+    /// @dev Not protected with `nonReentrantView()`
+    /// @param _account Account address.
+    /// @return Number of checkpoints.
+    function numCheckpoints(address _account) public view virtual override returns (uint32) {
+        return super.numCheckpoints(_account);
+    }
+
+    /// @dev Get the `_pos`-th checkpoint for `_account`.
+    /// @dev Not protected with `nonReentrantView()`
+    function checkpoints(address _account, uint32 _pos)
+        public
+        view
+        virtual
+        override
+        returns (Checkpoints.Checkpoint208 memory)
+    {
+        return super.checkpoints(_account, _pos);
+    }
+
+    /// @dev See {VotesUpgradeable-clock}.
+    /// @dev Not protected with `nonReentrantView()`
+    function clock() public view virtual override returns (uint48) {
+        return super.clock();
+    }
+
+    /// @dev See {VotesUpgradeable-CLOCK_MODE}.
+    /// @dev Not protected with `nonReentrantView()`
+    function CLOCK_MODE() public view virtual override returns (string memory) {
+        return super.CLOCK_MODE();
+    }
+
+    /// @dev See {VotesUpgradeable-getVotes}.
+    /// @dev Not protected with `nonReentrantView()`
+    function getVotes(address _account) public view virtual override returns (uint256) {
+        return super.getVotes(_account);
+    }
+
+    /// @dev See {VotesUpgradeable-getPastVotes}.
+    /// @dev Not protected with `nonReentrantView()`
+    function getPastVotes(address _account, uint256 _timepoint) public view virtual override returns (uint256) {
+        return super.getPastVotes(_account, _timepoint);
+    }
+
+    /// @dev See {VotesUpgradeable-getPastTotalSupply}.
+    /// @dev Not protected with `nonReentrantView()`
+    function getPastTotalSupply(uint256 _timepoint) public view virtual override returns (uint256) {
+        return super.getPastTotalSupply(_timepoint);
+    }
+
+    /// @dev See {VotesUpgradeable-delegates}.
+    /// @dev Not protected with `nonReentrantView()`
+    function delegates(address _account) public view virtual override returns (address) {
+        return super.delegates(_account);
     }
 
     /// @dev Increase the total assets deposited.
