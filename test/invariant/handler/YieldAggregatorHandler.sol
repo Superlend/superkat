@@ -234,11 +234,15 @@ contract YieldAggregatorHandler is Test {
             abi.encodeWithSelector(YieldAggregator.rebalance.selector, strategiesToRebalance)
         );
 
-        for (uint256 i; i < strategiesToRebalance.length; i++) {
-            assertEq(
-                IERC4626(strategiesToRebalance[i]).maxWithdraw(address(yieldAggregator)),
-                (yieldAggregator.getStrategy(strategiesToRebalance[i])).allocated
-            );
+        if (success) {
+            ghost_lastHarvestTimestamp = uint40(block.timestamp);
+
+            for (uint256 i; i < strategiesToRebalance.length; i++) {
+                assertEq(
+                    IERC4626(strategiesToRebalance[i]).maxWithdraw(address(yieldAggregator)),
+                    (yieldAggregator.getStrategy(strategiesToRebalance[i])).allocated
+                );
+            }
         }
     }
 

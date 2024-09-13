@@ -45,7 +45,9 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     /// @dev The strategies to rebalance will be harvested.
     /// @param _strategies Strategies addresses.
     function rebalance(address[] calldata _strategies) public virtual nonReentrant {
-        _executeHarvest(_strategies);
+        _updateInterestAccrued();
+
+        _harvest(false, false);
 
         for (uint256 i; i < _strategies.length; ++i) {
             _rebalance(_strategies[i]);
@@ -602,18 +604,10 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
 
         $.lastHarvestTimestamp = uint40(block.timestamp);
 
-        _executeHarvest($.withdrawalQueue);
-
-        return true;
-    }
-
-    /// @dev Execute harvest across array of strategies.
-    /// @param _strategies Array of strategies.
-    function _executeHarvest(address[] memory _strategies) private {
         uint256 totalPositiveYield;
         uint256 totalNegativeYield;
-        for (uint256 i; i < _strategies.length; ++i) {
-            (uint256 positiveYield, uint256 loss) = _harvestStrategy(_strategies[i]);
+        for (uint256 i; i < $.withdrawalQueue.length; ++i) {
+            (uint256 positiveYield, uint256 loss) = _harvestStrategy($.withdrawalQueue[i]);
 
             totalPositiveYield += positiveYield;
             totalNegativeYield += loss;
@@ -630,13 +624,13 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
             }
         }
 
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
-
         $.totalAllocated = $.totalAllocated + totalPositiveYield - totalNegativeYield;
 
         _gulp();
 
         emit Events.Harvest($.totalAllocated, totalPositiveYield, totalNegativeYield);
+
+        return true;
     }
 
     /// @dev Execute harvest on a single strategy.
