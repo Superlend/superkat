@@ -16,7 +16,7 @@ import {YieldAggregatorFactory} from "../../src/YieldAggregatorFactory.sol";
 import {Strategy} from "../../src/module/Strategy.sol";
 // libs
 import {ErrorsLib} from "../../src/lib/ErrorsLib.sol";
-import {ErrorsLib} from "../../src/lib/ErrorsLib.sol";
+import {EventsLib} from "../../src/lib/EventsLib.sol";
 import {AmountCapLib as AggAmountCapLib, AmountCap as AggAmountCap} from "../../src/lib/AmountCapLib.sol";
 import {ConstantsLib} from "../../src/lib/ConstantsLib.sol";
 
@@ -133,6 +133,7 @@ contract YieldAggregatorBase is EVaultTestBase {
             eulerYieldAggregatorVaultFactory.getYieldAggregatorVaultsListSlice(0, 1);
         assertEq(yieldAggregatorVaultsList.length, 1);
         assertEq(address(yieldAggregatorVaultsList[0]), address(eulerYieldAggregatorVault));
+        assertEq(eulerYieldAggregatorVault.decimals(), assetTST.decimals());
     }
 
     function testDeployYieldAggregatorWithInvalidInitialCashAllocationPoints() public {

@@ -1,19 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
+import "../common/YieldAggregatorBase.t.sol";
 import {TrackingRewardStreams} from "reward-streams/src/TrackingRewardStreams.sol";
-import {
-    YieldAggregatorBase,
-    YieldAggregator,
-    console2,
-    EVault,
-    IEVault,
-    IRMTestDefault,
-    TestERC20,
-    YieldAggregatorFactory,
-    Rewards,
-    ConstantsLib
-} from "../common/YieldAggregatorBase.t.sol";
 
 contract BalanceForwarderE2ETest is YieldAggregatorBase {
     uint256 user1InitialBalance = 100000e18;

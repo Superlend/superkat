@@ -12,8 +12,6 @@ library ErrorsLib {
     error FeeRecipientNotSet();
     error CanNotRemoveCashReserve();
     error YieldAggregatorRewardsNotSupported();
-    error YieldAggregatorRewardsAlreadyEnabled();
-    error YieldAggregatorRewardsAlreadyDisabled();
     error InvalidHooksTarget();
     error NotHooksContract();
     error InvalidHookedFns();

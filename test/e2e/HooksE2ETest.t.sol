@@ -1,18 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {
-    YieldAggregatorBase,
-    YieldAggregator,
-    console2,
-    EVault,
-    IEVault,
-    IRMTestDefault,
-    TestERC20,
-    IHookTarget,
-    ErrorsLib,
-    ConstantsLib
-} from "../common/YieldAggregatorBase.t.sol";
+import "../common/YieldAggregatorBase.t.sol";
 
 contract HooksE2ETest is YieldAggregatorBase {
     uint256 user1InitialBalance = 100000e18;
