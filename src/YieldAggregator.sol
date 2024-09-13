@@ -16,6 +16,7 @@ import {
     WithdrawalQueueModule,
     RebalanceModule
 } from "./Dispatch.sol";
+import {IAccessControl, AccessControlUpgradeable} from "@openzeppelin-upgradeable/access/AccessControlUpgradeable.sol";
 import {AccessControlEnumerableUpgradeable} from
     "@openzeppelin-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
 import {ContextUpgradeable} from "@openzeppelin-upgradeable/utils/ContextUpgradeable.sol";
@@ -83,8 +84,8 @@ contract YieldAggregator is Dispatch, AccessControlEnumerableUpgradeable, IYield
     function setFeeRecipient(address _newFeeRecipient)
         public
         override (IYieldAggregator, FeeModule)
-        onlyRole(Constants.YIELD_AGGREGATOR_MANAGER)
         onlyEVCAccountOwner
+        onlyRole(Constants.YIELD_AGGREGATOR_MANAGER)
         use(feeModule)
     {}
 
@@ -92,8 +93,8 @@ contract YieldAggregator is Dispatch, AccessControlEnumerableUpgradeable, IYield
     function setPerformanceFee(uint96 _newFee)
         public
         override (IYieldAggregator, FeeModule)
-        onlyRole(Constants.YIELD_AGGREGATOR_MANAGER)
         onlyEVCAccountOwner
+        onlyRole(Constants.YIELD_AGGREGATOR_MANAGER)
         use(feeModule)
     {}
 
@@ -101,8 +102,8 @@ contract YieldAggregator is Dispatch, AccessControlEnumerableUpgradeable, IYield
     function optInStrategyRewards(address _strategy)
         public
         override (IYieldAggregator, RewardsModule)
-        onlyRole(Constants.YIELD_AGGREGATOR_MANAGER)
         onlyEVCAccountOwner
+        onlyRole(Constants.YIELD_AGGREGATOR_MANAGER)
         use(rewardsModule)
     {}
 
@@ -110,8 +111,8 @@ contract YieldAggregator is Dispatch, AccessControlEnumerableUpgradeable, IYield
     function optOutStrategyRewards(address _strategy)
         public
         override (IYieldAggregator, RewardsModule)
-        onlyRole(Constants.YIELD_AGGREGATOR_MANAGER)
         onlyEVCAccountOwner
+        onlyRole(Constants.YIELD_AGGREGATOR_MANAGER)
         use(rewardsModule)
     {}
 
@@ -119,8 +120,8 @@ contract YieldAggregator is Dispatch, AccessControlEnumerableUpgradeable, IYield
     function enableRewardForStrategy(address _strategy, address _reward)
         public
         override (IYieldAggregator, RewardsModule)
-        onlyRole(Constants.YIELD_AGGREGATOR_MANAGER)
         onlyEVCAccountOwner
+        onlyRole(Constants.YIELD_AGGREGATOR_MANAGER)
         use(rewardsModule)
     {}
 
@@ -128,8 +129,8 @@ contract YieldAggregator is Dispatch, AccessControlEnumerableUpgradeable, IYield
     function disableRewardForStrategy(address _strategy, address _reward, bool _forfeitRecentReward)
         public
         override (IYieldAggregator, RewardsModule)
-        onlyRole(Constants.YIELD_AGGREGATOR_MANAGER)
         onlyEVCAccountOwner
+        onlyRole(Constants.YIELD_AGGREGATOR_MANAGER)
         use(rewardsModule)
     {}
 
@@ -137,8 +138,8 @@ contract YieldAggregator is Dispatch, AccessControlEnumerableUpgradeable, IYield
     function claimStrategyReward(address _strategy, address _reward, address _recipient, bool _forfeitRecentReward)
         public
         override (IYieldAggregator, RewardsModule)
-        onlyRole(Constants.YIELD_AGGREGATOR_MANAGER)
         onlyEVCAccountOwner
+        onlyRole(Constants.YIELD_AGGREGATOR_MANAGER)
         use(rewardsModule)
     {}
 
@@ -146,8 +147,8 @@ contract YieldAggregator is Dispatch, AccessControlEnumerableUpgradeable, IYield
     function setHooksConfig(address _hooksTarget, uint32 _hookedFns)
         public
         override (IYieldAggregator, HooksModule)
-        onlyRole(Constants.YIELD_AGGREGATOR_MANAGER)
         onlyEVCAccountOwner
+        onlyRole(Constants.YIELD_AGGREGATOR_MANAGER)
         use(hooksModule)
     {}
 
@@ -155,8 +156,8 @@ contract YieldAggregator is Dispatch, AccessControlEnumerableUpgradeable, IYield
     function addStrategy(address _strategy, uint256 _allocationPoints)
         public
         override (IYieldAggregator, StrategyModule)
-        onlyRole(Constants.STRATEGY_OPERATOR)
         onlyEVCAccountOwner
+        onlyRole(Constants.STRATEGY_OPERATOR)
         use(strategyModule)
     {}
 
@@ -164,8 +165,8 @@ contract YieldAggregator is Dispatch, AccessControlEnumerableUpgradeable, IYield
     function removeStrategy(address _strategy)
         public
         override (IYieldAggregator, StrategyModule)
-        onlyRole(Constants.STRATEGY_OPERATOR)
         onlyEVCAccountOwner
+        onlyRole(Constants.STRATEGY_OPERATOR)
         use(strategyModule)
     {}
 
@@ -173,8 +174,8 @@ contract YieldAggregator is Dispatch, AccessControlEnumerableUpgradeable, IYield
     function setStrategyCap(address _strategy, uint16 _cap)
         public
         override (IYieldAggregator, StrategyModule)
-        onlyRole(Constants.GUARDIAN)
         onlyEVCAccountOwner
+        onlyRole(Constants.GUARDIAN)
         use(strategyModule)
     {}
 
@@ -182,8 +183,8 @@ contract YieldAggregator is Dispatch, AccessControlEnumerableUpgradeable, IYield
     function adjustAllocationPoints(address _strategy, uint256 _newPoints)
         public
         override (IYieldAggregator, StrategyModule)
-        onlyRole(Constants.GUARDIAN)
         onlyEVCAccountOwner
+        onlyRole(Constants.GUARDIAN)
         use(strategyModule)
     {}
 
@@ -191,8 +192,8 @@ contract YieldAggregator is Dispatch, AccessControlEnumerableUpgradeable, IYield
     function toggleStrategyEmergencyStatus(address _strategy)
         public
         override (IYieldAggregator, StrategyModule)
-        onlyRole(Constants.GUARDIAN)
         onlyEVCAccountOwner
+        onlyRole(Constants.GUARDIAN)
         use(strategyModule)
     {}
 
@@ -213,8 +214,8 @@ contract YieldAggregator is Dispatch, AccessControlEnumerableUpgradeable, IYield
     function reorderWithdrawalQueue(uint8 _index1, uint8 _index2)
         public
         override (IYieldAggregator, WithdrawalQueueModule)
-        onlyRole(Constants.WITHDRAWAL_QUEUE_MANAGER)
         onlyEVCAccountOwner
+        onlyRole(Constants.WITHDRAWAL_QUEUE_MANAGER)
         use(withdrawalQueueModule)
     {}
 
@@ -486,6 +487,24 @@ contract YieldAggregator is Dispatch, AccessControlEnumerableUpgradeable, IYield
         returns (address[] memory)
     {
         return super.withdrawalQueue();
+    }
+
+    /// @dev Overriding grantRole().
+    function grantRole(bytes32 role, address account)
+        public
+        override (IAccessControl, AccessControlUpgradeable)
+        onlyEVCAccountOwner
+    {
+        super.grantRole(role, account);
+    }
+
+    /// @dev Overriding revokeRole().
+    function revokeRole(bytes32 role, address account)
+        public
+        override (IAccessControl, AccessControlUpgradeable)
+        onlyEVCAccountOwner
+    {
+        super.revokeRole(role, account);
     }
 
     /// @dev Overriding _msgSender().
