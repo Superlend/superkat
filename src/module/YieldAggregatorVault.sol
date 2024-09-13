@@ -342,7 +342,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         override
     {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
-        uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
+        uint256 assetsRetrieved = IERC20(_asset()).balanceOf(address(this));
 
         if (assetsRetrieved < _assets) {
             uint256 numStrategies = $.withdrawalQueue.length;
@@ -711,7 +711,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
 
     function _simulateStrategiesWithdraw(uint256 _requestedAssets) private view returns (uint256) {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
-        uint256 assetsRetrieved = IERC20(asset()).balanceOf(address(this));
+        uint256 assetsRetrieved = IERC20(_asset()).balanceOf(address(this));
 
         if (assetsRetrieved < _requestedAssets) {
             uint256 numStrategies = $.withdrawalQueue.length;
