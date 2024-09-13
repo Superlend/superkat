@@ -21,7 +21,6 @@ contract YieldAggregatorFactory {
     address public immutable hooksModule;
     address public immutable feeModule;
     address public immutable strategyModule;
-    address public immutable rebalanceModule;
     address public immutable withdrawalQueueModule;
     /// yield aggregator implementation address
     address public immutable yieldAggregatorImpl;
@@ -38,7 +37,6 @@ contract YieldAggregatorFactory {
         address hooksModule;
         address feeModule;
         address strategyModule;
-        address rebalanceModule;
         address withdrawalQueueModule;
     }
 
@@ -54,7 +52,6 @@ contract YieldAggregatorFactory {
         hooksModule = _factoryParams.hooksModule;
         feeModule = _factoryParams.feeModule;
         strategyModule = _factoryParams.strategyModule;
-        rebalanceModule = _factoryParams.rebalanceModule;
         withdrawalQueueModule = _factoryParams.withdrawalQueueModule;
 
         IYieldAggregator.ConstructorParams memory yieldAggregatorVaultConstructorParams = IYieldAggregator
@@ -65,7 +62,6 @@ contract YieldAggregatorFactory {
             hooksModule: hooksModule,
             feeModule: feeModule,
             strategyModule: strategyModule,
-            rebalanceModule: rebalanceModule,
             withdrawalQueueModule: withdrawalQueueModule
         });
         yieldAggregatorImpl = address(new YieldAggregator(yieldAggregatorVaultConstructorParams));

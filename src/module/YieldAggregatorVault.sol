@@ -16,16 +16,33 @@ import {ERC20VotesUpgradeable} from "@openzeppelin-upgradeable/token/ERC20/exten
 import {ContextUpgradeable} from "@openzeppelin-upgradeable/utils/ContextUpgradeable.sol";
 // libs
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {StorageLib as Storage, YieldAggregatorStorage} from "../lib/StorageLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
 import {ConstantsLib as Constants} from "../lib/ConstantsLib.sol";
+import {AmountCapLib, AmountCap} from "../lib/AmountCapLib.sol";
 
 /// @title YieldAggregatorVaultModule contract
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
 abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUpgradeable, Shared {
     using Math for uint256;
+    using AmountCapLib for AmountCap;
+    using SafeERC20 for IERC20;
+    using SafeCast for uint256;
+
+    /// @notice Rebalance strategies allocation.
+    /// @dev The strategies to rebalance will be harvested.
+    /// @param _strategies Strategies addresses.
+    function rebalance(address[] calldata _strategies) public virtual nonReentrant {
+        _executeHarvest(_strategies);
+
+        for (uint256 i; i < _strategies.length; ++i) {
+            _rebalance(_strategies[i]);
+        }
+    }
 
     /// @notice Harvest all the strategies.
     /// @dev This function will loop through the strategies following the withdrawal queue order and harvest all.
@@ -136,6 +153,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         }
 
         uint256 assets = _convertToAssets(_shares, Math.Rounding.Floor);
+
         _withdraw(_msgSender(), _receiver, _owner, assets, _shares);
 
         return assets;
@@ -416,10 +434,18 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
             return;
         }
 
+        $.lastHarvestTimestamp = uint40(block.timestamp);
+
+        _executeHarvest($.withdrawalQueue);
+    }
+
+    /// @dev Execute harvest across array of strategies.
+    /// @param _strategies Array of strategies.
+    function _executeHarvest(address[] memory _strategies) private {
         uint256 totalPositiveYield;
         uint256 totalNegativeYield;
-        for (uint256 i; i < $.withdrawalQueue.length; ++i) {
-            (uint256 positiveYield, uint256 loss) = _executeHarvest($.withdrawalQueue[i]);
+        for (uint256 i; i < _strategies.length; ++i) {
+            (uint256 positiveYield, uint256 loss) = _harvestStrategy(_strategies[i]);
 
             totalPositiveYield += positiveYield;
             totalNegativeYield += loss;
@@ -432,8 +458,9 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
             _accruePerformanceFee(totalPositiveYield - totalNegativeYield);
         }
 
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+
         $.totalAllocated = $.totalAllocated + totalPositiveYield - totalNegativeYield;
-        $.lastHarvestTimestamp = uint40(block.timestamp);
 
         _gulp();
 
@@ -444,7 +471,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     /// @param _strategy Strategy address.
     /// @return Amount of positive yield if any, else 0.
     /// @return Amount of loss if any, else 0.
-    function _executeHarvest(address _strategy) private returns (uint256, uint256) {
+    function _harvestStrategy(address _strategy) private returns (uint256, uint256) {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         uint120 strategyAllocatedAmount = $.strategies[_strategy].allocated;
@@ -496,6 +523,83 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         }
 
         emit Events.AccruePerformanceFee(cachedFeeRecipient, _yield, feeShares);
+    }
+
+    /// @dev Rebalance strategy by depositing or withdrawing the amount to rebalance to hit target allocation.
+    ///      If current allocation is greater than target allocation, the aggregator will withdraw the excess assets.
+    ///      If current allocation is less than target allocation, the aggregator will:
+    ///         - Try to deposit the delta, if the cash is not sufficient, deposit all the available cash
+    ///         - If all the available cash is greater than the max deposit, deposit the max deposit
+    /// @param _strategy Strategy address.
+    function _rebalance(address _strategy) private {
+        if (_strategy == Constants.CASH_RESERVE) {
+            return; //nothing to rebalance as that's the cash reserve
+        }
+
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+
+        IYieldAggregator.Strategy memory strategyData = $.strategies[_strategy];
+
+        if (strategyData.status != IYieldAggregator.StrategyStatus.Active) return;
+
+        uint256 totalAllocationPointsCache = $.totalAllocationPoints;
+        uint256 totalAssetsAllocatableCache = _totalAssetsAllocatable();
+        uint256 targetAllocation =
+            totalAssetsAllocatableCache * strategyData.allocationPoints / totalAllocationPointsCache;
+
+        uint120 capAmount = uint120(strategyData.cap.resolve());
+        // capAmount will be max uint256 if no cap is set
+        if (targetAllocation > capAmount) targetAllocation = capAmount;
+
+        uint256 amountToRebalance;
+        bool isDeposit;
+        if (strategyData.allocated > targetAllocation) {
+            // Withdraw
+            amountToRebalance = strategyData.allocated - targetAllocation;
+
+            uint256 maxWithdrawableFromStrategy = IERC4626(_strategy).maxWithdraw(address(this));
+            if (amountToRebalance > maxWithdrawableFromStrategy) {
+                amountToRebalance = maxWithdrawableFromStrategy;
+            }
+        } else if (strategyData.allocated < targetAllocation) {
+            // Deposit
+            uint256 targetCash = totalAssetsAllocatableCache * $.strategies[Constants.CASH_RESERVE].allocationPoints
+                / totalAllocationPointsCache;
+            uint256 currentCash = totalAssetsAllocatableCache - $.totalAllocated;
+
+            // Calculate available cash to put in strategies
+            uint256 cashAvailable = (currentCash > targetCash) ? currentCash - targetCash : 0;
+
+            amountToRebalance = targetAllocation - strategyData.allocated;
+            if (amountToRebalance > cashAvailable) {
+                amountToRebalance = cashAvailable;
+            }
+
+            uint256 maxDepositInStrategy = IERC4626(_strategy).maxDeposit(address(this));
+            if (amountToRebalance > maxDepositInStrategy) {
+                amountToRebalance = maxDepositInStrategy;
+            }
+
+            isDeposit = true;
+        }
+
+        if (amountToRebalance == 0) {
+            return;
+        }
+
+        if (isDeposit) {
+            // Do required approval (safely) and deposit
+            IERC20(IERC4626(address(this)).asset()).safeIncreaseAllowance(_strategy, amountToRebalance);
+            IERC4626(_strategy).deposit(amountToRebalance, address(this));
+            $.strategies[_strategy].allocated = (strategyData.allocated + amountToRebalance).toUint120();
+            $.totalAllocated += amountToRebalance;
+        } else {
+            IERC4626(_strategy).withdraw(amountToRebalance, address(this), address(this));
+            $.strategies[_strategy].allocated = (strategyData.allocated - amountToRebalance).toUint120();
+            $.totalAllocated -= amountToRebalance;
+        }
+
+        emit Events.Rebalance(_strategy, amountToRebalance, isDeposit);
     }
 
     /// @notice Return the total amount of assets deposited, plus the accrued interest.
