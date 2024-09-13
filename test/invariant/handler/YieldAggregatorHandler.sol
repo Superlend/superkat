@@ -273,7 +273,7 @@ contract YieldAggregatorHandler is Test {
             _actorIndexSeed, address(yieldAggregator), abi.encodeWithSelector(YieldAggregator.gulp.selector)
         );
 
-        if (success && yieldAggregator.totalSupply() >= ConstantsLib.MIN_SHARES_FOR_GULP) {
+        if (success && yieldAggregator.totalSupply() > 0) {
             (,, uint168 interestLeft) = yieldAggregator.getYieldAggregatorSavingRate();
 
             assertEq(yieldAggregator.totalAssetsAllocatable(), yieldAggregator.totalAssetsDeposited() + interestLeft);
@@ -284,13 +284,10 @@ contract YieldAggregatorHandler is Test {
         vm.assume(_receiver != address(0));
         vm.assume(actorUtil.isFeeReceiver(_receiver) == false);
 
+        _assets = bound(_assets, 1, type(uint256).max);
+
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
 
-        if (yieldAggregator.totalSupply() == 0) {
-            uint256 minAssets = yieldAggregator.previewMint(ConstantsLib.MIN_SHARES_FOR_GULP);
-
-            if (minAssets < _assets) _assets = minAssets + 1;
-        }
         _fillBalance(currentActor, yieldAggregator.asset(), _assets);
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
@@ -311,9 +308,7 @@ contract YieldAggregatorHandler is Test {
 
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
 
-        if (yieldAggregator.totalSupply() == 0) {
-            _shares = bound(_shares, ConstantsLib.MIN_SHARES_FOR_GULP, type(uint256).max);
-        }
+        _shares = bound(_shares, 1, type(uint256).max);
 
         uint256 assets = yieldAggregator.previewMint(_shares);
         _fillBalance(currentActor, yieldAggregator.asset(), assets);

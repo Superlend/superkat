@@ -59,6 +59,8 @@ contract GulpFuzzTest is YieldAggregatorBase {
         }
     }
 
+    // ESR implement has a min shares for gulp
+    // This test to make sure everything works as expected when removing that min share for gulping requirement.
     function testFuzzGulpBelowMinSharesForGulp() public {
         uint256 depositAmount = 1337;
         assetTST.mint(user1, depositAmount);
@@ -74,7 +76,7 @@ contract GulpFuzzTest is YieldAggregatorBase {
         skip(ConstantsLib.INTEREST_SMEAR);
 
         (,, uint168 interestLeft) = eulerYieldAggregatorVault.getYieldAggregatorSavingRate();
-        assertEq(eulerYieldAggregatorVault.totalAssets(), depositAmount);
-        assertEq(interestLeft, 0);
+        assertEq(eulerYieldAggregatorVault.totalAssets(), depositAmount + interestAmount);
+        assertEq(interestLeft, interestAmount);
     }
 }
