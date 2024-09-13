@@ -71,11 +71,6 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     function deposit(uint256 _assets, address _receiver) public virtual override nonReentrant returns (uint256) {
         _callHooksTarget(Constants.DEPOSIT, _msgSender());
 
-        uint256 maxAssets = _maxDeposit();
-        if (_assets > maxAssets) {
-            revert Errors.ERC4626ExceededMaxDeposit(_receiver, _assets, maxAssets);
-        }
-
         uint256 shares = _convertToShares(_assets, Math.Rounding.Floor);
         _deposit(_msgSender(), _receiver, _assets, shares);
 
@@ -88,11 +83,6 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     /// @return Amount of assets deposited.
     function mint(uint256 _shares, address _receiver) public virtual override nonReentrant returns (uint256) {
         _callHooksTarget(Constants.MINT, _msgSender());
-
-        uint256 maxShares = _maxMint();
-        if (_shares > maxShares) {
-            revert Errors.ERC4626ExceededMaxMint(_receiver, _shares, maxShares);
-        }
 
         uint256 assets = _convertToAssets(_shares, Math.Rounding.Ceil);
         _deposit(_msgSender(), _receiver, assets, _shares);
@@ -325,13 +315,13 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     /// @notice Returns the maximum amount of the underlying asset that can be deposited into the yield aggregator.
     /// @dev Overriding this function to add the `nonReentrantView` modifier for consistency, even though it does not read from the state.
     function maxDeposit(address) public view virtual override nonReentrantView returns (uint256) {
-        return _maxDeposit();
+        return type(uint256).max;
     }
 
     /// @notice Returns the maximum amount of the Vault shares that can be minted for the receiver.
     /// @dev Overriding this function to add the `nonReentrantView` modifier for consistency, even though it does not read from the state.
     function maxMint(address) public view virtual override nonReentrantView returns (uint256) {
-        return _maxMint();
+        return type(uint256).max;
     }
 
     /// @dev Increase the total assets deposited.
@@ -763,18 +753,6 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         uint256 feeShares = _convertToShares(feeAssets, Math.Rounding.Floor);
 
         return (feeAssets, feeShares);
-    }
-
-    /// @dev Return max deposit amount.
-    /// @return Max deposit amount.
-    function _maxDeposit() private pure returns (uint256) {
-        return type(uint256).max;
-    }
-
-    /// @dev Return max mint amount.
-    /// @return Max mint amount.
-    function _maxMint() private pure returns (uint256) {
-        return type(uint256).max;
     }
 }
 
