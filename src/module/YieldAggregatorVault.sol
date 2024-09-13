@@ -601,9 +601,9 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
 
         emit Events.Rebalance(_strategy, amountToRebalance, isDeposit);
     }
+
     /// @notice Return the total amount of assets deposited, plus the accrued interest.
     /// @return total asset amount.
-
     function _totalAssets() private view returns (uint256) {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
