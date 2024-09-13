@@ -610,7 +610,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
 
         if (isDeposit) {
             // Do required approval (safely) and deposit
-            IERC20(IERC4626(address(this)).asset()).safeIncreaseAllowance(_strategy, amountToRebalance);
+            IERC20(_asset()).safeIncreaseAllowance(_strategy, amountToRebalance);
             IERC4626(_strategy).deposit(amountToRebalance, address(this));
             $.strategies[_strategy].allocated = (strategyData.allocated + amountToRebalance).toUint120();
             $.totalAllocated += amountToRebalance;

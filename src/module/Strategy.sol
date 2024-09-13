@@ -120,7 +120,7 @@ abstract contract StrategyModule is Shared {
             revert Errors.StrategyAlreadyExist();
         }
 
-        if (IERC4626(_strategy).asset() != IERC4626(address(this)).asset()) {
+        if (IERC4626(_strategy).asset() != _asset()) {
             revert Errors.InvalidStrategyAsset();
         }
 
