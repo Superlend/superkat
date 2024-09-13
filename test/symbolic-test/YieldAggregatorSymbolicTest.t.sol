@@ -79,7 +79,6 @@ contract YieldAggregatorSymbolicTest is YieldAggregatorBase, SymTest {
         withdrawalQueueModuleModule = new WithdrawalQueue(address(evc));
 
         YieldAggregatorFactory.FactoryParams memory factoryParams = YieldAggregatorFactory.FactoryParams({
-            owner: deployer,
             evc: address(evc),
             balanceTracker: address(0),
             yieldAggregatorVaultModule: address(yieldAggregatorVaultModule),

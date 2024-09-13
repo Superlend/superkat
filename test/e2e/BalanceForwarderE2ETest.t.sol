@@ -16,7 +16,6 @@ contract BalanceForwarderE2ETest is YieldAggregatorBase {
         trackingReward = address(new TrackingRewardStreams(address(evc), 2 weeks));
 
         YieldAggregatorFactory.FactoryParams memory factoryParams = YieldAggregatorFactory.FactoryParams({
-            owner: deployer,
             evc: address(evc),
             balanceTracker: trackingReward,
             yieldAggregatorVaultModule: address(yieldAggregatorVaultModule),

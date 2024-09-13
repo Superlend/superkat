@@ -46,7 +46,6 @@ contract A16zPropertyTests is ERC4626Test {
         withdrawalQueueModuleModule = new WithdrawalQueue(address(evc));
 
         YieldAggregatorFactory.FactoryParams memory factoryParams = YieldAggregatorFactory.FactoryParams({
-            owner: factoryOwner,
             evc: address(evc),
             balanceTracker: address(0),
             yieldAggregatorVaultModule: address(yieldAggregatorVaultModule),

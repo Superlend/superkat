@@ -29,7 +29,6 @@ contract YieldAggregatorFactory {
 
     /// @dev Init params struct.
     struct FactoryParams {
-        address owner;
         address evc;
         address balanceTracker;
         address yieldAggregatorVaultModule;

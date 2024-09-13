@@ -21,7 +21,6 @@ contract BalanceForwarderTest is YieldAggregatorBase {
         balanceTracker = address(new MockBalanceTracker());
 
         YieldAggregatorFactory.FactoryParams memory factoryParams = YieldAggregatorFactory.FactoryParams({
-            owner: deployer,
             evc: address(evc),
             balanceTracker: balanceTracker,
             yieldAggregatorVaultModule: address(yieldAggregatorVaultModule),

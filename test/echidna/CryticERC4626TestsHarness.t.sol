@@ -44,7 +44,6 @@ contract CryticERC4626TestsHarness is CryticERC4626PropertyTests {
         withdrawalQueueModuleModule = new WithdrawalQueue(address(evc));
 
         YieldAggregatorFactory.FactoryParams memory factoryParams = YieldAggregatorFactory.FactoryParams({
-            owner: address(this),
             evc: address(evc),
             balanceTracker: address(0),
             yieldAggregatorVaultModule: address(yieldAggregatorVaultModule),
