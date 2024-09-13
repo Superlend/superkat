@@ -97,9 +97,6 @@ abstract contract Shared is EVCUtil {
     function _updateInterestAccrued() internal {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
-        // do not update interest
-        if (_totalSupply() == 0) return;
-
         uint168 interestLeftCached = $.interestLeft;
         uint256 accruedInterest = _interestAccruedFromCache(interestLeftCached);
 
@@ -119,6 +116,9 @@ abstract contract Shared is EVCUtil {
     /// @dev Get accrued interest without updating it.
     /// @return Accrued interest.
     function _interestAccruedFromCache(uint168 _interestLeft) internal view returns (uint256) {
+        // do not update interest
+        if (_totalSupply() == 0) return 0;
+
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         uint40 interestSmearEndCached = $.interestSmearEnd;

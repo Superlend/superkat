@@ -785,20 +785,21 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     }
 
     /// @dev Preview a harvest flow and return the expected result of `_totalAssets()` and `_totalSupply()` amount after a harvest.
+    /// @param _isOnlyCashReserveWithdraw True if the withdraw after harvest will be covered by the funds in cash reserve.
     /// @return Expected amount to be returned from `_totalAssets()` if called after a harvest.
     /// @return Expected amount to be returned from `_totalSupply()` if called after a harvest.
     function _previewHarvestBeforeWithdraw(bool _isOnlyCashReserveWithdraw) private view returns (uint256, uint256) {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
-        uint256 totalAssetsDepositedExpected = $.totalAssetsDeposited;
-        uint256 totalSupplyExpected = _totalSupply();
         uint168 interestLeftExpected = $.interestLeft;
+        uint256 totalAssetsDepositedExpected = $.totalAssetsDeposited + _interestAccruedFromCache(interestLeftExpected);
+        uint256 totalSupplyExpected = _totalSupply();
 
         if (
-            (isHarvestCoolDownCheckOn && $.lastHarvestTimestamp + Constants.HARVEST_COOLDOWN >= block.timestamp)
-                && _isOnlyCashReserveWithdraw
+            _isOnlyCashReserveWithdraw
+                && (isHarvestCoolDownCheckOn && $.lastHarvestTimestamp + Constants.HARVEST_COOLDOWN >= block.timestamp)
         ) {
-            return (totalAssetsDepositedExpected + _interestAccruedFromCache(interestLeftExpected), totalSupplyExpected);
+            return (totalAssetsDepositedExpected, totalSupplyExpected);
         }
 
         uint256 totalPositiveYield;
@@ -823,8 +824,6 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         }
 
         if (totalNegativeYield > totalPositiveYield) {
-            interestLeftExpected = 0;
-
             uint256 totalNotDistributed = _totalAssetsAllocatable() - totalAssetsDepositedExpected;
             uint256 lossAmount;
             unchecked {
@@ -850,12 +849,6 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
                 totalAssetsDepositedExpected += feeAssets;
                 totalSupplyExpected += feeShares;
             }
-        }
-
-        // If there was no loss deduction, apply `_interestAccruedFromCache()`
-        // We do not apply it if there was a call to `_deductLoss()` as: interestLeftExpected == 0 => _interestAccruedFromCache(interestLeftExpected) == 0
-        if (interestLeftExpected != 0) {
-            return (totalAssetsDepositedExpected + _interestAccruedFromCache(interestLeftExpected), totalSupplyExpected);
         }
 
         return (totalAssetsDepositedExpected, totalSupplyExpected);
