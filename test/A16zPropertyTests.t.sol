@@ -38,7 +38,7 @@ contract A16zPropertyTests is ERC4626Test {
         factoryOwner = makeAddr("FACTORY_OWNER");
         evc = new EthereumVaultConnector();
 
-        yieldAggregatorVaultModule = new YieldAggregatorVault(address(evc));
+        yieldAggregatorVaultModule = new YieldAggregatorVault(address(evc), true);
         rewardsModule = new Rewards(address(evc));
         hooksModule = new Hooks(address(evc));
         feeModuleModule = new Fee(address(evc));

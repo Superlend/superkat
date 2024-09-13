@@ -339,6 +339,8 @@ contract YieldAggregatorHandler is Test {
 
         _assets = bound(_assets, 0, yieldAggregator.convertToAssets(yieldAggregator.balanceOf(currentActor)));
 
+        bool isOnlyCashReserveWithdraw = IERC20(yieldAggregator.asset()).balanceOf(address(yieldAggregator)) >= _assets;
+
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             currentActorIndex,
             address(yieldAggregator),
@@ -346,7 +348,10 @@ contract YieldAggregatorHandler is Test {
         );
 
         if (success) {
-            if (block.timestamp > previousHarvestTimestamp + ConstantsLib.HARVEST_COOLDOWN) {
+            if (
+                block.timestamp > previousHarvestTimestamp + ConstantsLib.HARVEST_COOLDOWN
+                    || isOnlyCashReserveWithdraw == false
+            ) {
                 (address feeRecipient,) = yieldAggregator.performanceFeeConfig();
                 ghost_accumulatedPerformanceFeePerRecipient[feeRecipient] = expectedAccumulatedPerformanceFee;
                 ghost_totalAssetsDeposited = expectedTotalAssetsDeposited;
@@ -380,8 +385,14 @@ contract YieldAggregatorHandler is Test {
             abi.encodeWithSelector(IERC4626.redeem.selector, _shares, _receiver, currentActor)
         );
 
+        bool isOnlyCashReserveWithdraw = IERC20(yieldAggregator.asset()).balanceOf(address(yieldAggregator))
+            >= yieldAggregator.previewRedeem(_shares);
+
         if (success) {
-            if (block.timestamp > previousHarvestTimestamp + ConstantsLib.HARVEST_COOLDOWN) {
+            if (
+                block.timestamp > previousHarvestTimestamp + ConstantsLib.HARVEST_COOLDOWN
+                    || isOnlyCashReserveWithdraw == false
+            ) {
                 (address feeRecipient,) = yieldAggregator.performanceFeeConfig();
                 ghost_accumulatedPerformanceFeePerRecipient[feeRecipient] = expectedAccumulatedPerformanceFee;
                 ghost_totalAssetsDeposited = expectedTotalAssetsDeposited;

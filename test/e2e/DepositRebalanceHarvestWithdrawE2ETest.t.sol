@@ -263,16 +263,21 @@ contract DepositRebalanceHarvestWithdrawE2ETest is YieldAggregatorBase {
             );
         }
 
-        vm.warp(block.timestamp + 1.5 days);
+        vm.warp(block.timestamp + 1 days);
         // mock an increase of aggregator balance due to yield
-        uint256 aggrCurrenteTSTShareBalance = eTST.balanceOf(address(eulerYieldAggregatorVault));
-        uint256 aggrCurrenteTSTUnderlyingBalance = eTST.convertToAssets(aggrCurrenteTSTShareBalance);
-        uint256 aggrCurrenteTSTsecondaryShareBalance = eTSTsecondary.balanceOf(address(eulerYieldAggregatorVault));
-        uint256 aggrCurrenteTSTsecondaryUnderlyingBalance = eTST.convertToAssets(aggrCurrenteTSTsecondaryShareBalance);
-        uint256 aggrNeweTSTUnderlyingBalance = aggrCurrenteTSTUnderlyingBalance * 11e17 / 1e18;
-        uint256 aggrNeweTSTsecondaryUnderlyingBalance = aggrCurrenteTSTsecondaryUnderlyingBalance * 11e17 / 1e18;
-        uint256 eTSTYield = aggrNeweTSTUnderlyingBalance - aggrCurrenteTSTUnderlyingBalance;
-        uint256 eTSTsecondaryYield = aggrNeweTSTsecondaryUnderlyingBalance - aggrCurrenteTSTsecondaryUnderlyingBalance;
+        uint256 eTSTYield;
+        uint256 eTSTsecondaryYield;
+        {
+            uint256 aggrCurrenteTSTShareBalance = eTST.balanceOf(address(eulerYieldAggregatorVault));
+            uint256 aggrCurrenteTSTUnderlyingBalance = eTST.convertToAssets(aggrCurrenteTSTShareBalance);
+            uint256 aggrCurrenteTSTsecondaryShareBalance = eTSTsecondary.balanceOf(address(eulerYieldAggregatorVault));
+            uint256 aggrCurrenteTSTsecondaryUnderlyingBalance =
+                eTSTsecondary.convertToAssets(aggrCurrenteTSTsecondaryShareBalance);
+            uint256 aggrNeweTSTUnderlyingBalance = aggrCurrenteTSTUnderlyingBalance * 11e17 / 1e18;
+            uint256 aggrNeweTSTsecondaryUnderlyingBalance = aggrCurrenteTSTsecondaryUnderlyingBalance * 11e17 / 1e18;
+            eTSTYield = aggrNeweTSTUnderlyingBalance - aggrCurrenteTSTUnderlyingBalance;
+            eTSTsecondaryYield = aggrNeweTSTsecondaryUnderlyingBalance - aggrCurrenteTSTsecondaryUnderlyingBalance;
+        }
 
         assetTST.mint(address(eTST), eTSTYield);
         assetTST.mint(address(eTSTsecondary), eTSTsecondaryYield);
@@ -476,7 +481,7 @@ contract DepositRebalanceHarvestWithdrawE2ETest is YieldAggregatorBase {
             uint256 aggrCurrenteTSTUnderlyingBalance = eTST.convertToAssets(aggrCurrenteTSTShareBalance);
             uint256 aggrCurrenteTSTsecondaryShareBalance = eTSTsecondary.balanceOf(address(eulerYieldAggregatorVault));
             uint256 aggrCurrenteTSTsecondaryUnderlyingBalance =
-                eTST.convertToAssets(aggrCurrenteTSTsecondaryShareBalance);
+                eTSTsecondary.convertToAssets(aggrCurrenteTSTsecondaryShareBalance);
             uint256 aggrNeweTSTUnderlyingBalance = aggrCurrenteTSTUnderlyingBalance * 11e17 / 1e18;
             uint256 aggrNeweTSTsecondaryUnderlyingBalance = aggrCurrenteTSTsecondaryUnderlyingBalance * 11e17 / 1e18;
             eTSTYield = aggrNeweTSTUnderlyingBalance - aggrCurrenteTSTUnderlyingBalance;
@@ -575,6 +580,11 @@ contract DepositRebalanceHarvestWithdrawE2ETest is YieldAggregatorBase {
         // mock decrease by 10%
         uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(eulerYieldAggregatorVault));
         uint256 aggrCurrentStrategyBalanceAfterNegYield = aggrCurrentStrategyBalance * 9e17 / 1e18;
+        vm.mockCall(
+            address(eTST),
+            abi.encodeWithSelector(EVault.previewWithdraw.selector, aggrCurrentStrategyBalance),
+            abi.encode(aggrCurrentStrategyBalanceAfterNegYield)
+        );
         vm.mockCall(
             address(eTST),
             abi.encodeWithSelector(EVault.maxWithdraw.selector, address(eulerYieldAggregatorVault)),

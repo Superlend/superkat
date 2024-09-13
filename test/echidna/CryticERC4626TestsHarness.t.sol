@@ -49,7 +49,7 @@ contract CryticERC4626TestsHarness is
     constructor() {
         evc = new EthereumVaultConnector();
 
-        yieldAggregatorVaultModule = new YieldAggregatorVault(address(evc));
+        yieldAggregatorVaultModule = new YieldAggregatorVault(address(evc), true);
         rewardsModule = new Rewards(address(evc));
         hooksModule = new Hooks(address(evc));
         feeModuleModule = new Fee(address(evc));

@@ -37,6 +37,10 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     using SafeERC20 for IERC20;
     using SafeCast for uint256;
 
+    /// @dev A boolean to whether execute the harvest cooldown period check or not.
+    ///      This is meant to be set to `False` when deploying on L2 to explicitly harvest on every withdraw/redeem.
+    bool public immutable isHarvestCoolDownCheckOn;
+
     /// @notice Rebalance strategies allocation.
     /// @dev The strategies to rebalance will be harvested.
     /// @param _strategies Strategies addresses.
@@ -55,7 +59,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     function harvest() public virtual nonReentrant {
         _updateInterestAccrued();
 
-        _harvest(false);
+        _harvest(false, false);
     }
 
     /// @notice Update accrued interest and count it in the total assets deposited.
@@ -110,7 +114,8 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
 
         _callHooksTarget(Constants.WITHDRAW, _msgSender());
 
-        _harvest(true);
+        bool isOnlyCashReserveWithdraw = IERC20(_asset()).balanceOf(address(this)) >= _assets;
+        _harvest(isHarvestCoolDownCheckOn, isOnlyCashReserveWithdraw);
 
         uint256 maxAssets = _convertToAssets(_balanceOf(_owner), Math.Rounding.Floor);
         if (_assets > maxAssets) {
@@ -139,14 +144,17 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
 
         _callHooksTarget(Constants.REDEEM, _msgSender());
 
-        _harvest(true);
-
         uint256 maxShares = _balanceOf(_owner);
         if (_shares > maxShares) {
             revert Errors.ERC4626ExceededMaxRedeem(_owner, _shares, maxShares);
         }
 
         uint256 assets = _convertToAssets(_shares, Math.Rounding.Floor);
+
+        bool isOnlyCashReserveWithdraw = IERC20(_asset()).balanceOf(address(this)) >= assets;
+        bool harvestExecuted = _harvest(isHarvestCoolDownCheckOn, isOnlyCashReserveWithdraw);
+
+        if (harvestExecuted) assets = _convertToAssets(_shares, Math.Rounding.Floor);
 
         _withdraw(_msgSender(), _receiver, _owner, assets, _shares);
 
@@ -265,9 +273,14 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     /// @dev See {IERC4626-maxWithdraw}.
     /// @return Amount of asset to be withdrawn.
     function maxWithdraw(address _owner) public view virtual override nonReentrantView returns (uint256) {
-        (uint256 totalAssetsExpected, uint256 totalSupplyExpected) = previewHarvest();
+        uint256 ownerShares = _balanceOf(_owner);
+        uint256 assetsBeforeHarvest = _convertToAssets(ownerShares, Math.Rounding.Floor);
+        bool isOnlyCashReserveWithdraw = IERC20(_asset()).balanceOf(address(this)) >= assetsBeforeHarvest;
 
-        uint256 maxAssets = _balanceOf(_owner).mulDiv(
+        (uint256 totalAssetsExpected, uint256 totalSupplyExpected) =
+            _previewHarvestBeforeWithdraw(isOnlyCashReserveWithdraw);
+
+        uint256 maxAssets = ownerShares.mulDiv(
             totalAssetsExpected + 1, totalSupplyExpected + 10 ** _decimalsOffset(), Math.Rounding.Floor
         );
 
@@ -278,16 +291,22 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     /// @dev See {IERC4626-maxRedeem}.
     /// @return Amount of shares.
     function maxRedeem(address _owner) public view virtual override nonReentrantView returns (uint256) {
-        (uint256 totalAssetsExpected, uint256 totalSupplyExpected) = previewHarvest();
+        uint256 ownerShares = _balanceOf(_owner);
+        uint256 assetsBeforeHarvest = _convertToAssets(ownerShares, Math.Rounding.Floor);
+        bool isOnlyCashReserveWithdraw = IERC20(_asset()).balanceOf(address(this)) >= assetsBeforeHarvest;
+
+        (uint256 totalAssetsExpected, uint256 totalSupplyExpected) =
+            _previewHarvestBeforeWithdraw(isOnlyCashReserveWithdraw);
 
         uint256 maxAssets = _balanceOf(_owner).mulDiv(
             totalAssetsExpected + 1, totalSupplyExpected + 10 ** _decimalsOffset(), Math.Rounding.Floor
         );
 
-        uint256 assets = _simulateStrategiesWithdraw(maxAssets);
+        maxAssets = _simulateStrategiesWithdraw(maxAssets);
 
-        return
-            assets.mulDiv(totalSupplyExpected + 10 ** _decimalsOffset(), totalAssetsExpected + 1, Math.Rounding.Floor);
+        return maxAssets.mulDiv(
+            totalSupplyExpected + 10 ** _decimalsOffset(), totalAssetsExpected + 1, Math.Rounding.Floor
+        );
     }
 
     /// @notice Preview a deposit call and return the amount of shares to be minted.
@@ -308,7 +327,9 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     /// @dev See {IERC4626-previewWithdraw}.
     /// @return Amount of shares.
     function previewWithdraw(uint256 _assets) public view virtual override nonReentrantView returns (uint256) {
-        (uint256 totalAssetsExpected, uint256 totalSupplyExpected) = previewHarvest();
+        bool isOnlyCashReserveWithdraw = IERC20(_asset()).balanceOf(address(this)) >= _assets;
+        (uint256 totalAssetsExpected, uint256 totalSupplyExpected) =
+            _previewHarvestBeforeWithdraw(isOnlyCashReserveWithdraw);
 
         return
             _assets.mulDiv(totalSupplyExpected + 10 ** _decimalsOffset(), totalAssetsExpected + 1, Math.Rounding.Ceil);
@@ -318,7 +339,10 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     /// @dev See {IERC4626-previewRedeem}.
     /// @return Amount of assets.
     function previewRedeem(uint256 _shares) public view virtual override nonReentrantView returns (uint256) {
-        (uint256 totalAssetsExpected, uint256 totalSupplyExpected) = previewHarvest();
+        uint256 assetsBeforeHarvest = _convertToAssets(_shares, Math.Rounding.Floor);
+        bool isOnlyCashReserveWithdraw = IERC20(_asset()).balanceOf(address(this)) >= assetsBeforeHarvest;
+        (uint256 totalAssetsExpected, uint256 totalSupplyExpected) =
+            _previewHarvestBeforeWithdraw(isOnlyCashReserveWithdraw);
 
         return
             _shares.mulDiv(totalAssetsExpected + 1, totalSupplyExpected + 10 ** _decimalsOffset(), Math.Rounding.Floor);
@@ -565,17 +589,22 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     /// @dev Loop through strategies, harvest, aggregate positive and negative yield and account for net amount.
     /// @dev Loss socialization will be taken out from interest left + amount available to gulp first, if not enough, socialize on deposits.
     /// @dev Performance fee will only be applied on net positive yield across all strategies.
-    /// @param _checkCooldown a boolean to indicate whether to check for cooldown period or not.
-    function _harvest(bool _checkCooldown) private {
+    /// @param _isHarvestCoolDownCheckOn a boolean to indicate whether to check for cooldown period or not.
+    function _harvest(bool _isHarvestCoolDownCheckOn, bool _isOnlyCashReserveWithdraw) private returns (bool) {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
-        if (_checkCooldown && ($.lastHarvestTimestamp + Constants.HARVEST_COOLDOWN >= block.timestamp)) {
-            return;
+        if (
+            (_isHarvestCoolDownCheckOn && ($.lastHarvestTimestamp + Constants.HARVEST_COOLDOWN >= block.timestamp))
+                && _isOnlyCashReserveWithdraw
+        ) {
+            return false;
         }
 
         $.lastHarvestTimestamp = uint40(block.timestamp);
 
         _executeHarvest($.withdrawalQueue);
+
+        return true;
     }
 
     /// @dev Execute harvest across array of strategies.
@@ -762,17 +791,21 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     }
 
     /// @dev Preview a harvest flow and return the expected result of `_totalAssets()` and `_totalSupply()` amount after a harvest.
+    /// @param _isOnlyCashReserveWithdraw True if the withdraw after harvest will be covered by the funds in cash reserve.
     /// @return Expected amount to be returned from `_totalAssets()` if called after a harvest.
     /// @return Expected amount to be returned from `_totalSupply()` if called after a harvest.
-    function previewHarvest() private view returns (uint256, uint256) {
+    function _previewHarvestBeforeWithdraw(bool _isOnlyCashReserveWithdraw) private view returns (uint256, uint256) {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
-        uint256 totalAssetsDepositedExpected = $.totalAssetsDeposited;
-        uint256 totalSupplyExpected = _totalSupply();
         uint168 interestLeftExpected = $.interestLeft;
+        uint256 totalAssetsDepositedExpected = $.totalAssetsDeposited + _interestAccruedFromCache(interestLeftExpected);
+        uint256 totalSupplyExpected = _totalSupply();
 
-        if ($.lastHarvestTimestamp + Constants.HARVEST_COOLDOWN >= block.timestamp) {
-            return (totalAssetsDepositedExpected + _interestAccruedFromCache(interestLeftExpected), totalSupplyExpected);
+        if (
+            _isOnlyCashReserveWithdraw
+                && (isHarvestCoolDownCheckOn && $.lastHarvestTimestamp + Constants.HARVEST_COOLDOWN >= block.timestamp)
+        ) {
+            return (totalAssetsDepositedExpected, totalSupplyExpected);
         }
 
         uint256 totalPositiveYield;
@@ -797,8 +830,6 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         }
 
         if (totalNegativeYield > totalPositiveYield) {
-            interestLeftExpected = 0;
-
             uint256 totalNotDistributed = _totalAssetsAllocatable() - totalAssetsDepositedExpected;
             uint256 lossAmount;
             unchecked {
@@ -824,12 +855,6 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
                 totalAssetsDepositedExpected += feeAssets;
                 totalSupplyExpected += feeShares;
             }
-        }
-
-        // If there was no loss deduction, apply `_interestAccruedFromCache()`
-        // We do not apply it if there was a call to `_deductLoss()` as: interestLeftExpected == 0 => _interestAccruedFromCache(interestLeftExpected) == 0
-        if (interestLeftExpected != 0) {
-            return (totalAssetsDepositedExpected + _interestAccruedFromCache(interestLeftExpected), totalSupplyExpected);
         }
 
         return (totalAssetsDepositedExpected, totalSupplyExpected);
@@ -883,5 +908,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
 }
 
 contract YieldAggregatorVault is YieldAggregatorVaultModule {
-    constructor(address _evc) Shared(_evc) {}
+    constructor(address _evc, bool _isHarvestCoolDownCheckOn) Shared(_evc) {
+        isHarvestCoolDownCheckOn = _isHarvestCoolDownCheckOn;
+    }
 }
