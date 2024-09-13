@@ -73,10 +73,10 @@ abstract contract Shared is EVCUtil {
     function _gulp() internal {
         _updateInterestAccrued();
 
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
-
         // Do not gulp if total supply is too low
         if (_totalSupply() < Constants.MIN_SHARES_FOR_GULP) return;
+
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         uint256 toGulp = _totalAssetsAllocatable() - $.totalAssetsDeposited - $.interestLeft;
         if (toGulp == 0) return;
@@ -93,10 +93,11 @@ abstract contract Shared is EVCUtil {
 
     /// @dev update accrued interest.
     function _updateInterestAccrued() internal {
-        uint256 accruedInterest = _interestAccruedFromCache();
+        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+
+        uint256 accruedInterest = _interestAccruedFromCache($.interestLeft);
 
         if (accruedInterest > 0) {
-            YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
             // it's safe to down-cast because the accrued interest is a fraction of interest left
             $.interestLeft -= uint168(accruedInterest);
             $.lastInterestUpdate = uint40(block.timestamp);
@@ -110,13 +111,13 @@ abstract contract Shared is EVCUtil {
 
     /// @dev Get accrued interest without updating it.
     /// @return Accrued interest.
-    function _interestAccruedFromCache() internal view returns (uint256) {
+    function _interestAccruedFromCache(uint168 _interestLeft) internal view returns (uint256) {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         uint40 interestSmearEndCached = $.interestSmearEnd;
         // If distribution ended, full amount is accrued
         if (block.timestamp >= interestSmearEndCached) {
-            return $.interestLeft;
+            return _interestLeft;
         }
 
         uint40 lastInterestUpdateCached = $.lastInterestUpdate;
@@ -129,7 +130,7 @@ abstract contract Shared is EVCUtil {
         uint256 totalDuration = interestSmearEndCached - lastInterestUpdateCached;
         uint256 timePassed = block.timestamp - lastInterestUpdateCached;
 
-        return $.interestLeft * timePassed / totalDuration;
+        return _interestLeft * timePassed / totalDuration;
     }
 
     /// @dev Return total assets allocatable.

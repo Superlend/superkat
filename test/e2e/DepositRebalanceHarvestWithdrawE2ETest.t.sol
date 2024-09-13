@@ -69,14 +69,17 @@ contract DepositRebalanceHarvestWithdrawE2ETest is YieldAggregatorBase {
             uint256 aggregatorTotalSupplyBefore = eulerYieldAggregatorVault.totalSupply();
             uint256 user1AssetTSTBalanceBefore = assetTST.balanceOf(user1);
 
+            uint256 previewedShares = eulerYieldAggregatorVault.previewWithdraw(amountToWithdraw);
             vm.prank(user1);
-            eulerYieldAggregatorVault.withdraw(amountToWithdraw, user1, user1);
+            uint256 burnedShares = eulerYieldAggregatorVault.withdraw(amountToWithdraw, user1, user1);
 
             assertEq(eTST.balanceOf(address(eulerYieldAggregatorVault)), strategyShareBalanceBefore);
             assertEq(eulerYieldAggregatorVault.totalAssetsDeposited(), totalAssetsDepositedBefore - amountToWithdraw);
             assertEq(eulerYieldAggregatorVault.totalSupply(), aggregatorTotalSupplyBefore - amountToWithdraw);
             assertEq(assetTST.balanceOf(user1), user1AssetTSTBalanceBefore + amountToWithdraw);
             assertEq((eulerYieldAggregatorVault.getStrategy(address(eTST))).allocated, strategyBefore.allocated);
+
+            assertEq(burnedShares, previewedShares);
         }
 
         // full withdraw, will have to withdraw from strategy as cash reserve is not enough
@@ -86,14 +89,17 @@ contract DepositRebalanceHarvestWithdrawE2ETest is YieldAggregatorBase {
             uint256 aggregatorTotalSupplyBefore = eulerYieldAggregatorVault.totalSupply();
             uint256 user1AssetTSTBalanceBefore = assetTST.balanceOf(user1);
 
+            uint256 previewedShares = eulerYieldAggregatorVault.previewWithdraw(amountToWithdraw);
             vm.prank(user1);
-            eulerYieldAggregatorVault.withdraw(amountToWithdraw, user1, user1);
+            uint256 burnedShares = eulerYieldAggregatorVault.withdraw(amountToWithdraw, user1, user1);
 
             assertEq(eTST.balanceOf(address(eulerYieldAggregatorVault)), 0);
             assertEq(eulerYieldAggregatorVault.totalAssetsDeposited(), totalAssetsDepositedBefore - amountToWithdraw);
             assertEq(eulerYieldAggregatorVault.totalSupply(), aggregatorTotalSupplyBefore - amountToWithdraw);
             assertEq(assetTST.balanceOf(user1), user1AssetTSTBalanceBefore + amountToWithdraw);
             assertEq((eulerYieldAggregatorVault.getStrategy(address(eTST))).allocated, 0);
+
+            assertEq(previewedShares, burnedShares);
         }
     }
 
@@ -149,21 +155,24 @@ contract DepositRebalanceHarvestWithdrawE2ETest is YieldAggregatorBase {
 
         // full withdraw, will have to withdraw from strategy as cash reserve is not enough
         {
-            uint256 amountToWithdraw = eulerYieldAggregatorVault.balanceOf(user1);
+            uint256 amountToRedeem = eulerYieldAggregatorVault.balanceOf(user1);
             uint256 totalAssetsDepositedBefore = eulerYieldAggregatorVault.totalAssetsDeposited();
             uint256 aggregatorTotalSupplyBefore = eulerYieldAggregatorVault.totalSupply();
             uint256 user1AssetTSTBalanceBefore = assetTST.balanceOf(user1);
 
+            uint256 previewedAssets = eulerYieldAggregatorVault.previewRedeem(amountToRedeem);
             vm.prank(user1);
-            eulerYieldAggregatorVault.redeem(amountToWithdraw, user1, user1);
+            uint256 withdrawnAssets = eulerYieldAggregatorVault.redeem(amountToRedeem, user1, user1);
 
             assertEq(eTST.balanceOf(address(eulerYieldAggregatorVault)), yield);
-            assertEq(eulerYieldAggregatorVault.totalAssetsDeposited(), totalAssetsDepositedBefore - amountToWithdraw);
-            assertEq(eulerYieldAggregatorVault.totalSupply(), aggregatorTotalSupplyBefore - amountToWithdraw);
+            assertEq(eulerYieldAggregatorVault.totalAssetsDeposited(), totalAssetsDepositedBefore - amountToRedeem);
+            assertEq(eulerYieldAggregatorVault.totalSupply(), aggregatorTotalSupplyBefore - amountToRedeem);
             assertEq(
                 assetTST.balanceOf(user1),
-                user1AssetTSTBalanceBefore + eulerYieldAggregatorVault.convertToAssets(amountToWithdraw)
+                user1AssetTSTBalanceBefore + eulerYieldAggregatorVault.convertToAssets(amountToRedeem)
             );
+
+            assertEq(previewedAssets, withdrawnAssets);
         }
     }
 
@@ -272,21 +281,24 @@ contract DepositRebalanceHarvestWithdrawE2ETest is YieldAggregatorBase {
 
         // full withdraw, will have to withdraw from strategy as cash reserve is not enough
         {
-            uint256 amountToWithdraw = eulerYieldAggregatorVault.balanceOf(user1);
+            uint256 amountToRedeem = eulerYieldAggregatorVault.balanceOf(user1);
             uint256 totalAssetsDepositedBefore = eulerYieldAggregatorVault.totalAssetsDeposited();
             uint256 aggregatorTotalSupplyBefore = eulerYieldAggregatorVault.totalSupply();
             uint256 user1AssetTSTBalanceBefore = assetTST.balanceOf(user1);
 
+            uint256 previewedAssets = eulerYieldAggregatorVault.previewRedeem(amountToRedeem);
             vm.prank(user1);
-            eulerYieldAggregatorVault.redeem(amountToWithdraw, user1, user1);
+            uint256 withdrawnAssets = eulerYieldAggregatorVault.redeem(amountToRedeem, user1, user1);
 
             assertEq(eTST.balanceOf(address(eulerYieldAggregatorVault)), 0);
-            assertEq(eulerYieldAggregatorVault.totalAssetsDeposited(), totalAssetsDepositedBefore - amountToWithdraw);
-            assertEq(eulerYieldAggregatorVault.totalSupply(), aggregatorTotalSupplyBefore - amountToWithdraw);
+            assertEq(eulerYieldAggregatorVault.totalAssetsDeposited(), totalAssetsDepositedBefore - amountToRedeem);
+            assertEq(eulerYieldAggregatorVault.totalSupply(), aggregatorTotalSupplyBefore - amountToRedeem);
             assertEq(
                 assetTST.balanceOf(user1),
-                user1AssetTSTBalanceBefore + eulerYieldAggregatorVault.convertToAssets(amountToWithdraw)
+                user1AssetTSTBalanceBefore + eulerYieldAggregatorVault.convertToAssets(amountToRedeem)
             );
+
+            assertEq(previewedAssets, withdrawnAssets);
         }
     }
 
@@ -347,21 +359,24 @@ contract DepositRebalanceHarvestWithdrawE2ETest is YieldAggregatorBase {
 
         // full withdraw, will have to withdraw from strategy as cash reserve is not enough
         {
-            uint256 amountToWithdraw = eulerYieldAggregatorVault.balanceOf(user1);
+            uint256 amountToRedeem = eulerYieldAggregatorVault.balanceOf(user1);
             uint256 totalAssetsDepositedBefore = eulerYieldAggregatorVault.totalAssetsDeposited();
             uint256 aggregatorTotalSupplyBefore = eulerYieldAggregatorVault.totalSupply();
             uint256 user1AssetTSTBalanceBefore = assetTST.balanceOf(user1);
 
+            uint256 previewedAssets = eulerYieldAggregatorVault.previewRedeem(amountToRedeem);
             vm.prank(user1);
-            eulerYieldAggregatorVault.redeem(amountToWithdraw, user1, user1);
+            uint256 withdrawnAssets = eulerYieldAggregatorVault.redeem(amountToRedeem, user1, user1);
 
             // all yield is distributed
             assertApproxEqAbs(eTST.balanceOf(address(eulerYieldAggregatorVault)), 0, 1);
             assertApproxEqAbs(
-                eulerYieldAggregatorVault.totalAssetsDeposited(), totalAssetsDepositedBefore - amountToWithdraw, 1
+                eulerYieldAggregatorVault.totalAssetsDeposited(), totalAssetsDepositedBefore - amountToRedeem, 1
             );
-            assertEq(eulerYieldAggregatorVault.totalSupply(), aggregatorTotalSupplyBefore - amountToWithdraw);
+            assertEq(eulerYieldAggregatorVault.totalSupply(), aggregatorTotalSupplyBefore - amountToRedeem);
             assertApproxEqAbs(assetTST.balanceOf(user1), user1AssetTSTBalanceBefore + amountToDeposit + yield, 1);
+
+            assertEq(previewedAssets, withdrawnAssets);
         }
     }
 
@@ -480,24 +495,27 @@ contract DepositRebalanceHarvestWithdrawE2ETest is YieldAggregatorBase {
 
         // full withdraw, will have to withdraw from strategy as cash reserve is not enough
         {
-            uint256 amountToWithdraw = eulerYieldAggregatorVault.balanceOf(user1);
+            uint256 amountToRedeem = eulerYieldAggregatorVault.balanceOf(user1);
             uint256 totalAssetsDepositedBefore = eulerYieldAggregatorVault.totalAssetsDeposited();
             uint256 aggregatorTotalSupplyBefore = eulerYieldAggregatorVault.totalSupply();
             uint256 user1AssetTSTBalanceBefore = assetTST.balanceOf(user1);
 
+            uint256 previewedAssets = eulerYieldAggregatorVault.previewRedeem(amountToRedeem);
             vm.prank(user1);
-            eulerYieldAggregatorVault.redeem(amountToWithdraw, user1, user1);
+            uint256 withdrawnAssets = eulerYieldAggregatorVault.redeem(amountToRedeem, user1, user1);
 
             assertApproxEqAbs(eTST.balanceOf(address(eulerYieldAggregatorVault)), 0, 0);
             assertApproxEqAbs(
-                eulerYieldAggregatorVault.totalAssetsDeposited(), totalAssetsDepositedBefore - amountToWithdraw, 1
+                eulerYieldAggregatorVault.totalAssetsDeposited(), totalAssetsDepositedBefore - amountToRedeem, 1
             );
-            assertEq(eulerYieldAggregatorVault.totalSupply(), aggregatorTotalSupplyBefore - amountToWithdraw);
+            assertEq(eulerYieldAggregatorVault.totalSupply(), aggregatorTotalSupplyBefore - amountToRedeem);
             assertApproxEqAbs(
                 assetTST.balanceOf(user1),
                 user1AssetTSTBalanceBefore + amountToDeposit + eTSTYield + eTSTsecondaryYield,
                 1
             );
+
+            assertEq(previewedAssets, withdrawnAssets);
         }
     }
 
@@ -562,6 +580,9 @@ contract DepositRebalanceHarvestWithdrawE2ETest is YieldAggregatorBase {
         );
 
         uint256 amountToRedeem = eulerYieldAggregatorVault.balanceOf(user1);
+        uint256 previewedShares = eulerYieldAggregatorVault.previewWithdraw(amountToDeposit);
+        assertEq(amountToRedeem, previewedShares);
+
         vm.prank(user1);
         vm.expectRevert(ErrorsLib.NotEnoughAssets.selector);
         eulerYieldAggregatorVault.redeem(amountToRedeem, user1, user1);
