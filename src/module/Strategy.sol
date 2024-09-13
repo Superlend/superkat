@@ -84,6 +84,8 @@ abstract contract StrategyModule is Shared {
         } else if (strategyCached.status == IYieldAggregator.StrategyStatus.Active) {
             $.strategies[_strategy].status = IYieldAggregator.StrategyStatus.Emergency;
 
+            _updateInterestAccrued();
+
             // we should deduct loss before decrease totalAllocated to not underflow
             _deductLoss(strategyCached.allocated);
 
