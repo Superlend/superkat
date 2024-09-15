@@ -204,7 +204,7 @@ abstract contract Shared is EVCUtil {
     function _nonReentrantBefore() private {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
-        if ($.locked == Constants.REENTRANCYLOCK__LOCKED) revert Errors.Reentrancy();
+        require($.locked != Constants.REENTRANCYLOCK__LOCKED, Errors.Reentrancy());
 
         $.locked = Constants.REENTRANCYLOCK__LOCKED;
     }
@@ -222,9 +222,7 @@ abstract contract Shared is EVCUtil {
 
         if ($.locked == Constants.REENTRANCYLOCK__LOCKED) {
             // The hook target is allowed to bypass the RO-reentrancy lock.
-            if (msg.sender != $.hooksTarget && msg.sender != address(this)) {
-                revert Errors.ViewReentrancy();
-            }
+            require(msg.sender == $.hooksTarget || msg.sender == address(this), Errors.ViewReentrancy());
         }
     }
 

@@ -61,7 +61,7 @@ contract YieldAggregator is Dispatch, AccessControlEnumerableUpgradeable, IYield
         __EIP712_init_unchained(_initParams.name, "1");
         __AccessControlEnumerable_init_unchained();
 
-        if (_initParams.initialCashAllocationPoints == 0) revert Errors.InitialAllocationPointsZero();
+        require(_initParams.initialCashAllocationPoints != 0, Errors.InitialAllocationPointsZero());
 
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
         $.locked = Constants.REENTRANCYLOCK__UNLOCKED;

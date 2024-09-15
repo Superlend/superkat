@@ -28,12 +28,10 @@ abstract contract StrategyModule is Shared {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
         IYieldAggregator.Strategy memory strategyDataCache = $.strategies[_strategy];
 
-        if (strategyDataCache.status != IYieldAggregator.StrategyStatus.Active) {
-            revert Errors.StrategyShouldBeActive();
-        }
+        require(strategyDataCache.status == IYieldAggregator.StrategyStatus.Active, Errors.StrategyShouldBeActive());
 
-        if (_strategy == Constants.CASH_RESERVE && _newPoints == 0) {
-            revert Errors.InvalidAllocationPoints();
+        if (_strategy == Constants.CASH_RESERVE) {
+            require(_newPoints != 0, Errors.InvalidAllocationPoints());
         }
 
         $.strategies[_strategy].allocationPoints = _newPoints.toUint96();
@@ -49,18 +47,15 @@ abstract contract StrategyModule is Shared {
     function setStrategyCap(address _strategy, uint16 _cap) public virtual nonReentrant {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
-        if ($.strategies[_strategy].status != IYieldAggregator.StrategyStatus.Active) {
-            revert Errors.StrategyShouldBeActive();
-        }
-
-        if (_strategy == Constants.CASH_RESERVE) {
-            revert Errors.NoCapOnCashReserveStrategy();
-        }
+        require(
+            $.strategies[_strategy].status == IYieldAggregator.StrategyStatus.Active, Errors.StrategyShouldBeActive()
+        );
+        require(_strategy != Constants.CASH_RESERVE, Errors.NoCapOnCashReserveStrategy());
 
         AmountCap strategyCap = AmountCap.wrap(_cap);
         // The raw uint16 cap amount == 0 is a special value. See comments in AmountCapLib.sol
         // Max cap is max amount that can be allocated into strategy (max uint120).
-        if (_cap != 0 && strategyCap.resolve() > Constants.MAX_CAP_AMOUNT) revert Errors.StrategyCapExceedMax();
+        if (_cap != 0) require(strategyCap.resolve() <= Constants.MAX_CAP_AMOUNT, Errors.StrategyCapExceedMax());
 
         $.strategies[_strategy].cap = strategyCap;
 
@@ -74,14 +69,14 @@ abstract contract StrategyModule is Shared {
     ///      In the case of switching a strategy from Emergency to Active again, the max withdrawable amount from the strategy
     ///      will be set as the allocated amount, and will be immediately available to gulp.
     function toggleStrategyEmergencyStatus(address _strategy) public virtual nonReentrant {
-        if (_strategy == Constants.CASH_RESERVE) revert Errors.CanNotToggleStrategyEmergencyStatus();
+        require(_strategy != Constants.CASH_RESERVE, Errors.CanNotToggleStrategyEmergencyStatus());
 
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
         IYieldAggregator.Strategy memory strategyCached = $.strategies[_strategy];
 
-        if (strategyCached.status == IYieldAggregator.StrategyStatus.Inactive) {
-            revert Errors.InactiveStrategy();
-        } else if (strategyCached.status == IYieldAggregator.StrategyStatus.Active) {
+        require(strategyCached.status != IYieldAggregator.StrategyStatus.Inactive, Errors.InactiveStrategy());
+
+        if (strategyCached.status == IYieldAggregator.StrategyStatus.Active) {
             $.strategies[_strategy].status = IYieldAggregator.StrategyStatus.Emergency;
 
             _updateInterestAccrued();
@@ -116,17 +111,12 @@ abstract contract StrategyModule is Shared {
     function addStrategy(address _strategy, uint256 _allocationPoints) public virtual nonReentrant {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
-        if ($.withdrawalQueue.length == Constants.MAX_STRATEGIES) revert Errors.MaxStrategiesExceeded();
-
-        if ($.strategies[_strategy].status != IYieldAggregator.StrategyStatus.Inactive) {
-            revert Errors.StrategyAlreadyExist();
-        }
-
-        if (IERC4626(_strategy).asset() != _asset()) {
-            revert Errors.InvalidStrategyAsset();
-        }
-
-        if (_allocationPoints == 0) revert Errors.InvalidAllocationPoints();
+        require($.withdrawalQueue.length < Constants.MAX_STRATEGIES, Errors.MaxStrategiesExceeded());
+        require(
+            $.strategies[_strategy].status == IYieldAggregator.StrategyStatus.Inactive, Errors.StrategyAlreadyExist()
+        );
+        require(IERC4626(_strategy).asset() == _asset(), Errors.InvalidStrategyAsset());
+        require(_allocationPoints != 0, Errors.InvalidAllocationPoints());
 
         _callHooksTarget(Constants.ADD_STRATEGY, _msgSender());
 
@@ -148,16 +138,13 @@ abstract contract StrategyModule is Shared {
     ///      should be set as `EMERGENCY` using `toggleStrategyEmergencyStatus()`.
     /// @param _strategy Address of the strategy to remove.
     function removeStrategy(address _strategy) public virtual nonReentrant {
-        if (_strategy == Constants.CASH_RESERVE) revert Errors.CanNotRemoveCashReserve();
+        require(_strategy != Constants.CASH_RESERVE, Errors.CanNotRemoveCashReserve());
 
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
         IYieldAggregator.Strategy storage strategyStorage = $.strategies[_strategy];
 
-        if (strategyStorage.status != IYieldAggregator.StrategyStatus.Active) {
-            revert Errors.StrategyShouldBeActive();
-        }
-
-        if (strategyStorage.allocated > 0) revert Errors.CanNotRemoveStrategyWithAllocatedAmount();
+        require(strategyStorage.status == IYieldAggregator.StrategyStatus.Active, Errors.StrategyShouldBeActive());
+        require(strategyStorage.allocated == 0, Errors.CanNotRemoveStrategyWithAllocatedAmount());
 
         _callHooksTarget(Constants.REMOVE_STRATEGY, _msgSender());
 
