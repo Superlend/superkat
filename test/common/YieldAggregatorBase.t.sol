@@ -136,7 +136,14 @@ contract YieldAggregatorBase is EVaultTestBase {
         assertEq(yieldAggregatorVaultsList.length, 1);
         assertEq(address(yieldAggregatorVaultsList[0]), address(eulerYieldAggregatorVault));
         assertEq(eulerYieldAggregatorVault.decimals(), assetTST.decimals());
+
         assertEq(address(eulerYieldAggregatorVault.EVC()), address(evc));
+        assertEq(eulerYieldAggregatorVault.yieldAggregatorVaultModule(), deploymentParams.yieldAggregatorVaultModule);
+        assertEq(eulerYieldAggregatorVault.rewardsModule(), deploymentParams.rewardsModule);
+        assertEq(eulerYieldAggregatorVault.hooksModule(), deploymentParams.hooksModule);
+        assertEq(eulerYieldAggregatorVault.feeModule(), deploymentParams.feeModule);
+        assertEq(eulerYieldAggregatorVault.strategyModule(), deploymentParams.strategyModule);
+        assertEq(eulerYieldAggregatorVault.withdrawalQueueModule(), deploymentParams.withdrawalQueueModule);
         assertEq(eulerYieldAggregatorVault.isHarvestCoolDownCheckOn(), true);
     }
 
