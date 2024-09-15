@@ -12,18 +12,15 @@ import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 contract YieldAggregatorFactory {
     error InvalidQuery();
 
-    /// core dependencies
-    address public immutable balanceTracker;
-    /// yield aggregator implementation address
+    /// @dev yield aggregator implementation address
     address public immutable yieldAggregatorImpl;
-
+    /// @dev Array for deployed yield aggreagtor addresses.
     address[] public yieldAggregatorVaults;
 
     event DeployYieldAggregator(address indexed _owner, address _yieldAggregatorVault, address indexed _asset);
 
     /// @dev Constructor.
-    constructor(address _balanceTracker, address _yieldAggregatorImpl) {
-        balanceTracker = _balanceTracker;
+    constructor(address _yieldAggregatorImpl) {
         yieldAggregatorImpl = _yieldAggregatorImpl;
     }
 
@@ -44,7 +41,6 @@ contract YieldAggregatorFactory {
         IYieldAggregator.InitParams memory yieldAggregatorVaultInitParams = IYieldAggregator.InitParams({
             yieldAggregatorVaultOwner: msg.sender,
             asset: _asset,
-            balanceTracker: balanceTracker,
             name: _name,
             symbol: _symbol,
             initialCashAllocationPoints: _initialCashAllocationPoints

@@ -29,7 +29,7 @@ contract YieldAggregatorBase is EVaultTestBase {
     address user2;
     address manager;
 
-    Shared.IntegrationParams integrationParams;
+    Shared.IntegrationsParams integrationsParams;
     IYieldAggregator.DeploymentParams deploymentParams;
 
     // core modules
@@ -53,14 +53,15 @@ contract YieldAggregatorBase is EVaultTestBase {
         manager = makeAddr("Manager");
 
         vm.startPrank(deployer);
-        integrationParams = Shared.IntegrationParams({evc: address(evc), isHarvestCoolDownCheckOn: true});
+        integrationsParams =
+            Shared.IntegrationsParams({evc: address(evc), balanceTracker: address(0), isHarvestCoolDownCheckOn: true});
 
-        yieldAggregatorVaultModule = new YieldAggregatorVault(integrationParams);
-        rewardsModule = new Rewards(integrationParams);
-        hooksModule = new Hooks(integrationParams);
-        feeModule = new Fee(integrationParams);
-        strategyModule = new Strategy(integrationParams);
-        withdrawalQueueModule = new WithdrawalQueue(integrationParams);
+        yieldAggregatorVaultModule = new YieldAggregatorVault(integrationsParams);
+        rewardsModule = new Rewards(integrationsParams);
+        hooksModule = new Hooks(integrationsParams);
+        feeModule = new Fee(integrationsParams);
+        strategyModule = new Strategy(integrationsParams);
+        withdrawalQueueModule = new WithdrawalQueue(integrationsParams);
 
         deploymentParams = IYieldAggregator.DeploymentParams({
             yieldAggregatorVaultModule: address(yieldAggregatorVaultModule),
@@ -70,9 +71,9 @@ contract YieldAggregatorBase is EVaultTestBase {
             strategyModule: address(strategyModule),
             withdrawalQueueModule: address(withdrawalQueueModule)
         });
-        yieldAggregatorImpl = address(new YieldAggregator(integrationParams, deploymentParams));
+        yieldAggregatorImpl = address(new YieldAggregator(integrationsParams, deploymentParams));
 
-        eulerYieldAggregatorVaultFactory = new YieldAggregatorFactory(address(0), yieldAggregatorImpl);
+        eulerYieldAggregatorVaultFactory = new YieldAggregatorFactory(yieldAggregatorImpl);
         eulerYieldAggregatorVault = YieldAggregator(
             eulerYieldAggregatorVaultFactory.deployYieldAggregator(
                 address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS
@@ -136,6 +137,7 @@ contract YieldAggregatorBase is EVaultTestBase {
         assertEq(address(yieldAggregatorVaultsList[0]), address(eulerYieldAggregatorVault));
         assertEq(eulerYieldAggregatorVault.decimals(), assetTST.decimals());
         assertEq(address(eulerYieldAggregatorVault.EVC()), address(evc));
+        assertEq(eulerYieldAggregatorVault.isHarvestCoolDownCheckOn(), true);
     }
 
     function testDeployYieldAggregatorWithInvalidInitialCashAllocationPoints() public {

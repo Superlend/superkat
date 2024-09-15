@@ -43,5 +43,5 @@ abstract contract WithdrawalQueueModule is Shared {
 }
 
 contract WithdrawalQueue is WithdrawalQueueModule {
-    constructor(IntegrationParams memory _integrationParams) Shared(_integrationParams) {}
+    constructor(IntegrationsParams memory _integrationsParams) Shared(_integrationsParams) {}
 }

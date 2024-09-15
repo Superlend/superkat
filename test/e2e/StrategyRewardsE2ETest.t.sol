@@ -69,14 +69,18 @@ contract StrategyRewardsE2ETest is YieldAggregatorBase {
         manager = makeAddr("Manager");
 
         vm.startPrank(deployer);
-        integrationParams = Shared.IntegrationParams({evc: address(evc), isHarvestCoolDownCheckOn: true});
+        integrationsParams = Shared.IntegrationsParams({
+            evc: address(evc),
+            balanceTracker: balanceTracker,
+            isHarvestCoolDownCheckOn: true
+        });
 
-        yieldAggregatorVaultModule = new YieldAggregatorVault(integrationParams);
-        rewardsModule = new Rewards(integrationParams);
-        hooksModule = new Hooks(integrationParams);
-        feeModule = new Fee(integrationParams);
-        strategyModule = new Strategy(integrationParams);
-        withdrawalQueueModule = new WithdrawalQueue(integrationParams);
+        yieldAggregatorVaultModule = new YieldAggregatorVault(integrationsParams);
+        rewardsModule = new Rewards(integrationsParams);
+        hooksModule = new Hooks(integrationsParams);
+        feeModule = new Fee(integrationsParams);
+        strategyModule = new Strategy(integrationsParams);
+        withdrawalQueueModule = new WithdrawalQueue(integrationsParams);
 
         deploymentParams = IYieldAggregator.DeploymentParams({
             yieldAggregatorVaultModule: address(yieldAggregatorVaultModule),
@@ -86,9 +90,9 @@ contract StrategyRewardsE2ETest is YieldAggregatorBase {
             strategyModule: address(strategyModule),
             withdrawalQueueModule: address(withdrawalQueueModule)
         });
-        yieldAggregatorImpl = address(new YieldAggregator(integrationParams, deploymentParams));
+        yieldAggregatorImpl = address(new YieldAggregator(integrationsParams, deploymentParams));
 
-        eulerYieldAggregatorVaultFactory = new YieldAggregatorFactory(balanceTracker, yieldAggregatorImpl);
+        eulerYieldAggregatorVaultFactory = new YieldAggregatorFactory(yieldAggregatorImpl);
         eulerYieldAggregatorVault = YieldAggregator(
             eulerYieldAggregatorVaultFactory.deployYieldAggregator(
                 address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS
@@ -124,6 +128,10 @@ contract StrategyRewardsE2ETest is YieldAggregatorBase {
         nonActiveStrategy = IEVault(
             factory.createProxy(address(0), true, abi.encodePacked(address(assetTST), address(oracle), unitOfAccount))
         );
+    }
+
+    function testBalanceForwarderrAddress_Integrity() public view {
+        assertEq(eulerYieldAggregatorVault.balanceTrackerAddress(), balanceTracker);
     }
 
     function testOptInStrategyRewards() public {

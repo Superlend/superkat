@@ -46,5 +46,5 @@ abstract contract HooksModule is Shared {
 }
 
 contract Hooks is HooksModule {
-    constructor(IntegrationParams memory _integrationParams) Shared(_integrationParams) {}
+    constructor(IntegrationsParams memory _integrationsParams) Shared(_integrationsParams) {}
 }

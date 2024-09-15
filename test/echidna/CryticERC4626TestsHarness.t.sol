@@ -33,7 +33,7 @@ contract CryticERC4626TestsHarness is
     uint256 public constant CASH_RESERVE_ALLOCATION_POINTS = 1000e18;
 
     EthereumVaultConnector public evc;
-    Shared.IntegrationParams integrationParams;
+    Shared.IntegrationsParams integrationsParams;
     IYieldAggregator.DeploymentParams deploymentParams;
     address factoryDeployer;
 
@@ -51,14 +51,15 @@ contract CryticERC4626TestsHarness is
     constructor() {
         evc = new EthereumVaultConnector();
 
-        integrationParams = Shared.IntegrationParams({evc: address(evc), isHarvestCoolDownCheckOn: true});
+        integrationsParams =
+            Shared.IntegrationsParams({evc: address(evc), balanceTracker: address(0), isHarvestCoolDownCheckOn: true});
 
-        yieldAggregatorVaultModule = new YieldAggregatorVault(integrationParams);
-        rewardsModule = new Rewards(integrationParams);
-        hooksModule = new Hooks(integrationParams);
-        feeModule = new Fee(integrationParams);
-        strategyModule = new Strategy(integrationParams);
-        withdrawalQueueModule = new WithdrawalQueue(integrationParams);
+        yieldAggregatorVaultModule = new YieldAggregatorVault(integrationsParams);
+        rewardsModule = new Rewards(integrationsParams);
+        hooksModule = new Hooks(integrationsParams);
+        feeModule = new Fee(integrationsParams);
+        strategyModule = new Strategy(integrationsParams);
+        withdrawalQueueModule = new WithdrawalQueue(integrationsParams);
 
         deploymentParams = IYieldAggregator.DeploymentParams({
             yieldAggregatorVaultModule: address(yieldAggregatorVaultModule),
@@ -68,9 +69,9 @@ contract CryticERC4626TestsHarness is
             strategyModule: address(strategyModule),
             withdrawalQueueModule: address(withdrawalQueueModule)
         });
-        address yieldAggregatorImpl = address(new YieldAggregator(integrationParams, deploymentParams));
+        address yieldAggregatorImpl = address(new YieldAggregator(integrationsParams, deploymentParams));
 
-        eulerYieldAggregatorVaultFactory = new YieldAggregatorFactory(address(0), yieldAggregatorImpl);
+        eulerYieldAggregatorVaultFactory = new YieldAggregatorFactory(yieldAggregatorImpl);
 
         TestERC20Token _asset = new TestERC20Token("Test Token", "TT", 18);
         address _vault = eulerYieldAggregatorVaultFactory.deployYieldAggregator(

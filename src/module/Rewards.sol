@@ -108,9 +108,7 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
     /// @notice Retrieve the address of rewards contract, tracking changes in account's balances.
     /// @return The balance tracker address.
     function balanceTrackerAddress() public view virtual nonReentrantView returns (address) {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
-
-        return address($.balanceTracker);
+        return balanceTracker;
     }
 
     /// @notice Retrieves boolean indicating if the account opted in to forward balance changes to the rewards contract.
@@ -123,13 +121,12 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
     /// @dev Enables balance forwarding for the authenticated account.
     function _enableBalanceForwarder(address _sender, uint256 _senderBalance) internal {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
-        IBalanceTracker balanceTrackerCached = IBalanceTracker($.balanceTracker);
 
-        if (address(balanceTrackerCached) == address(0)) revert Errors.YieldAggregatorRewardsNotSupported();
+        if (balanceTracker == address(0)) revert Errors.YieldAggregatorRewardsNotSupported();
         bool wasBalanceForwarderEnabled = $.isBalanceForwarderEnabled[_sender];
 
         $.isBalanceForwarderEnabled[_sender] = true;
-        balanceTrackerCached.balanceTrackerHook(_sender, _senderBalance, false);
+        IBalanceTracker(balanceTracker).balanceTrackerHook(_sender, _senderBalance, false);
 
         if (!wasBalanceForwarderEnabled) emit Events.EnableBalanceForwarder(_sender);
     }
@@ -139,19 +136,18 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
     /// @dev Should call the IBalanceTracker hook with the account's balance of 0.
     function _disableBalanceForwarder(address _sender) internal {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
-        IBalanceTracker balanceTrackerCached = IBalanceTracker($.balanceTracker);
 
-        if (address(balanceTrackerCached) == address(0)) revert Errors.YieldAggregatorRewardsNotSupported();
+        if (balanceTracker == address(0)) revert Errors.YieldAggregatorRewardsNotSupported();
 
         bool wasBalanceForwarderEnabled = $.isBalanceForwarderEnabled[_sender];
 
         $.isBalanceForwarderEnabled[_sender] = false;
-        balanceTrackerCached.balanceTrackerHook(_sender, 0, false);
+        IBalanceTracker(balanceTracker).balanceTrackerHook(_sender, 0, false);
 
         if (wasBalanceForwarderEnabled) emit Events.DisableBalanceForwarder(_sender);
     }
 }
 
 contract Rewards is RewardsModule {
-    constructor(IntegrationParams memory _integrationParams) Shared(_integrationParams) {}
+    constructor(IntegrationsParams memory _integrationsParams) Shared(_integrationsParams) {}
 }

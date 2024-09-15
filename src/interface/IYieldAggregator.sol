@@ -21,7 +21,6 @@ interface IYieldAggregator {
     struct InitParams {
         address yieldAggregatorVaultOwner;
         address asset;
-        address balanceTracker;
         string name;
         string symbol;
         uint256 initialCashAllocationPoints;

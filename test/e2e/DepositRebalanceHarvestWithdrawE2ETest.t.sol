@@ -15,6 +15,10 @@ contract DepositRebalanceHarvestWithdrawE2ETest is YieldAggregatorBase {
         assetTST.mint(user1, user1InitialBalance);
     }
 
+    function testBalanceForwarderrAddress_Integrity() public view {
+        assertEq(eulerYieldAggregatorVault.balanceTrackerAddress(), address(0));
+    }
+
     function testSingleStrategy_NoYield() public {
         uint256 amountToDeposit = 10000e18;
 

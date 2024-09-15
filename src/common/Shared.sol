@@ -33,20 +33,22 @@ abstract contract Shared is EVCUtil {
         _;
     }
 
+    /// @dev Address of balance tracker contract for reward streams integration.
+    address internal immutable balanceTracker;
     /// @dev A boolean to whether execute the harvest cooldown period check or not.
     ///      This is meant to be set to `False` when deploying on L2 to explicitly harvest on every withdraw/redeem.
     bool public immutable isHarvestCoolDownCheckOn;
 
-    /// @title Integrations
-    struct IntegrationParams {
+    /// @dev Integrations
+    struct IntegrationsParams {
         address evc;
+        address balanceTracker;
         bool isHarvestCoolDownCheckOn;
     }
-    // Address of the contract which is called when user balances change
-    // address balanceTracker;
 
-    constructor(IntegrationParams memory _integrationParams) EVCUtil(_integrationParams.evc) {
-        isHarvestCoolDownCheckOn = _integrationParams.isHarvestCoolDownCheckOn;
+    constructor(IntegrationsParams memory _integrationsParams) EVCUtil(_integrationsParams.evc) {
+        balanceTracker = _integrationsParams.balanceTracker;
+        isHarvestCoolDownCheckOn = _integrationsParams.isHarvestCoolDownCheckOn;
     }
 
     /// @dev Deduct _lossAmount from the not-distributed amount, if not enough, socialize loss.
@@ -177,14 +179,6 @@ abstract contract Shared is EVCUtil {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         return $.isBalanceForwarderEnabled[_account];
-    }
-
-    /// @dev Retrieve the address of rewards contract, tracking changes in account's balances.
-    /// @return The balance tracker address.
-    function _balanceTrackerAddress() internal view returns (address) {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
-
-        return address($.balanceTracker);
     }
 
     /// @dev Read `_balances` from storage.

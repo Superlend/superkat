@@ -19,8 +19,30 @@ contract BalanceForwarderTest is YieldAggregatorBase {
 
         vm.startPrank(deployer);
         balanceTracker = address(new MockBalanceTracker());
+        integrationsParams = Shared.IntegrationsParams({
+            evc: address(evc),
+            balanceTracker: balanceTracker,
+            isHarvestCoolDownCheckOn: true
+        });
 
-        eulerYieldAggregatorVaultFactory = new YieldAggregatorFactory(balanceTracker, yieldAggregatorImpl);
+        yieldAggregatorVaultModule = new YieldAggregatorVault(integrationsParams);
+        rewardsModule = new Rewards(integrationsParams);
+        hooksModule = new Hooks(integrationsParams);
+        feeModule = new Fee(integrationsParams);
+        strategyModule = new Strategy(integrationsParams);
+        withdrawalQueueModule = new WithdrawalQueue(integrationsParams);
+
+        deploymentParams = IYieldAggregator.DeploymentParams({
+            yieldAggregatorVaultModule: address(yieldAggregatorVaultModule),
+            rewardsModule: address(rewardsModule),
+            hooksModule: address(hooksModule),
+            feeModule: address(feeModule),
+            strategyModule: address(strategyModule),
+            withdrawalQueueModule: address(withdrawalQueueModule)
+        });
+        yieldAggregatorImpl = address(new YieldAggregator(integrationsParams, deploymentParams));
+
+        eulerYieldAggregatorVaultFactory = new YieldAggregatorFactory(yieldAggregatorImpl);
 
         eulerYieldAggregatorVault = YieldAggregator(
             eulerYieldAggregatorVaultFactory.deployYieldAggregator(

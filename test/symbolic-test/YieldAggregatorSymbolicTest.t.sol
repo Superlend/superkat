@@ -71,14 +71,15 @@ contract YieldAggregatorSymbolicTest is YieldAggregatorBase, SymTest {
         manager = address(0x7);
 
         vm.startPrank(deployer);
-        integrationParams = Shared.IntegrationParams({evc: address(evc), isHarvestCoolDownCheckOn: true});
+        integrationsParams =
+            Shared.IntegrationsParams({evc: address(evc), balanceTracker: address(0), isHarvestCoolDownCheckOn: true});
 
-        yieldAggregatorVaultModule = new YieldAggregatorVault(integrationParams);
-        rewardsModule = new Rewards(integrationParams);
-        hooksModule = new Hooks(integrationParams);
-        feeModule = new Fee(integrationParams);
-        strategyModule = new Strategy(integrationParams);
-        withdrawalQueueModule = new WithdrawalQueue(integrationParams);
+        yieldAggregatorVaultModule = new YieldAggregatorVault(integrationsParams);
+        rewardsModule = new Rewards(integrationsParams);
+        hooksModule = new Hooks(integrationsParams);
+        feeModule = new Fee(integrationsParams);
+        strategyModule = new Strategy(integrationsParams);
+        withdrawalQueueModule = new WithdrawalQueue(integrationsParams);
 
         deploymentParams = IYieldAggregator.DeploymentParams({
             yieldAggregatorVaultModule: address(yieldAggregatorVaultModule),
@@ -88,9 +89,9 @@ contract YieldAggregatorSymbolicTest is YieldAggregatorBase, SymTest {
             strategyModule: address(strategyModule),
             withdrawalQueueModule: address(withdrawalQueueModule)
         });
-        yieldAggregatorImpl = address(new YieldAggregator(integrationParams, deploymentParams));
+        yieldAggregatorImpl = address(new YieldAggregator(integrationsParams, deploymentParams));
 
-        eulerYieldAggregatorVaultFactory = new YieldAggregatorFactory(address(0), yieldAggregatorImpl);
+        eulerYieldAggregatorVaultFactory = new YieldAggregatorFactory(yieldAggregatorImpl);
 
         uint256 initialCashReservePointsAllocation = svm.createUint256("initialCashReservePointsAllocation");
         vm.assume(initialCashReservePointsAllocation > 0 && initialCashReservePointsAllocation <= type(uint120).max);

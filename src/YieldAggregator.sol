@@ -37,8 +37,11 @@ contract YieldAggregator is Dispatch, AccessControlEnumerableUpgradeable, IYield
     using SafeCast for uint256;
 
     /// @dev Constructor.
-    constructor(IntegrationParams memory _integrationParams, IYieldAggregator.DeploymentParams memory _deploymentParams)
-        Shared(_integrationParams)
+    constructor(
+        IntegrationsParams memory _integrationsParams,
+        IYieldAggregator.DeploymentParams memory _deploymentParams
+    )
+        Shared(_integrationsParams)
         Dispatch(
             _deploymentParams.yieldAggregatorVaultModule,
             _deploymentParams.rewardsModule,
@@ -62,7 +65,6 @@ contract YieldAggregator is Dispatch, AccessControlEnumerableUpgradeable, IYield
 
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
         $.locked = Constants.REENTRANCYLOCK__UNLOCKED;
-        $.balanceTracker = _initParams.balanceTracker;
         $.strategies[address(0)] = IYieldAggregator.Strategy({
             allocated: 0,
             allocationPoints: _initParams.initialCashAllocationPoints.toUint96(),

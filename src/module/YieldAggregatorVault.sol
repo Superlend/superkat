@@ -551,14 +551,12 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
 
         if (_from == _to) return;
 
-        IBalanceTracker balanceTracker = IBalanceTracker(_balanceTrackerAddress());
-
         if ((_from != address(0)) && (_balanceForwarderEnabled(_from))) {
-            balanceTracker.balanceTrackerHook(_from, _balanceOf(_from), false);
+            IBalanceTracker(balanceTracker).balanceTrackerHook(_from, _balanceOf(_from), false);
         }
 
         if ((_to != address(0)) && (_balanceForwarderEnabled(_to))) {
-            balanceTracker.balanceTrackerHook(_to, _balanceOf(_to), false);
+            IBalanceTracker(balanceTracker).balanceTrackerHook(_to, _balanceOf(_to), false);
         }
     }
 
@@ -898,5 +896,5 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
 }
 
 contract YieldAggregatorVault is YieldAggregatorVaultModule {
-    constructor(IntegrationParams memory _integrationParams) Shared(_integrationParams) {}
+    constructor(IntegrationsParams memory _integrationsParams) Shared(_integrationsParams) {}
 }
