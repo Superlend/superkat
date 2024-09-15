@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
 // contracts
 import "evk/test/unit/evault/EVaultTestBase.t.sol";
-import {YieldAggregator, IYieldAggregator} from "../../src/YieldAggregator.sol";
+import {YieldAggregator, IYieldAggregator, Shared} from "../../src/YieldAggregator.sol";
 import {YieldAggregatorVault} from "../../src/module/YieldAggregatorVault.sol";
 import {Hooks, HooksModule} from "../../src/module/Hooks.sol";
 import {Rewards} from "../../src/module/Rewards.sol";
@@ -29,14 +29,18 @@ contract YieldAggregatorBase is EVaultTestBase {
     address user2;
     address manager;
 
+    Shared.IntegrationParams integrationParams;
+    IYieldAggregator.DeploymentParams deploymentParams;
+
     // core modules
     YieldAggregatorVault yieldAggregatorVaultModule;
     Rewards rewardsModule;
     Hooks hooksModule;
-    Fee feeModuleModule;
-    Strategy strategyModuleModule;
-    WithdrawalQueue withdrawalQueueModuleModule;
+    Fee feeModule;
+    Strategy strategyModule;
+    WithdrawalQueue withdrawalQueueModule;
 
+    address yieldAggregatorImpl;
     YieldAggregatorFactory eulerYieldAggregatorVaultFactory;
     YieldAggregator eulerYieldAggregatorVault;
 
@@ -49,24 +53,26 @@ contract YieldAggregatorBase is EVaultTestBase {
         manager = makeAddr("Manager");
 
         vm.startPrank(deployer);
-        yieldAggregatorVaultModule = new YieldAggregatorVault(address(evc), true);
-        rewardsModule = new Rewards(address(evc));
-        hooksModule = new Hooks(address(evc));
-        feeModuleModule = new Fee(address(evc));
-        strategyModuleModule = new Strategy(address(evc));
-        withdrawalQueueModuleModule = new WithdrawalQueue(address(evc));
+        integrationParams = Shared.IntegrationParams({evc: address(evc), isHarvestCoolDownCheckOn: true});
 
-        YieldAggregatorFactory.FactoryParams memory factoryParams = YieldAggregatorFactory.FactoryParams({
-            evc: address(evc),
-            balanceTracker: address(0),
+        yieldAggregatorVaultModule = new YieldAggregatorVault(integrationParams);
+        rewardsModule = new Rewards(integrationParams);
+        hooksModule = new Hooks(integrationParams);
+        feeModule = new Fee(integrationParams);
+        strategyModule = new Strategy(integrationParams);
+        withdrawalQueueModule = new WithdrawalQueue(integrationParams);
+
+        deploymentParams = IYieldAggregator.DeploymentParams({
             yieldAggregatorVaultModule: address(yieldAggregatorVaultModule),
             rewardsModule: address(rewardsModule),
             hooksModule: address(hooksModule),
-            feeModule: address(feeModuleModule),
-            strategyModule: address(strategyModuleModule),
-            withdrawalQueueModule: address(withdrawalQueueModuleModule)
+            feeModule: address(feeModule),
+            strategyModule: address(strategyModule),
+            withdrawalQueueModule: address(withdrawalQueueModule)
         });
-        eulerYieldAggregatorVaultFactory = new YieldAggregatorFactory(factoryParams);
+        yieldAggregatorImpl = address(new YieldAggregator(integrationParams, deploymentParams));
+
+        eulerYieldAggregatorVaultFactory = new YieldAggregatorFactory(address(0), yieldAggregatorImpl);
         eulerYieldAggregatorVault = YieldAggregator(
             eulerYieldAggregatorVaultFactory.deployYieldAggregator(
                 address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS
@@ -129,6 +135,7 @@ contract YieldAggregatorBase is EVaultTestBase {
         assertEq(yieldAggregatorVaultsList.length, 1);
         assertEq(address(yieldAggregatorVaultsList[0]), address(eulerYieldAggregatorVault));
         assertEq(eulerYieldAggregatorVault.decimals(), assetTST.decimals());
+        assertEq(address(eulerYieldAggregatorVault.EVC()), address(evc));
     }
 
     function testDeployYieldAggregatorWithInvalidInitialCashAllocationPoints() public {

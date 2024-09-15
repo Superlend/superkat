@@ -37,15 +37,15 @@ contract YieldAggregator is Dispatch, AccessControlEnumerableUpgradeable, IYield
     using SafeCast for uint256;
 
     /// @dev Constructor.
-    constructor(IYieldAggregator.ConstructorParams memory _constructorParams)
-        Shared(_constructorParams.evc)
+    constructor(IntegrationParams memory _integrationParams, IYieldAggregator.DeploymentParams memory _deploymentParams)
+        Shared(_integrationParams)
         Dispatch(
-            _constructorParams.yieldAggregatorVaultModule,
-            _constructorParams.rewardsModule,
-            _constructorParams.hooksModule,
-            _constructorParams.feeModule,
-            _constructorParams.strategyModule,
-            _constructorParams.withdrawalQueueModule
+            _deploymentParams.yieldAggregatorVaultModule,
+            _deploymentParams.rewardsModule,
+            _deploymentParams.hooksModule,
+            _deploymentParams.feeModule,
+            _deploymentParams.strategyModule,
+            _deploymentParams.withdrawalQueueModule
         )
     {}
 

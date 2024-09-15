@@ -153,5 +153,5 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
 }
 
 contract Rewards is RewardsModule {
-    constructor(address _evc) Shared(_evc) {}
+    constructor(IntegrationParams memory _integrationParams) Shared(_integrationParams) {}
 }

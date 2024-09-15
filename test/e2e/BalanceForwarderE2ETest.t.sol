@@ -15,17 +15,7 @@ contract BalanceForwarderE2ETest is YieldAggregatorBase {
         vm.startPrank(deployer);
         trackingReward = address(new TrackingRewardStreams(address(evc), 2 weeks));
 
-        YieldAggregatorFactory.FactoryParams memory factoryParams = YieldAggregatorFactory.FactoryParams({
-            evc: address(evc),
-            balanceTracker: trackingReward,
-            yieldAggregatorVaultModule: address(yieldAggregatorVaultModule),
-            rewardsModule: address(rewardsModule),
-            hooksModule: address(hooksModule),
-            feeModule: address(feeModuleModule),
-            strategyModule: address(strategyModuleModule),
-            withdrawalQueueModule: address(withdrawalQueueModuleModule)
-        });
-        eulerYieldAggregatorVaultFactory = new YieldAggregatorFactory(factoryParams);
+        eulerYieldAggregatorVaultFactory = new YieldAggregatorFactory(trackingReward, yieldAggregatorImpl);
 
         eulerYieldAggregatorVault = YieldAggregator(
             eulerYieldAggregatorVaultFactory.deployYieldAggregator(

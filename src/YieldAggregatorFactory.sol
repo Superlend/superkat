@@ -13,57 +13,18 @@ contract YieldAggregatorFactory {
     error InvalidQuery();
 
     /// core dependencies
-    address public immutable evc;
     address public immutable balanceTracker;
-    /// core modules implementations addresses
-    address public immutable yieldAggregatorVaultModule;
-    address public immutable rewardsModule;
-    address public immutable hooksModule;
-    address public immutable feeModule;
-    address public immutable strategyModule;
-    address public immutable withdrawalQueueModule;
     /// yield aggregator implementation address
     address public immutable yieldAggregatorImpl;
 
     address[] public yieldAggregatorVaults;
 
-    /// @dev Init params struct.
-    struct FactoryParams {
-        address evc;
-        address balanceTracker;
-        address yieldAggregatorVaultModule;
-        address rewardsModule;
-        address hooksModule;
-        address feeModule;
-        address strategyModule;
-        address withdrawalQueueModule;
-    }
-
     event DeployYieldAggregator(address indexed _owner, address _yieldAggregatorVault, address indexed _asset);
 
     /// @dev Constructor.
-    /// @param _factoryParams FactoryParams struct.
-    constructor(FactoryParams memory _factoryParams) {
-        evc = _factoryParams.evc;
-        balanceTracker = _factoryParams.balanceTracker;
-        yieldAggregatorVaultModule = _factoryParams.yieldAggregatorVaultModule;
-        rewardsModule = _factoryParams.rewardsModule;
-        hooksModule = _factoryParams.hooksModule;
-        feeModule = _factoryParams.feeModule;
-        strategyModule = _factoryParams.strategyModule;
-        withdrawalQueueModule = _factoryParams.withdrawalQueueModule;
-
-        IYieldAggregator.ConstructorParams memory yieldAggregatorVaultConstructorParams = IYieldAggregator
-            .ConstructorParams({
-            evc: evc,
-            yieldAggregatorVaultModule: yieldAggregatorVaultModule,
-            rewardsModule: rewardsModule,
-            hooksModule: hooksModule,
-            feeModule: feeModule,
-            strategyModule: strategyModule,
-            withdrawalQueueModule: withdrawalQueueModule
-        });
-        yieldAggregatorImpl = address(new YieldAggregator(yieldAggregatorVaultConstructorParams));
+    constructor(address _balanceTracker, address _yieldAggregatorImpl) {
+        balanceTracker = _balanceTracker;
+        yieldAggregatorImpl = _yieldAggregatorImpl;
     }
 
     /// @notice Deploy a new yield aggregator vault.

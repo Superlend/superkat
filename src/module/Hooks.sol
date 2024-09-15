@@ -46,5 +46,5 @@ abstract contract HooksModule is Shared {
 }
 
 contract Hooks is HooksModule {
-    constructor(address _evc) Shared(_evc) {}
+    constructor(IntegrationParams memory _integrationParams) Shared(_integrationParams) {}
 }

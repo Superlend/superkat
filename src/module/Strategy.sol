@@ -205,5 +205,5 @@ abstract contract StrategyModule is Shared {
 }
 
 contract Strategy is StrategyModule {
-    constructor(address _evc) Shared(_evc) {}
+    constructor(IntegrationParams memory _integrationParams) Shared(_integrationParams) {}
 }

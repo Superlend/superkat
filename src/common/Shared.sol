@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 // interfaces
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {IYieldAggregator} from "../interface/IYieldAggregator.sol";
 // contracts
 import {EVCUtil} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {ERC20Upgradeable} from "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
@@ -32,7 +33,21 @@ abstract contract Shared is EVCUtil {
         _;
     }
 
-    constructor(address _evc) EVCUtil(_evc) {}
+    /// @dev A boolean to whether execute the harvest cooldown period check or not.
+    ///      This is meant to be set to `False` when deploying on L2 to explicitly harvest on every withdraw/redeem.
+    bool public immutable isHarvestCoolDownCheckOn;
+
+    /// @title Integrations
+    struct IntegrationParams {
+        address evc;
+        bool isHarvestCoolDownCheckOn;
+    }
+    // Address of the contract which is called when user balances change
+    // address balanceTracker;
+
+    constructor(IntegrationParams memory _integrationParams) EVCUtil(_integrationParams.evc) {
+        isHarvestCoolDownCheckOn = _integrationParams.isHarvestCoolDownCheckOn;
+    }
 
     /// @dev Deduct _lossAmount from the not-distributed amount, if not enough, socialize loss.
     /// @dev The not distributed amount is amount available to gulp + interest left.
