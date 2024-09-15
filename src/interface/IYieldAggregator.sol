@@ -8,8 +8,7 @@ import {AmountCap} from "../lib/AmountCapLib.sol";
 
 interface IYieldAggregator {
     /// @dev Struct to pass to constructor.
-    struct ConstructorParams {
-        address evc;
+    struct DeploymentParams {
         address yieldAggregatorVaultModule;
         address rewardsModule;
         address hooksModule;
@@ -22,7 +21,6 @@ interface IYieldAggregator {
     struct InitParams {
         address yieldAggregatorVaultOwner;
         address asset;
-        address balanceTracker;
         string name;
         string symbol;
         uint256 initialCashAllocationPoints;

@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 // a16z properties tests
 import {ERC4626Test} from "erc4626-tests/ERC4626.test.sol";
 // contracts
-import {YieldAggregator} from "../src/YieldAggregator.sol";
+import {YieldAggregator, Shared, IYieldAggregator} from "../src/YieldAggregator.sol";
 import {YieldAggregatorVault} from "../src/module/YieldAggregatorVault.sol";
 import {Hooks} from "../src/module/Hooks.sol";
 import {Rewards} from "../src/module/Rewards.sol";
@@ -23,13 +23,16 @@ contract A16zPropertyTests is ERC4626Test {
     EthereumVaultConnector public evc;
     address public factoryOwner;
 
+    Shared.IntegrationsParams integrationsParams;
+    IYieldAggregator.DeploymentParams deploymentParams;
+
     // core modules
     YieldAggregatorVault yieldAggregatorVaultModule;
     Rewards rewardsModule;
     Hooks hooksModule;
-    Fee feeModuleModule;
-    Strategy strategyModuleModule;
-    WithdrawalQueue withdrawalQueueModuleModule;
+    Fee feeModule;
+    Strategy strategyModule;
+    WithdrawalQueue withdrawalQueueModule;
 
     YieldAggregatorFactory eulerYieldAggregatorVaultFactory;
     YieldAggregator eulerYieldAggregatorVault;
@@ -38,24 +41,27 @@ contract A16zPropertyTests is ERC4626Test {
         factoryOwner = makeAddr("FACTORY_OWNER");
         evc = new EthereumVaultConnector();
 
-        yieldAggregatorVaultModule = new YieldAggregatorVault(address(evc), true);
-        rewardsModule = new Rewards(address(evc));
-        hooksModule = new Hooks(address(evc));
-        feeModuleModule = new Fee(address(evc));
-        strategyModuleModule = new Strategy(address(evc));
-        withdrawalQueueModuleModule = new WithdrawalQueue(address(evc));
+        integrationsParams =
+            Shared.IntegrationsParams({evc: address(evc), balanceTracker: address(0), isHarvestCoolDownCheckOn: true});
 
-        YieldAggregatorFactory.FactoryParams memory factoryParams = YieldAggregatorFactory.FactoryParams({
-            evc: address(evc),
-            balanceTracker: address(0),
+        yieldAggregatorVaultModule = new YieldAggregatorVault(integrationsParams);
+        rewardsModule = new Rewards(integrationsParams);
+        hooksModule = new Hooks(integrationsParams);
+        feeModule = new Fee(integrationsParams);
+        strategyModule = new Strategy(integrationsParams);
+        withdrawalQueueModule = new WithdrawalQueue(integrationsParams);
+
+        deploymentParams = IYieldAggregator.DeploymentParams({
             yieldAggregatorVaultModule: address(yieldAggregatorVaultModule),
             rewardsModule: address(rewardsModule),
             hooksModule: address(hooksModule),
-            feeModule: address(feeModuleModule),
-            strategyModule: address(strategyModuleModule),
-            withdrawalQueueModule: address(withdrawalQueueModuleModule)
+            feeModule: address(feeModule),
+            strategyModule: address(strategyModule),
+            withdrawalQueueModule: address(withdrawalQueueModule)
         });
-        eulerYieldAggregatorVaultFactory = new YieldAggregatorFactory(factoryParams);
+        address yieldAggregatorImpl = address(new YieldAggregator(integrationsParams, deploymentParams));
+
+        eulerYieldAggregatorVaultFactory = new YieldAggregatorFactory(yieldAggregatorImpl);
         vm.prank(factoryOwner);
 
         _underlying_ = address(new ERC20Mock());

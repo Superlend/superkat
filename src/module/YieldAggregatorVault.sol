@@ -37,10 +37,6 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     using SafeERC20 for IERC20;
     using SafeCast for uint256;
 
-    /// @dev A boolean to whether execute the harvest cooldown period check or not.
-    ///      This is meant to be set to `False` when deploying on L2 to explicitly harvest on every withdraw/redeem.
-    bool public immutable isHarvestCoolDownCheckOn;
-
     /// @notice Rebalance strategies allocation.
     /// @dev The strategies to rebalance will be harvested.
     /// @param _strategies Strategies addresses.
@@ -555,14 +551,12 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
 
         if (_from == _to) return;
 
-        IBalanceTracker balanceTracker = IBalanceTracker(_balanceTrackerAddress());
-
         if ((_from != address(0)) && (_balanceForwarderEnabled(_from))) {
-            balanceTracker.balanceTrackerHook(_from, _balanceOf(_from), false);
+            IBalanceTracker(balanceTracker).balanceTrackerHook(_from, _balanceOf(_from), false);
         }
 
         if ((_to != address(0)) && (_balanceForwarderEnabled(_to))) {
-            balanceTracker.balanceTrackerHook(_to, _balanceOf(_to), false);
+            IBalanceTracker(balanceTracker).balanceTrackerHook(_to, _balanceOf(_to), false);
         }
     }
 
@@ -902,7 +896,5 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
 }
 
 contract YieldAggregatorVault is YieldAggregatorVaultModule {
-    constructor(address _evc, bool _isHarvestCoolDownCheckOn) Shared(_evc) {
-        isHarvestCoolDownCheckOn = _isHarvestCoolDownCheckOn;
-    }
+    constructor(IntegrationsParams memory _integrationsParams) Shared(_integrationsParams) {}
 }

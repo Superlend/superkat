@@ -49,5 +49,5 @@ abstract contract FeeModule is Shared {
 }
 
 contract Fee is FeeModule {
-    constructor(address _evc) Shared(_evc) {}
+    constructor(IntegrationsParams memory _integrationsParams) Shared(_integrationsParams) {}
 }

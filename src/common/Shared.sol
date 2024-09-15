@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 // interfaces
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {IYieldAggregator} from "../interface/IYieldAggregator.sol";
 // contracts
 import {EVCUtil} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {ERC20Upgradeable} from "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
@@ -32,7 +33,23 @@ abstract contract Shared is EVCUtil {
         _;
     }
 
-    constructor(address _evc) EVCUtil(_evc) {}
+    /// @dev Address of balance tracker contract for reward streams integration.
+    address internal immutable balanceTracker;
+    /// @dev A boolean to whether execute the harvest cooldown period check or not.
+    ///      This is meant to be set to `False` when deploying on L2 to explicitly harvest on every withdraw/redeem.
+    bool public immutable isHarvestCoolDownCheckOn;
+
+    /// @dev Integrations
+    struct IntegrationsParams {
+        address evc;
+        address balanceTracker;
+        bool isHarvestCoolDownCheckOn;
+    }
+
+    constructor(IntegrationsParams memory _integrationsParams) EVCUtil(_integrationsParams.evc) {
+        balanceTracker = _integrationsParams.balanceTracker;
+        isHarvestCoolDownCheckOn = _integrationsParams.isHarvestCoolDownCheckOn;
+    }
 
     /// @dev Deduct _lossAmount from the not-distributed amount, if not enough, socialize loss.
     /// @dev The not distributed amount is amount available to gulp + interest left.
@@ -162,14 +179,6 @@ abstract contract Shared is EVCUtil {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         return $.isBalanceForwarderEnabled[_account];
-    }
-
-    /// @dev Retrieve the address of rewards contract, tracking changes in account's balances.
-    /// @return The balance tracker address.
-    function _balanceTrackerAddress() internal view returns (address) {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
-
-        return address($.balanceTracker);
     }
 
     /// @dev Read `_balances` from storage.

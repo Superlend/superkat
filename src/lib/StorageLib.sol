@@ -33,8 +33,6 @@ struct YieldAggregatorStorage {
     uint8 locked;
     
     
-    /// Address of balance tracker contract for reward streams integration.
-    address balanceTracker;
     /// A mapping to check if a user address enabled balance forwarding for reward streams integration.
     mapping(address => bool) isBalanceForwarderEnabled;
     

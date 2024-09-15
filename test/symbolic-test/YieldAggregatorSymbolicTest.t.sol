@@ -71,24 +71,27 @@ contract YieldAggregatorSymbolicTest is YieldAggregatorBase, SymTest {
         manager = address(0x7);
 
         vm.startPrank(deployer);
-        yieldAggregatorVaultModule = new YieldAggregatorVault(address(evc), true);
-        rewardsModule = new Rewards(address(evc));
-        hooksModule = new Hooks(address(evc));
-        feeModuleModule = new Fee(address(evc));
-        strategyModuleModule = new Strategy(address(evc));
-        withdrawalQueueModuleModule = new WithdrawalQueue(address(evc));
+        integrationsParams =
+            Shared.IntegrationsParams({evc: address(evc), balanceTracker: address(0), isHarvestCoolDownCheckOn: true});
 
-        YieldAggregatorFactory.FactoryParams memory factoryParams = YieldAggregatorFactory.FactoryParams({
-            evc: address(evc),
-            balanceTracker: address(0),
+        yieldAggregatorVaultModule = new YieldAggregatorVault(integrationsParams);
+        rewardsModule = new Rewards(integrationsParams);
+        hooksModule = new Hooks(integrationsParams);
+        feeModule = new Fee(integrationsParams);
+        strategyModule = new Strategy(integrationsParams);
+        withdrawalQueueModule = new WithdrawalQueue(integrationsParams);
+
+        deploymentParams = IYieldAggregator.DeploymentParams({
             yieldAggregatorVaultModule: address(yieldAggregatorVaultModule),
             rewardsModule: address(rewardsModule),
             hooksModule: address(hooksModule),
-            feeModule: address(feeModuleModule),
-            strategyModule: address(strategyModuleModule),
-            withdrawalQueueModule: address(withdrawalQueueModuleModule)
+            feeModule: address(feeModule),
+            strategyModule: address(strategyModule),
+            withdrawalQueueModule: address(withdrawalQueueModule)
         });
-        eulerYieldAggregatorVaultFactory = new YieldAggregatorFactory(factoryParams);
+        yieldAggregatorImpl = address(new YieldAggregator(integrationsParams, deploymentParams));
+
+        eulerYieldAggregatorVaultFactory = new YieldAggregatorFactory(yieldAggregatorImpl);
 
         uint256 initialCashReservePointsAllocation = svm.createUint256("initialCashReservePointsAllocation");
         vm.assume(initialCashReservePointsAllocation > 0 && initialCashReservePointsAllocation <= type(uint120).max);
