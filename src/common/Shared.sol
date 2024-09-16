@@ -2,9 +2,7 @@
 pragma solidity ^0.8.0;
 
 // interfaces
-import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {IYieldAggregator} from "../interface/IYieldAggregator.sol";
 // contracts
 import {EVCUtil} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {ERC20Upgradeable} from "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";

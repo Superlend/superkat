@@ -20,7 +20,6 @@ import {AccessControlEnumerableUpgradeable} from
     "@openzeppelin-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
 import {ContextUpgradeable} from "@openzeppelin-upgradeable/utils/ContextUpgradeable.sol";
 import {Checkpoints} from "@openzeppelin-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
-import {EIP712Upgradeable} from "@openzeppelin-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
 import {Shared} from "./common/Shared.sol";
 // libs
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
