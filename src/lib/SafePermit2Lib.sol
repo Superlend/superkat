@@ -15,6 +15,8 @@ import {ErrorsLib as Errors} from "./ErrorsLib.sol";
 /// @notice The library provides helpers for ERC20 transfers based on Permit2.
 /// Copied from https://github.com/euler-xyz/euler-vault-kit/blob/master/src/EVault/shared/lib/SafeERC20Lib.sol
 library SafePermit2Lib {
+
+    /// @dev Transfer from using Permit2. If `permit2 == address(0)` this will use the normale `ERC20.transferFrom()` call.
     function safePermitTransferFrom(IERC20 _token, address _from, address _to, uint256 _value, address _permit2)
         internal
     {
@@ -35,8 +37,7 @@ library SafePermit2Lib {
         if (!success) revert Errors.SafeTransferFromFailed(permit2Data, transferData);
     }
 
-    // If no code exists under the token address, the function will succeed. EVault ensures this is not the case in
-    // `initialize`.
+    /// @dev If no code exists under the token address, the function will succeed. Yield aggregator ensures this is not the case in `init()`.
     function _trySafeTransferFrom(IERC20 _token, address _from, address _to, uint256 _value)
         private
         returns (bool, bytes memory)
