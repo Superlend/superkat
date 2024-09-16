@@ -149,6 +149,7 @@ contract YieldAggregatorBase is EVaultTestBase {
         assertEq(eulerYieldAggregatorVault.strategyModule(), deploymentParams.strategyModule);
         assertEq(eulerYieldAggregatorVault.withdrawalQueueModule(), deploymentParams.withdrawalQueueModule);
         assertEq(eulerYieldAggregatorVault.isHarvestCoolDownCheckOn(), true);
+        assertEq(eulerYieldAggregatorVault.permit2(), permit2);
     }
 
     function testDeployYieldAggregatorWithInvalidInitialCashAllocationPoints() public {
