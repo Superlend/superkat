@@ -74,7 +74,7 @@ contract YieldAggregatorSymbolicTest is YieldAggregatorBase, SymTest {
         integrationsParams = Shared.IntegrationsParams({
             evc: address(evc),
             balanceTracker: address(0),
-            permit2: permit2,
+            permit2: address(0),
             isHarvestCoolDownCheckOn: true
         });
 
