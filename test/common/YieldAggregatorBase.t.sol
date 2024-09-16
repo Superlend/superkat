@@ -53,8 +53,12 @@ contract YieldAggregatorBase is EVaultTestBase {
         manager = makeAddr("Manager");
 
         vm.startPrank(deployer);
-        integrationsParams =
-            Shared.IntegrationsParams({evc: address(evc), balanceTracker: address(0), isHarvestCoolDownCheckOn: true});
+        integrationsParams = Shared.IntegrationsParams({
+            evc: address(evc),
+            balanceTracker: address(0),
+            permit2: permit2,
+            isHarvestCoolDownCheckOn: true
+        });
 
         yieldAggregatorVaultModule = new YieldAggregatorVault(integrationsParams);
         rewardsModule = new Rewards(integrationsParams);
@@ -145,6 +149,7 @@ contract YieldAggregatorBase is EVaultTestBase {
         assertEq(eulerYieldAggregatorVault.strategyModule(), deploymentParams.strategyModule);
         assertEq(eulerYieldAggregatorVault.withdrawalQueueModule(), deploymentParams.withdrawalQueueModule);
         assertEq(eulerYieldAggregatorVault.isHarvestCoolDownCheckOn(), true);
+        assertEq(eulerYieldAggregatorVault.permit2(), permit2);
     }
 
     function testDeployYieldAggregatorWithInvalidInitialCashAllocationPoints() public {

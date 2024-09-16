@@ -12,6 +12,7 @@ import {StorageLib as Storage, YieldAggregatorStorage} from "../lib/StorageLib.s
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
 import {ConstantsLib as Constants} from "../lib/ConstantsLib.sol";
+import {RevertBytesLib} from "../lib/RevertBytesLib.sol";
 
 /// @title Shared contract
 /// @dev Have common functions that is used in different contracts.
@@ -33,6 +34,8 @@ abstract contract Shared is EVCUtil {
 
     /// @dev Address of balance tracker contract for reward streams integration.
     address internal immutable balanceTracker;
+    /// @dev Permit2 contract address.
+    address public immutable permit2;
     /// @dev A boolean to whether execute the harvest cooldown period check or not.
     ///      This is meant to be set to `False` when deploying on L2 to explicitly harvest on every withdraw/redeem.
     bool public immutable isHarvestCoolDownCheckOn;
@@ -41,11 +44,15 @@ abstract contract Shared is EVCUtil {
     struct IntegrationsParams {
         address evc;
         address balanceTracker;
+        address permit2;
         bool isHarvestCoolDownCheckOn;
     }
 
+    /// @dev Constructor.
+    /// @param _integrationsParams IntegrationsParams struct.
     constructor(IntegrationsParams memory _integrationsParams) EVCUtil(_integrationsParams.evc) {
         balanceTracker = _integrationsParams.balanceTracker;
+        permit2 = _integrationsParams.permit2;
         isHarvestCoolDownCheckOn = _integrationsParams.isHarvestCoolDownCheckOn;
     }
 
@@ -84,7 +91,7 @@ abstract contract Shared is EVCUtil {
 
         (bool success, bytes memory data) = target.call(abi.encodePacked(msg.data, _caller));
 
-        if (!success) _revertBytes(data);
+        if (!success) RevertBytesLib.revertBytes(data);
     }
 
     /// @dev gulp positive yield into interest left amd update accrued interest.
@@ -240,17 +247,5 @@ abstract contract Shared is EVCUtil {
         assembly {
             $.slot := 0x52c63247e1f47db19d5ce0460030c497f067ca4cebf71ba98eeadabe20bace00
         }
-    }
-
-    /// @dev Revert with call error or EmptyError
-    /// @param _errorMsg call revert message
-    function _revertBytes(bytes memory _errorMsg) private pure {
-        if (_errorMsg.length > 0) {
-            assembly {
-                revert(add(32, _errorMsg), mload(_errorMsg))
-            }
-        }
-
-        revert Errors.EmptyError();
     }
 }

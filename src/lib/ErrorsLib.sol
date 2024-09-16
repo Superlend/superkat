@@ -26,6 +26,7 @@ library ErrorsLib {
     error SameIndexes();
     error NotEnoughAssets();
     error MaxStrategiesExceeded();
+    error InvalidAssetAddress();
 
     /// ERC4626Upgradeable.sol errors
     /// @dev Attempted to withdraw more assets than the max amount for `receiver`.
@@ -36,4 +37,7 @@ library ErrorsLib {
     /// ERC20VotesUpgradeable.sol errors
     /// @dev Total supply cap has been exceeded, introducing a risk of votes overflowing.
     error ERC20ExceededSafeSupply(uint256 increasedSupply, uint256 cap);
+
+    /// SafePermit2Lib.sol errors
+    error SafeTransferFromFailed(bytes errorPermit2, bytes errorTransferFrom);
 }

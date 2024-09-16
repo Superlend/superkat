@@ -60,6 +60,9 @@ contract YieldAggregator is Dispatch, AccessControlEnumerableUpgradeable, IYield
         __EIP712_init_unchained(_initParams.name, "1");
         __AccessControlEnumerable_init_unchained();
 
+        // Make sure the asset is a contract. Token transfers using a library will not revert if address has no code.
+        require(_initParams.asset.code.length != 0, Errors.InvalidAssetAddress());
+
         require(_initParams.initialCashAllocationPoints != 0, Errors.InitialAllocationPointsZero());
 
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();

@@ -22,6 +22,7 @@ contract BalanceForwarderTest is YieldAggregatorBase {
         integrationsParams = Shared.IntegrationsParams({
             evc: address(evc),
             balanceTracker: balanceTracker,
+            permit2: permit2,
             isHarvestCoolDownCheckOn: true
         });
 

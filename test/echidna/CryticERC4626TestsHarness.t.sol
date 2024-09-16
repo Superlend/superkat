@@ -51,8 +51,12 @@ contract CryticERC4626TestsHarness is
     constructor() {
         evc = new EthereumVaultConnector();
 
-        integrationsParams =
-            Shared.IntegrationsParams({evc: address(evc), balanceTracker: address(0), isHarvestCoolDownCheckOn: true});
+        integrationsParams = Shared.IntegrationsParams({
+            evc: address(evc),
+            balanceTracker: address(0),
+            permit2: address(0),
+            isHarvestCoolDownCheckOn: true
+        });
 
         yieldAggregatorVaultModule = new YieldAggregatorVault(integrationsParams);
         rewardsModule = new Rewards(integrationsParams);
