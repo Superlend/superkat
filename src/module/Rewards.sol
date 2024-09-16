@@ -24,9 +24,9 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
     function optInStrategyRewards(address _strategy) external virtual nonReentrant {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
-        if ($.strategies[_strategy].status != IYieldAggregator.StrategyStatus.Active) {
-            revert Errors.StrategyShouldBeActive();
-        }
+        require(
+            $.strategies[_strategy].status == IYieldAggregator.StrategyStatus.Active, Errors.StrategyShouldBeActive()
+        );
 
         IBalanceForwarder(_strategy).enableBalanceForwarder();
 
@@ -47,9 +47,9 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
     function enableRewardForStrategy(address _strategy, address _reward) external virtual nonReentrant {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
-        if ($.strategies[_strategy].status != IYieldAggregator.StrategyStatus.Active) {
-            revert Errors.StrategyShouldBeActive();
-        }
+        require(
+            $.strategies[_strategy].status == IYieldAggregator.StrategyStatus.Active, Errors.StrategyShouldBeActive()
+        );
 
         IRewardStreams(IBalanceForwarder(_strategy).balanceTrackerAddress()).enableReward(_strategy, _reward);
 
@@ -122,7 +122,7 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
     function _enableBalanceForwarder(address _sender, uint256 _senderBalance) internal {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
-        if (balanceTracker == address(0)) revert Errors.YieldAggregatorRewardsNotSupported();
+        require(balanceTracker != address(0), Errors.YieldAggregatorRewardsNotSupported());
         bool wasBalanceForwarderEnabled = $.isBalanceForwarderEnabled[_sender];
 
         $.isBalanceForwarderEnabled[_sender] = true;
@@ -137,7 +137,7 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
     function _disableBalanceForwarder(address _sender) internal {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
-        if (balanceTracker == address(0)) revert Errors.YieldAggregatorRewardsNotSupported();
+        require(balanceTracker != address(0), Errors.YieldAggregatorRewardsNotSupported());
 
         bool wasBalanceForwarderEnabled = $.isBalanceForwarderEnabled[_sender];
 

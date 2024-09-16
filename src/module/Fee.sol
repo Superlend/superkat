@@ -30,8 +30,8 @@ abstract contract FeeModule is Shared {
 
         uint96 performanceFeeCached = $.performanceFee;
 
-        if (_newFee > Constants.MAX_PERFORMANCE_FEE) revert Errors.MaxPerformanceFeeExceeded();
-        if ($.feeRecipient == address(0)) revert Errors.FeeRecipientNotSet();
+        require(_newFee <= Constants.MAX_PERFORMANCE_FEE, Errors.MaxPerformanceFeeExceeded());
+        require($.feeRecipient != address(0), Errors.FeeRecipientNotSet());
 
         emit Events.SetPerformanceFee(performanceFeeCached, _newFee);
 

@@ -116,9 +116,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         _harvest(isHarvestCoolDownCheckOn, isOnlyCashReserveWithdraw);
 
         uint256 maxAssets = _convertToAssets(_balanceOf(_owner), Math.Rounding.Floor);
-        if (_assets > maxAssets) {
-            revert Errors.ERC4626ExceededMaxWithdraw(_owner, _assets, maxAssets);
-        }
+        require(_assets <= maxAssets, Errors.ERC4626ExceededMaxWithdraw(_owner, _assets, maxAssets));
 
         uint256 shares = _convertToShares(_assets, Math.Rounding.Ceil);
         _withdraw(_msgSender(), _receiver, _owner, _assets, shares);
@@ -143,9 +141,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         _callHooksTarget(Constants.REDEEM, _msgSender());
 
         uint256 maxShares = _balanceOf(_owner);
-        if (_shares > maxShares) {
-            revert Errors.ERC4626ExceededMaxRedeem(_owner, _shares, maxShares);
-        }
+        require(_shares <= maxShares, Errors.ERC4626ExceededMaxRedeem(_owner, _shares, maxShares));
 
         uint256 assets = _convertToAssets(_shares, Math.Rounding.Floor);
 
@@ -518,9 +514,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
             }
         }
 
-        if (assetsRetrieved < _assets) {
-            revert Errors.NotEnoughAssets();
-        }
+        require(assetsRetrieved >= _assets, Errors.NotEnoughAssets());
 
         $.totalAssetsDeposited -= _assets;
 
@@ -543,9 +537,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         if (_from == address(0)) {
             uint256 supply = _totalSupply();
             uint256 cap = _maxSupply();
-            if (supply > cap) {
-                revert Errors.ERC20ExceededSafeSupply(supply, cap);
-            }
+            require(supply <= cap, Errors.ERC20ExceededSafeSupply(supply, cap));
         }
         _transferVotingUnits(_from, _to, _value);
 

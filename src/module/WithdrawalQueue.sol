@@ -19,13 +19,9 @@ abstract contract WithdrawalQueueModule is Shared {
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
 
         uint256 length = $.withdrawalQueue.length;
-        if (_index1 >= length || _index2 >= length) {
-            revert Errors.OutOfBounds();
-        }
+        require(_index1 < length && _index2 < length, Errors.OutOfBounds());
 
-        if (_index1 == _index2) {
-            revert Errors.SameIndexes();
-        }
+        require(_index1 != _index2, Errors.SameIndexes());
 
         ($.withdrawalQueue[_index1], $.withdrawalQueue[_index2]) =
             ($.withdrawalQueue[_index2], $.withdrawalQueue[_index1]);

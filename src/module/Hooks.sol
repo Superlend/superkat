@@ -19,14 +19,15 @@ abstract contract HooksModule is Shared {
     /// @param _hooksTarget Hooks contract.
     /// @param _hookedFns Hooked functions.
     function setHooksConfig(address _hooksTarget, uint32 _hookedFns) external virtual nonReentrant {
-        if (_hookedFns != 0 && _hooksTarget == address(0)) {
-            revert Errors.InvalidHooksTarget();
+        if (_hookedFns != 0) {
+            require(_hooksTarget != address(0), Errors.InvalidHooksTarget());
         }
-        if (_hooksTarget != address(0) && IHookTarget(_hooksTarget).isHookTarget() != IHookTarget.isHookTarget.selector)
-        {
-            revert Errors.NotHooksContract();
+        if (_hooksTarget != address(0)) {
+            require(
+                IHookTarget(_hooksTarget).isHookTarget() == IHookTarget.isHookTarget.selector, Errors.NotHooksContract()
+            );
         }
-        if (_hookedFns >= Constants.ACTIONS_COUNTER) revert Errors.InvalidHookedFns();
+        require(_hookedFns < Constants.ACTIONS_COUNTER, Errors.InvalidHookedFns());
 
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
         $.hooksTarget = _hooksTarget;
