@@ -27,6 +27,7 @@ import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
 import {ConstantsLib as Constants} from "../lib/ConstantsLib.sol";
 import {AmountCapLib, AmountCap} from "../lib/AmountCapLib.sol";
+import {SafePermit2Lib} from "../lib/SafePermit2Lib.sol";
 
 /// @title YieldAggregatorVaultModule contract
 /// @custom:security-contact security@euler.xyz
@@ -36,6 +37,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     using AmountCapLib for AmountCap;
     using SafeERC20 for IERC20;
     using SafeCast for uint256;
+    using SafePermit2Lib for IERC20;
 
     /// @notice Rebalance strategies allocation.
     /// @dev The strategies to rebalance will be harvested.
@@ -469,12 +471,14 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     }
 
     /// @dev Increase the total assets deposited.
-    /// @dev See {IERC4626-_deposit}.
     function _deposit(address _caller, address _receiver, uint256 _assets, uint256 _shares) internal override {
-        super._deposit(_caller, _receiver, _assets, _shares);
+        IERC20(_asset()).safePermitTransferFrom(_caller, address(this), _assets, permit2);
+        _mint(_receiver, _shares);
 
         YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
         $.totalAssetsDeposited += _assets;
+
+        emit Events.Deposit(_caller, _receiver, _assets, _shares);
     }
 
     /// @dev Withdraw needed amount from yield aggregator.

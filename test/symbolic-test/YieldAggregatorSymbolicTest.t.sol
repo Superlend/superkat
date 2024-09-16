@@ -71,8 +71,12 @@ contract YieldAggregatorSymbolicTest is YieldAggregatorBase, SymTest {
         manager = address(0x7);
 
         vm.startPrank(deployer);
-        integrationsParams =
-            Shared.IntegrationsParams({evc: address(evc), balanceTracker: address(0), isHarvestCoolDownCheckOn: true});
+        integrationsParams = Shared.IntegrationsParams({
+            evc: address(evc),
+            balanceTracker: address(0),
+            permit2: permit2,
+            isHarvestCoolDownCheckOn: true
+        });
 
         yieldAggregatorVaultModule = new YieldAggregatorVault(integrationsParams);
         rewardsModule = new Rewards(integrationsParams);

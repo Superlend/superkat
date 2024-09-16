@@ -36,4 +36,7 @@ library ErrorsLib {
     /// ERC20VotesUpgradeable.sol errors
     /// @dev Total supply cap has been exceeded, introducing a risk of votes overflowing.
     error ERC20ExceededSafeSupply(uint256 increasedSupply, uint256 cap);
+
+    /// SafeERC20Lib.sol errors
+    error SafeTransferFromFailed(bytes errorPermit2, bytes errorTransferFrom);
 }
