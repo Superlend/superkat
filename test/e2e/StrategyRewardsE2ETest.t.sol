@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import "../common/YieldAggregatorBase.t.sol";
+import "../common/EulerEarnBase.t.sol";
 import {TrackingRewardStreams} from "reward-streams/src/TrackingRewardStreams.sol";
 
-contract StrategyRewardsE2ETest is YieldAggregatorBase {
+contract StrategyRewardsE2ETest is EulerEarnBase {
     uint256 user1InitialBalance = 100000e18;
 
     IEVault nonActiveStrategy;
@@ -61,7 +61,7 @@ contract StrategyRewardsE2ETest is YieldAggregatorBase {
         eTST.setMaxLiquidationDiscount(0.2e4);
         eTST.setFeeReceiver(feeReceiver);
 
-        // deploy yield aggregator
+        // deploy euler earn
 
         deployer = makeAddr("Deployer");
         user1 = makeAddr("User_1");
@@ -76,50 +76,50 @@ contract StrategyRewardsE2ETest is YieldAggregatorBase {
             isHarvestCoolDownCheckOn: true
         });
 
-        yieldAggregatorVaultModule = new YieldAggregatorVault(integrationsParams);
+        eulerEarnVaultModule = new EulerEarnVault(integrationsParams);
         rewardsModule = new Rewards(integrationsParams);
         hooksModule = new Hooks(integrationsParams);
         feeModule = new Fee(integrationsParams);
         strategyModule = new Strategy(integrationsParams);
         withdrawalQueueModule = new WithdrawalQueue(integrationsParams);
 
-        deploymentParams = IYieldAggregator.DeploymentParams({
-            yieldAggregatorVaultModule: address(yieldAggregatorVaultModule),
+        deploymentParams = IEulerEarn.DeploymentParams({
+            eulerEarnVaultModule: address(eulerEarnVaultModule),
             rewardsModule: address(rewardsModule),
             hooksModule: address(hooksModule),
             feeModule: address(feeModule),
             strategyModule: address(strategyModule),
             withdrawalQueueModule: address(withdrawalQueueModule)
         });
-        yieldAggregatorImpl = address(new YieldAggregator(integrationsParams, deploymentParams));
+        eulerEarnImpl = address(new EulerEarn(integrationsParams, deploymentParams));
 
-        eulerYieldAggregatorVaultFactory = new YieldAggregatorFactory(yieldAggregatorImpl);
-        eulerYieldAggregatorVault = YieldAggregator(
-            eulerYieldAggregatorVaultFactory.deployYieldAggregator(
+        eulerEulerEarnVaultFactory = new EulerEarnFactory(eulerEarnImpl);
+        eulerEulerEarnVault = EulerEarn(
+            eulerEulerEarnVaultFactory.deployEulerEarn(
                 address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS
             )
         );
 
         // grant admin roles to deployer
-        eulerYieldAggregatorVault.grantRole(ConstantsLib.GUARDIAN_ADMIN, deployer);
-        eulerYieldAggregatorVault.grantRole(ConstantsLib.STRATEGY_OPERATOR_ADMIN, deployer);
-        eulerYieldAggregatorVault.grantRole(ConstantsLib.YIELD_AGGREGATOR_MANAGER_ADMIN, deployer);
-        eulerYieldAggregatorVault.grantRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER_ADMIN, deployer);
+        eulerEulerEarnVault.grantRole(ConstantsLib.GUARDIAN_ADMIN, deployer);
+        eulerEulerEarnVault.grantRole(ConstantsLib.STRATEGY_OPERATOR_ADMIN, deployer);
+        eulerEulerEarnVault.grantRole(ConstantsLib.EULER_EARN_MANAGER_ADMIN, deployer);
+        eulerEulerEarnVault.grantRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER_ADMIN, deployer);
 
         // grant roles to manager
-        eulerYieldAggregatorVault.grantRole(ConstantsLib.GUARDIAN, manager);
-        eulerYieldAggregatorVault.grantRole(ConstantsLib.STRATEGY_OPERATOR, manager);
-        eulerYieldAggregatorVault.grantRole(ConstantsLib.YIELD_AGGREGATOR_MANAGER, manager);
-        eulerYieldAggregatorVault.grantRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER, manager);
+        eulerEulerEarnVault.grantRole(ConstantsLib.GUARDIAN, manager);
+        eulerEulerEarnVault.grantRole(ConstantsLib.STRATEGY_OPERATOR, manager);
+        eulerEulerEarnVault.grantRole(ConstantsLib.EULER_EARN_MANAGER, manager);
+        eulerEulerEarnVault.grantRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER, manager);
 
         vm.stopPrank();
 
-        vm.label(address(eulerYieldAggregatorVaultFactory), "eulerYieldAggregatorVaultFactory");
-        vm.label(address(eulerYieldAggregatorVault), "eulerYieldAggregatorVault");
-        vm.label(eulerYieldAggregatorVault.rewardsModule(), "rewardsModule");
-        vm.label(eulerYieldAggregatorVault.hooksModule(), "hooksModule");
-        vm.label(eulerYieldAggregatorVault.feeModule(), "feeModule");
-        vm.label(eulerYieldAggregatorVault.strategyModule(), "strategyModule");
+        vm.label(address(eulerEulerEarnVaultFactory), "eulerEulerEarnVaultFactory");
+        vm.label(address(eulerEulerEarnVault), "eulerEulerEarnVault");
+        vm.label(eulerEulerEarnVault.rewardsModule(), "rewardsModule");
+        vm.label(eulerEulerEarnVault.hooksModule(), "hooksModule");
+        vm.label(eulerEulerEarnVault.feeModule(), "feeModule");
+        vm.label(eulerEulerEarnVault.strategyModule(), "strategyModule");
         vm.label(address(assetTST), "assetTST");
         uint256 initialStrategyAllocationPoints = 500e18;
         _addStrategy(manager, address(eTST), initialStrategyAllocationPoints);
@@ -132,73 +132,73 @@ contract StrategyRewardsE2ETest is YieldAggregatorBase {
     }
 
     function testBalanceForwarderrAddress_Integrity() public view {
-        assertEq(eulerYieldAggregatorVault.balanceTrackerAddress(), balanceTracker);
+        assertEq(eulerEulerEarnVault.balanceTrackerAddress(), balanceTracker);
     }
 
     function testOptInStrategyRewards() public {
         vm.prank(manager);
         vm.expectRevert(ErrorsLib.StrategyShouldBeActive.selector);
-        eulerYieldAggregatorVault.optInStrategyRewards(address(nonActiveStrategy));
+        eulerEulerEarnVault.optInStrategyRewards(address(nonActiveStrategy));
 
         vm.expectEmit();
         emit EventsLib.OptInStrategyRewards(address(eTST));
         vm.prank(manager);
-        eulerYieldAggregatorVault.optInStrategyRewards(address(eTST));
+        eulerEulerEarnVault.optInStrategyRewards(address(eTST));
 
-        assertTrue(eTST.balanceForwarderEnabled(address(eulerYieldAggregatorVault)));
+        assertTrue(eTST.balanceForwarderEnabled(address(eulerEulerEarnVault)));
     }
 
     function testOptOutStrategyRewards() public {
         vm.prank(manager);
-        eulerYieldAggregatorVault.optInStrategyRewards(address(eTST));
-        assertTrue(eTST.balanceForwarderEnabled(address(eulerYieldAggregatorVault)));
+        eulerEulerEarnVault.optInStrategyRewards(address(eTST));
+        assertTrue(eTST.balanceForwarderEnabled(address(eulerEulerEarnVault)));
 
         vm.prank(manager);
-        eulerYieldAggregatorVault.optOutStrategyRewards(address(eTST));
+        eulerEulerEarnVault.optOutStrategyRewards(address(eTST));
 
-        assertFalse(eTST.balanceForwarderEnabled(address(eulerYieldAggregatorVault)));
+        assertFalse(eTST.balanceForwarderEnabled(address(eulerEulerEarnVault)));
     }
 
     function testEnableRewardForStrategy() public {
         vm.prank(manager);
-        eulerYieldAggregatorVault.optInStrategyRewards(address(eTST));
+        eulerEulerEarnVault.optInStrategyRewards(address(eTST));
 
         vm.prank(manager);
         vm.expectRevert(ErrorsLib.StrategyShouldBeActive.selector);
-        eulerYieldAggregatorVault.enableRewardForStrategy(address(nonActiveStrategy), address(assetTST));
+        eulerEulerEarnVault.enableRewardForStrategy(address(nonActiveStrategy), address(assetTST));
 
         vm.expectEmit();
         emit EventsLib.EnableRewardForStrategy(address(eTST), address(assetTST));
         vm.prank(manager);
-        eulerYieldAggregatorVault.enableRewardForStrategy(address(eTST), address(assetTST));
+        eulerEulerEarnVault.enableRewardForStrategy(address(eTST), address(assetTST));
     }
 
     function testDisableRewardForStrategy() public {
         vm.prank(manager);
-        eulerYieldAggregatorVault.optInStrategyRewards(address(eTST));
+        eulerEulerEarnVault.optInStrategyRewards(address(eTST));
 
         vm.prank(manager);
-        eulerYieldAggregatorVault.enableRewardForStrategy(address(eTST), address(assetTST));
+        eulerEulerEarnVault.enableRewardForStrategy(address(eTST), address(assetTST));
 
         vm.prank(manager);
-        eulerYieldAggregatorVault.disableRewardForStrategy(address(nonActiveStrategy), address(assetTST), true);
+        eulerEulerEarnVault.disableRewardForStrategy(address(nonActiveStrategy), address(assetTST), true);
 
         vm.expectEmit();
         emit EventsLib.DisableRewardForStrategy(address(eTST), address(assetTST), true);
         vm.prank(manager);
-        eulerYieldAggregatorVault.disableRewardForStrategy(address(eTST), address(assetTST), true);
+        eulerEulerEarnVault.disableRewardForStrategy(address(eTST), address(assetTST), true);
     }
 
     function testClaimStrategyReward() public {
         vm.prank(manager);
-        eulerYieldAggregatorVault.optInStrategyRewards(address(eTST));
+        eulerEulerEarnVault.optInStrategyRewards(address(eTST));
 
         vm.prank(manager);
-        eulerYieldAggregatorVault.enableRewardForStrategy(address(eTST), address(assetTST));
+        eulerEulerEarnVault.enableRewardForStrategy(address(eTST), address(assetTST));
 
         vm.expectEmit();
         emit EventsLib.ClaimStrategyReward(address(eTST), address(assetTST), manager, true);
         vm.prank(manager);
-        eulerYieldAggregatorVault.claimStrategyReward(address(eTST), address(assetTST), manager, true);
+        eulerEulerEarnVault.claimStrategyReward(address(eTST), address(assetTST), manager, true);
     }
 }

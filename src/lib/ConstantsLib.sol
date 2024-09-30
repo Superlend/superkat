@@ -40,10 +40,10 @@ library ConstantsLib {
     /// @dev STRATEGY_OPERATOR: can add and remove strategy.
     bytes32 public constant STRATEGY_OPERATOR = keccak256("STRATEGY_OPERATOR");
     bytes32 public constant STRATEGY_OPERATOR_ADMIN = keccak256("STRATEGY_OPERATOR_ADMIN");
-    /// @dev YIELD_AGGREGATOR_MANAGER: can set performance fee and recipient, opt in&out underlying strategy rewards,
+    /// @dev EULER_EARN_MANAGER: can set performance fee and recipient, opt in&out underlying strategy rewards,
     /// including enabling, disabling and claiming those rewards, plus set hooks config.
-    bytes32 public constant YIELD_AGGREGATOR_MANAGER = keccak256("YIELD_AGGREGATOR_MANAGER");
-    bytes32 public constant YIELD_AGGREGATOR_MANAGER_ADMIN = keccak256("YIELD_AGGREGATOR_MANAGER_ADMIN");
+    bytes32 public constant EULER_EARN_MANAGER = keccak256("EULER_EARN_MANAGER");
+    bytes32 public constant EULER_EARN_MANAGER_ADMIN = keccak256("EULER_EARN_MANAGER_ADMIN");
     /// @dev WITHDRAWAL_QUEUE_MANAGER: can re-order withdrawal queue array.
     bytes32 public constant WITHDRAWAL_QUEUE_MANAGER = keccak256("WITHDRAWAL_QUEUE_MANAGER");
     bytes32 public constant WITHDRAWAL_QUEUE_MANAGER_ADMIN = keccak256("WITHDRAWAL_QUEUE_MANAGER_ADMIN");

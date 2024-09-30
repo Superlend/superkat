@@ -3,12 +3,12 @@ pragma solidity ^0.8.0;
 
 // interfaces
 import {IERC4626} from "@openzeppelin-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
-import {IYieldAggregator} from "../interface/IYieldAggregator.sol";
+import {IEulerEarn} from "../interface/IEulerEarn.sol";
 // contracts
 import {Shared} from "../common/Shared.sol";
 // libs
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {StorageLib as Storage, YieldAggregatorStorage} from "../lib/StorageLib.sol";
+import {StorageLib as Storage, EulerEarnStorage} from "../lib/StorageLib.sol";
 import {AmountCapLib, AmountCap} from "../lib/AmountCapLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
@@ -25,10 +25,10 @@ abstract contract StrategyModule is Shared {
     /// @param _strategy address of strategy
     /// @param _newPoints new strategy's points
     function adjustAllocationPoints(address _strategy, uint256 _newPoints) public virtual nonReentrant {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
-        IYieldAggregator.Strategy memory strategyDataCache = $.strategies[_strategy];
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
+        IEulerEarn.Strategy memory strategyDataCache = $.strategies[_strategy];
 
-        require(strategyDataCache.status == IYieldAggregator.StrategyStatus.Active, Errors.StrategyShouldBeActive());
+        require(strategyDataCache.status == IEulerEarn.StrategyStatus.Active, Errors.StrategyShouldBeActive());
 
         if (_strategy == Constants.CASH_RESERVE) {
             require(_newPoints != 0, Errors.InvalidAllocationPoints());
@@ -45,11 +45,9 @@ abstract contract StrategyModule is Shared {
     /// @param _strategy Strategy address.
     /// @param _cap Cap amount
     function setStrategyCap(address _strategy, uint16 _cap) public virtual nonReentrant {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
-        require(
-            $.strategies[_strategy].status == IYieldAggregator.StrategyStatus.Active, Errors.StrategyShouldBeActive()
-        );
+        require($.strategies[_strategy].status == IEulerEarn.StrategyStatus.Active, Errors.StrategyShouldBeActive());
         require(_strategy != Constants.CASH_RESERVE, Errors.NoCapOnCashReserveStrategy());
 
         AmountCap strategyCap = AmountCap.wrap(_cap);
@@ -65,19 +63,19 @@ abstract contract StrategyModule is Shared {
     /// @notice Toggle a strategy status between `Active` and `Emergency`.
     /// @dev This should be used as a circuit-breaker to exclude a faulty strategy from being harvest or rebalanced.
     ///      It also deduct all the deposited amounts into the strategy as loss, and uses a loss socialization mechanism.
-    ///      This is needed, in case the Yield Aggregator can no longer withdraw from a certain strategy.
+    ///      This is needed, in case the EulerEarn Vault can no longer withdraw from a certain strategy.
     ///      In the case of switching a strategy from Emergency to Active again, the max withdrawable amount from the strategy
     ///      will be set as the allocated amount, and will be immediately available to gulp.
     function toggleStrategyEmergencyStatus(address _strategy) public virtual nonReentrant {
         require(_strategy != Constants.CASH_RESERVE, Errors.CanNotToggleStrategyEmergencyStatus());
 
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
-        IYieldAggregator.Strategy memory strategyCached = $.strategies[_strategy];
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
+        IEulerEarn.Strategy memory strategyCached = $.strategies[_strategy];
 
-        require(strategyCached.status != IYieldAggregator.StrategyStatus.Inactive, Errors.InactiveStrategy());
+        require(strategyCached.status != IEulerEarn.StrategyStatus.Inactive, Errors.InactiveStrategy());
 
-        if (strategyCached.status == IYieldAggregator.StrategyStatus.Active) {
-            $.strategies[_strategy].status = IYieldAggregator.StrategyStatus.Emergency;
+        if (strategyCached.status == IEulerEarn.StrategyStatus.Active) {
+            $.strategies[_strategy].status = IEulerEarn.StrategyStatus.Emergency;
 
             _updateInterestAccrued();
 
@@ -92,14 +90,14 @@ abstract contract StrategyModule is Shared {
             emit Events.ToggleStrategyEmergencyStatus(_strategy, true);
         } else {
             // Use `previewRedeem()` to get the actual assets amount, bypassing any limits or revert.
-            uint256 aggregatorShares = IERC4626(_strategy).balanceOf(address(this));
-            uint256 aggregatorAssets = IERC4626(_strategy).previewRedeem(aggregatorShares);
+            uint256 eulerEarnShares = IERC4626(_strategy).balanceOf(address(this));
+            uint256 eulerEarnAssets = IERC4626(_strategy).previewRedeem(eulerEarnShares);
 
-            $.strategies[_strategy].status = IYieldAggregator.StrategyStatus.Active;
-            $.strategies[_strategy].allocated = aggregatorAssets.toUint120();
+            $.strategies[_strategy].status = IEulerEarn.StrategyStatus.Active;
+            $.strategies[_strategy].allocated = eulerEarnAssets.toUint120();
 
             $.totalAllocationPoints += strategyCached.allocationPoints;
-            $.totalAllocated += aggregatorAssets;
+            $.totalAllocated += eulerEarnAssets;
 
             emit Events.ToggleStrategyEmergencyStatus(_strategy, false);
         }
@@ -109,21 +107,19 @@ abstract contract StrategyModule is Shared {
     /// @param _strategy Address of the strategy
     /// @param _allocationPoints Strategy's allocation points
     function addStrategy(address _strategy, uint256 _allocationPoints) public virtual nonReentrant {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
         require($.withdrawalQueue.length < Constants.MAX_STRATEGIES, Errors.MaxStrategiesExceeded());
-        require(
-            $.strategies[_strategy].status == IYieldAggregator.StrategyStatus.Inactive, Errors.StrategyAlreadyExist()
-        );
+        require($.strategies[_strategy].status == IEulerEarn.StrategyStatus.Inactive, Errors.StrategyAlreadyExist());
         require(IERC4626(_strategy).asset() == _asset(), Errors.InvalidStrategyAsset());
         require(_allocationPoints != 0, Errors.InvalidAllocationPoints());
 
         _callHooksTarget(Constants.ADD_STRATEGY, _msgSender());
 
-        $.strategies[_strategy] = IYieldAggregator.Strategy({
+        $.strategies[_strategy] = IEulerEarn.Strategy({
             allocated: 0,
             allocationPoints: _allocationPoints.toUint96(),
-            status: IYieldAggregator.StrategyStatus.Active,
+            status: IEulerEarn.StrategyStatus.Active,
             cap: AmountCap.wrap(0)
         });
 
@@ -140,16 +136,16 @@ abstract contract StrategyModule is Shared {
     function removeStrategy(address _strategy) public virtual nonReentrant {
         require(_strategy != Constants.CASH_RESERVE, Errors.CanNotRemoveCashReserve());
 
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
-        IYieldAggregator.Strategy storage strategyStorage = $.strategies[_strategy];
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
+        IEulerEarn.Strategy storage strategyStorage = $.strategies[_strategy];
 
-        require(strategyStorage.status == IYieldAggregator.StrategyStatus.Active, Errors.StrategyShouldBeActive());
+        require(strategyStorage.status == IEulerEarn.StrategyStatus.Active, Errors.StrategyShouldBeActive());
         require(strategyStorage.allocated == 0, Errors.CanNotRemoveStrategyWithAllocatedAmount());
 
         _callHooksTarget(Constants.REMOVE_STRATEGY, _msgSender());
 
         $.totalAllocationPoints -= strategyStorage.allocationPoints;
-        strategyStorage.status = IYieldAggregator.StrategyStatus.Inactive;
+        strategyStorage.status = IEulerEarn.StrategyStatus.Inactive;
         strategyStorage.allocationPoints = 0;
         strategyStorage.cap = AmountCap.wrap(0);
 
@@ -170,14 +166,8 @@ abstract contract StrategyModule is Shared {
     /// @notice Get strategy params.
     /// @param _strategy strategy's address.
     /// @return Strategy struct.
-    function getStrategy(address _strategy)
-        public
-        view
-        virtual
-        nonReentrantView
-        returns (IYieldAggregator.Strategy memory)
-    {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+    function getStrategy(address _strategy) public view virtual nonReentrantView returns (IEulerEarn.Strategy memory) {
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
         return $.strategies[_strategy];
     }
@@ -185,7 +175,7 @@ abstract contract StrategyModule is Shared {
     /// @notice Get the total allocation points.
     /// @return Total allocation points.
     function totalAllocationPoints() public view virtual nonReentrantView returns (uint256) {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
         return $.totalAllocationPoints;
     }

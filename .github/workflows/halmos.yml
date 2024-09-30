@@ -33,4 +33,4 @@ jobs:
       run: python3 -m pip install --upgrade halmos
 
     - name: Run halmos
-      run: halmos --match-contract YieldAggregatorSymbolicTest --storage-layout=generic --test-parallel --solver-parallel  --solver-timeout-assertion 0
+      run: halmos --match-contract EulerEarnSymbolicTest --storage-layout=generic --test-parallel --solver-parallel  --solver-timeout-assertion 0

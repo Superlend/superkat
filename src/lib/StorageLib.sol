@@ -2,11 +2,11 @@
 pragma solidity ^0.8.0;
 
 // interfaces
-import {IYieldAggregator} from "../interface/IYieldAggregator.sol";
+import {IEulerEarn} from "../interface/IEulerEarn.sol";
 
-/// @custom:storage-location erc7201:euler_yield_aggregator.storage.YieldAggregator
-struct YieldAggregatorStorage {
-    /// Total amount of _asset deposited into YieldAggregator contract
+/// @custom:storage-location erc7201:euler.storage.EulerEarn
+struct EulerEarnStorage {
+    /// Total amount of _asset deposited into EulerEarn contract
     uint256 totalAssetsDeposited;
     /// Total amount of _asset deposited across all strategies.
     uint256 totalAllocated;
@@ -18,7 +18,7 @@ struct YieldAggregatorStorage {
     /// fee recipient address
     address feeRecipient;
     /// Mapping between a strategy address and it's allocation config
-    mapping(address => IYieldAggregator.Strategy) strategies;
+    mapping(address => IEulerEarn.Strategy) strategies;
     /// An array of strategy addresses to withdraw from
     address[] withdrawalQueue;
 
@@ -48,14 +48,14 @@ struct YieldAggregatorStorage {
 }
 
 library StorageLib {
-    // keccak256(abi.encode(uint256(keccak256("euler_yield_aggregator.storage.YieldAggregator")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 private constant YieldAggregatorStorageLocation =
-        0xac0b522cbeffc7768e2fa69372227b3c347a154761ba132cbe29d024b3f8eb00;
+    // keccak256(abi.encode(uint256(keccak256("euler.storage.EulerEarn")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant EulerEarnStorageLocation =
+        0x557a0cdd38e5249281b5bc89e23dd8e4f8f0223d657d77792700289d81047f00;
 
-    /// @dev A function to return a pointer for the YieldAggregatorStorageLocation.
-    function _getYieldAggregatorStorage() internal pure returns (YieldAggregatorStorage storage $) {
+    /// @dev A function to return a pointer for the EulerEarnStorageLocation.
+    function _getEulerEarnStorage() internal pure returns (EulerEarnStorage storage $) {
         assembly {
-            $.slot := YieldAggregatorStorageLocation
+            $.slot := EulerEarnStorageLocation
         }
     }
 }

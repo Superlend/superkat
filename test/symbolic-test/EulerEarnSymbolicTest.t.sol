@@ -2,9 +2,9 @@
 pragma solidity ^0.8.0;
 
 import {SymTest} from "halmos-cheatcodes/SymTest.sol";
-import "../common/YieldAggregatorBase.t.sol";
+import "../common/EulerEarnBase.t.sol";
 
-contract YieldAggregatorSymbolicTest is YieldAggregatorBase, SymTest {
+contract EulerEarnSymbolicTest is EulerEarnBase, SymTest {
     function setUp() public override {
         admin = address(0x1);
         feeReceiver = address(0x2);
@@ -78,44 +78,44 @@ contract YieldAggregatorSymbolicTest is YieldAggregatorBase, SymTest {
             isHarvestCoolDownCheckOn: true
         });
 
-        yieldAggregatorVaultModule = new YieldAggregatorVault(integrationsParams);
+        eulerEarnVaultModule = new EulerEarnVault(integrationsParams);
         rewardsModule = new Rewards(integrationsParams);
         hooksModule = new Hooks(integrationsParams);
         feeModule = new Fee(integrationsParams);
         strategyModule = new Strategy(integrationsParams);
         withdrawalQueueModule = new WithdrawalQueue(integrationsParams);
 
-        deploymentParams = IYieldAggregator.DeploymentParams({
-            yieldAggregatorVaultModule: address(yieldAggregatorVaultModule),
+        deploymentParams = IEulerEarn.DeploymentParams({
+            eulerEarnVaultModule: address(eulerEarnVaultModule),
             rewardsModule: address(rewardsModule),
             hooksModule: address(hooksModule),
             feeModule: address(feeModule),
             strategyModule: address(strategyModule),
             withdrawalQueueModule: address(withdrawalQueueModule)
         });
-        yieldAggregatorImpl = address(new YieldAggregator(integrationsParams, deploymentParams));
+        eulerEarnImpl = address(new EulerEarn(integrationsParams, deploymentParams));
 
-        eulerYieldAggregatorVaultFactory = new YieldAggregatorFactory(yieldAggregatorImpl);
+        eulerEulerEarnVaultFactory = new EulerEarnFactory(eulerEarnImpl);
 
         uint256 initialCashReservePointsAllocation = svm.createUint256("initialCashReservePointsAllocation");
         vm.assume(initialCashReservePointsAllocation > 0 && initialCashReservePointsAllocation <= type(uint120).max);
 
-        eulerYieldAggregatorVault = YieldAggregator(
-            eulerYieldAggregatorVaultFactory.deployYieldAggregator(
+        eulerEulerEarnVault = EulerEarn(
+            eulerEulerEarnVaultFactory.deployEulerEarn(
                 address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS
             )
         );
         // grant admin roles to deployer
-        eulerYieldAggregatorVault.grantRole(ConstantsLib.GUARDIAN_ADMIN, deployer);
-        eulerYieldAggregatorVault.grantRole(ConstantsLib.STRATEGY_OPERATOR_ADMIN, deployer);
-        eulerYieldAggregatorVault.grantRole(ConstantsLib.YIELD_AGGREGATOR_MANAGER_ADMIN, deployer);
-        eulerYieldAggregatorVault.grantRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER_ADMIN, deployer);
+        eulerEulerEarnVault.grantRole(ConstantsLib.GUARDIAN_ADMIN, deployer);
+        eulerEulerEarnVault.grantRole(ConstantsLib.STRATEGY_OPERATOR_ADMIN, deployer);
+        eulerEulerEarnVault.grantRole(ConstantsLib.EULER_EARN_MANAGER_ADMIN, deployer);
+        eulerEulerEarnVault.grantRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER_ADMIN, deployer);
 
         // grant roles to manager
-        eulerYieldAggregatorVault.grantRole(ConstantsLib.GUARDIAN, manager);
-        eulerYieldAggregatorVault.grantRole(ConstantsLib.STRATEGY_OPERATOR, manager);
-        eulerYieldAggregatorVault.grantRole(ConstantsLib.YIELD_AGGREGATOR_MANAGER, manager);
-        eulerYieldAggregatorVault.grantRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER, manager);
+        eulerEulerEarnVault.grantRole(ConstantsLib.GUARDIAN, manager);
+        eulerEulerEarnVault.grantRole(ConstantsLib.STRATEGY_OPERATOR, manager);
+        eulerEulerEarnVault.grantRole(ConstantsLib.EULER_EARN_MANAGER, manager);
+        eulerEulerEarnVault.grantRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER, manager);
         vm.stopPrank();
     }
 
@@ -137,14 +137,14 @@ contract YieldAggregatorSymbolicTest is YieldAggregatorBase, SymTest {
             uint256 allocationPoints = svm.createUint256("allocationPoints");
             vm.assume(allocationPoints > 0 && allocationPoints <= type(uint120).max);
 
-            uint256 totalAllocationPointsBefore = eulerYieldAggregatorVault.totalAllocationPoints();
+            uint256 totalAllocationPointsBefore = eulerEulerEarnVault.totalAllocationPoints();
 
             vm.prank(manager);
-            eulerYieldAggregatorVault.addStrategy(strategyAddr, allocationPoints);
+            eulerEulerEarnVault.addStrategy(strategyAddr, allocationPoints);
 
-            IYieldAggregator.Strategy memory strategy = eulerYieldAggregatorVault.getStrategy(strategyAddr);
+            IEulerEarn.Strategy memory strategy = eulerEulerEarnVault.getStrategy(strategyAddr);
 
-            assert(eulerYieldAggregatorVault.totalAllocationPoints() == allocationPoints + totalAllocationPointsBefore);
+            assert(eulerEulerEarnVault.totalAllocationPoints() == allocationPoints + totalAllocationPointsBefore);
             assert(strategy.allocated == 0);
             assert(strategy.allocationPoints == allocationPoints);
         }
@@ -162,14 +162,14 @@ contract YieldAggregatorSymbolicTest is YieldAggregatorBase, SymTest {
         uint256 allocationPoints = svm.createUint256("allocationPoints");
         vm.assume(allocationPoints > 0 && allocationPoints <= type(uint120).max);
         vm.prank(manager);
-        eulerYieldAggregatorVault.addStrategy(strategyAddr, allocationPoints);
+        eulerEulerEarnVault.addStrategy(strategyAddr, allocationPoints);
 
         // set cap
         uint256 cap = svm.createUint256("cap");
         vm.assume(cap <= type(uint16).max);
 
         vm.prank(manager);
-        eulerYieldAggregatorVault.setStrategyCap(strategyAddr, uint16(cap));
+        eulerEulerEarnVault.setStrategyCap(strategyAddr, uint16(cap));
     }
 
     function check_adjustAllocationPoints() public {
@@ -185,7 +185,7 @@ contract YieldAggregatorSymbolicTest is YieldAggregatorBase, SymTest {
         vm.assume(allocationPoints > 0 && allocationPoints <= type(uint120).max);
 
         vm.prank(manager);
-        eulerYieldAggregatorVault.addStrategy(strategyAddr, allocationPoints);
+        eulerEulerEarnVault.addStrategy(strategyAddr, allocationPoints);
 
         // adjust allocation points
         bool isCashReserveStrategy = svm.createBool("isCashReserveStrategy");
@@ -198,63 +198,63 @@ contract YieldAggregatorSymbolicTest is YieldAggregatorBase, SymTest {
             vm.assume(newAllocationPoints <= type(uint120).max);
         }
 
-        IYieldAggregator.Strategy memory strategyBefore = eulerYieldAggregatorVault.getStrategy(strategyAddrToAdjust);
-        uint256 totalAllocationPointsBefore = eulerYieldAggregatorVault.totalAllocationPoints();
+        IEulerEarn.Strategy memory strategyBefore = eulerEulerEarnVault.getStrategy(strategyAddrToAdjust);
+        uint256 totalAllocationPointsBefore = eulerEulerEarnVault.totalAllocationPoints();
 
         vm.prank(manager);
-        eulerYieldAggregatorVault.adjustAllocationPoints(strategyAddrToAdjust, newAllocationPoints);
+        eulerEulerEarnVault.adjustAllocationPoints(strategyAddrToAdjust, newAllocationPoints);
 
-        IYieldAggregator.Strategy memory strategyAfter = eulerYieldAggregatorVault.getStrategy(strategyAddrToAdjust);
+        IEulerEarn.Strategy memory strategyAfter = eulerEulerEarnVault.getStrategy(strategyAddrToAdjust);
 
         assert(
-            eulerYieldAggregatorVault.totalAllocationPoints()
+            eulerEulerEarnVault.totalAllocationPoints()
                 == totalAllocationPointsBefore + newAllocationPoints - strategyBefore.allocationPoints
         );
         assert(strategyAfter.allocationPoints == newAllocationPoints);
     }
 
-    // YieldAggregatorVault module's functions
+    // EulerEarnVault module's functions
     function check_deposit() public {
         uint256 amountToDeposit = svm.createUint256("amountToDeposit");
         assetTST.mint(user1, amountToDeposit);
 
-        uint256 totalSupplyBefore = eulerYieldAggregatorVault.totalSupply();
-        uint256 totalAssetsDepositedBefore = eulerYieldAggregatorVault.totalAssetsDeposited();
+        uint256 totalSupplyBefore = eulerEulerEarnVault.totalSupply();
+        uint256 totalAssetsDepositedBefore = eulerEulerEarnVault.totalAssetsDeposited();
         uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
 
         assert(userAssetBalanceBefore >= amountToDeposit);
 
         vm.startPrank(user1);
-        assetTST.approve(address(eulerYieldAggregatorVault), amountToDeposit);
-        uint256 mintedShares = eulerYieldAggregatorVault.deposit(amountToDeposit, user1);
+        assetTST.approve(address(eulerEulerEarnVault), amountToDeposit);
+        uint256 mintedShares = eulerEulerEarnVault.deposit(amountToDeposit, user1);
         vm.stopPrank();
 
-        assert(eulerYieldAggregatorVault.balanceOf(user1) == mintedShares);
-        assert(eulerYieldAggregatorVault.totalSupply() == totalSupplyBefore + mintedShares);
-        assert(eulerYieldAggregatorVault.totalAssetsDeposited() == totalAssetsDepositedBefore + amountToDeposit);
+        assert(eulerEulerEarnVault.balanceOf(user1) == mintedShares);
+        assert(eulerEulerEarnVault.totalSupply() == totalSupplyBefore + mintedShares);
+        assert(eulerEulerEarnVault.totalAssetsDeposited() == totalAssetsDepositedBefore + amountToDeposit);
         assert(assetTST.balanceOf(user1) == userAssetBalanceBefore - amountToDeposit);
     }
 
     function check_mint() public {
         uint256 amountToMint = svm.createUint256("amountToMint");
 
-        uint256 amountToDeposit = eulerYieldAggregatorVault.previewMint(amountToMint);
+        uint256 amountToDeposit = eulerEulerEarnVault.previewMint(amountToMint);
         assetTST.mint(user1, amountToDeposit);
 
-        uint256 totalSupplyBefore = eulerYieldAggregatorVault.totalSupply();
-        uint256 totalAssetsDepositedBefore = eulerYieldAggregatorVault.totalAssetsDeposited();
+        uint256 totalSupplyBefore = eulerEulerEarnVault.totalSupply();
+        uint256 totalAssetsDepositedBefore = eulerEulerEarnVault.totalAssetsDeposited();
         uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
 
         assert(userAssetBalanceBefore >= amountToDeposit);
 
         vm.startPrank(user1);
-        assetTST.approve(address(eulerYieldAggregatorVault), amountToDeposit);
-        uint256 mintedShares = eulerYieldAggregatorVault.mint(amountToMint, user1);
+        assetTST.approve(address(eulerEulerEarnVault), amountToDeposit);
+        uint256 mintedShares = eulerEulerEarnVault.mint(amountToMint, user1);
         vm.stopPrank();
 
-        assert(eulerYieldAggregatorVault.balanceOf(user1) == mintedShares);
-        assert(eulerYieldAggregatorVault.totalSupply() == totalSupplyBefore + mintedShares);
-        assert(eulerYieldAggregatorVault.totalAssetsDeposited() == totalAssetsDepositedBefore + amountToDeposit);
+        assert(eulerEulerEarnVault.balanceOf(user1) == mintedShares);
+        assert(eulerEulerEarnVault.totalSupply() == totalSupplyBefore + mintedShares);
+        assert(eulerEulerEarnVault.totalAssetsDeposited() == totalAssetsDepositedBefore + amountToDeposit);
         assert(assetTST.balanceOf(user1) == userAssetBalanceBefore - amountToDeposit);
     }
 
@@ -263,25 +263,25 @@ contract YieldAggregatorSymbolicTest is YieldAggregatorBase, SymTest {
         assetTST.mint(user1, amountToDeposit);
 
         vm.startPrank(user1);
-        assetTST.approve(address(eulerYieldAggregatorVault), amountToDeposit);
-        uint256 mintedShares = eulerYieldAggregatorVault.deposit(amountToDeposit, user1);
+        assetTST.approve(address(eulerEulerEarnVault), amountToDeposit);
+        uint256 mintedShares = eulerEulerEarnVault.deposit(amountToDeposit, user1);
         vm.stopPrank();
 
-        assert(eulerYieldAggregatorVault.balanceOf(user1) == mintedShares);
+        assert(eulerEulerEarnVault.balanceOf(user1) == mintedShares);
 
         uint256 amountToWithdraw = svm.createUint256("amountToDeposit");
         vm.assume(amountToWithdraw <= amountToDeposit);
 
-        uint256 totalSupplyBefore = eulerYieldAggregatorVault.totalSupply();
-        uint256 totalAssetsDepositedBefore = eulerYieldAggregatorVault.totalAssetsDeposited();
+        uint256 totalSupplyBefore = eulerEulerEarnVault.totalSupply();
+        uint256 totalAssetsDepositedBefore = eulerEulerEarnVault.totalAssetsDeposited();
         uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
 
         vm.prank(user1);
-        uint256 burnedShares = eulerYieldAggregatorVault.withdraw(amountToWithdraw, user1, user1);
+        uint256 burnedShares = eulerEulerEarnVault.withdraw(amountToWithdraw, user1, user1);
 
-        assert(eulerYieldAggregatorVault.balanceOf(user1) == mintedShares - burnedShares);
-        assert(eulerYieldAggregatorVault.totalSupply() == totalSupplyBefore - burnedShares);
-        assert(eulerYieldAggregatorVault.totalAssetsDeposited() == totalAssetsDepositedBefore - amountToWithdraw);
+        assert(eulerEulerEarnVault.balanceOf(user1) == mintedShares - burnedShares);
+        assert(eulerEulerEarnVault.totalSupply() == totalSupplyBefore - burnedShares);
+        assert(eulerEulerEarnVault.totalAssetsDeposited() == totalAssetsDepositedBefore - amountToWithdraw);
         assert(assetTST.balanceOf(user1) == userAssetBalanceBefore + amountToWithdraw);
     }
 
@@ -290,25 +290,25 @@ contract YieldAggregatorSymbolicTest is YieldAggregatorBase, SymTest {
         assetTST.mint(user1, amountToDeposit);
 
         vm.startPrank(user1);
-        assetTST.approve(address(eulerYieldAggregatorVault), amountToDeposit);
-        uint256 mintedShares = eulerYieldAggregatorVault.deposit(amountToDeposit, user1);
+        assetTST.approve(address(eulerEulerEarnVault), amountToDeposit);
+        uint256 mintedShares = eulerEulerEarnVault.deposit(amountToDeposit, user1);
         vm.stopPrank();
 
-        assert(eulerYieldAggregatorVault.balanceOf(user1) == mintedShares);
+        assert(eulerEulerEarnVault.balanceOf(user1) == mintedShares);
 
         uint256 sharesToRedeem = svm.createUint256("sharesToRedeem");
         vm.assume(sharesToRedeem <= mintedShares);
 
-        uint256 totalSupplyBefore = eulerYieldAggregatorVault.totalSupply();
-        uint256 totalAssetsDepositedBefore = eulerYieldAggregatorVault.totalAssetsDeposited();
+        uint256 totalSupplyBefore = eulerEulerEarnVault.totalSupply();
+        uint256 totalAssetsDepositedBefore = eulerEulerEarnVault.totalAssetsDeposited();
         uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
 
         vm.prank(user1);
-        uint256 withdrawnAssets = eulerYieldAggregatorVault.redeem(sharesToRedeem, user1, user1);
+        uint256 withdrawnAssets = eulerEulerEarnVault.redeem(sharesToRedeem, user1, user1);
 
-        assert(eulerYieldAggregatorVault.balanceOf(user1) == mintedShares - sharesToRedeem);
-        assert(eulerYieldAggregatorVault.totalSupply() == totalSupplyBefore - sharesToRedeem);
-        assert(eulerYieldAggregatorVault.totalAssetsDeposited() == totalAssetsDepositedBefore - withdrawnAssets);
+        assert(eulerEulerEarnVault.balanceOf(user1) == mintedShares - sharesToRedeem);
+        assert(eulerEulerEarnVault.totalSupply() == totalSupplyBefore - sharesToRedeem);
+        assert(eulerEulerEarnVault.totalAssetsDeposited() == totalAssetsDepositedBefore - withdrawnAssets);
         assert(assetTST.balanceOf(user1) == userAssetBalanceBefore + withdrawnAssets);
     }
 
@@ -330,7 +330,7 @@ contract YieldAggregatorSymbolicTest is YieldAggregatorBase, SymTest {
             uint256 allocationPoints = svm.createUint256("allocationPoints");
             vm.assume(allocationPoints > 0 && allocationPoints <= type(uint120).max);
             vm.prank(manager);
-            eulerYieldAggregatorVault.addStrategy(strategyAddr, allocationPoints);
+            eulerEulerEarnVault.addStrategy(strategyAddr, allocationPoints);
         }
 
         // deposit
@@ -339,12 +339,12 @@ contract YieldAggregatorSymbolicTest is YieldAggregatorBase, SymTest {
         assetTST.mint(user1, amountToDeposit);
 
         vm.startPrank(user1);
-        assetTST.approve(address(eulerYieldAggregatorVault), amountToDeposit);
-        eulerYieldAggregatorVault.deposit(amountToDeposit, user1);
+        assetTST.approve(address(eulerEulerEarnVault), amountToDeposit);
+        eulerEulerEarnVault.deposit(amountToDeposit, user1);
         vm.stopPrank();
 
         // rebalance
-        address[] memory strategies = eulerYieldAggregatorVault.withdrawalQueue();
-        eulerYieldAggregatorVault.rebalance(strategies);
+        address[] memory strategies = eulerEulerEarnVault.withdrawalQueue();
+        eulerEulerEarnVault.rebalance(strategies);
     }
 }

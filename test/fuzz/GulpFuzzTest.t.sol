@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import "../common/YieldAggregatorBase.t.sol";
+import "../common/EulerEarnBase.t.sol";
 
-contract GulpFuzzTest is YieldAggregatorBase {
+contract GulpFuzzTest is EulerEarnBase {
     function setUp() public virtual override {
         super.setUp();
 
@@ -21,16 +21,16 @@ contract GulpFuzzTest is YieldAggregatorBase {
 
         assetTST.mint(user1, _depositAmount);
         vm.startPrank(user1);
-        assetTST.approve(address(eulerYieldAggregatorVault), _depositAmount);
-        eulerYieldAggregatorVault.deposit(_depositAmount, user1);
+        assetTST.approve(address(eulerEulerEarnVault), _depositAmount);
+        eulerEulerEarnVault.deposit(_depositAmount, user1);
         vm.stopPrank();
 
-        assetTST.mint(address(eulerYieldAggregatorVault), _interestAmount);
-        eulerYieldAggregatorVault.gulp();
-        eulerYieldAggregatorVault.updateInterestAccrued();
+        assetTST.mint(address(eulerEulerEarnVault), _interestAmount);
+        eulerEulerEarnVault.gulp();
+        eulerEulerEarnVault.updateInterestAccrued();
 
         vm.warp(_timePassed);
-        uint256 interestAccrued = eulerYieldAggregatorVault.interestAccrued();
+        uint256 interestAccrued = eulerEulerEarnVault.interestAccrued();
 
         assertLe(interestAccrued, type(uint168).max);
     }
@@ -40,17 +40,17 @@ contract GulpFuzzTest is YieldAggregatorBase {
         _depositAmount = bound(_depositAmount, 1e7, type(uint112).max);
         _interestAmount = bound(_interestAmount, 0, type(uint256).max - _depositAmount); // this makes sure that the mint won't cause overflow
 
-        assetTST.mint(address(eulerYieldAggregatorVault), _interestAmount);
+        assetTST.mint(address(eulerEulerEarnVault), _interestAmount);
 
         assetTST.mint(user1, _depositAmount);
         vm.startPrank(user1);
-        assetTST.approve(address(eulerYieldAggregatorVault), _depositAmount);
-        eulerYieldAggregatorVault.deposit(_depositAmount, user1);
+        assetTST.approve(address(eulerEulerEarnVault), _depositAmount);
+        eulerEulerEarnVault.deposit(_depositAmount, user1);
         vm.stopPrank();
 
-        eulerYieldAggregatorVault.gulp();
+        eulerEulerEarnVault.gulp();
 
-        (,, uint168 interestLeft) = eulerYieldAggregatorVault.getYieldAggregatorSavingRate();
+        (,, uint168 interestLeft) = eulerEulerEarnVault.getEulerEarnSavingRate();
 
         if (_interestAmount <= type(uint168).max) {
             assertEq(interestLeft, _interestAmount);
@@ -65,18 +65,18 @@ contract GulpFuzzTest is YieldAggregatorBase {
         uint256 depositAmount = 1337;
         assetTST.mint(user1, depositAmount);
         vm.startPrank(user1);
-        assetTST.approve(address(eulerYieldAggregatorVault), depositAmount);
-        eulerYieldAggregatorVault.deposit(depositAmount, user1);
+        assetTST.approve(address(eulerEulerEarnVault), depositAmount);
+        eulerEulerEarnVault.deposit(depositAmount, user1);
         vm.stopPrank();
 
         uint256 interestAmount = 10e18;
         // Mint interest directly into the contract
-        assetTST.mint(address(eulerYieldAggregatorVault), interestAmount);
-        eulerYieldAggregatorVault.gulp();
+        assetTST.mint(address(eulerEulerEarnVault), interestAmount);
+        eulerEulerEarnVault.gulp();
         skip(ConstantsLib.INTEREST_SMEAR);
 
-        (,, uint168 interestLeft) = eulerYieldAggregatorVault.getYieldAggregatorSavingRate();
-        assertEq(eulerYieldAggregatorVault.totalAssets(), depositAmount + interestAmount);
+        (,, uint168 interestLeft) = eulerEulerEarnVault.getEulerEarnSavingRate();
+        assertEq(eulerEulerEarnVault.totalAssets(), depositAmount + interestAmount);
         assertEq(interestLeft, interestAmount);
     }
 }

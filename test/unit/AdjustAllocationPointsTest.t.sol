@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import "../common/YieldAggregatorBase.t.sol";
+import "../common/EulerEarnBase.t.sol";
 
-contract AdjustAllocationsPointsTest is YieldAggregatorBase {
+contract AdjustAllocationsPointsTest is EulerEarnBase {
     uint256 initialStrategyAllocationPoints = 500e18;
 
     function setUp() public virtual override {
@@ -14,16 +14,16 @@ contract AdjustAllocationsPointsTest is YieldAggregatorBase {
 
     function testAdjustAllocationPoints() public {
         uint256 newAllocationPoints = 859e18;
-        uint256 totalAllocationPointsBefore = eulerYieldAggregatorVault.totalAllocationPoints();
+        uint256 totalAllocationPointsBefore = eulerEulerEarnVault.totalAllocationPoints();
         uint256 withdrawalQueueLengthBefore = _getWithdrawalQueueLength();
 
         vm.prank(manager);
-        eulerYieldAggregatorVault.adjustAllocationPoints(address(eTST), newAllocationPoints);
+        eulerEulerEarnVault.adjustAllocationPoints(address(eTST), newAllocationPoints);
 
-        IYieldAggregator.Strategy memory strategy = eulerYieldAggregatorVault.getStrategy(address(eTST));
+        IEulerEarn.Strategy memory strategy = eulerEulerEarnVault.getStrategy(address(eTST));
 
         assertEq(
-            eulerYieldAggregatorVault.totalAllocationPoints(),
+            eulerEulerEarnVault.totalAllocationPoints(),
             totalAllocationPointsBefore + (newAllocationPoints - initialStrategyAllocationPoints)
         );
         assertEq(_getWithdrawalQueueLength(), withdrawalQueueLengthBefore);
@@ -35,7 +35,7 @@ contract AdjustAllocationsPointsTest is YieldAggregatorBase {
 
         vm.startPrank(deployer);
         vm.expectRevert();
-        eulerYieldAggregatorVault.adjustAllocationPoints(address(eTST), newAllocationPoints);
+        eulerEulerEarnVault.adjustAllocationPoints(address(eTST), newAllocationPoints);
         vm.stopPrank();
     }
 
@@ -44,7 +44,7 @@ contract AdjustAllocationsPointsTest is YieldAggregatorBase {
 
         vm.startPrank(manager);
         vm.expectRevert(ErrorsLib.StrategyShouldBeActive.selector);
-        eulerYieldAggregatorVault.adjustAllocationPoints(address(eTST2), newAllocationPoints);
+        eulerEulerEarnVault.adjustAllocationPoints(address(eTST2), newAllocationPoints);
         vm.stopPrank();
     }
 
@@ -53,7 +53,7 @@ contract AdjustAllocationsPointsTest is YieldAggregatorBase {
 
         vm.startPrank(manager);
         vm.expectRevert(ErrorsLib.InvalidAllocationPoints.selector);
-        eulerYieldAggregatorVault.adjustAllocationPoints(address(0), newAllocationPoints);
+        eulerEulerEarnVault.adjustAllocationPoints(address(0), newAllocationPoints);
         vm.stopPrank();
     }
 }

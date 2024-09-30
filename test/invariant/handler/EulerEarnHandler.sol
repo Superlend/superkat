@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import "../../common/YieldAggregatorBase.t.sol";
+import "../../common/EulerEarnBase.t.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ActorUtil} from "../util/ActorUtil.sol";
 import {StrategyUtil} from "../util/StrategyUtil.sol";
 
-contract YieldAggregatorHandler is Test {
+contract EulerEarnHandler is Test {
     using AggAmountCapLib for AggAmountCap;
 
     ActorUtil internal actorUtil;
     StrategyUtil internal strategyUtil;
-    YieldAggregator internal yieldAggregator;
+    EulerEarn internal eulerEarn;
 
     // ghost vars
     uint256 public ghost_totalAllocationPoints;
@@ -28,13 +28,13 @@ contract YieldAggregatorHandler is Test {
     bool success;
     bytes returnData;
 
-    constructor(YieldAggregator _yieldAggregator, ActorUtil _actor, StrategyUtil _strategy) {
-        yieldAggregator = _yieldAggregator;
+    constructor(EulerEarn _eulerEarn, ActorUtil _actor, StrategyUtil _strategy) {
+        eulerEarn = _eulerEarn;
         actorUtil = _actor;
         strategyUtil = _strategy;
 
         // initiating ghost total allocation points to match count cash reserve.
-        ghost_totalAllocationPoints += yieldAggregator.totalAllocationPoints();
+        ghost_totalAllocationPoints += eulerEarn.totalAllocationPoints();
         ghost_allocationPoints[address(0)] = ghost_totalAllocationPoints;
     }
 
@@ -42,16 +42,14 @@ contract YieldAggregatorHandler is Test {
         address feeRecipientAddr = makeAddr(_feeRecipientSeed);
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
-            0,
-            address(yieldAggregator),
-            abi.encodeWithSelector(YieldAggregator.setFeeRecipient.selector, feeRecipientAddr)
+            0, address(eulerEarn), abi.encodeWithSelector(EulerEarn.setFeeRecipient.selector, feeRecipientAddr)
         );
 
         if (success) {
             ghost_feeRecipients.push(feeRecipientAddr);
             actorUtil.setAsFeeReceiver(feeRecipientAddr);
         }
-        (address feeRecipient,) = yieldAggregator.performanceFeeConfig();
+        (address feeRecipient,) = eulerEarn.performanceFeeConfig();
         assertEq(feeRecipient, feeRecipientAddr);
     }
 
@@ -62,9 +60,7 @@ contract YieldAggregatorHandler is Test {
             address feeRecipientAddr = makeAddr(_feeRecipientSeed);
 
             (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
-                0,
-                address(yieldAggregator),
-                abi.encodeWithSelector(YieldAggregator.setFeeRecipient.selector, feeRecipientAddr)
+                0, address(eulerEarn), abi.encodeWithSelector(EulerEarn.setFeeRecipient.selector, feeRecipientAddr)
             );
 
             if (success) {
@@ -74,10 +70,10 @@ contract YieldAggregatorHandler is Test {
         }
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
-            0, address(yieldAggregator), abi.encodeWithSelector(YieldAggregator.setPerformanceFee.selector, _newFee)
+            0, address(eulerEarn), abi.encodeWithSelector(EulerEarn.setPerformanceFee.selector, _newFee)
         );
 
-        (, uint96 fee) = yieldAggregator.performanceFeeConfig();
+        (, uint96 fee) = eulerEarn.performanceFeeConfig();
 
         assertEq(_newFee, fee);
     }
@@ -86,20 +82,20 @@ contract YieldAggregatorHandler is Test {
         // allow strategyAddr == address(0) for cash reserve
         address strategyAddr = strategyUtil.fetchActiveStrategy(_strategyIndexSeed);
 
-        IYieldAggregator.Strategy memory strategyBefore = yieldAggregator.getStrategy(strategyAddr);
+        IEulerEarn.Strategy memory strategyBefore = eulerEarn.getStrategy(strategyAddr);
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             0,
-            address(yieldAggregator),
-            abi.encodeWithSelector(YieldAggregator.adjustAllocationPoints.selector, strategyAddr, _newPoints)
+            address(eulerEarn),
+            abi.encodeWithSelector(EulerEarn.adjustAllocationPoints.selector, strategyAddr, _newPoints)
         );
 
         if (success) {
             ghost_totalAllocationPoints = ghost_totalAllocationPoints + _newPoints - strategyBefore.allocationPoints;
             ghost_allocationPoints[strategyAddr] = _newPoints;
         }
-        IYieldAggregator.Strategy memory strategyAfter = yieldAggregator.getStrategy(strategyAddr);
-        assertEq(yieldAggregator.totalAllocationPoints(), ghost_totalAllocationPoints);
+        IEulerEarn.Strategy memory strategyAfter = eulerEarn.getStrategy(strategyAddr);
+        assertEq(eulerEarn.totalAllocationPoints(), ghost_totalAllocationPoints);
         assertEq(strategyAfter.allocationPoints, ghost_allocationPoints[strategyAddr]);
     }
 
@@ -111,15 +107,13 @@ contract YieldAggregatorHandler is Test {
         uint256 strategyCapAmount = AggAmountCap.wrap(_cap).resolve();
         if (strategyCapAmount > ConstantsLib.MAX_CAP_AMOUNT) strategyCapAmount = ConstantsLib.MAX_CAP_AMOUNT;
 
-        IYieldAggregator.Strategy memory strategyBefore = yieldAggregator.getStrategy(strategyAddr);
+        IEulerEarn.Strategy memory strategyBefore = eulerEarn.getStrategy(strategyAddr);
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
-            0,
-            address(yieldAggregator),
-            abi.encodeWithSelector(YieldAggregator.setStrategyCap.selector, strategyAddr, _cap)
+            0, address(eulerEarn), abi.encodeWithSelector(EulerEarn.setStrategyCap.selector, strategyAddr, _cap)
         );
 
-        IYieldAggregator.Strategy memory strategyAfter = yieldAggregator.getStrategy(strategyAddr);
+        IEulerEarn.Strategy memory strategyAfter = eulerEarn.getStrategy(strategyAddr);
         if (success) {
             assertEq(AggAmountCap.unwrap(strategyAfter.cap), _cap);
         } else {
@@ -139,25 +133,25 @@ contract YieldAggregatorHandler is Test {
         // simulating loss when switching strategy to emergency status
         uint256 expected_ghost_totalAssetsDeposited;
         if (_isInitiallyActive) {
-            IYieldAggregator.Strategy memory strategyBefore = yieldAggregator.getStrategy(strategyAddr);
+            IEulerEarn.Strategy memory strategyBefore = eulerEarn.getStrategy(strategyAddr);
             expected_ghost_totalAssetsDeposited =
                 _simulateLossDeduction(ghost_totalAssetsDeposited, strategyBefore.allocated);
         }
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             0,
-            address(yieldAggregator),
-            abi.encodeWithSelector(YieldAggregator.toggleStrategyEmergencyStatus.selector, strategyAddr)
+            address(eulerEarn),
+            abi.encodeWithSelector(EulerEarn.toggleStrategyEmergencyStatus.selector, strategyAddr)
         );
 
-        IYieldAggregator.Strategy memory strategyAfter = yieldAggregator.getStrategy(strategyAddr);
+        IEulerEarn.Strategy memory strategyAfter = eulerEarn.getStrategy(strategyAddr);
         if (success) {
-            if (strategyAfter.status == IYieldAggregator.StrategyStatus.Emergency) {
+            if (strategyAfter.status == IEulerEarn.StrategyStatus.Emergency) {
                 ghost_totalAllocationPoints -= strategyAfter.allocationPoints;
                 ghost_totalAssetsDeposited = expected_ghost_totalAssetsDeposited;
 
                 strategyUtil.fromActiveToEmergency(strategyAddr);
-            } else if (strategyAfter.status == IYieldAggregator.StrategyStatus.Active) {
+            } else if (strategyAfter.status == IEulerEarn.StrategyStatus.Active) {
                 ghost_totalAllocationPoints += strategyAfter.allocationPoints;
 
                 strategyUtil.fromEmergencyToActive(strategyAddr);
@@ -166,7 +160,7 @@ contract YieldAggregatorHandler is Test {
     }
 
     function addStrategy(uint256 _strategyIndexSeed, uint256 _allocationPoints) external {
-        address[] memory withdrawalQueue = yieldAggregator.withdrawalQueue();
+        address[] memory withdrawalQueue = eulerEarn.withdrawalQueue();
         if (withdrawalQueue.length == ConstantsLib.MAX_STRATEGIES) return;
 
         address strategyAddr = strategyUtil.fetchNonActiveStrategy(_strategyIndexSeed);
@@ -176,8 +170,8 @@ contract YieldAggregatorHandler is Test {
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             0,
-            address(yieldAggregator),
-            abi.encodeWithSelector(YieldAggregator.addStrategy.selector, strategyAddr, _allocationPoints)
+            address(eulerEarn),
+            abi.encodeWithSelector(EulerEarn.addStrategy.selector, strategyAddr, _allocationPoints)
         );
 
         if (success) {
@@ -188,8 +182,8 @@ contract YieldAggregatorHandler is Test {
             strategyUtil.fromNonActiveToActive(strategyAddr);
         }
 
-        IYieldAggregator.Strategy memory strategyAfter = yieldAggregator.getStrategy(strategyAddr);
-        assertEq(yieldAggregator.totalAllocationPoints(), ghost_totalAllocationPoints);
+        IEulerEarn.Strategy memory strategyAfter = eulerEarn.getStrategy(strategyAddr);
+        assertEq(eulerEarn.totalAllocationPoints(), ghost_totalAllocationPoints);
         assertEq(strategyAfter.allocationPoints, ghost_allocationPoints[strategyAddr]);
     }
 
@@ -197,10 +191,10 @@ contract YieldAggregatorHandler is Test {
         address strategyAddr = strategyUtil.fetchActiveStrategy(_strategyIndexSeed);
         if (strategyAddr == address(0)) return;
 
-        IYieldAggregator.Strategy memory strategyBefore = yieldAggregator.getStrategy(strategyAddr);
+        IEulerEarn.Strategy memory strategyBefore = eulerEarn.getStrategy(strategyAddr);
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
-            0, address(yieldAggregator), abi.encodeWithSelector(YieldAggregator.removeStrategy.selector, strategyAddr)
+            0, address(eulerEarn), abi.encodeWithSelector(EulerEarn.removeStrategy.selector, strategyAddr)
         );
 
         if (success) {
@@ -211,27 +205,25 @@ contract YieldAggregatorHandler is Test {
             strategyUtil.fromActiveToNonActive(strategyAddr);
         }
 
-        IYieldAggregator.Strategy memory strategyAfter = yieldAggregator.getStrategy(strategyAddr);
+        IEulerEarn.Strategy memory strategyAfter = eulerEarn.getStrategy(strategyAddr);
         assertEq(strategyAfter.allocationPoints, ghost_allocationPoints[strategyAddr]);
-        assertEq(yieldAggregator.totalAllocationPoints(), ghost_totalAllocationPoints);
+        assertEq(eulerEarn.totalAllocationPoints(), ghost_totalAllocationPoints);
     }
 
     function reorderWithdrawalQueue(uint8 _index1, uint8 _index2) external {
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
-            0,
-            address(yieldAggregator),
-            abi.encodeWithSelector(YieldAggregator.reorderWithdrawalQueue.selector, _index1, _index2)
+            0, address(eulerEarn), abi.encodeWithSelector(EulerEarn.reorderWithdrawalQueue.selector, _index1, _index2)
         );
     }
 
     function rebalance(uint256 _actorIndexSeed) external {
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
 
-        (address[] memory strategiesToRebalance) = yieldAggregator.withdrawalQueue();
+        (address[] memory strategiesToRebalance) = eulerEarn.withdrawalQueue();
         (currentActor, success, returnData) = actorUtil.initiateActorCall(
             _actorIndexSeed,
-            address(yieldAggregator),
-            abi.encodeWithSelector(YieldAggregator.rebalance.selector, strategiesToRebalance)
+            address(eulerEarn),
+            abi.encodeWithSelector(EulerEarn.rebalance.selector, strategiesToRebalance)
         );
 
         if (success) {
@@ -239,25 +231,25 @@ contract YieldAggregatorHandler is Test {
 
             for (uint256 i; i < strategiesToRebalance.length; i++) {
                 assertEq(
-                    IERC4626(strategiesToRebalance[i]).maxWithdraw(address(yieldAggregator)),
-                    (yieldAggregator.getStrategy(strategiesToRebalance[i])).allocated
+                    IERC4626(strategiesToRebalance[i]).maxWithdraw(address(eulerEarn)),
+                    (eulerEarn.getStrategy(strategiesToRebalance[i])).allocated
                 );
             }
         }
     }
 
     function harvest(uint256 _actorIndexSeed) external {
-        uint256 expectedInterestRate = yieldAggregator.interestAccrued();
+        uint256 expectedInterestRate = eulerEarn.interestAccrued();
         (uint256 expectedAccumulatedPerformanceFee, uint256 expectedTotalAssetsDeposited) =
             _simulateHarvest(ghost_totalAssetsDeposited + expectedInterestRate);
 
         // simulate loss
         (, success, returnData) = actorUtil.initiateActorCall(
-            _actorIndexSeed, address(yieldAggregator), abi.encodeWithSelector(IYieldAggregator.harvest.selector)
+            _actorIndexSeed, address(eulerEarn), abi.encodeWithSelector(IEulerEarn.harvest.selector)
         );
 
         if (success) {
-            (address feeRecipient,) = yieldAggregator.performanceFeeConfig();
+            (address feeRecipient,) = eulerEarn.performanceFeeConfig();
             ghost_accumulatedPerformanceFeePerRecipient[feeRecipient] = expectedAccumulatedPerformanceFee;
             ghost_totalAssetsDeposited = expectedTotalAssetsDeposited;
             ghost_lastHarvestTimestamp = uint40(block.timestamp);
@@ -266,21 +258,19 @@ contract YieldAggregatorHandler is Test {
 
     function updateInterestAccrued(uint256 _actorIndexSeed) external {
         (, success, returnData) = actorUtil.initiateActorCall(
-            _actorIndexSeed,
-            address(yieldAggregator),
-            abi.encodeWithSelector(YieldAggregator.updateInterestAccrued.selector)
+            _actorIndexSeed, address(eulerEarn), abi.encodeWithSelector(EulerEarn.updateInterestAccrued.selector)
         );
     }
 
     function gulp(uint256 _actorIndexSeed) external {
         (, success, returnData) = actorUtil.initiateActorCall(
-            _actorIndexSeed, address(yieldAggregator), abi.encodeWithSelector(YieldAggregator.gulp.selector)
+            _actorIndexSeed, address(eulerEarn), abi.encodeWithSelector(EulerEarn.gulp.selector)
         );
 
-        if (success && yieldAggregator.totalSupply() > 0) {
-            (,, uint168 interestLeft) = yieldAggregator.getYieldAggregatorSavingRate();
+        if (success && eulerEarn.totalSupply() > 0) {
+            (,, uint168 interestLeft) = eulerEarn.getEulerEarnSavingRate();
 
-            assertEq(yieldAggregator.totalAssetsAllocatable(), yieldAggregator.totalAssetsDeposited() + interestLeft);
+            assertEq(eulerEarn.totalAssetsAllocatable(), eulerEarn.totalAssetsDeposited() + interestLeft);
         }
     }
 
@@ -292,18 +282,16 @@ contract YieldAggregatorHandler is Test {
 
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
 
-        _fillBalance(currentActor, yieldAggregator.asset(), _assets);
+        _fillBalance(currentActor, eulerEarn.asset(), _assets);
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
-            currentActorIndex,
-            address(yieldAggregator),
-            abi.encodeWithSelector(IERC4626.deposit.selector, _assets, _receiver)
+            currentActorIndex, address(eulerEarn), abi.encodeWithSelector(IERC4626.deposit.selector, _assets, _receiver)
         );
 
         if (success) {
             ghost_totalAssetsDeposited += _assets;
         }
-        assertEq(yieldAggregator.totalAssetsDeposited(), ghost_totalAssetsDeposited);
+        assertEq(eulerEarn.totalAssetsDeposited(), ghost_totalAssetsDeposited);
     }
 
     function mint(uint256 _actorIndexSeed, uint256 _shares, address _receiver) external {
@@ -314,40 +302,38 @@ contract YieldAggregatorHandler is Test {
 
         _shares = bound(_shares, 1, type(uint256).max);
 
-        uint256 assets = yieldAggregator.previewMint(_shares);
-        _fillBalance(currentActor, yieldAggregator.asset(), assets);
+        uint256 assets = eulerEarn.previewMint(_shares);
+        _fillBalance(currentActor, eulerEarn.asset(), assets);
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
-            currentActorIndex,
-            address(yieldAggregator),
-            abi.encodeWithSelector(IERC4626.mint.selector, _shares, _receiver)
+            currentActorIndex, address(eulerEarn), abi.encodeWithSelector(IERC4626.mint.selector, _shares, _receiver)
         );
 
         if (success) {
             ghost_totalAssetsDeposited += assets;
         }
-        assertEq(yieldAggregator.totalAssetsDeposited(), ghost_totalAssetsDeposited);
+        assertEq(eulerEarn.totalAssetsDeposited(), ghost_totalAssetsDeposited);
     }
 
     function withdraw(uint256 _actorIndexSeed, uint256 _assets, address _receiver) external {
         vm.assume(_receiver != address(0));
         vm.assume(!actorUtil.isFeeReceiver(_receiver));
 
-        uint256 expectedInterestRate = yieldAggregator.interestAccrued();
+        uint256 expectedInterestRate = eulerEarn.interestAccrued();
         (uint256 expectedAccumulatedPerformanceFee, uint256 expectedTotalAssetsDeposited) =
             _simulateHarvest(ghost_totalAssetsDeposited + expectedInterestRate);
 
-        uint256 previousHarvestTimestamp = yieldAggregator.lastHarvestTimestamp();
+        uint256 previousHarvestTimestamp = eulerEarn.lastHarvestTimestamp();
 
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
 
-        _assets = bound(_assets, 0, yieldAggregator.convertToAssets(yieldAggregator.balanceOf(currentActor)));
+        _assets = bound(_assets, 0, eulerEarn.convertToAssets(eulerEarn.balanceOf(currentActor)));
 
-        bool isOnlyCashReserveWithdraw = IERC20(yieldAggregator.asset()).balanceOf(address(yieldAggregator)) >= _assets;
+        bool isOnlyCashReserveWithdraw = IERC20(eulerEarn.asset()).balanceOf(address(eulerEarn)) >= _assets;
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             currentActorIndex,
-            address(yieldAggregator),
+            address(eulerEarn),
             abi.encodeWithSelector(IERC4626.withdraw.selector, _assets, _receiver, currentActor)
         );
 
@@ -356,7 +342,7 @@ contract YieldAggregatorHandler is Test {
                 block.timestamp > previousHarvestTimestamp + ConstantsLib.HARVEST_COOLDOWN
                     || isOnlyCashReserveWithdraw == false
             ) {
-                (address feeRecipient,) = yieldAggregator.performanceFeeConfig();
+                (address feeRecipient,) = eulerEarn.performanceFeeConfig();
                 ghost_accumulatedPerformanceFeePerRecipient[feeRecipient] = expectedAccumulatedPerformanceFee;
                 ghost_totalAssetsDeposited = expectedTotalAssetsDeposited;
 
@@ -365,39 +351,39 @@ contract YieldAggregatorHandler is Test {
 
             ghost_totalAssetsDeposited -= _assets;
         }
-        assertEq(yieldAggregator.totalAssetsDeposited(), ghost_totalAssetsDeposited);
+        assertEq(eulerEarn.totalAssetsDeposited(), ghost_totalAssetsDeposited);
     }
 
     function redeem(uint256 _actorIndexSeed, uint256 _shares, address _receiver) external {
         vm.assume(_receiver != address(0));
         vm.assume(!actorUtil.isFeeReceiver(_receiver));
 
-        uint256 expectedInterestRate = yieldAggregator.interestAccrued();
+        uint256 expectedInterestRate = eulerEarn.interestAccrued();
 
         (uint256 expectedAccumulatedPerformanceFee, uint256 expectedTotalAssetsDeposited) =
             _simulateHarvest(ghost_totalAssetsDeposited + expectedInterestRate);
 
-        uint256 previousHarvestTimestamp = yieldAggregator.lastHarvestTimestamp();
+        uint256 previousHarvestTimestamp = eulerEarn.lastHarvestTimestamp();
 
         (currentActor, currentActorIndex) = actorUtil.fetchActor(_actorIndexSeed);
 
-        _shares = bound(_shares, 0, yieldAggregator.balanceOf(currentActor));
+        _shares = bound(_shares, 0, eulerEarn.balanceOf(currentActor));
 
         (currentActor, success, returnData) = actorUtil.initiateExactActorCall(
             currentActorIndex,
-            address(yieldAggregator),
+            address(eulerEarn),
             abi.encodeWithSelector(IERC4626.redeem.selector, _shares, _receiver, currentActor)
         );
 
-        bool isOnlyCashReserveWithdraw = IERC20(yieldAggregator.asset()).balanceOf(address(yieldAggregator))
-            >= yieldAggregator.previewRedeem(_shares);
+        bool isOnlyCashReserveWithdraw =
+            IERC20(eulerEarn.asset()).balanceOf(address(eulerEarn)) >= eulerEarn.previewRedeem(_shares);
 
         if (success) {
             if (
                 block.timestamp > previousHarvestTimestamp + ConstantsLib.HARVEST_COOLDOWN
                     || isOnlyCashReserveWithdraw == false
             ) {
-                (address feeRecipient,) = yieldAggregator.performanceFeeConfig();
+                (address feeRecipient,) = eulerEarn.performanceFeeConfig();
                 ghost_accumulatedPerformanceFeePerRecipient[feeRecipient] = expectedAccumulatedPerformanceFee;
                 ghost_totalAssetsDeposited = expectedTotalAssetsDeposited;
 
@@ -407,7 +393,7 @@ contract YieldAggregatorHandler is Test {
             uint256 assets = abi.decode(returnData, (uint256));
             ghost_totalAssetsDeposited -= assets;
         }
-        assertEq(yieldAggregator.totalAssetsDeposited(), ghost_totalAssetsDeposited);
+        assertEq(eulerEarn.totalAssetsDeposited(), ghost_totalAssetsDeposited);
     }
 
     function ghostFeeRecipientsLength() external view returns (uint256) {
@@ -422,7 +408,7 @@ contract YieldAggregatorHandler is Test {
             asset.mint(currentActor, _amount - actorCurrentBalance);
         }
         vm.prank(_actor);
-        asset.approve(address(yieldAggregator), _amount);
+        asset.approve(address(eulerEarn), _amount);
     }
 
     // This function simulate loss socialization, the part related to decreasing totalAssetsDeposited only.
@@ -432,8 +418,8 @@ contract YieldAggregatorHandler is Test {
         view
         returns (uint256)
     {
-        // (,, uint168 interestLeft) = yieldAggregator.getYieldAggregatorSavingRate();
-        uint256 totalNotDistributed = yieldAggregator.totalAssetsAllocatable() - cachedGhostTotalAssetsDeposited;
+        // (,, uint168 interestLeft) = eulerEarn.getEulerEarnSavingRate();
+        uint256 totalNotDistributed = eulerEarn.totalAssetsAllocatable() - cachedGhostTotalAssetsDeposited;
 
         if (_loss > totalNotDistributed) {
             cachedGhostTotalAssetsDeposited -= (_loss - totalNotDistributed);
@@ -448,13 +434,13 @@ contract YieldAggregatorHandler is Test {
         uint256 totalLoss;
 
         // check if performance fee is on; store received fee per recipient if call is succesfull
-        (address feeRecipient, uint256 performanceFee) = yieldAggregator.performanceFeeConfig();
+        (address feeRecipient, uint256 performanceFee) = eulerEarn.performanceFeeConfig();
         uint256 accumulatedPerformanceFee = ghost_accumulatedPerformanceFeePerRecipient[feeRecipient];
 
-        address[] memory withdrawalQueueArray = yieldAggregator.withdrawalQueue();
+        address[] memory withdrawalQueueArray = eulerEarn.withdrawalQueue();
         for (uint256 i; i < withdrawalQueueArray.length; i++) {
-            uint256 allocated = (yieldAggregator.getStrategy(withdrawalQueueArray[i])).allocated;
-            uint256 underlying = IERC4626(withdrawalQueueArray[i]).maxWithdraw(address(yieldAggregator));
+            uint256 allocated = (eulerEarn.getStrategy(withdrawalQueueArray[i])).allocated;
+            uint256 underlying = IERC4626(withdrawalQueueArray[i]).maxWithdraw(address(eulerEarn));
             if (underlying >= allocated) {
                 totalYield += underlying - allocated;
             } else {
@@ -466,7 +452,7 @@ contract YieldAggregatorHandler is Test {
             if (feeRecipient != address(0) && performanceFee > 0) {
                 uint256 performancefeeAssets =
                     Math.mulDiv(totalYield - totalLoss, performanceFee, 1e18, Math.Rounding.Floor);
-                accumulatedPerformanceFee = yieldAggregator.previewDeposit(performancefeeAssets);
+                accumulatedPerformanceFee = eulerEarn.previewDeposit(performancefeeAssets);
 
                 _totalAssetsDeposited += performancefeeAssets;
             }

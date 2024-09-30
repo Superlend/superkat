@@ -12,7 +12,7 @@ library ErrorsLib {
     error MaxPerformanceFeeExceeded();
     error FeeRecipientNotSet();
     error CanNotRemoveCashReserve();
-    error YieldAggregatorRewardsNotSupported();
+    error EulerEarnRewardsNotSupported();
     error InvalidHooksTarget();
     error NotHooksContract();
     error InvalidHookedFns();

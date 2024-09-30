@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import "../common/YieldAggregatorBase.t.sol";
+import "../common/EulerEarnBase.t.sol";
 
-contract StrategyCapE2ETest is YieldAggregatorBase {
+contract StrategyCapE2ETest is EulerEarnBase {
     uint256 user1InitialBalance = 100000e18;
 
     using AggAmountCapLib for AggAmountCap;
@@ -20,13 +20,13 @@ contract StrategyCapE2ETest is YieldAggregatorBase {
     function testSetCap() public {
         uint256 cap = 100e18;
 
-        assertEq(AggAmountCap.unwrap(eulerYieldAggregatorVault.getStrategy(address(eTST)).cap), 0);
+        assertEq(AggAmountCap.unwrap(eulerEulerEarnVault.getStrategy(address(eTST)).cap), 0);
 
         vm.prank(manager);
         // 100e18 cap
-        eulerYieldAggregatorVault.setStrategyCap(address(eTST), 6420);
+        eulerEulerEarnVault.setStrategyCap(address(eTST), 6420);
 
-        IYieldAggregator.Strategy memory strategy = eulerYieldAggregatorVault.getStrategy(address(eTST));
+        IEulerEarn.Strategy memory strategy = eulerEulerEarnVault.getStrategy(address(eTST));
 
         assertEq(strategy.cap.resolve(), cap);
         assertEq(AggAmountCap.unwrap(strategy.cap), 6420);
@@ -35,19 +35,19 @@ contract StrategyCapE2ETest is YieldAggregatorBase {
     function testSetCapForInactiveStrategy() public {
         vm.prank(manager);
         vm.expectRevert(ErrorsLib.StrategyShouldBeActive.selector);
-        eulerYieldAggregatorVault.setStrategyCap(address(0x2), 1);
+        eulerEulerEarnVault.setStrategyCap(address(0x2), 1);
     }
 
     function testSetCapForCashReserveStrategy() public {
         vm.prank(manager);
         vm.expectRevert(ErrorsLib.NoCapOnCashReserveStrategy.selector);
-        eulerYieldAggregatorVault.setStrategyCap(address(0), 1);
+        eulerEulerEarnVault.setStrategyCap(address(0), 1);
     }
 
     function testSetCapExceedingMax() public {
         vm.prank(manager);
         vm.expectRevert(ErrorsLib.StrategyCapExceedMax.selector);
-        eulerYieldAggregatorVault.setStrategyCap(address(eTST), 51238);
+        eulerEulerEarnVault.setStrategyCap(address(eTST), 51238);
     }
 
     function testRebalanceAfterHittingCap() public {
@@ -57,51 +57,50 @@ contract StrategyCapE2ETest is YieldAggregatorBase {
         // 3000000000000000000000 cap
         uint16 cap = 19221;
         vm.prank(manager);
-        eulerYieldAggregatorVault.setStrategyCap(address(eTST), cap);
-        IYieldAggregator.Strategy memory strategy = eulerYieldAggregatorVault.getStrategy(address(eTST));
+        eulerEulerEarnVault.setStrategyCap(address(eTST), cap);
+        IEulerEarn.Strategy memory strategy = eulerEulerEarnVault.getStrategy(address(eTST));
         assertEq(strategy.cap.resolve(), cappedBalance);
         assertEq(AggAmountCap.unwrap(strategy.cap), cap);
 
         uint256 amountToDeposit = 10000e18;
 
-        // deposit into aggregator
+        // deposit into EulerEarn
         {
-            uint256 balanceBefore = eulerYieldAggregatorVault.balanceOf(user1);
-            uint256 totalSupplyBefore = eulerYieldAggregatorVault.totalSupply();
-            uint256 totalAssetsDepositedBefore = eulerYieldAggregatorVault.totalAssetsDeposited();
+            uint256 balanceBefore = eulerEulerEarnVault.balanceOf(user1);
+            uint256 totalSupplyBefore = eulerEulerEarnVault.totalSupply();
+            uint256 totalAssetsDepositedBefore = eulerEulerEarnVault.totalAssetsDeposited();
             uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
 
             vm.startPrank(user1);
-            assetTST.approve(address(eulerYieldAggregatorVault), amountToDeposit);
-            eulerYieldAggregatorVault.deposit(amountToDeposit, user1);
+            assetTST.approve(address(eulerEulerEarnVault), amountToDeposit);
+            eulerEulerEarnVault.deposit(amountToDeposit, user1);
             vm.stopPrank();
 
-            assertEq(eulerYieldAggregatorVault.balanceOf(user1), balanceBefore + amountToDeposit);
-            assertEq(eulerYieldAggregatorVault.totalSupply(), totalSupplyBefore + amountToDeposit);
-            assertEq(eulerYieldAggregatorVault.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
+            assertEq(eulerEulerEarnVault.balanceOf(user1), balanceBefore + amountToDeposit);
+            assertEq(eulerEulerEarnVault.totalSupply(), totalSupplyBefore + amountToDeposit);
+            assertEq(eulerEulerEarnVault.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
             assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - amountToDeposit);
         }
 
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
         {
-            IYieldAggregator.Strategy memory strategyBefore = eulerYieldAggregatorVault.getStrategy(address(eTST));
+            IEulerEarn.Strategy memory strategyBefore = eulerEulerEarnVault.getStrategy(address(eTST));
 
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerYieldAggregatorVault))), strategyBefore.allocated);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerEulerEarnVault))), strategyBefore.allocated);
 
-            uint256 expectedStrategyCash = eulerYieldAggregatorVault.totalAssetsAllocatable()
-                * strategyBefore.allocationPoints / eulerYieldAggregatorVault.totalAllocationPoints();
+            uint256 expectedStrategyCash = eulerEulerEarnVault.totalAssetsAllocatable()
+                * strategyBefore.allocationPoints / eulerEulerEarnVault.totalAllocationPoints();
 
             vm.prank(user1);
             strategiesToRebalance[0] = address(eTST);
-            eulerYieldAggregatorVault.rebalance(strategiesToRebalance);
+            eulerEulerEarnVault.rebalance(strategiesToRebalance);
 
             assertTrue(expectedStrategyCash > cappedBalance);
-            assertEq(eulerYieldAggregatorVault.totalAllocated(), cappedBalance);
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerYieldAggregatorVault))), cappedBalance);
+            assertEq(eulerEulerEarnVault.totalAllocated(), cappedBalance);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerEulerEarnVault))), cappedBalance);
             assertEq(
-                (eulerYieldAggregatorVault.getStrategy(address(eTST))).allocated,
-                strategyBefore.allocated + cappedBalance
+                (eulerEulerEarnVault.getStrategy(address(eTST))).allocated, strategyBefore.allocated + cappedBalance
             );
         }
 
@@ -109,63 +108,62 @@ contract StrategyCapE2ETest is YieldAggregatorBase {
         vm.warp(block.timestamp + 86400);
         vm.startPrank(user1);
 
-        assetTST.approve(address(eulerYieldAggregatorVault), amountToDeposit);
-        eulerYieldAggregatorVault.deposit(amountToDeposit, user1);
+        assetTST.approve(address(eulerEulerEarnVault), amountToDeposit);
+        eulerEulerEarnVault.deposit(amountToDeposit, user1);
 
-        uint256 strategyAllocatedBefore = (eulerYieldAggregatorVault.getStrategy(address(eTST))).allocated;
+        uint256 strategyAllocatedBefore = (eulerEulerEarnVault.getStrategy(address(eTST))).allocated;
 
         strategiesToRebalance[0] = address(eTST);
-        eulerYieldAggregatorVault.rebalance(strategiesToRebalance);
+        eulerEulerEarnVault.rebalance(strategiesToRebalance);
         vm.stopPrank();
 
-        assertEq(strategyAllocatedBefore, (eulerYieldAggregatorVault.getStrategy(address(eTST))).allocated);
+        assertEq(strategyAllocatedBefore, (eulerEulerEarnVault.getStrategy(address(eTST))).allocated);
     }
 
     function testRebalanceWhentargetAllocationGreaterThanCap() public {
         uint256 amountToDeposit = 10000e18;
 
-        // deposit into aggregator
+        // deposit into EulerEarn
         {
-            uint256 balanceBefore = eulerYieldAggregatorVault.balanceOf(user1);
-            uint256 totalSupplyBefore = eulerYieldAggregatorVault.totalSupply();
-            uint256 totalAssetsDepositedBefore = eulerYieldAggregatorVault.totalAssetsDeposited();
+            uint256 balanceBefore = eulerEulerEarnVault.balanceOf(user1);
+            uint256 totalSupplyBefore = eulerEulerEarnVault.totalSupply();
+            uint256 totalAssetsDepositedBefore = eulerEulerEarnVault.totalAssetsDeposited();
             uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
 
             vm.startPrank(user1);
-            assetTST.approve(address(eulerYieldAggregatorVault), amountToDeposit);
-            eulerYieldAggregatorVault.deposit(amountToDeposit, user1);
+            assetTST.approve(address(eulerEulerEarnVault), amountToDeposit);
+            eulerEulerEarnVault.deposit(amountToDeposit, user1);
             vm.stopPrank();
 
-            assertEq(eulerYieldAggregatorVault.balanceOf(user1), balanceBefore + amountToDeposit);
-            assertEq(eulerYieldAggregatorVault.totalSupply(), totalSupplyBefore + amountToDeposit);
-            assertEq(eulerYieldAggregatorVault.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
+            assertEq(eulerEulerEarnVault.balanceOf(user1), balanceBefore + amountToDeposit);
+            assertEq(eulerEulerEarnVault.totalSupply(), totalSupplyBefore + amountToDeposit);
+            assertEq(eulerEulerEarnVault.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
             assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - amountToDeposit);
         }
 
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
         {
-            IYieldAggregator.Strategy memory strategyBefore = eulerYieldAggregatorVault.getStrategy(address(eTST));
+            IEulerEarn.Strategy memory strategyBefore = eulerEulerEarnVault.getStrategy(address(eTST));
 
-            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerYieldAggregatorVault))), strategyBefore.allocated);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerEulerEarnVault))), strategyBefore.allocated);
 
             // set cap at around 10% less than target allocation
             uint16 cap = 19219;
             vm.prank(manager);
-            eulerYieldAggregatorVault.setStrategyCap(address(eTST), cap);
+            eulerEulerEarnVault.setStrategyCap(address(eTST), cap);
 
             vm.prank(user1);
             address[] memory strategiesToRebalance = new address[](1);
             strategiesToRebalance[0] = address(eTST);
-            eulerYieldAggregatorVault.rebalance(strategiesToRebalance);
+            eulerEulerEarnVault.rebalance(strategiesToRebalance);
 
-            assertEq(eulerYieldAggregatorVault.totalAllocated(), AggAmountCap.wrap(cap).resolve());
+            assertEq(eulerEulerEarnVault.totalAllocated(), AggAmountCap.wrap(cap).resolve());
             assertEq(
-                eTST.convertToAssets(eTST.balanceOf(address(eulerYieldAggregatorVault))),
-                AggAmountCap.wrap(cap).resolve()
+                eTST.convertToAssets(eTST.balanceOf(address(eulerEulerEarnVault))), AggAmountCap.wrap(cap).resolve()
             );
             assertEq(
-                (eulerYieldAggregatorVault.getStrategy(address(eTST))).allocated,
+                (eulerEulerEarnVault.getStrategy(address(eTST))).allocated,
                 strategyBefore.allocated + AggAmountCap.wrap(cap).resolve()
             );
         }
