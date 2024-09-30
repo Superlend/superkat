@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 // interfaces
 import {IERC4626} from "@openzeppelin-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {IYieldAggregator} from "../interface/IYieldAggregator.sol";
+import {IEulerEarn} from "../interface/IEulerEarn.sol";
 import {IBalanceTracker} from "reward-streams/src/interfaces/IBalanceTracker.sol";
 // contracts
 import {Shared} from "../common/Shared.sol";
@@ -22,17 +22,17 @@ import {ContextUpgradeable} from "@openzeppelin-upgradeable/utils/ContextUpgrade
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {StorageLib as Storage, YieldAggregatorStorage} from "../lib/StorageLib.sol";
+import {StorageLib as Storage, EulerEarnStorage} from "../lib/StorageLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
 import {ConstantsLib as Constants} from "../lib/ConstantsLib.sol";
 import {AmountCapLib, AmountCap} from "../lib/AmountCapLib.sol";
 import {SafePermit2Lib} from "../lib/SafePermit2Lib.sol";
 
-/// @title YieldAggregatorVaultModule contract
+/// @title EulerEarnVaultModule contract
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
-abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUpgradeable, Shared {
+abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradeable, Shared {
     using Math for uint256;
     using AmountCapLib for AmountCap;
     using SafeERC20 for IERC20;
@@ -72,7 +72,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         _gulp();
     }
 
-    /// @notice Deposit `_assets` amount into the yield aggregator.
+    /// @notice Deposit `_assets` amount into the euler earn.
     /// @dev See {IERC4626-deposit}.
     /// @dev This function will call DEPOSIT hook if enabled.
     /// @return Amount of shares minted.
@@ -98,7 +98,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         return assets;
     }
 
-    /// @notice Withdraw `_assets` amount from yield aggregator. This function will try to withdraw from cash reserve,
+    /// @notice Withdraw `_assets` amount from euler earn. This function will try to withdraw from cash reserve,
     ///         if not enough, will loop through the strategies following the withdrawal queue order till the withdraw amount is filled.
     /// @dev See {IERC4626-withdraw}.
     /// @dev This function will update the accrued interest and call WITHDRAW hook if enabled.
@@ -126,7 +126,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         return shares;
     }
 
-    /// @notice Redeem `_shares` amount from yield aggregator. This function will try to withdraw from cash reserve,
+    /// @notice Redeem `_shares` amount from euler earn. This function will try to withdraw from cash reserve,
     ///         if not enough, will loop through the strategies following the withdrawal queue order till the withdraw amount is filled.
     /// @dev See {IERC4626-redeem}.
     /// @dev This function will update the accrued interest and call REDEEM hook if enabled.
@@ -199,7 +199,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     /// @notice Return the accrued interest.
     /// @return Accrued interest.
     function interestAccrued() public view virtual nonReentrantView returns (uint256) {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
         return _interestAccruedFromCache($.interestLeft);
     }
@@ -208,8 +208,8 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     /// @return Last interest update timestamp.
     /// @return Timestamp when interest smearing end.
     /// @return Amount of interest left to distribute.
-    function getYieldAggregatorSavingRate() public view virtual nonReentrantView returns (uint40, uint40, uint168) {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+    function getEulerEarnSavingRate() public view virtual nonReentrantView returns (uint40, uint40, uint168) {
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
         return ($.lastInterestUpdate, $.interestSmearEnd, $.interestLeft);
     }
@@ -217,15 +217,15 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     /// @notice Get the total allocated amount.
     /// @return Total allocated amount.
     function totalAllocated() public view virtual nonReentrantView returns (uint256) {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
         return $.totalAllocated;
     }
 
-    /// @notice Get the total assets deposited into the yield aggregator.
+    /// @notice Get the total assets deposited into the euler earn.
     /// @return Total assets deposited.
     function totalAssetsDeposited() public view virtual nonReentrantView returns (uint256) {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
         return $.totalAssetsDeposited;
     }
@@ -233,13 +233,13 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     /// @notice Get the latest harvest timestamp.
     /// @return Latest harvest timestamp.
     function lastHarvestTimestamp() public view virtual nonReentrantView returns (uint256) {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
         return $.lastHarvestTimestamp;
     }
 
-    /// @notice get the total assets allocatable
-    /// @dev the total assets allocatable is the amount of assets deposited into the aggregator + assets already deposited into strategies
+    /// @notice get the total assets allocatable.
+    /// @dev the total assets allocatable is the amount of assets deposited into EulerEarn + assets already deposited into strategies.
     /// @return total assets allocatable.
     function totalAssetsAllocatable() public view virtual nonReentrantView returns (uint256) {
         return _totalAssetsAllocatable();
@@ -344,7 +344,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
             _shares.mulDiv(totalAssetsExpected + 1, totalSupplyExpected + 10 ** _decimalsOffset(), Math.Rounding.Floor);
     }
 
-    /// @notice Return the `_account` aggregator's balance.
+    /// @notice Return the `_account` EulerEarn's balance.
     /// @dev Overriding this function to add the `nonReentrantView` modifier.
     function balanceOf(address _account)
         public
@@ -357,19 +357,19 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         return _balanceOf(_account);
     }
 
-    /// @notice Return the yield aggregator total balance.
+    /// @notice Return the euler earn total balance.
     /// @dev Overriding this function to add the `nonReentrantView` modifier.
     function totalSupply() public view virtual override (ERC20Upgradeable, IERC20) nonReentrantView returns (uint256) {
         return _totalSupply();
     }
 
-    /// @notice Return the yield aggregator token decimals.
+    /// @notice Return the euler earn token decimals.
     /// @dev Not protected with `nonReentrantView()`
     function decimals() public view virtual override (ERC4626Upgradeable, ERC20Upgradeable) returns (uint8) {
         return ERC4626Upgradeable.decimals();
     }
 
-    /// @notice Returns the maximum amount of the underlying asset that can be deposited into the yield aggregator.
+    /// @notice Returns the maximum amount of the underlying asset that can be deposited into the euler earn.
     /// @dev Not protected with `nonReentrantView()`
     function maxDeposit(address) public view virtual override returns (uint256) {
         return type(uint256).max;
@@ -381,21 +381,21 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         return type(uint256).max;
     }
 
-    /// @notice Returns the yield aggregator asset.
+    /// @notice Returns the euler earn asset.
     /// @dev Not protected with `nonReentrantView()`
     /// @return Asset address.
     function asset() public view virtual override returns (address) {
         return _asset();
     }
 
-    /// @notice Returns the name of the yield aggregator.
+    /// @notice Returns the name of the euler earn.
     /// @dev Not protected with `nonReentrantView()`
     /// @return Name.
     function name() public view virtual override (ERC20Upgradeable, IERC20Metadata) returns (string memory) {
         return super.name();
     }
 
-    ///@dev Returns the symbol of the yield aggregator, usually a shorter version of the name.
+    ///@dev Returns the symbol of the euler earn, usually a shorter version of the name.
     /// @dev Not protected with `nonReentrantView()`
     /// @return Symbol.
     function symbol() public view virtual override (ERC20Upgradeable, IERC20Metadata) returns (string memory) {
@@ -475,13 +475,13 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         IERC20(_asset()).safePermitTransferFrom(_caller, address(this), _assets, permit2);
         _mint(_receiver, _shares);
 
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
         $.totalAssetsDeposited += _assets;
 
         emit Events.Deposit(_caller, _receiver, _assets, _shares);
     }
 
-    /// @dev Withdraw needed amount from yield aggregator.
+    /// @dev Withdraw needed amount from euler earn.
     ///      If cash reserve is not enough for withdraw, this function will loop through the withdrawal queue
     ///      and do withdraws till the amount is retrieved, or revert with `NotEnoughAssets()` error.
     /// @dev See {IERC4626-_withdraw}.
@@ -489,7 +489,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
         internal
         override
     {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
         uint256 assetsRetrieved = IERC20(_asset()).balanceOf(address(this));
 
         if (assetsRetrieved < _assets) {
@@ -497,7 +497,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
             for (uint256 i; i < numStrategies; ++i) {
                 IERC4626 strategy = IERC4626($.withdrawalQueue[i]);
 
-                if ($.strategies[address(strategy)].status != IYieldAggregator.StrategyStatus.Active) continue;
+                if ($.strategies[address(strategy)].status != IEulerEarn.StrategyStatus.Active) continue;
 
                 uint256 underlyingBalance = strategy.maxWithdraw(address(this));
                 uint256 desiredAssets = _assets - assetsRetrieved;
@@ -583,7 +583,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     /// @dev Performance fee will only be applied on net positive yield across all strategies.
     /// @param _isHarvestCoolDownCheckOn a boolean to indicate whether to check for cooldown period or not.
     function _harvest(bool _isHarvestCoolDownCheckOn, bool _isOnlyCashReserveWithdraw) private returns (bool) {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
         if (
             (_isHarvestCoolDownCheckOn && ($.lastHarvestTimestamp + Constants.HARVEST_COOLDOWN >= block.timestamp))
@@ -628,34 +628,34 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     /// @return Amount of positive yield if any, else 0.
     /// @return Amount of loss if any, else 0.
     function _harvestStrategy(address _strategy) private returns (uint256, uint256) {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
         uint120 strategyAllocatedAmount = $.strategies[_strategy].allocated;
 
-        if (strategyAllocatedAmount == 0 || $.strategies[_strategy].status != IYieldAggregator.StrategyStatus.Active) {
+        if (strategyAllocatedAmount == 0 || $.strategies[_strategy].status != IEulerEarn.StrategyStatus.Active) {
             return (0, 0);
         }
 
         // Use `previewRedeem()` to get the actual assets amount, bypassing any limits or revert.
-        uint256 aggregatorShares = IERC4626(_strategy).balanceOf(address(this));
-        uint256 aggregatorAssets = IERC4626(_strategy).previewRedeem(aggregatorShares);
-        $.strategies[_strategy].allocated = uint120(aggregatorAssets);
+        uint256 eulerEarnShares = IERC4626(_strategy).balanceOf(address(this));
+        uint256 eulerEarnAssets = IERC4626(_strategy).previewRedeem(eulerEarnShares);
+        $.strategies[_strategy].allocated = uint120(eulerEarnAssets);
 
         uint256 positiveYield;
         uint256 loss;
-        if (aggregatorAssets == strategyAllocatedAmount) {
+        if (eulerEarnAssets == strategyAllocatedAmount) {
             return (positiveYield, loss);
-        } else if (aggregatorAssets > strategyAllocatedAmount) {
+        } else if (eulerEarnAssets > strategyAllocatedAmount) {
             unchecked {
-                positiveYield = aggregatorAssets - strategyAllocatedAmount;
+                positiveYield = eulerEarnAssets - strategyAllocatedAmount;
             }
         } else {
             unchecked {
-                loss = strategyAllocatedAmount - aggregatorAssets;
+                loss = strategyAllocatedAmount - eulerEarnAssets;
             }
         }
 
-        emit Events.ExecuteHarvest(_strategy, aggregatorAssets, strategyAllocatedAmount);
+        emit Events.ExecuteHarvest(_strategy, eulerEarnAssets, strategyAllocatedAmount);
 
         return (positiveYield, loss);
     }
@@ -664,7 +664,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     /// @dev Fees will be minted as shares to fee recipient.
     /// @param _yield Net positive yield.
     function _accruePerformanceFee(uint256 _yield) private {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
         address cachedFeeRecipient = $.feeRecipient;
         uint96 cachedPerformanceFee = $.performanceFee;
@@ -684,8 +684,8 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     }
 
     /// @dev Rebalance strategy by depositing or withdrawing the amount to rebalance to hit target allocation.
-    ///      If current allocation is greater than target allocation, the aggregator will withdraw the excess assets.
-    ///      If current allocation is less than target allocation, the aggregator will:
+    ///      If current allocation is greater than target allocation, EulerEarn will withdraw the excess assets.
+    ///      If current allocation is less than target allocation, EulerEarn will:
     ///         - Try to deposit the delta, if the cash is not sufficient, deposit all the available cash
     ///         - If all the available cash is greater than the max deposit, deposit the max deposit
     /// @param _strategy Strategy address.
@@ -694,11 +694,11 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
             return; //nothing to rebalance as that's the cash reserve
         }
 
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
-        IYieldAggregator.Strategy memory strategyData = $.strategies[_strategy];
+        IEulerEarn.Strategy memory strategyData = $.strategies[_strategy];
 
-        if (strategyData.status != IYieldAggregator.StrategyStatus.Active) return;
+        if (strategyData.status != IEulerEarn.StrategyStatus.Active) return;
 
         uint256 totalAllocationPointsCache = $.totalAllocationPoints;
         uint256 totalAssetsAllocatableCache = _totalAssetsAllocatable();
@@ -769,7 +769,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     /// @notice Return the total amount of assets deposited, plus the accrued interest.
     /// @return total asset amount.
     function _totalAssets() private view returns (uint256) {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
         return $.totalAssetsDeposited + _interestAccruedFromCache($.interestLeft);
     }
@@ -779,7 +779,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     /// @return Expected amount to be returned from `_totalAssets()` if called after a harvest.
     /// @return Expected amount to be returned from `_totalSupply()` if called after a harvest.
     function _previewHarvestBeforeWithdraw(bool _isOnlyCashReserveWithdraw) private view returns (uint256, uint256) {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
         uint168 interestLeftExpected = $.interestLeft;
         uint256 totalAssetsDepositedExpected = $.totalAssetsDeposited + _interestAccruedFromCache(interestLeftExpected);
@@ -798,18 +798,17 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
             address strategy = $.withdrawalQueue[i];
             uint120 strategyAllocatedAmount = $.strategies[strategy].allocated;
 
-            if (strategyAllocatedAmount == 0 || $.strategies[strategy].status != IYieldAggregator.StrategyStatus.Active)
-            {
+            if (strategyAllocatedAmount == 0 || $.strategies[strategy].status != IEulerEarn.StrategyStatus.Active) {
                 continue;
             }
 
-            uint256 aggregatorShares = IERC4626(strategy).balanceOf(address(this));
-            uint256 aggregatorAssets = IERC4626(strategy).previewRedeem(aggregatorShares);
+            uint256 eulerEarnShares = IERC4626(strategy).balanceOf(address(this));
+            uint256 eulerEarnAssets = IERC4626(strategy).previewRedeem(eulerEarnShares);
 
-            if (aggregatorAssets > strategyAllocatedAmount) {
-                totalPositiveYield += aggregatorAssets - strategyAllocatedAmount;
-            } else if (aggregatorAssets < strategyAllocatedAmount) {
-                totalNegativeYield += strategyAllocatedAmount - aggregatorAssets;
+            if (eulerEarnAssets > strategyAllocatedAmount) {
+                totalPositiveYield += eulerEarnAssets - strategyAllocatedAmount;
+            } else if (eulerEarnAssets < strategyAllocatedAmount) {
+                totalNegativeYield += strategyAllocatedAmount - eulerEarnAssets;
             }
         }
 
@@ -845,7 +844,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     }
 
     function _simulateStrategiesWithdraw(uint256 _requestedAssets) private view returns (uint256) {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
         uint256 assetsRetrieved = IERC20(_asset()).balanceOf(address(this));
 
         if (assetsRetrieved < _requestedAssets) {
@@ -853,7 +852,7 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
             for (uint256 i; i < numStrategies; ++i) {
                 IERC4626 strategy = IERC4626($.withdrawalQueue[i]);
 
-                if ($.strategies[address(strategy)].status != IYieldAggregator.StrategyStatus.Active) continue;
+                if ($.strategies[address(strategy)].status != IEulerEarn.StrategyStatus.Active) continue;
 
                 uint256 underlyingBalance = strategy.maxWithdraw(address(this));
 
@@ -891,6 +890,6 @@ abstract contract YieldAggregatorVaultModule is ERC4626Upgradeable, ERC20VotesUp
     }
 }
 
-contract YieldAggregatorVault is YieldAggregatorVaultModule {
+contract EulerEarnVault is EulerEarnVaultModule {
     constructor(IntegrationsParams memory _integrationsParams) Shared(_integrationsParams) {}
 }

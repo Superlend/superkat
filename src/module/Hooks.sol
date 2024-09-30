@@ -6,7 +6,7 @@ import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
 // contracts
 import {Shared} from "../common/Shared.sol";
 // libs
-import {StorageLib as Storage, YieldAggregatorStorage} from "../lib/StorageLib.sol";
+import {StorageLib as Storage, EulerEarnStorage} from "../lib/StorageLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {ConstantsLib as Constants} from "../lib/ConstantsLib.sol";
@@ -29,7 +29,7 @@ abstract contract HooksModule is Shared {
         }
         require(_hookedFns < Constants.ACTIONS_COUNTER, Errors.InvalidHookedFns());
 
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
         $.hooksTarget = _hooksTarget;
         $.hookedFns = _hookedFns;
 
@@ -40,7 +40,7 @@ abstract contract HooksModule is Shared {
     /// @return Hooks contract.
     /// @return Hooked functions.
     function getHooksConfig() public view virtual nonReentrantView returns (address, uint32) {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
         return ($.hooksTarget, $.hookedFns);
     }

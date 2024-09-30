@@ -1,14 +1,14 @@
-## Yield Aggregator
+## Euler Earn
 
-The Yield Aggregator is an open source protocol for permissionless risk curation on top of [ERC4626 vaults](https://eips.ethereum.org/EIPS/eip-4626)(strategies). Although it is initially designed to be integrated with [Euler V2 vaults](https://github.com/euler-xyz/euler-vault-kit), technically it supports any other vault as long as it is ERC4626 compliant.
+Euler Earn is an open source protocol for permissionless risk curation on top of [ERC4626 vaults](https://eips.ethereum.org/EIPS/eip-4626)(strategies). Although it is initially designed to be integrated with [Euler V2 vaults](https://github.com/euler-xyz/euler-vault-kit), technically it supports any other vault as long as it is ERC4626 compliant.
 
-The yield aggregator in itself is an ERC4626 vault, and any risk curator can deploy one through the factory. Each vault has one loan asset and can allocate deposits to multiple strategies. The aggregator vaults are noncustodial and immutable instances, and offer users an easy way to provide liquidity and passively earn yield. 
+The Euler Earn in itself is an ERC4626 vault, and any risk curator can deploy one through the factory. Each vault has one loan asset and can allocate deposits to multiple strategies. Euler Earn vaults are noncustodial and immutable instances, and offer users an easy way to provide liquidity and passively earn yield. 
 
 For more details, please refer to the [whitepaper](/docs/whitepaper.md) and the [low-level spec](/docs/low-level-spec.md).
 
 ## Usage
 
-The Yield Aggregator comes with a comprehensive set of tests written in Solidity, which can be executed using Foundry.
+Euler Earn comes with a comprehensive set of tests written in Solidity, which can be executed using Foundry.
 
 To install Foundry:
 
@@ -25,7 +25,7 @@ foundryup
 To clone the repo:
 
 ```sh
-git clone https://github.com/euler-xyz/yield-aggregator.git
+git clone https://github.com/euler-xyz/euler-earn
 ```
 
 ### Build
@@ -62,7 +62,7 @@ echidna test/echidna/CryticERC4626TestsHarness.t.sol --contract CryticERC4626Tes
 
 To run symbolic tests using [`Halmos`](https://github.com/a16z/halmos):
 ```sh
-halmos --match-contract YieldAggregatorSymbolicTest --storage-layout=generic --test-parallel --solver-parallel --solver-timeout-assertion 0
+halmos --match-contract EulerEarnSymbolicTest --storage-layout=generic --test-parallel --solver-parallel --solver-timeout-assertion 0
 ```
 
 ### Format

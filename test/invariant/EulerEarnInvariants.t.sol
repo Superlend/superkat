@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import "../common/YieldAggregatorBase.t.sol";
+import "../common/EulerEarnBase.t.sol";
 import {ActorUtil} from "./util/ActorUtil.sol";
 import {StrategyUtil} from "./util/StrategyUtil.sol";
-import {YieldAggregatorHandler} from "./handler/YieldAggregatorHandler.sol";
+import {EulerEarnHandler} from "./handler/EulerEarnHandler.sol";
 
-contract YieldAggregatorInvariants is YieldAggregatorBase {
+contract EulerEarnInvariants is EulerEarnBase {
     ActorUtil internal actorUtil;
     StrategyUtil internal strategyUtil;
 
-    YieldAggregatorHandler internal eulerYieldAggregatorVaultHandler;
+    EulerEarnHandler internal eulerEulerEarnVaultHandler;
 
     // other strategies
     IEVault eTSTsecond;
@@ -22,7 +22,7 @@ contract YieldAggregatorInvariants is YieldAggregatorBase {
     function setUp() public override {
         super.setUp();
 
-        actorUtil = new ActorUtil(address(eulerYieldAggregatorVault));
+        actorUtil = new ActorUtil(address(eulerEulerEarnVault));
         actorUtil.includeActor(manager);
         actorUtil.includeActor(deployer);
         actorUtil.includeActor(user1);
@@ -39,118 +39,113 @@ contract YieldAggregatorInvariants is YieldAggregatorBase {
         // cash reserve strategy
         strategyUtil.includeStrategy(address(0));
 
-        eulerYieldAggregatorVaultHandler =
-            new YieldAggregatorHandler(eulerYieldAggregatorVault, actorUtil, strategyUtil);
+        eulerEulerEarnVaultHandler = new EulerEarnHandler(eulerEulerEarnVault, actorUtil, strategyUtil);
 
-        targetContract(address(eulerYieldAggregatorVaultHandler));
+        targetContract(address(eulerEulerEarnVaultHandler));
     }
 
     // Right after gulp, total assets allocatable should be always equal to total assets deposited + interest left.
     function invariant_gulp() public {
-        eulerYieldAggregatorVault.gulp();
+        eulerEulerEarnVault.gulp();
 
-        if (eulerYieldAggregatorVault.totalSupply() > 0) {
-            (,, uint168 interestLeft) = eulerYieldAggregatorVault.getYieldAggregatorSavingRate();
+        if (eulerEulerEarnVault.totalSupply() > 0) {
+            (,, uint168 interestLeft) = eulerEulerEarnVault.getEulerEarnSavingRate();
             assertEq(
-                eulerYieldAggregatorVault.totalAssetsAllocatable(),
-                eulerYieldAggregatorVault.totalAssetsDeposited() + interestLeft
+                eulerEulerEarnVault.totalAssetsAllocatable(), eulerEulerEarnVault.totalAssetsDeposited() + interestLeft
             );
         }
     }
 
     // totalAssetsDeposited should be equal to the totalAssetsAllocatable after SMEAR has passed.
     function invariant_totalAssets() public {
-        eulerYieldAggregatorVault.gulp();
+        eulerEulerEarnVault.gulp();
         skip(ConstantsLib.INTEREST_SMEAR); // make sure smear has passed
-        eulerYieldAggregatorVault.updateInterestAccrued();
+        eulerEulerEarnVault.updateInterestAccrued();
 
-        if (eulerYieldAggregatorVault.totalSupply() > 0) {
-            assertEq(eulerYieldAggregatorVault.totalAssets(), eulerYieldAggregatorVault.totalAssetsAllocatable());
+        if (eulerEulerEarnVault.totalSupply() > 0) {
+            assertEq(eulerEulerEarnVault.totalAssets(), eulerEulerEarnVault.totalAssetsAllocatable());
         }
     }
 
     // total allocation points should be equal to the sum of the allocation points of all strategies.
     function invariant_totalAllocationPoints() public view {
-        address[] memory withdrawalQueueArray = eulerYieldAggregatorVault.withdrawalQueue();
+        address[] memory withdrawalQueueArray = eulerEulerEarnVault.withdrawalQueue();
 
         uint256 expectedTotalAllocationpoints;
-        expectedTotalAllocationpoints += (eulerYieldAggregatorVault.getStrategy(address(0))).allocationPoints;
+        expectedTotalAllocationpoints += (eulerEulerEarnVault.getStrategy(address(0))).allocationPoints;
         for (uint256 i; i < withdrawalQueueArray.length; i++) {
-            IYieldAggregator.Strategy memory strategy = eulerYieldAggregatorVault.getStrategy(withdrawalQueueArray[i]);
+            IEulerEarn.Strategy memory strategy = eulerEulerEarnVault.getStrategy(withdrawalQueueArray[i]);
 
-            if (strategy.status == IYieldAggregator.StrategyStatus.Active) {
+            if (strategy.status == IEulerEarn.StrategyStatus.Active) {
                 expectedTotalAllocationpoints += strategy.allocationPoints;
             }
         }
 
-        assertEq(eulerYieldAggregatorVault.totalAllocationPoints(), expectedTotalAllocationpoints);
+        assertEq(eulerEulerEarnVault.totalAllocationPoints(), expectedTotalAllocationpoints);
     }
 
     // (1) If withdrawal queue length == 0, then the total allocation points should be equal cash reserve allocation points.
     // (2) If length > 0 and the total allocation points == cash reserve allocation points, then every strategy should have a 0 allocation points or should be a strategy in EMERGENCY mode.
     // (3) withdrawal queue length should always be equal the ghost length variable.
     function invariant_withdrawalQueue() public view {
-        (address[] memory withdrawalQueueArray) = eulerYieldAggregatorVault.withdrawalQueue();
+        (address[] memory withdrawalQueueArray) = eulerEulerEarnVault.withdrawalQueue();
 
-        uint256 cashReserveAllocationPoints = (eulerYieldAggregatorVault.getStrategy(address(0))).allocationPoints;
+        uint256 cashReserveAllocationPoints = (eulerEulerEarnVault.getStrategy(address(0))).allocationPoints;
 
         if (withdrawalQueueArray.length == 0) {
-            assertEq(eulerYieldAggregatorVault.totalAllocationPoints(), cashReserveAllocationPoints);
+            assertEq(eulerEulerEarnVault.totalAllocationPoints(), cashReserveAllocationPoints);
         }
 
         if (
             withdrawalQueueArray.length > 0
-                && eulerYieldAggregatorVault.totalAllocationPoints() == cashReserveAllocationPoints
+                && eulerEulerEarnVault.totalAllocationPoints() == cashReserveAllocationPoints
         ) {
             for (uint256 i; i < withdrawalQueueArray.length; i++) {
-                IYieldAggregator.Strategy memory strategy =
-                    eulerYieldAggregatorVault.getStrategy(withdrawalQueueArray[i]);
-                assertEq(
-                    strategy.allocationPoints == 0 || strategy.status == IYieldAggregator.StrategyStatus.Emergency, true
-                );
+                IEulerEarn.Strategy memory strategy = eulerEulerEarnVault.getStrategy(withdrawalQueueArray[i]);
+                assertEq(strategy.allocationPoints == 0 || strategy.status == IEulerEarn.StrategyStatus.Emergency, true);
             }
         }
 
-        assertEq(withdrawalQueueArray.length, eulerYieldAggregatorVaultHandler.ghost_withdrawalQueueLength());
+        assertEq(withdrawalQueueArray.length, eulerEulerEarnVaultHandler.ghost_withdrawalQueueLength());
     }
 
     // total allocated amount should always be equal the sum of allocated amount in all the strategies.
     function invariant_totalAllocated() public view {
-        (address[] memory withdrawalQueueArray) = eulerYieldAggregatorVault.withdrawalQueue();
+        (address[] memory withdrawalQueueArray) = eulerEulerEarnVault.withdrawalQueue();
 
-        uint256 aggregatedAllocatedAmount;
+        uint256 earnegatedAllocatedAmount;
         for (uint256 i; i < withdrawalQueueArray.length; i++) {
-            IYieldAggregator.Strategy memory strategy = eulerYieldAggregatorVault.getStrategy(withdrawalQueueArray[i]);
+            IEulerEarn.Strategy memory strategy = eulerEulerEarnVault.getStrategy(withdrawalQueueArray[i]);
 
-            if (strategy.status == IYieldAggregator.StrategyStatus.Active) {
-                aggregatedAllocatedAmount += strategy.allocated;
+            if (strategy.status == IEulerEarn.StrategyStatus.Active) {
+                earnegatedAllocatedAmount += strategy.allocated;
             }
         }
 
-        assertEq(eulerYieldAggregatorVault.totalAllocated(), aggregatedAllocatedAmount);
+        assertEq(eulerEulerEarnVault.totalAllocated(), earnegatedAllocatedAmount);
     }
 
     // Balance of a certain fee recipient should always be equal to the ghost tracking variable.
     function invariant_performanceFee() public view {
-        for (uint256 i; i < eulerYieldAggregatorVaultHandler.ghostFeeRecipientsLength(); i++) {
-            address feeRecipient = eulerYieldAggregatorVaultHandler.ghost_feeRecipients(i);
+        for (uint256 i; i < eulerEulerEarnVaultHandler.ghostFeeRecipientsLength(); i++) {
+            address feeRecipient = eulerEulerEarnVaultHandler.ghost_feeRecipients(i);
 
             assertEq(
-                eulerYieldAggregatorVault.balanceOf(feeRecipient),
-                eulerYieldAggregatorVaultHandler.ghost_accumulatedPerformanceFeePerRecipient(feeRecipient)
+                eulerEulerEarnVault.balanceOf(feeRecipient),
+                eulerEulerEarnVaultHandler.ghost_accumulatedPerformanceFeePerRecipient(feeRecipient)
             );
         }
     }
 
     // The interest left should always be greater or equal current interest accrued value.
     function invariant_interestLeft() public view {
-        (,, uint168 interestLeft) = eulerYieldAggregatorVault.getYieldAggregatorSavingRate();
-        uint256 accruedInterest = eulerYieldAggregatorVault.interestAccrued();
+        (,, uint168 interestLeft) = eulerEulerEarnVault.getEulerEarnSavingRate();
+        uint256 accruedInterest = eulerEulerEarnVault.interestAccrued();
         assertGe(interestLeft, accruedInterest);
     }
 
     function invariant_cashReserveStrategyCap() public view {
-        assertEq(AggAmountCap.unwrap(eulerYieldAggregatorVault.getStrategy(address(0)).cap), 0);
+        assertEq(AggAmountCap.unwrap(eulerEulerEarnVault.getStrategy(address(0)).cap), 0);
     }
 
     // All actors voting power should always be equal to their shares balance.
@@ -159,9 +154,7 @@ contract YieldAggregatorInvariants is YieldAggregatorBase {
         address[] memory actorsList = actorUtil.getActors();
 
         for (uint256 i; i < actorsList.length; i++) {
-            assertEq(
-                eulerYieldAggregatorVault.balanceOf(actorsList[i]), eulerYieldAggregatorVault.getVotes(actorsList[i])
-            );
+            assertEq(eulerEulerEarnVault.balanceOf(actorsList[i]), eulerEulerEarnVault.getVotes(actorsList[i]));
         }
     }
 
@@ -170,10 +163,7 @@ contract YieldAggregatorInvariants is YieldAggregatorBase {
     // lastHarvestTimestamp does not get updated when a harvest is executed while rebalancing, as `rebalance()` does not guarantee
     // a harvest to all the strategies in withdrawal queue.
     function invariant_lastHarvestTimestamp() public view {
-        assertEq(
-            eulerYieldAggregatorVault.lastHarvestTimestamp(),
-            eulerYieldAggregatorVaultHandler.ghost_lastHarvestTimestamp()
-        );
+        assertEq(eulerEulerEarnVault.lastHarvestTimestamp(), eulerEulerEarnVaultHandler.ghost_lastHarvestTimestamp());
     }
 
     function _deployOtherStrategies() private {

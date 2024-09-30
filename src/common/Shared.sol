@@ -8,7 +8,7 @@ import {EVCUtil} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {ERC20Upgradeable} from "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {ERC4626Upgradeable} from "@openzeppelin-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 // libs
-import {StorageLib as Storage, YieldAggregatorStorage} from "../lib/StorageLib.sol";
+import {StorageLib as Storage, EulerEarnStorage} from "../lib/StorageLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
 import {ConstantsLib as Constants} from "../lib/ConstantsLib.sol";
@@ -60,7 +60,7 @@ abstract contract Shared is EVCUtil {
     /// @dev The not distributed amount is amount available to gulp + interest left.
     /// @param _lossAmount Amount lost.
     function _deductLoss(uint256 _lossAmount) internal {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
         uint256 totalAssetsDepositedCache = $.totalAssetsDeposited;
         uint256 totalNotDistributed = _totalAssetsAllocatable() - totalAssetsDepositedCache;
@@ -83,7 +83,7 @@ abstract contract Shared is EVCUtil {
     /// @param _fn Function to call the hook for.
     /// @param _caller Caller's address.
     function _callHooksTarget(uint32 _fn, address _caller) internal {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
         (address target, uint32 hookedFns) = ($.hooksTarget, $.hookedFns);
 
@@ -98,7 +98,7 @@ abstract contract Shared is EVCUtil {
     function _gulp() internal {
         _updateInterestAccrued();
 
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
         uint168 interestLeftCached = $.interestLeft;
         uint256 toGulp = _totalAssetsAllocatable() - $.totalAssetsDeposited - interestLeftCached;
@@ -117,7 +117,7 @@ abstract contract Shared is EVCUtil {
 
     /// @dev update accrued interest.
     function _updateInterestAccrued() internal {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
         uint168 interestLeftCached = $.interestLeft;
         uint256 accruedInterest = _interestAccruedFromCache(interestLeftCached);
@@ -141,7 +141,7 @@ abstract contract Shared is EVCUtil {
         // do not update interest
         if (_totalSupply() == 0) return 0;
 
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
         uint40 interestSmearEndCached = $.interestSmearEnd;
         // If distribution ended, full amount is accrued
@@ -166,7 +166,7 @@ abstract contract Shared is EVCUtil {
     /// @dev The total assets allocatable is the current balanceOf + total amount already allocated.
     /// @return total assets allocatable.
     function _totalAssetsAllocatable() internal view returns (uint256) {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
         return IERC20(_asset()).balanceOf(address(this)) + $.totalAllocated;
     }
@@ -181,7 +181,7 @@ abstract contract Shared is EVCUtil {
     /// @param _account Address to query
     /// @return True if balance forwarder is enabled
     function _balanceForwarderEnabled(address _account) internal view returns (bool) {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
         return $.isBalanceForwarderEnabled[_account];
     }
@@ -194,7 +194,7 @@ abstract contract Shared is EVCUtil {
     }
 
     /// @dev Read `_totalSupply` from storage.
-    /// @return Yield aggregator total supply.
+    /// @return Euler Earn total supply.
     function _totalSupply() internal view returns (uint256) {
         ERC20Upgradeable.ERC20Storage storage $ = _getInheritedERC20Storage();
         return $._totalSupply;
@@ -207,7 +207,7 @@ abstract contract Shared is EVCUtil {
 
     /// @dev Used by the nonReentrant before returning the execution flow to the original function.
     function _nonReentrantBefore() private {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
         require($.locked != Constants.REENTRANCYLOCK__LOCKED, Errors.Reentrancy());
 
@@ -216,14 +216,14 @@ abstract contract Shared is EVCUtil {
 
     /// @dev Used by the nonReentrant after returning the execution flow to the original function.
     function _nonReentrantAfter() private {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
         $.locked = Constants.REENTRANCYLOCK__UNLOCKED;
     }
 
     /// @dev Used by the nonReentrantView before returning the execution flow to the original function.
     function _nonReentrantViewBefore() private view {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
         if ($.locked == Constants.REENTRANCYLOCK__LOCKED) {
             // The hook target is allowed to bypass the RO-reentrancy lock.

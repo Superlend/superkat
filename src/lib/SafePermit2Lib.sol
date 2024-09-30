@@ -36,7 +36,7 @@ library SafePermit2Lib {
         if (!success) revert Errors.SafeTransferFromFailed(permit2Data, transferData);
     }
 
-    /// @dev If no code exists under the token address, the function will succeed. Yield aggregator ensures this is not the case in `init()`.
+    /// @dev If no code exists under the token address, the function will succeed. EulerEarn ensures this is not the case in `init()`.
     function _trySafeTransferFrom(IERC20 _token, address _from, address _to, uint256 _value)
         private
         returns (bool, bytes memory)

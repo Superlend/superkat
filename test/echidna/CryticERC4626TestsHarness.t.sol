@@ -9,13 +9,13 @@ import {CryticERC4626FunctionalAccounting} from "crytic-properties/ERC4626/prope
 import {CryticERC4626Rounding} from "crytic-properties/ERC4626/properties/RoundingProps.sol";
 import {CryticERC4626SecurityProps} from "crytic-properties/ERC4626/properties/SecurityProps.sol";
 // contracts
-import {YieldAggregator, Shared, IYieldAggregator} from "../../src/YieldAggregator.sol";
-import {YieldAggregatorVault} from "../../src/module/YieldAggregatorVault.sol";
+import {EulerEarn, Shared, IEulerEarn} from "../../src/EulerEarn.sol";
+import {EulerEarnVault} from "../../src/module/EulerEarnVault.sol";
 import {Hooks} from "../../src/module/Hooks.sol";
 import {Rewards} from "../../src/module/Rewards.sol";
 import {Fee} from "../../src/module/Fee.sol";
 import {WithdrawalQueue} from "../../src/module/WithdrawalQueue.sol";
-import {YieldAggregatorFactory} from "../../src/YieldAggregatorFactory.sol";
+import {EulerEarnFactory} from "../../src/EulerEarnFactory.sol";
 import {Strategy} from "../../src/module/Strategy.sol";
 import {TestERC20Token} from "crytic-properties/ERC4626/util/TestERC20Token.sol";
 // evc setup
@@ -34,19 +34,19 @@ contract CryticERC4626TestsHarness is
 
     EthereumVaultConnector public evc;
     Shared.IntegrationsParams integrationsParams;
-    IYieldAggregator.DeploymentParams deploymentParams;
+    IEulerEarn.DeploymentParams deploymentParams;
     address factoryDeployer;
 
     // core modules
-    YieldAggregatorVault yieldAggregatorVaultModule;
+    EulerEarnVault eulerEarnVaultModule;
     Rewards rewardsModule;
     Hooks hooksModule;
     Fee feeModule;
     Strategy strategyModule;
     WithdrawalQueue withdrawalQueueModule;
 
-    YieldAggregatorFactory eulerYieldAggregatorVaultFactory;
-    YieldAggregator eulerYieldAggregatorVault;
+    EulerEarnFactory eulerEulerEarnVaultFactory;
+    EulerEarn eulerEulerEarnVault;
 
     constructor() {
         evc = new EthereumVaultConnector();
@@ -58,27 +58,27 @@ contract CryticERC4626TestsHarness is
             isHarvestCoolDownCheckOn: true
         });
 
-        yieldAggregatorVaultModule = new YieldAggregatorVault(integrationsParams);
+        eulerEarnVaultModule = new EulerEarnVault(integrationsParams);
         rewardsModule = new Rewards(integrationsParams);
         hooksModule = new Hooks(integrationsParams);
         feeModule = new Fee(integrationsParams);
         strategyModule = new Strategy(integrationsParams);
         withdrawalQueueModule = new WithdrawalQueue(integrationsParams);
 
-        deploymentParams = IYieldAggregator.DeploymentParams({
-            yieldAggregatorVaultModule: address(yieldAggregatorVaultModule),
+        deploymentParams = IEulerEarn.DeploymentParams({
+            eulerEarnVaultModule: address(eulerEarnVaultModule),
             rewardsModule: address(rewardsModule),
             hooksModule: address(hooksModule),
             feeModule: address(feeModule),
             strategyModule: address(strategyModule),
             withdrawalQueueModule: address(withdrawalQueueModule)
         });
-        address yieldAggregatorImpl = address(new YieldAggregator(integrationsParams, deploymentParams));
+        address eulerEarnImpl = address(new EulerEarn(integrationsParams, deploymentParams));
 
-        eulerYieldAggregatorVaultFactory = new YieldAggregatorFactory(yieldAggregatorImpl);
+        eulerEulerEarnVaultFactory = new EulerEarnFactory(eulerEarnImpl);
 
         TestERC20Token _asset = new TestERC20Token("Test Token", "TT", 18);
-        address _vault = eulerYieldAggregatorVaultFactory.deployYieldAggregator(
+        address _vault = eulerEulerEarnVaultFactory.deployEulerEarn(
             address(_asset), "TT_Agg", "TT_Agg", CASH_RESERVE_ALLOCATION_POINTS
         );
 

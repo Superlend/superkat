@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import "../common/YieldAggregatorBase.t.sol";
+import "../common/EulerEarnBase.t.sol";
 
-contract BalanceForwarderTest is YieldAggregatorBase {
+contract BalanceForwarderTest is EulerEarnBase {
     uint256 user1InitialBalance = 100000e18;
 
-    YieldAggregator eulerYieldAggregatorVaultNoTracker;
+    EulerEarn eulerEulerEarnVaultNoTracker;
 
     function setUp() public virtual override {
         super.setUp();
 
-        eulerYieldAggregatorVaultNoTracker = YieldAggregator(
-            eulerYieldAggregatorVaultFactory.deployYieldAggregator(
+        eulerEulerEarnVaultNoTracker = EulerEarn(
+            eulerEulerEarnVaultFactory.deployEulerEarn(
                 address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS
             )
         );
@@ -26,100 +26,100 @@ contract BalanceForwarderTest is YieldAggregatorBase {
             isHarvestCoolDownCheckOn: true
         });
 
-        yieldAggregatorVaultModule = new YieldAggregatorVault(integrationsParams);
+        eulerEarnVaultModule = new EulerEarnVault(integrationsParams);
         rewardsModule = new Rewards(integrationsParams);
         hooksModule = new Hooks(integrationsParams);
         feeModule = new Fee(integrationsParams);
         strategyModule = new Strategy(integrationsParams);
         withdrawalQueueModule = new WithdrawalQueue(integrationsParams);
 
-        deploymentParams = IYieldAggregator.DeploymentParams({
-            yieldAggregatorVaultModule: address(yieldAggregatorVaultModule),
+        deploymentParams = IEulerEarn.DeploymentParams({
+            eulerEarnVaultModule: address(eulerEarnVaultModule),
             rewardsModule: address(rewardsModule),
             hooksModule: address(hooksModule),
             feeModule: address(feeModule),
             strategyModule: address(strategyModule),
             withdrawalQueueModule: address(withdrawalQueueModule)
         });
-        yieldAggregatorImpl = address(new YieldAggregator(integrationsParams, deploymentParams));
+        eulerEarnImpl = address(new EulerEarn(integrationsParams, deploymentParams));
 
-        eulerYieldAggregatorVaultFactory = new YieldAggregatorFactory(yieldAggregatorImpl);
+        eulerEulerEarnVaultFactory = new EulerEarnFactory(eulerEarnImpl);
 
-        eulerYieldAggregatorVault = YieldAggregator(
-            eulerYieldAggregatorVaultFactory.deployYieldAggregator(
+        eulerEulerEarnVault = EulerEarn(
+            eulerEulerEarnVaultFactory.deployEulerEarn(
                 address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS
             )
         );
 
         // grant admin roles to deployer
-        eulerYieldAggregatorVault.grantRole(ConstantsLib.GUARDIAN_ADMIN, deployer);
-        eulerYieldAggregatorVault.grantRole(ConstantsLib.STRATEGY_OPERATOR_ADMIN, deployer);
-        eulerYieldAggregatorVault.grantRole(ConstantsLib.YIELD_AGGREGATOR_MANAGER_ADMIN, deployer);
-        eulerYieldAggregatorVault.grantRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER_ADMIN, deployer);
+        eulerEulerEarnVault.grantRole(ConstantsLib.GUARDIAN_ADMIN, deployer);
+        eulerEulerEarnVault.grantRole(ConstantsLib.STRATEGY_OPERATOR_ADMIN, deployer);
+        eulerEulerEarnVault.grantRole(ConstantsLib.EULER_EARN_MANAGER_ADMIN, deployer);
+        eulerEulerEarnVault.grantRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER_ADMIN, deployer);
 
         // grant roles to manager
-        eulerYieldAggregatorVault.grantRole(ConstantsLib.GUARDIAN, manager);
-        eulerYieldAggregatorVault.grantRole(ConstantsLib.STRATEGY_OPERATOR, manager);
-        eulerYieldAggregatorVault.grantRole(ConstantsLib.YIELD_AGGREGATOR_MANAGER, manager);
-        eulerYieldAggregatorVault.grantRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER, manager);
+        eulerEulerEarnVault.grantRole(ConstantsLib.GUARDIAN, manager);
+        eulerEulerEarnVault.grantRole(ConstantsLib.STRATEGY_OPERATOR, manager);
+        eulerEulerEarnVault.grantRole(ConstantsLib.EULER_EARN_MANAGER, manager);
+        eulerEulerEarnVault.grantRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER, manager);
         vm.stopPrank();
     }
 
     function testBalanceForwarderrAddress_Integrity() public view {
-        assertEq(eulerYieldAggregatorVault.balanceTrackerAddress(), balanceTracker);
+        assertEq(eulerEulerEarnVault.balanceTrackerAddress(), balanceTracker);
     }
 
     function testEnableBalanceForwarder() public {
         vm.expectEmit();
         emit EventsLib.EnableBalanceForwarder(user1);
         vm.prank(user1);
-        eulerYieldAggregatorVault.enableBalanceForwarder();
+        eulerEulerEarnVault.enableBalanceForwarder();
 
-        assertTrue(eulerYieldAggregatorVault.balanceForwarderEnabled(user1));
+        assertTrue(eulerEulerEarnVault.balanceForwarderEnabled(user1));
         assertEq(MockBalanceTracker(balanceTracker).numCalls(), 1);
         assertEq(MockBalanceTracker(balanceTracker).calls(user1, 0, false), 1);
     }
 
     function test_EnableBalanceForwarder_AlreadyEnabledOk() public {
         vm.prank(user1);
-        eulerYieldAggregatorVault.enableBalanceForwarder();
+        eulerEulerEarnVault.enableBalanceForwarder();
         vm.prank(user1);
-        eulerYieldAggregatorVault.enableBalanceForwarder();
+        eulerEulerEarnVault.enableBalanceForwarder();
 
-        assertTrue(eulerYieldAggregatorVault.balanceForwarderEnabled(user1));
+        assertTrue(eulerEulerEarnVault.balanceForwarderEnabled(user1));
     }
 
-    function testEnableBalanceForwarderYieldAggregatorRewardsNotSupported() public {
-        vm.expectRevert(ErrorsLib.YieldAggregatorRewardsNotSupported.selector);
+    function testEnableBalanceForwarderEulerEarnRewardsNotSupported() public {
+        vm.expectRevert(ErrorsLib.EulerEarnRewardsNotSupported.selector);
         vm.prank(user1);
-        eulerYieldAggregatorVaultNoTracker.enableBalanceForwarder();
+        eulerEulerEarnVaultNoTracker.enableBalanceForwarder();
     }
 
     function testDisableBalanceForwarder() public {
         vm.prank(user1);
-        eulerYieldAggregatorVault.enableBalanceForwarder();
+        eulerEulerEarnVault.enableBalanceForwarder();
 
         vm.expectEmit();
         emit EventsLib.DisableBalanceForwarder(user1);
         vm.prank(user1);
-        eulerYieldAggregatorVault.disableBalanceForwarder();
+        eulerEulerEarnVault.disableBalanceForwarder();
 
-        assertFalse(eulerYieldAggregatorVault.balanceForwarderEnabled(user1));
+        assertFalse(eulerEulerEarnVault.balanceForwarderEnabled(user1));
         assertEq(MockBalanceTracker(balanceTracker).numCalls(), 2);
         assertEq(MockBalanceTracker(balanceTracker).calls(user1, 0, false), 2);
     }
 
     function testDisableBalanceForwarder_AlreadyDisabledOk() public {
-        assertFalse(eulerYieldAggregatorVault.balanceForwarderEnabled(user1));
+        assertFalse(eulerEulerEarnVault.balanceForwarderEnabled(user1));
         vm.prank(user1);
-        eulerYieldAggregatorVault.disableBalanceForwarder();
+        eulerEulerEarnVault.disableBalanceForwarder();
 
-        assertFalse(eulerYieldAggregatorVault.balanceForwarderEnabled(user1));
+        assertFalse(eulerEulerEarnVault.balanceForwarderEnabled(user1));
     }
 
     function testDisableBalanceForwarder_RevertsWhen_NoBalanceTracker() public {
-        vm.expectRevert(ErrorsLib.YieldAggregatorRewardsNotSupported.selector);
+        vm.expectRevert(ErrorsLib.EulerEarnRewardsNotSupported.selector);
         vm.prank(user1);
-        eulerYieldAggregatorVaultNoTracker.disableBalanceForwarder();
+        eulerEulerEarnVaultNoTracker.disableBalanceForwarder();
     }
 }

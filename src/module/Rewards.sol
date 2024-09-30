@@ -3,13 +3,13 @@ pragma solidity ^0.8.0;
 
 // interfaces
 import {IBalanceForwarder} from "../interface/IBalanceForwarder.sol";
-import {IYieldAggregator} from "../interface/IYieldAggregator.sol";
+import {IEulerEarn} from "../interface/IEulerEarn.sol";
 import {IBalanceTracker} from "reward-streams/src/interfaces/IBalanceTracker.sol";
 import {IRewardStreams} from "reward-streams/src/interfaces/IRewardStreams.sol";
 // contracts
 import {Shared} from "../common/Shared.sol";
 // libs
-import {StorageLib as Storage, YieldAggregatorStorage} from "../lib/StorageLib.sol";
+import {StorageLib as Storage, EulerEarnStorage} from "../lib/StorageLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
 
@@ -22,11 +22,9 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
     /// @notice Opt in to strategy rewards.
     /// @param _strategy Strategy address.
     function optInStrategyRewards(address _strategy) external virtual nonReentrant {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
-        require(
-            $.strategies[_strategy].status == IYieldAggregator.StrategyStatus.Active, Errors.StrategyShouldBeActive()
-        );
+        require($.strategies[_strategy].status == IEulerEarn.StrategyStatus.Active, Errors.StrategyShouldBeActive());
 
         IBalanceForwarder(_strategy).enableBalanceForwarder();
 
@@ -41,22 +39,20 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
         emit Events.OptOutStrategyRewards(_strategy);
     }
 
-    /// @notice Enable yield aggregator vault rewards for specific strategy's reward token.
+    /// @notice Enable euler earn vault rewards for specific strategy's reward token.
     /// @param _strategy Strategy address.
     /// @param _reward Reward token address.
     function enableRewardForStrategy(address _strategy, address _reward) external virtual nonReentrant {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
-        require(
-            $.strategies[_strategy].status == IYieldAggregator.StrategyStatus.Active, Errors.StrategyShouldBeActive()
-        );
+        require($.strategies[_strategy].status == IEulerEarn.StrategyStatus.Active, Errors.StrategyShouldBeActive());
 
         IRewardStreams(IBalanceForwarder(_strategy).balanceTrackerAddress()).enableReward(_strategy, _reward);
 
         emit Events.EnableRewardForStrategy(_strategy, _reward);
     }
 
-    /// @notice Disable yield aggregator vault rewards for specific strategy's reward token.
+    /// @notice Disable euler earn vault rewards for specific strategy's reward token.
     /// @param _strategy Strategy address.
     /// @param _reward Reward token address.
     /// @param _forfeitRecentReward Whether to forfeit the recent rewards or not.
@@ -120,9 +116,9 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
 
     /// @dev Enables balance forwarding for the authenticated account.
     function _enableBalanceForwarder(address _sender, uint256 _senderBalance) internal {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
-        require(balanceTracker != address(0), Errors.YieldAggregatorRewardsNotSupported());
+        require(balanceTracker != address(0), Errors.EulerEarnRewardsNotSupported());
         bool wasBalanceForwarderEnabled = $.isBalanceForwarderEnabled[_sender];
 
         $.isBalanceForwarderEnabled[_sender] = true;
@@ -135,9 +131,9 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
     /// @dev Only the authenticated account can disable balance forwarding for itself.
     /// @dev Should call the IBalanceTracker hook with the account's balance of 0.
     function _disableBalanceForwarder(address _sender) internal {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
-        require(balanceTracker != address(0), Errors.YieldAggregatorRewardsNotSupported());
+        require(balanceTracker != address(0), Errors.EulerEarnRewardsNotSupported());
 
         bool wasBalanceForwarderEnabled = $.isBalanceForwarderEnabled[_sender];
 

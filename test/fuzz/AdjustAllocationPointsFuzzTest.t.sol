@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import "../common/YieldAggregatorBase.t.sol";
+import "../common/EulerEarnBase.t.sol";
 
-contract AdjustAllocationsPointsFuzzTest is YieldAggregatorBase {
+contract AdjustAllocationsPointsFuzzTest is EulerEarnBase {
     function setUp() public virtual override {
         super.setUp();
 
@@ -14,23 +14,23 @@ contract AdjustAllocationsPointsFuzzTest is YieldAggregatorBase {
     function testFuzzAdjustAllocationPoints(uint256 _newAllocationPoints) public {
         _newAllocationPoints = bound(_newAllocationPoints, 1, type(uint96).max);
 
-        uint256 strategyAllocationPoints = (eulerYieldAggregatorVault.getStrategy(address(eTST))).allocationPoints;
-        uint256 totalAllocationPointsBefore = eulerYieldAggregatorVault.totalAllocationPoints();
+        uint256 strategyAllocationPoints = (eulerEulerEarnVault.getStrategy(address(eTST))).allocationPoints;
+        uint256 totalAllocationPointsBefore = eulerEulerEarnVault.totalAllocationPoints();
         uint256 withdrawalQueueLengthBefore = _getWithdrawalQueueLength();
 
         vm.prank(manager);
-        eulerYieldAggregatorVault.adjustAllocationPoints(address(eTST), _newAllocationPoints);
+        eulerEulerEarnVault.adjustAllocationPoints(address(eTST), _newAllocationPoints);
 
-        IYieldAggregator.Strategy memory strategy = eulerYieldAggregatorVault.getStrategy(address(eTST));
+        IEulerEarn.Strategy memory strategy = eulerEulerEarnVault.getStrategy(address(eTST));
 
         if (_newAllocationPoints < strategyAllocationPoints) {
             assertEq(
-                eulerYieldAggregatorVault.totalAllocationPoints(),
+                eulerEulerEarnVault.totalAllocationPoints(),
                 totalAllocationPointsBefore - (strategyAllocationPoints - _newAllocationPoints)
             );
         } else {
             assertEq(
-                eulerYieldAggregatorVault.totalAllocationPoints(),
+                eulerEulerEarnVault.totalAllocationPoints(),
                 totalAllocationPointsBefore + (_newAllocationPoints - strategyAllocationPoints)
             );
         }

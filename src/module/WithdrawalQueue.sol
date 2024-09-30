@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 // contracts
 import {Shared} from "../common/Shared.sol";
 // libs
-import {StorageLib as Storage, YieldAggregatorStorage} from "../lib/StorageLib.sol";
+import {StorageLib as Storage, EulerEarnStorage} from "../lib/StorageLib.sol";
 import {ErrorsLib as Errors} from "../lib/ErrorsLib.sol";
 import {EventsLib as Events} from "../lib/EventsLib.sol";
 
@@ -16,7 +16,7 @@ abstract contract WithdrawalQueueModule is Shared {
     /// @param _index1 index of first strategy.
     /// @param _index2 index of second strategy.
     function reorderWithdrawalQueue(uint8 _index1, uint8 _index2) external virtual nonReentrant {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
         uint256 length = $.withdrawalQueue.length;
         require(_index1 < length && _index2 < length, Errors.OutOfBounds());
@@ -32,7 +32,7 @@ abstract contract WithdrawalQueueModule is Shared {
     /// @notice Return the withdrawal queue.
     /// @return withdrawal queue array.
     function withdrawalQueue() public view virtual nonReentrantView returns (address[] memory) {
-        YieldAggregatorStorage storage $ = Storage._getYieldAggregatorStorage();
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
         return $.withdrawalQueue;
     }

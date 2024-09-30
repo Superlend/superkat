@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import "../common/YieldAggregatorBase.t.sol";
+import "../common/EulerEarnBase.t.sol";
 
-contract AddStrategyTest is YieldAggregatorBase {
+contract AddStrategyTest is EulerEarnBase {
     function setUp() public virtual override {
         super.setUp();
     }
 
     function testAddStrategy() public {
         uint256 allocationPoints = 500e18;
-        uint256 totalAllocationPointsBefore = eulerYieldAggregatorVault.totalAllocationPoints();
+        uint256 totalAllocationPointsBefore = eulerEulerEarnVault.totalAllocationPoints();
 
         assertEq(_getWithdrawalQueueLength(), 0);
 
         _addStrategy(manager, address(eTST), allocationPoints);
 
-        assertEq(eulerYieldAggregatorVault.totalAllocationPoints(), allocationPoints + totalAllocationPointsBefore);
+        assertEq(eulerEulerEarnVault.totalAllocationPoints(), allocationPoints + totalAllocationPointsBefore);
         assertEq(_getWithdrawalQueueLength(), 1);
     }
 
@@ -40,13 +40,13 @@ contract AddStrategyTest is YieldAggregatorBase {
 
     function testAddStrategy_AlreadyAddedStrategy() public {
         uint256 allocationPoints = 500e18;
-        uint256 totalAllocationPointsBefore = eulerYieldAggregatorVault.totalAllocationPoints();
+        uint256 totalAllocationPointsBefore = eulerEulerEarnVault.totalAllocationPoints();
 
         assertEq(_getWithdrawalQueueLength(), 0);
 
         _addStrategy(manager, address(eTST), allocationPoints);
 
-        assertEq(eulerYieldAggregatorVault.totalAllocationPoints(), allocationPoints + totalAllocationPointsBefore);
+        assertEq(eulerEulerEarnVault.totalAllocationPoints(), allocationPoints + totalAllocationPointsBefore);
         assertEq(_getWithdrawalQueueLength(), 1);
 
         vm.expectRevert(ErrorsLib.StrategyAlreadyExist.selector);
