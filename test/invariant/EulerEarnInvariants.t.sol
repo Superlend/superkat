@@ -113,16 +113,16 @@ contract EulerEarnInvariants is EulerEarnBase {
     function invariant_totalAllocated() public view {
         (address[] memory withdrawalQueueArray) = eulerEulerEarnVault.withdrawalQueue();
 
-        uint256 aggregatedAllocatedAmount;
+        uint256 earnegatedAllocatedAmount;
         for (uint256 i; i < withdrawalQueueArray.length; i++) {
             IEulerEarn.Strategy memory strategy = eulerEulerEarnVault.getStrategy(withdrawalQueueArray[i]);
 
             if (strategy.status == IEulerEarn.StrategyStatus.Active) {
-                aggregatedAllocatedAmount += strategy.allocated;
+                earnegatedAllocatedAmount += strategy.allocated;
             }
         }
 
-        assertEq(eulerEulerEarnVault.totalAllocated(), aggregatedAllocatedAmount);
+        assertEq(eulerEulerEarnVault.totalAllocated(), earnegatedAllocatedAmount);
     }
 
     // Balance of a certain fee recipient should always be equal to the ghost tracking variable.

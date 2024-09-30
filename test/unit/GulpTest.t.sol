@@ -68,10 +68,10 @@ contract GulpTest is EulerEarnBase {
         assertEq(eulerEulerEarnVault.interestAccrued(), 0);
         uint256 yield;
         {
-            uint256 aggrCurrentStrategyShareBalance = eTST.balanceOf(address(eulerEulerEarnVault));
-            uint256 aggrCurrentStrategyUnderlyingBalance = eTST.convertToAssets(aggrCurrentStrategyShareBalance);
-            uint256 aggrNewStrategyUnderlyingBalance = aggrCurrentStrategyUnderlyingBalance * 11e17 / 1e18;
-            yield = aggrNewStrategyUnderlyingBalance - aggrCurrentStrategyUnderlyingBalance;
+            uint256 earnCurrentStrategyShareBalance = eTST.balanceOf(address(eulerEulerEarnVault));
+            uint256 earnCurrentStrategyUnderlyingBalance = eTST.convertToAssets(earnCurrentStrategyShareBalance);
+            uint256 earnNewStrategyUnderlyingBalance = earnCurrentStrategyUnderlyingBalance * 11e17 / 1e18;
+            yield = earnNewStrategyUnderlyingBalance - earnCurrentStrategyUnderlyingBalance;
             assetTST.mint(address(eTST), yield);
             eTST.skim(type(uint256).max, address(eulerEulerEarnVault));
         }
@@ -93,12 +93,12 @@ contract GulpTest is EulerEarnBase {
         (,, interestLeft) = eulerEulerEarnVault.getEulerEarnSavingRate();
 
         // mock a decrease of strategy balance by interestLeft
-        uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(eulerEulerEarnVault));
-        uint256 aggrCurrentStrategyBalanceAfterNegYield = aggrCurrentStrategyBalance - interestLeft;
+        uint256 earnCurrentStrategyBalance = eTST.balanceOf(address(eulerEulerEarnVault));
+        uint256 earnCurrentStrategyBalanceAfterNegYield = earnCurrentStrategyBalance - interestLeft;
         vm.mockCall(
             address(eTST),
             abi.encodeWithSelector(EVault.balanceOf.selector, address(eulerEulerEarnVault)),
-            abi.encode(aggrCurrentStrategyBalanceAfterNegYield)
+            abi.encode(earnCurrentStrategyBalanceAfterNegYield)
         );
         vm.prank(user1);
         eulerEulerEarnVault.harvest();
@@ -118,10 +118,10 @@ contract GulpTest is EulerEarnBase {
         assertEq(eulerEulerEarnVault.interestAccrued(), 0);
         uint256 yield;
         {
-            uint256 aggrCurrentStrategyShareBalance = eTST.balanceOf(address(eulerEulerEarnVault));
-            uint256 aggrCurrentStrategyUnderlyingBalance = eTST.convertToAssets(aggrCurrentStrategyShareBalance);
-            uint256 aggrNewStrategyUnderlyingBalance = aggrCurrentStrategyUnderlyingBalance * 11e17 / 1e18;
-            yield = aggrNewStrategyUnderlyingBalance - aggrCurrentStrategyUnderlyingBalance;
+            uint256 earnCurrentStrategyShareBalance = eTST.balanceOf(address(eulerEulerEarnVault));
+            uint256 earnCurrentStrategyUnderlyingBalance = eTST.convertToAssets(earnCurrentStrategyShareBalance);
+            uint256 earnNewStrategyUnderlyingBalance = earnCurrentStrategyUnderlyingBalance * 11e17 / 1e18;
+            yield = earnNewStrategyUnderlyingBalance - earnCurrentStrategyUnderlyingBalance;
             assetTST.mint(address(eTST), yield);
             eTST.skim(type(uint256).max, address(eulerEulerEarnVault));
         }
@@ -143,12 +143,12 @@ contract GulpTest is EulerEarnBase {
         (,, interestLeft) = eulerEulerEarnVault.getEulerEarnSavingRate();
 
         // mock a decrease of strategy balance by interestLeft
-        uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(eulerEulerEarnVault));
-        uint256 aggrCurrentStrategyBalanceAfterNegYield = aggrCurrentStrategyBalance - (interestLeft * 2);
+        uint256 earnCurrentStrategyBalance = eTST.balanceOf(address(eulerEulerEarnVault));
+        uint256 earnCurrentStrategyBalanceAfterNegYield = earnCurrentStrategyBalance - (interestLeft * 2);
         vm.mockCall(
             address(eTST),
             abi.encodeWithSelector(EVault.balanceOf.selector, address(eulerEulerEarnVault)),
-            abi.encode(aggrCurrentStrategyBalanceAfterNegYield)
+            abi.encode(earnCurrentStrategyBalanceAfterNegYield)
         );
         vm.prank(user1);
         eulerEulerEarnVault.harvest();

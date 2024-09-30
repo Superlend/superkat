@@ -14,9 +14,10 @@ contract EulerEarnFactory {
 
     /// @dev euler earn implementation address
     address public immutable eulerEarnImpl;
-    /// @dev Array for deployed yield aggreagtor addresses.
+    /// @dev Array for deployed Euler Earn addresses.
     address[] public eulerEarnVaults;
 
+    /// @dev Emits when deploying new Earn vault.
     event DeployEulerEarn(address indexed _owner, address _eulerEarnVault, address indexed _asset);
 
     /// @dev Constructor.

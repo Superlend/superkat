@@ -69,14 +69,14 @@ contract HarvestTest is EulerEarnBase {
 
         vm.warp(block.timestamp + 86400);
         // mock an increase of strategy balance by 10%
-        uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(eulerEulerEarnVault));
+        uint256 earnCurrentStrategyBalance = eTST.balanceOf(address(eulerEulerEarnVault));
         vm.mockCall(
             address(eTST),
-            abi.encodeWithSelector(EVault.previewRedeem.selector, aggrCurrentStrategyBalance),
-            abi.encode(aggrCurrentStrategyBalance * 11e17 / 1e18)
+            abi.encodeWithSelector(EVault.previewRedeem.selector, earnCurrentStrategyBalance),
+            abi.encode(earnCurrentStrategyBalance * 11e17 / 1e18)
         );
 
-        uint256 expectedAllocated = eTST.previewRedeem(aggrCurrentStrategyBalance);
+        uint256 expectedAllocated = eTST.previewRedeem(earnCurrentStrategyBalance);
         assertTrue(expectedAllocated > strategyBefore.allocated);
 
         vm.prank(user1);
@@ -93,16 +93,16 @@ contract HarvestTest is EulerEarnBase {
         vm.warp(block.timestamp + 86400);
 
         // mock a decrease of strategy balance by 10%
-        uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(eulerEulerEarnVault));
+        uint256 earnCurrentStrategyBalance = eTST.balanceOf(address(eulerEulerEarnVault));
         vm.mockCall(
             address(eTST),
-            abi.encodeWithSelector(EVault.previewRedeem.selector, aggrCurrentStrategyBalance),
-            abi.encode(aggrCurrentStrategyBalance * 9e17 / 1e18)
+            abi.encodeWithSelector(EVault.previewRedeem.selector, earnCurrentStrategyBalance),
+            abi.encode(earnCurrentStrategyBalance * 9e17 / 1e18)
         );
 
         IEulerEarn.Strategy memory strategyBefore = eulerEulerEarnVault.getStrategy(address(eTST));
 
-        uint256 expectedAllocated = eTST.previewRedeem(aggrCurrentStrategyBalance);
+        uint256 expectedAllocated = eTST.previewRedeem(earnCurrentStrategyBalance);
         assertTrue(expectedAllocated < strategyBefore.allocated);
 
         uint256 expectedLoss = strategyBefore.allocated - expectedAllocated;
@@ -119,15 +119,15 @@ contract HarvestTest is EulerEarnBase {
         vm.warp(block.timestamp + 86400);
 
         // mock a decrease of strategy balance by 10%
-        uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(eulerEulerEarnVault));
-        uint256 aggrCurrentStrategyBalanceAfterNegYield = aggrCurrentStrategyBalance * 9e17 / 1e18;
+        uint256 earnCurrentStrategyBalance = eTST.balanceOf(address(eulerEulerEarnVault));
+        uint256 earnCurrentStrategyBalanceAfterNegYield = earnCurrentStrategyBalance * 9e17 / 1e18;
         vm.mockCall(
             address(eTST),
-            abi.encodeWithSelector(EVault.previewRedeem.selector, aggrCurrentStrategyBalance),
-            abi.encode(aggrCurrentStrategyBalanceAfterNegYield)
+            abi.encodeWithSelector(EVault.previewRedeem.selector, earnCurrentStrategyBalance),
+            abi.encode(earnCurrentStrategyBalanceAfterNegYield)
         );
 
-        uint256 expectedAllocated = eTST.previewRedeem(aggrCurrentStrategyBalance);
+        uint256 expectedAllocated = eTST.previewRedeem(earnCurrentStrategyBalance);
         IEulerEarn.Strategy memory strategyBefore = eulerEulerEarnVault.getStrategy(address(eTST));
         assertTrue(expectedAllocated < strategyBefore.allocated);
 
@@ -162,16 +162,16 @@ contract HarvestTest is EulerEarnBase {
         vm.warp(block.timestamp + 86400);
 
         // mock a decrease of strategy balance by 10%
-        uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(eulerEulerEarnVault));
-        uint256 aggrCurrentStrategyBalanceAfterNegYield = aggrCurrentStrategyBalance * 9e17 / 1e18;
+        uint256 earnCurrentStrategyBalance = eTST.balanceOf(address(eulerEulerEarnVault));
+        uint256 earnCurrentStrategyBalanceAfterNegYield = earnCurrentStrategyBalance * 9e17 / 1e18;
         vm.mockCall(
             address(eTST),
-            abi.encodeWithSelector(EVault.previewRedeem.selector, aggrCurrentStrategyBalance),
-            abi.encode(aggrCurrentStrategyBalanceAfterNegYield)
+            abi.encodeWithSelector(EVault.previewRedeem.selector, earnCurrentStrategyBalance),
+            abi.encode(earnCurrentStrategyBalanceAfterNegYield)
         );
 
         IEulerEarn.Strategy memory strategyBefore = eulerEulerEarnVault.getStrategy(address(eTST));
-        uint256 expectedAllocated = eTST.previewRedeem(aggrCurrentStrategyBalance);
+        uint256 expectedAllocated = eTST.previewRedeem(earnCurrentStrategyBalance);
         assertTrue(expectedAllocated < strategyBefore.allocated);
 
         uint256 negativeYield = strategyBefore.allocated - expectedAllocated;
@@ -203,14 +203,14 @@ contract HarvestTest is EulerEarnBase {
 
         vm.warp(block.timestamp + 86400);
         // mock an increase of strategy balance by 10%
-        uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(eulerEulerEarnVault));
+        uint256 earnCurrentStrategyBalance = eTST.balanceOf(address(eulerEulerEarnVault));
         vm.mockCall(
             address(eTST),
-            abi.encodeWithSelector(EVault.previewRedeem.selector, aggrCurrentStrategyBalance),
-            abi.encode(aggrCurrentStrategyBalance * 11e17 / 1e18)
+            abi.encodeWithSelector(EVault.previewRedeem.selector, earnCurrentStrategyBalance),
+            abi.encode(earnCurrentStrategyBalance * 11e17 / 1e18)
         );
 
-        uint256 expectedAllocated = eTST.previewRedeem(aggrCurrentStrategyBalance);
+        uint256 expectedAllocated = eTST.previewRedeem(earnCurrentStrategyBalance);
         assertTrue(expectedAllocated > strategyBefore.allocated);
 
         vm.prank(user1);
@@ -224,11 +224,11 @@ contract HarvestTest is EulerEarnBase {
         vm.warp(block.timestamp + 86400);
 
         // mock a decrease of strategy balance by 2%
-        uint256 aggrCurrentStrategyBalanceAfterNegYield = expectedAllocated * 98e16 / 1e18;
+        uint256 earnCurrentStrategyBalanceAfterNegYield = expectedAllocated * 98e16 / 1e18;
         vm.mockCall(
             address(eTST),
             abi.encodeWithSelector(EVault.previewRedeem.selector, eTST.balanceOf(address(eulerEulerEarnVault))),
-            abi.encode(aggrCurrentStrategyBalanceAfterNegYield)
+            abi.encode(earnCurrentStrategyBalanceAfterNegYield)
         );
 
         strategyBefore = eulerEulerEarnVault.getStrategy(address(eTST));

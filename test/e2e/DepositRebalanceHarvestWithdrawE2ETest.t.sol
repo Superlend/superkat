@@ -150,10 +150,10 @@ contract DepositRebalanceHarvestWithdrawE2ETest is EulerEarnBase {
 
         vm.warp(block.timestamp + 86400);
         // mock an increase of strategy balance by 10%
-        uint256 aggrCurrentStrategyShareBalance = eTST.balanceOf(address(eulerEulerEarnVault));
-        uint256 aggrCurrentStrategyUnderlyingBalance = eTST.convertToAssets(aggrCurrentStrategyShareBalance);
-        uint256 aggrNewStrategyUnderlyingBalance = aggrCurrentStrategyUnderlyingBalance * 11e17 / 1e18;
-        uint256 yield = aggrNewStrategyUnderlyingBalance - aggrCurrentStrategyUnderlyingBalance;
+        uint256 earnCurrentStrategyShareBalance = eTST.balanceOf(address(eulerEulerEarnVault));
+        uint256 earnCurrentStrategyUnderlyingBalance = eTST.convertToAssets(earnCurrentStrategyShareBalance);
+        uint256 earnNewStrategyUnderlyingBalance = earnCurrentStrategyUnderlyingBalance * 11e17 / 1e18;
+        uint256 yield = earnNewStrategyUnderlyingBalance - earnCurrentStrategyUnderlyingBalance;
         assetTST.mint(address(eTST), yield);
         eTST.skim(type(uint256).max, address(eulerEulerEarnVault));
 
@@ -267,15 +267,15 @@ contract DepositRebalanceHarvestWithdrawE2ETest is EulerEarnBase {
         uint256 eTSTYield;
         uint256 eTSTsecondaryYield;
         {
-            uint256 aggrCurrenteTSTShareBalance = eTST.balanceOf(address(eulerEulerEarnVault));
-            uint256 aggrCurrenteTSTUnderlyingBalance = eTST.convertToAssets(aggrCurrenteTSTShareBalance);
-            uint256 aggrCurrenteTSTsecondaryShareBalance = eTSTsecondary.balanceOf(address(eulerEulerEarnVault));
-            uint256 aggrCurrenteTSTsecondaryUnderlyingBalance =
-                eTSTsecondary.convertToAssets(aggrCurrenteTSTsecondaryShareBalance);
-            uint256 aggrNeweTSTUnderlyingBalance = aggrCurrenteTSTUnderlyingBalance * 11e17 / 1e18;
-            uint256 aggrNeweTSTsecondaryUnderlyingBalance = aggrCurrenteTSTsecondaryUnderlyingBalance * 11e17 / 1e18;
-            eTSTYield = aggrNeweTSTUnderlyingBalance - aggrCurrenteTSTUnderlyingBalance;
-            eTSTsecondaryYield = aggrNeweTSTsecondaryUnderlyingBalance - aggrCurrenteTSTsecondaryUnderlyingBalance;
+            uint256 earnCurrenteTSTShareBalance = eTST.balanceOf(address(eulerEulerEarnVault));
+            uint256 earnCurrenteTSTUnderlyingBalance = eTST.convertToAssets(earnCurrenteTSTShareBalance);
+            uint256 earnCurrenteTSTsecondaryShareBalance = eTSTsecondary.balanceOf(address(eulerEulerEarnVault));
+            uint256 earnCurrenteTSTsecondaryUnderlyingBalance =
+                eTSTsecondary.convertToAssets(earnCurrenteTSTsecondaryShareBalance);
+            uint256 earnNeweTSTUnderlyingBalance = earnCurrenteTSTUnderlyingBalance * 11e17 / 1e18;
+            uint256 earnNeweTSTsecondaryUnderlyingBalance = earnCurrenteTSTsecondaryUnderlyingBalance * 11e17 / 1e18;
+            eTSTYield = earnNeweTSTUnderlyingBalance - earnCurrenteTSTUnderlyingBalance;
+            eTSTsecondaryYield = earnNeweTSTsecondaryUnderlyingBalance - earnCurrenteTSTsecondaryUnderlyingBalance;
         }
 
         assetTST.mint(address(eTST), eTSTYield);
@@ -349,10 +349,10 @@ contract DepositRebalanceHarvestWithdrawE2ETest is EulerEarnBase {
 
         vm.warp(block.timestamp + 86400);
         // mock an increase of strategy balance by 10%
-        uint256 aggrCurrentStrategyShareBalance = eTST.balanceOf(address(eulerEulerEarnVault));
-        uint256 aggrCurrentStrategyUnderlyingBalance = eTST.convertToAssets(aggrCurrentStrategyShareBalance);
-        uint256 aggrNewStrategyUnderlyingBalance = aggrCurrentStrategyUnderlyingBalance * 11e17 / 1e18;
-        uint256 yield = aggrNewStrategyUnderlyingBalance - aggrCurrentStrategyUnderlyingBalance;
+        uint256 earnCurrentStrategyShareBalance = eTST.balanceOf(address(eulerEulerEarnVault));
+        uint256 earnCurrentStrategyUnderlyingBalance = eTST.convertToAssets(earnCurrentStrategyShareBalance);
+        uint256 earnNewStrategyUnderlyingBalance = earnCurrentStrategyUnderlyingBalance * 11e17 / 1e18;
+        uint256 yield = earnNewStrategyUnderlyingBalance - earnCurrentStrategyUnderlyingBalance;
         assetTST.mint(address(eTST), yield);
         eTST.skim(type(uint256).max, address(eulerEulerEarnVault));
 
@@ -471,15 +471,15 @@ contract DepositRebalanceHarvestWithdrawE2ETest is EulerEarnBase {
         uint256 eTSTsecondaryYield;
         {
             // mock an increase of EulerEarn balance due to yield
-            uint256 aggrCurrenteTSTShareBalance = eTST.balanceOf(address(eulerEulerEarnVault));
-            uint256 aggrCurrenteTSTUnderlyingBalance = eTST.convertToAssets(aggrCurrenteTSTShareBalance);
-            uint256 aggrCurrenteTSTsecondaryShareBalance = eTSTsecondary.balanceOf(address(eulerEulerEarnVault));
-            uint256 aggrCurrenteTSTsecondaryUnderlyingBalance =
-                eTSTsecondary.convertToAssets(aggrCurrenteTSTsecondaryShareBalance);
-            uint256 aggrNeweTSTUnderlyingBalance = aggrCurrenteTSTUnderlyingBalance * 11e17 / 1e18;
-            uint256 aggrNeweTSTsecondaryUnderlyingBalance = aggrCurrenteTSTsecondaryUnderlyingBalance * 11e17 / 1e18;
-            eTSTYield = aggrNeweTSTUnderlyingBalance - aggrCurrenteTSTUnderlyingBalance;
-            eTSTsecondaryYield = aggrNeweTSTsecondaryUnderlyingBalance - aggrCurrenteTSTsecondaryUnderlyingBalance;
+            uint256 earnCurrenteTSTShareBalance = eTST.balanceOf(address(eulerEulerEarnVault));
+            uint256 earnCurrenteTSTUnderlyingBalance = eTST.convertToAssets(earnCurrenteTSTShareBalance);
+            uint256 earnCurrenteTSTsecondaryShareBalance = eTSTsecondary.balanceOf(address(eulerEulerEarnVault));
+            uint256 earnCurrenteTSTsecondaryUnderlyingBalance =
+                eTSTsecondary.convertToAssets(earnCurrenteTSTsecondaryShareBalance);
+            uint256 earnNeweTSTUnderlyingBalance = earnCurrenteTSTUnderlyingBalance * 11e17 / 1e18;
+            uint256 earnNeweTSTsecondaryUnderlyingBalance = earnCurrenteTSTsecondaryUnderlyingBalance * 11e17 / 1e18;
+            eTSTYield = earnNeweTSTUnderlyingBalance - earnCurrenteTSTUnderlyingBalance;
+            eTSTsecondaryYield = earnNeweTSTsecondaryUnderlyingBalance - earnCurrenteTSTsecondaryUnderlyingBalance;
 
             assetTST.mint(address(eTST), eTSTYield);
             assetTST.mint(address(eTSTsecondary), eTSTsecondaryYield);
@@ -570,17 +570,17 @@ contract DepositRebalanceHarvestWithdrawE2ETest is EulerEarnBase {
         eulerEulerEarnVault.harvest();
 
         // mock decrease by 10%
-        uint256 aggrCurrentStrategyBalance = eTST.balanceOf(address(eulerEulerEarnVault));
-        uint256 aggrCurrentStrategyBalanceAfterNegYield = aggrCurrentStrategyBalance * 9e17 / 1e18;
+        uint256 earnCurrentStrategyBalance = eTST.balanceOf(address(eulerEulerEarnVault));
+        uint256 earnCurrentStrategyBalanceAfterNegYield = earnCurrentStrategyBalance * 9e17 / 1e18;
         vm.mockCall(
             address(eTST),
-            abi.encodeWithSelector(EVault.previewWithdraw.selector, aggrCurrentStrategyBalance),
-            abi.encode(aggrCurrentStrategyBalanceAfterNegYield)
+            abi.encodeWithSelector(EVault.previewWithdraw.selector, earnCurrentStrategyBalance),
+            abi.encode(earnCurrentStrategyBalanceAfterNegYield)
         );
         vm.mockCall(
             address(eTST),
             abi.encodeWithSelector(EVault.maxWithdraw.selector, address(eulerEulerEarnVault)),
-            abi.encode(aggrCurrentStrategyBalanceAfterNegYield)
+            abi.encode(earnCurrentStrategyBalanceAfterNegYield)
         );
 
         uint256 amountToRedeem = eulerEulerEarnVault.balanceOf(user1);
