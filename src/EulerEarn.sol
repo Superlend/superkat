@@ -83,21 +83,30 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
     }
 
     /// @dev Overriding grantRole().
-    function grantRole(bytes32 role, address account)
+    function grantRole(bytes32 _role, address _account)
         public
         override (IAccessControl, AccessControlUpgradeable)
         onlyEVCAccountOwner
     {
-        super.grantRole(role, account);
+        super.grantRole(_role, _account);
     }
 
     /// @dev Overriding revokeRole().
-    function revokeRole(bytes32 role, address account)
+    function revokeRole(bytes32 _role, address _account)
         public
         override (IAccessControl, AccessControlUpgradeable)
         onlyEVCAccountOwner
     {
-        super.revokeRole(role, account);
+        super.revokeRole(_role, _account);
+    }
+
+    /// @dev Overriding renounceRole().
+    function renounceRole(bytes32 _role, address _callerConfirmation)
+        public
+        override (IAccessControl, AccessControlUpgradeable)
+        onlyEVCAccountOwner
+    {
+        super.renounceRole(_role, _callerConfirmation);
     }
 
     /// @dev See {FeeModule-setFeeRecipient}.

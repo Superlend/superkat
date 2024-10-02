@@ -9,7 +9,7 @@ library ConstantsLib {
     uint32 public constant REDEEM = 1 << 3;
     uint32 public constant ADD_STRATEGY = 1 << 4;
     uint32 public constant REMOVE_STRATEGY = 1 << 5;
-    uint32 constant ACTIONS_COUNTER = 1 << 6;
+    uint32 public constant ACTIONS_COUNTER = 1 << 6;
 
     // Re-entrancy protection
     uint8 internal constant REENTRANCYLOCK__UNLOCKED = 1;
