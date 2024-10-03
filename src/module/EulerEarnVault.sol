@@ -814,15 +814,14 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
 
         if (totalNegativeYield > totalPositiveYield) {
             uint256 totalNotDistributed = _totalAssetsAllocatable() - totalAssetsDepositedExpected;
-            uint256 lossAmount;
             unchecked {
-                lossAmount = totalNegativeYield - totalPositiveYield;
-            }
+                uint256 lossAmount = totalNegativeYield - totalPositiveYield;
 
-            if (lossAmount > totalNotDistributed) {
-                lossAmount -= totalNotDistributed;
+                if (lossAmount > totalNotDistributed) {
+                    lossAmount -= totalNotDistributed;
 
-                totalAssetsDepositedExpected -= lossAmount;
+                    totalAssetsDepositedExpected -= lossAmount;
+                }
             }
         } else if (totalNegativeYield < totalPositiveYield) {
             uint96 cachedPerformanceFee = $.performanceFee;
