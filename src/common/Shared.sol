@@ -112,7 +112,7 @@ abstract contract Shared is EVCUtil {
         $.interestSmearEnd = uint40(block.timestamp + Constants.INTEREST_SMEAR);
         $.interestLeft = interestLeftCached;
 
-        emit Events.Gulp(interestLeftCached, $.interestSmearEnd);
+        emit Events.Gulp(interestLeftCached, block.timestamp + Constants.INTEREST_SMEAR);
     }
 
     /// @dev update accrued interest.
