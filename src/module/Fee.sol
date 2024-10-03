@@ -28,12 +28,10 @@ abstract contract FeeModule is Shared {
     function setPerformanceFee(uint96 _newFee) external virtual nonReentrant {
         EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
-        uint96 performanceFeeCached = $.performanceFee;
-
         require(_newFee <= Constants.MAX_PERFORMANCE_FEE, Errors.MaxPerformanceFeeExceeded());
         require($.feeRecipient != address(0), Errors.FeeRecipientNotSet());
 
-        emit Events.SetPerformanceFee(performanceFeeCached, _newFee);
+        emit Events.SetPerformanceFee($.performanceFee, _newFee);
 
         $.performanceFee = _newFee;
     }
