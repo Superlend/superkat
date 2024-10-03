@@ -294,7 +294,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
         (uint256 totalAssetsExpected, uint256 totalSupplyExpected) =
             _previewHarvestBeforeWithdraw(isOnlyCashReserveWithdraw);
 
-        uint256 maxAssets = _balanceOf(_owner).mulDiv(
+        uint256 maxAssets = ownerShares.mulDiv(
             totalAssetsExpected + 1, totalSupplyExpected + 10 ** _decimalsOffset(), Math.Rounding.Floor
         );
 
