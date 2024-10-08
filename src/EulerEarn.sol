@@ -289,7 +289,7 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
         returns (uint256 assets)
     {}
 
-    /// @dev See {VaultModule-redeem}.
+    /// @dev See {VaultModule-transfer}.
     function transfer(address _to, uint256 _value) public override (IEulerEarn, EulerEarnVaultModule) returns (bool) {
         return super.transfer(_to, _value);
     }
