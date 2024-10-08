@@ -29,9 +29,9 @@ library ErrorsLib {
     error InvalidAssetAddress();
 
     /// ERC4626Upgradeable.sol errors
-    /// @dev Attempted to withdraw more assets than the max amount for `receiver`.
+    /// @dev Attempted to withdraw more assets than the max amount for `owner`.
     error ERC4626ExceededMaxWithdraw(address owner, uint256 assets, uint256 max);
-    /// @dev Attempted to redeem more shares than the max amount for `receiver`.
+    /// @dev Attempted to redeem more shares than the max amount for `owner`.
     error ERC4626ExceededMaxRedeem(address owner, uint256 shares, uint256 max);
 
     /// ERC20VotesUpgradeable.sol errors
