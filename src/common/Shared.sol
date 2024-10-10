@@ -37,7 +37,7 @@ abstract contract Shared is EVCUtil {
     /// @dev Permit2 contract address.
     address public immutable permit2;
     /// @dev A boolean to whether execute the harvest cooldown period check or not.
-    ///      This is meant to be set to `False` when deploying on L2 to explicitly harvest on every withdraw/redeem.
+    ///      This is meant to be set to `false` when deploying on L2 to explicitly harvest on every withdraw/redeem.
     bool public immutable isHarvestCoolDownCheckOn;
 
     /// @dev Integrations
@@ -231,8 +231,8 @@ abstract contract Shared is EVCUtil {
         }
     }
 
-    /// @dev Return ERC20StorageLocation pointer.
-    ///      This is copied from ERC20Upgradeable OZ implementation to be able to access ERC20 storage and override functions.
+    /// @dev Return ERC4626StorageLocation pointer.
+    ///      This is copied from ERC4626Upgradeable OZ implementation to be able to access ERC4626 storage and override functions.
     ///      keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.ERC4626")) - 1)) & ~bytes32(uint256(0xff))
     function _getInheritedERC4626Storage() private pure returns (ERC4626Upgradeable.ERC4626Storage storage $) {
         assembly {
