@@ -39,7 +39,6 @@ abstract contract DefaultBeforeAfterHooks is BaseHooks {
         uint256 totalAssetsAllocatable;
         uint256 totalAssetsDeposited;
         uint256 totalAllocated;
-        uint256 cashReserve;
         // External Accounting
         uint256 balance;
         uint256 exchangeRate;
@@ -51,6 +50,7 @@ abstract contract DefaultBeforeAfterHooks is BaseHooks {
         uint256 interestAccrued;
         // Strategies data
         mapping(address => Strategy) strategies;
+        Strategy cashReserve;
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -103,7 +103,6 @@ abstract contract DefaultBeforeAfterHooks is BaseHooks {
         _defaultVars.totalAssetsAllocatable = eulerEulerEarnVault.totalAssetsAllocatable();
         _defaultVars.totalAssetsDeposited = eulerEulerEarnVault.totalAssetsDeposited();
         _defaultVars.totalAllocated = eulerEulerEarnVault.totalAllocated();
-        _defaultVars.cashReserve = eulerEulerEarnVault.getStrategy(address(0)).allocated;
         // External Accounting
         _defaultVars.balance = eTST.balanceOf(address(eulerEulerEarnVault));
         _defaultVars.exchangeRate =
@@ -129,6 +128,15 @@ abstract contract DefaultBeforeAfterHooks is BaseHooks {
                 status: strategy.status
             });
         }
+
+        IEulerEarn.Strategy memory cashReserve = eulerEulerEarnVault.getStrategy(address(0));
+
+        _defaultVars.cashReserve = Strategy({
+            allocated: cashReserve.allocated,
+            allocationPoints: cashReserve.allocationPoints,
+            cap: cashReserve.cap,
+            status: cashReserve.status
+        });
     }
 
     function _setUserValues(DefaultVars storage _defaultVars) internal {}
@@ -153,8 +161,14 @@ abstract contract DefaultBeforeAfterHooks is BaseHooks {
         }
     }
 
+    function assert_GPOST_BASE_C() public {
+        if (defaultVarsAfter.exchangeRate < defaultVarsBefore.exchangeRate) {
+            // TODO add loss check
+        }
+    }
+
     ///////////////////////////////////////////////////////////////////////////////////////////////
-    //                                   POST CONDITIONS: BASE                                   //
+    //                                   POST CONDITIONS: INTEREST                                   //
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
     function assert_GPOST_INTEREST_A() public {

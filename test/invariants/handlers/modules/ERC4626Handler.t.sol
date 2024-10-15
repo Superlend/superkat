@@ -47,6 +47,17 @@ contract ERC4626Handler is BaseHandler {
 
             /// @dev ERC4626_DEPOSIT_INVARIANT_B
             assertLe(previewedShares, shares, ERC4626_DEPOSIT_INVARIANT_B);
+
+            /// @dev HSPOST_USER_A
+            assertEq(
+                defaultVarsBefore.cashReserve.allocated + assets, defaultVarsAfter.cashReserve.allocated, HSPOST_USER_A
+            );
+
+            /// @dev HSPOST_USER_D
+            assertEq(defaultVarsBefore.totalAssets + assets, defaultVarsAfter.totalAssets, HSPOST_USER_D);
+
+            /// @dev HSPOST_USER_F
+            assertEq(defaultVarsBefore.balance + assets, defaultVarsAfter.balance, HSPOST_USER_F);
         }
     }
 
@@ -74,6 +85,17 @@ contract ERC4626Handler is BaseHandler {
 
             /// @dev ERC4626_MINT_INVARIANT_B
             assertGe(previewedAssets, assets, ERC4626_MINT_INVARIANT_B);
+
+            /// @dev HSPOST_USER_A
+            assertEq(
+                defaultVarsBefore.cashReserve.allocated + assets, defaultVarsAfter.cashReserve.allocated, HSPOST_USER_A
+            );
+
+            /// @dev HSPOST_USER_D
+            assertEq(defaultVarsBefore.totalAssets + assets, defaultVarsAfter.totalAssets, HSPOST_USER_D);
+
+            /// @dev HSPOST_USER_F
+            assertEq(defaultVarsBefore.balance + assets, defaultVarsAfter.balance, HSPOST_USER_F);
         }
     }
 
@@ -102,6 +124,24 @@ contract ERC4626Handler is BaseHandler {
 
             /// @dev ERC4626_WITHDRAW_INVARIANT_B
             assertGe(previewedShares, shares, ERC4626_WITHDRAW_INVARIANT_B);
+
+            /// @dev HSPOST_USER_B
+            if (assets <= defaultVarsBefore.cashReserve.allocated) {
+                assertEq(
+                    defaultVarsBefore.cashReserve.allocated - assets,
+                    defaultVarsAfter.cashReserve.allocated,
+                    HSPOST_USER_B
+                );
+            } else {
+                assertEq(0, defaultVarsAfter.cashReserve.allocated, HSPOST_USER_B);
+
+                /// @dev HSPOST_USER_C
+                uint256 delta = assets - defaultVarsBefore.cashReserve.allocated;
+                assertEq(defaultVarsBefore.totalAllocated - delta, defaultVarsAfter.totalAllocated, HSPOST_USER_C);
+            }
+
+            /// @dev HSPOST_USER_E
+            assertEq(defaultVarsBefore.totalAssets - assets, defaultVarsAfter.totalAssets, HSPOST_USER_E);
         }
     }
 
@@ -130,6 +170,24 @@ contract ERC4626Handler is BaseHandler {
 
             /// @dev ERC4626_REDEEM_INVARIANT_B
             //assertLe(previewedAssets, assets, ERC4626_REDEEM_INVARIANT_B); @audit-issue  I - 5
+
+            /// @dev HSPOST_USER_B
+            if (assets <= defaultVarsBefore.cashReserve.allocated) {
+                assertEq(
+                    defaultVarsBefore.cashReserve.allocated - assets,
+                    defaultVarsAfter.cashReserve.allocated,
+                    HSPOST_USER_B
+                );
+            } else {
+                assertEq(0, defaultVarsAfter.cashReserve.allocated, HSPOST_USER_B);
+
+                /// @dev HSPOST_USER_C
+                uint256 delta = assets - defaultVarsBefore.cashReserve.allocated;
+                assertEq(defaultVarsBefore.totalAllocated - delta, defaultVarsAfter.totalAllocated, HSPOST_USER_C);
+            }
+
+            /// @dev HSPOST_USER_E
+            assertEq(defaultVarsBefore.totalAssets - assets, defaultVarsAfter.totalAssets, HSPOST_USER_E);
         }
     }
 

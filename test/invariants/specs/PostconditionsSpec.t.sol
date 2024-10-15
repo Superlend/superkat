@@ -31,7 +31,7 @@ abstract contract PostconditionsSpec {
         "GPOST_BASE_B: if lastHarvestTimestamp is updated either `harvest`, `withdraw` or `redeem` have been called";
 
     string constant GPOST_BASE_C =
-        "GPOST_BASE_C: Exchange rate should never decrease unless a loss is reported by harvest"; // TODO
+        "GPOST_BASE_C: Exchange rate should never decrease unless a loss is reported by harvest";
 
     string constant GPOST_BASE_D =
         "GPOST_BASE_D: new shares should only be minted when there is a corresponding increase in assets"; // TODO
@@ -54,22 +54,22 @@ abstract contract PostconditionsSpec {
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
     string constant HSPOST_USER_A =
-        "HSPOST_USER_A: After a deposit or mint, the amount should be credited to the cash reserve"; // TODO
+        "HSPOST_USER_A: After a deposit or mint, the amount should be credited to the cash reserve";
 
     string constant HSPOST_USER_B =
-        "HSPOST_USER_B: After a withdraw or redeem, if cash reserve > amount, the amount should be withdrawn from the cash reserve"; // TODO
+        "HSPOST_USER_B: After a withdraw or redeem, if cash reserve > amount, the amount should be withdrawn from the cash reserve";
 
     string constant HSPOST_USER_C =
-        "HSPOST_USER_C: After a withdraw or redeem, if cash reserve < amount, the difference should be withdrawn from the strategies"; // TODO
+        "HSPOST_USER_C: After a withdraw or redeem, if cash reserve < amount, the difference should be withdrawn from the strategies";
 
     string constant HSPOST_USER_D =
-        "HSPOST_USER_D: After a deposit or mint, the totalAssets should increase by the amount deposited"; // TODO
+        "HSPOST_USER_D: After a deposit or mint, the totalAssets should increase by the amount deposited";
 
     string constant HSPOST_USER_E =
-        "HSPOST_USER_E: After a withdraw or redeem, the totalAssets should decrease by the amount withdrawn"; // TODO
+        "HSPOST_USER_E: After a withdraw or redeem, the totalAssets should decrease by the amount withdrawn";
 
     string constant HSPOST_USER_F =
-        "HSPOST_USER_D: After a deposit or mint, the balance of the protocol should increase by the amount deposited"; // TODO
+        "HSPOST_USER_D: After a deposit or mint, the balance of the protocol should increase by the amount deposited";
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //                                          STRATEGIES                                       //
@@ -93,7 +93,7 @@ abstract contract PostconditionsSpec {
         "HSPOST_STRATEGIES_F: Performance fee should be transferred to the feeRecipient"; // TODO
 
     string constant HSPOST_STRATEGIES_G =
-        "HSPOST_STRATEGIES_G: After claiming underlying rewards, they are correctly distributed"; // TODO
+        "HSPOST_STRATEGIES_G: After claiming underlying rewards, they are correctly distributed";
 
     string constant GPOST_STRATEGIES_H = "GPOST_STRATEGIES_H: allocated =< allocated' => allocated < strategy.cap";
 }
