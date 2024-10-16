@@ -611,7 +611,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
             totalNegativeYield += loss;
         }
 
-        // we should deduct loss before updating totalAllocated to not underflow
+        // we should deduct loss before updating `totalAllocated` to not underflow
         if (totalNegativeYield > totalPositiveYield) {
             unchecked {
                 _deductLoss(totalNegativeYield - totalPositiveYield);
@@ -622,6 +622,10 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
             }
         }
 
+        // this is safe because:
+        // a strategy loss is capped by `startegy.allocated`
+        // => `$.totalAllocated` is the sum of all strategies `.allocated` amounts, the loss can never spill over into the cash reserve
+        // => this subtraction cannot underflow.
         $.totalAllocated = $.totalAllocated + totalPositiveYield - totalNegativeYield;
 
         _gulp();
@@ -713,6 +717,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
         uint256 targetAllocation =
             totalAssetsAllocatableCache * strategyData.allocationPoints / totalAllocationPointsCache;
 
+        // downcasting to uint120 is safe as MAX_CAP_AMOUNT == type(uint120).max
         uint120 capAmount = uint120(strategyData.cap.resolve());
         // capAmount will be max uint256 if no cap is set
         if (targetAllocation > capAmount) targetAllocation = capAmount;
@@ -828,6 +833,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
                 if (lossAmount > totalNotDistributed) {
                     lossAmount -= totalNotDistributed;
 
+                    // this is safe substraction as `_lossAmount` is capped by sum of strategies `.allocated` amounts <= `totalAssetsDeposited`
                     totalAssetsDepositedExpected -= lossAmount;
                 }
             }
