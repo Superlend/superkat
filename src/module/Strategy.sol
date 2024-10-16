@@ -62,7 +62,7 @@ abstract contract StrategyModule is Shared {
 
     /// @notice Toggle a strategy status between `Active` and `Emergency`.
     /// @dev This should be used as a circuit-breaker to exclude a faulty strategy from being harvest or rebalanced.
-    ///      It also deduct all the deposited amounts into the strategy as loss, and uses a loss socialization mechanism.
+    ///      It also deducts all the deposited amounts into the strategy as loss, and uses a loss socialization mechanism.
     ///      This is needed, in case the EulerEarn Vault can no longer withdraw from a certain strategy.
     ///      In the case of switching a strategy from Emergency to Active again, the max withdrawable amount from the strategy
     ///      will be set as the allocated amount, and will be immediately available to gulp.

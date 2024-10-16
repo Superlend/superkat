@@ -251,15 +251,17 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
         return _totalAssets();
     }
 
-    /// @notice Convert to the amount of shares that the Vault would exchange for the amount of assets provided.
-    /// @dev See {IERC4626-convertToShares}.
+    /// @notice Convert to an approximation of the amount of shares that the Vault would exchange for the amount of assets provided.
+    /// @dev This function will just return an approximation and not an exact amount as it does not simulate a harvest, and it should be used as a share price oracle.
+    /// @param _assets Amount of assets.
     /// @return Amount of shares.
     function convertToShares(uint256 _assets) public view virtual override nonReentrantView returns (uint256) {
         return _convertToShares(_assets, Math.Rounding.Floor);
     }
 
-    /// @notice Convert to the amount of assets that the Vault would exchange for the amount of shares provided.
-    /// @dev See {IERC4626-convertToAssets}.
+    /// @notice Convert to an apprximation of the amount of assets that the Vault would exchange for the amount of shares provided.
+    /// @dev This function will just return an approximation and not an exact amount as it does not simulate a harvest, and it should be used as a share price oracle.
+    /// @param _shares Amount of shares.
     /// @return Amount of assets.
     function convertToAssets(uint256 _shares) public view virtual override nonReentrantView returns (uint256) {
         return _convertToAssets(_shares, Math.Rounding.Floor);
@@ -590,6 +592,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
     ///         The performance fee will only be applied on net positive yield across all strategies.
     ///         In case of harvesting net negative yield amount, and the execution of loss socialization, and share price will drop instantly.
     /// @param _isHarvestCoolDownCheckOn a boolean to indicate whether to check for cooldown period or not.
+    /// @param _isOnlyCashReserveWithdraw a boolean to indicate, in the case of `_harvest()` during a withdraw/redeem, wether the cash reserve is enough to fill the withdrawn amount or not.
     function _harvest(bool _isHarvestCoolDownCheckOn, bool _isOnlyCashReserveWithdraw) private returns (bool) {
         EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
@@ -672,7 +675,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
         return (positiveYield, loss);
     }
 
-    /// @dev Accrue performace fee on aggregated harvested positive yield.
+    /// @dev Accrue performance fee on harvested positive yield.
     /// @dev Fees will be minted as shares to fee recipient.
     /// @param _yield Net positive yield.
     function _accruePerformanceFee(uint256 _yield) private {
@@ -719,7 +722,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
 
         // downcasting to uint120 is safe as MAX_CAP_AMOUNT == type(uint120).max
         uint120 capAmount = uint120(strategyData.cap.resolve());
-        // capAmount will be max uint256 if no cap is set
+        // if no cap is set, `cap.resolve()` will be `type(uint256).max` and therefore `capAmount` will be `type(uint120).max`
         if (targetAllocation > capAmount) targetAllocation = capAmount;
 
         uint256 amountToRebalance;
@@ -799,8 +802,8 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
         uint256 totalSupplyExpected = _totalSupply();
 
         if (
-            _isOnlyCashReserveWithdraw
-                && (isHarvestCoolDownCheckOn && $.lastHarvestTimestamp + Constants.HARVEST_COOLDOWN >= block.timestamp)
+            (isHarvestCoolDownCheckOn && $.lastHarvestTimestamp + Constants.HARVEST_COOLDOWN >= block.timestamp)
+                && _isOnlyCashReserveWithdraw
         ) {
             return (totalAssetsDepositedExpected, totalSupplyExpected);
         }
@@ -848,6 +851,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
 
                 (uint256 feeAssets, uint256 feeShares) = _applyPerformanceFee(yield, cachedPerformanceFee);
 
+                // cached `totalAssetsDeposited` & `totalSupply` are accurate in this case.
                 totalAssetsDepositedExpected += feeAssets;
                 totalSupplyExpected += feeShares;
             }

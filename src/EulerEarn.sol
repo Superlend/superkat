@@ -235,7 +235,7 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
         use(withdrawalQueueModule)
     {}
 
-    /// @dev See {VaultModule-rebalance}.
+    /// @dev See {EulerEarnVaultModule-rebalance}.
     function rebalance(address[] calldata _strategies)
         public
         override (IEulerEarn, EulerEarnVaultModule)
@@ -250,16 +250,16 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
     /// @dev See {RewardsModule-disableBalanceForwarder}.
     function disableBalanceForwarder() public override (IEulerEarn, RewardsModule) use(rewardsModule) {}
 
-    /// @dev See {VaultModule-harvest}.
+    /// @dev See {EulerEarnVaultModule-harvest}.
     function harvest() public override (IEulerEarn, EulerEarnVaultModule) use(eulerEarnVaultModule) {}
 
-    /// @dev See {VaultModule-updateInterestAccrued}.
+    /// @dev See {EulerEarnVaultModule-updateInterestAccrued}.
     function updateInterestAccrued() public override (IEulerEarn, EulerEarnVaultModule) use(eulerEarnVaultModule) {}
 
-    /// @dev See {VaultModule-gulp}.
+    /// @dev See {EulerEarnVaultModule-gulp}.
     function gulp() public override (IEulerEarn, EulerEarnVaultModule) use(eulerEarnVaultModule) {}
 
-    /// @dev See {VaultModule-deposit}.
+    /// @dev See {EulerEarnVaultModule-deposit}.
     function deposit(uint256 _assets, address _receiver)
         public
         override (IEulerEarn, EulerEarnVaultModule)
@@ -267,7 +267,7 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
         returns (uint256)
     {}
 
-    /// @dev See {VaultModule-mint}.
+    /// @dev See {EulerEarnVaultModule-mint}.
     function mint(uint256 _shares, address _receiver)
         public
         override (IEulerEarn, EulerEarnVaultModule)
@@ -275,7 +275,7 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
         returns (uint256)
     {}
 
-    /// @dev See {VaultModule-withdraw}.
+    /// @dev See {EulerEarnVaultModule-withdraw}.
     function withdraw(uint256 _assets, address _receiver, address _owner)
         public
         override (IEulerEarn, EulerEarnVaultModule)
@@ -283,7 +283,7 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
         returns (uint256 shares)
     {}
 
-    /// @dev See {VaultModule-redeem}.
+    /// @dev See {EulerEarnVaultModule-redeem}.
     function redeem(uint256 _shares, address _receiver, address _owner)
         public
         override (IEulerEarn, EulerEarnVaultModule)
@@ -291,12 +291,12 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
         returns (uint256 assets)
     {}
 
-    /// @dev See {VaultModule-transfer}.
+    /// @dev See {EulerEarnVaultModule-transfer}.
     function transfer(address _to, uint256 _value) public override (IEulerEarn, EulerEarnVaultModule) returns (bool) {
         return super.transfer(_to, _value);
     }
 
-    /// @dev See {VaultModule-approve}.
+    /// @dev See {EulerEarnVaultModule-approve}.
     function approve(address _spender, uint256 _value)
         public
         override (IEulerEarn, EulerEarnVaultModule)
@@ -305,7 +305,7 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
         return super.approve(_spender, _value);
     }
 
-    /// @dev See {VaultModule-transferFrom}.
+    /// @dev See {EulerEarnVaultModule-transferFrom}.
     function transferFrom(address _from, address _to, uint256 _value)
         public
         override (IEulerEarn, EulerEarnVaultModule)
@@ -314,12 +314,12 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
         return super.transferFrom(_from, _to, _value);
     }
 
-    /// @dev See {VaultModule-delegate}.
+    /// @dev See {EulerEarnVaultModule-delegate}.
     function delegate(address _delegatee) public override (IEulerEarn, EulerEarnVaultModule) {
         super.delegate(_delegatee);
     }
 
-    /// @dev See {VaultModule-delegateBySig}.
+    /// @dev See {EulerEarnVaultModule-delegateBySig}.
     function delegateBySig(address _delegatee, uint256 _nonce, uint256 _expiry, uint8 _v, bytes32 _r, bytes32 _s)
         public
         override (IEulerEarn, EulerEarnVaultModule)
@@ -327,12 +327,12 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
         super.delegateBySig(_delegatee, _nonce, _expiry, _v, _r, _s);
     }
 
-    /// @dev See {VaultModule-interestAccrued}.
+    /// @dev See {EulerEarnVaultModule-interestAccrued}.
     function interestAccrued() public view override (IEulerEarn, EulerEarnVaultModule) returns (uint256) {
         return super.interestAccrued();
     }
 
-    /// @dev See {VaultModule-getEulerEarnSavingRate}.
+    /// @dev See {EulerEarnVaultModule-getEulerEarnSavingRate}.
     function getEulerEarnSavingRate()
         public
         view
@@ -342,32 +342,32 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
         return super.getEulerEarnSavingRate();
     }
 
-    /// @dev See {VaultModule-totalAllocated}.
+    /// @dev See {EulerEarnVaultModule-totalAllocated}.
     function totalAllocated() public view override (IEulerEarn, EulerEarnVaultModule) returns (uint256) {
         return super.totalAllocated();
     }
 
-    /// @dev See {VaultModule-totalAssetsDeposited}.
+    /// @dev See {EulerEarnVaultModule-totalAssetsDeposited}.
     function totalAssetsDeposited() public view override (IEulerEarn, EulerEarnVaultModule) returns (uint256) {
         return super.totalAssetsDeposited();
     }
 
-    /// @dev See {VaultModule-lastHarvestTimestamp}.
+    /// @dev See {EulerEarnVaultModule-lastHarvestTimestamp}.
     function lastHarvestTimestamp() public view override (IEulerEarn, EulerEarnVaultModule) returns (uint256) {
         return super.lastHarvestTimestamp();
     }
 
-    /// @dev See {VaultModule-totalAssetsAllocatable}.
+    /// @dev See {EulerEarnVaultModule-totalAssetsAllocatable}.
     function totalAssetsAllocatable() public view override (IEulerEarn, EulerEarnVaultModule) returns (uint256) {
         return super.totalAssetsAllocatable();
     }
 
-    /// @dev See {VaultModule-totalAssets}.
+    /// @dev See {EulerEarnVaultModule-totalAssets}.
     function totalAssets() public view override (IEulerEarn, EulerEarnVaultModule) returns (uint256) {
         return super.totalAssets();
     }
 
-    /// @dev See {VaultModule-convertToShares}.
+    /// @dev See {EulerEarnVaultModule-convertToShares}.
     function convertToShares(uint256 _assets)
         public
         view
@@ -377,7 +377,7 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
         return super.convertToShares(_assets);
     }
 
-    /// @dev See {VaultModule-convertToAssets}.
+    /// @dev See {EulerEarnVaultModule-convertToAssets}.
     function convertToAssets(uint256 _shares)
         public
         view
@@ -387,17 +387,17 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
         return super.convertToAssets(_shares);
     }
 
-    /// @dev See {VaultModule-maxWithdraw}.
+    /// @dev See {EulerEarnVaultModule-maxWithdraw}.
     function maxWithdraw(address _owner) public view override (IEulerEarn, EulerEarnVaultModule) returns (uint256) {
         return super.maxWithdraw(_owner);
     }
 
-    /// @dev See {VaultModule-maxRedeem}.
+    /// @dev See {EulerEarnVaultModule-maxRedeem}.
     function maxRedeem(address _owner) public view override (IEulerEarn, EulerEarnVaultModule) returns (uint256) {
         return super.maxRedeem(_owner);
     }
 
-    /// @dev See {VaultModule-previewDeposit}.
+    /// @dev See {EulerEarnVaultModule-previewDeposit}.
     function previewDeposit(uint256 _assets)
         public
         view
@@ -407,12 +407,12 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
         return super.previewDeposit(_assets);
     }
 
-    /// @dev See {VaultModule-previewMint}.
+    /// @dev See {EulerEarnVaultModule-previewMint}.
     function previewMint(uint256 _shares) public view override (IEulerEarn, EulerEarnVaultModule) returns (uint256) {
         return super.previewMint(_shares);
     }
 
-    /// @dev See {VaultModule-previewWithdraw}.
+    /// @dev See {EulerEarnVaultModule-previewWithdraw}.
     function previewWithdraw(uint256 _assets)
         public
         view
@@ -422,52 +422,52 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
         return super.previewWithdraw(_assets);
     }
 
-    /// @dev See {VaultModule-previewRedeem}.
+    /// @dev See {EulerEarnVaultModule-previewRedeem}.
     function previewRedeem(uint256 _shares) public view override (IEulerEarn, EulerEarnVaultModule) returns (uint256) {
         return super.previewRedeem(_shares);
     }
 
-    /// @dev See {VaultModule-balanceOf}.
+    /// @dev See {EulerEarnVaultModule-balanceOf}.
     function balanceOf(address _account) public view override (IEulerEarn, EulerEarnVaultModule) returns (uint256) {
         return super.balanceOf(_account);
     }
 
-    /// @dev See {VaultModule-totalSupply}.
+    /// @dev See {EulerEarnVaultModule-totalSupply}.
     function totalSupply() public view override (IEulerEarn, EulerEarnVaultModule) returns (uint256) {
         return super.totalSupply();
     }
 
-    /// @dev See {VaultModule-decimals}.
+    /// @dev See {EulerEarnVaultModule-decimals}.
     function decimals() public view override (IEulerEarn, EulerEarnVaultModule) returns (uint8) {
         return super.decimals();
     }
 
-    /// @dev See {VaultModule-maxDeposit}.
+    /// @dev See {EulerEarnVaultModule-maxDeposit}.
     function maxDeposit(address _owner) public view override (IEulerEarn, EulerEarnVaultModule) returns (uint256) {
         return super.maxDeposit(_owner);
     }
 
-    /// @dev See {VaultModule-maxMint}.
+    /// @dev See {EulerEarnVaultModule-maxMint}.
     function maxMint(address _owner) public view override (IEulerEarn, EulerEarnVaultModule) returns (uint256) {
         return super.maxMint(_owner);
     }
 
-    /// @dev See {VaultModule-asset}.
+    /// @dev See {EulerEarnVaultModule-asset}.
     function asset() public view override returns (address) {
         return super.asset();
     }
 
-    /// @dev See {VaultModule-name}.
+    /// @dev See {EulerEarnVaultModule-name}.
     function name() public view override (IEulerEarn, EulerEarnVaultModule) returns (string memory) {
         return super.name();
     }
 
-    /// @dev See {VaultModule-symbol}.
+    /// @dev See {EulerEarnVaultModule-symbol}.
     function symbol() public view override (IEulerEarn, EulerEarnVaultModule) returns (string memory) {
         return super.symbol();
     }
 
-    /// @dev See {VaultModule-allowance}.
+    /// @dev See {EulerEarnVaultModule-allowance}.
     function allowance(address _owner, address _spender)
         public
         view
@@ -477,7 +477,7 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
         return super.allowance(_owner, _spender);
     }
 
-    /// @dev See {VaultModule-numCheckpoints}.
+    /// @dev See {EulerEarnVaultModule-numCheckpoints}.
     function numCheckpoints(address _account)
         public
         view
@@ -487,7 +487,7 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
         return super.numCheckpoints(_account);
     }
 
-    /// @dev See {VaultModule-checkpoints}.
+    /// @dev See {EulerEarnVaultModule-checkpoints}.
     function checkpoints(address _account, uint32 _pos)
         public
         view
@@ -497,22 +497,22 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
         return super.checkpoints(_account, _pos);
     }
 
-    /// @dev See {VaultModule-clock}.
+    /// @dev See {EulerEarnVaultModule-clock}.
     function clock() public view override (IEulerEarn, EulerEarnVaultModule) returns (uint48) {
         return super.clock();
     }
 
-    /// @dev See {VaultModule-CLOCK_MODE}.
+    /// @dev See {EulerEarnVaultModule-CLOCK_MODE}.
     function CLOCK_MODE() public view override (IEulerEarn, EulerEarnVaultModule) returns (string memory) {
         return super.CLOCK_MODE();
     }
 
-    /// @dev See {VaultModule-getVotes}.
+    /// @dev See {EulerEarnVaultModule-getVotes}.
     function getVotes(address _account) public view override (IEulerEarn, EulerEarnVaultModule) returns (uint256) {
         return super.getVotes(_account);
     }
 
-    /// @dev See {VaultModule-getPastVotes}.
+    /// @dev See {EulerEarnVaultModule-getPastVotes}.
     function getPastVotes(address _account, uint256 _timepoint)
         public
         view
@@ -522,7 +522,7 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
         return super.getPastVotes(_account, _timepoint);
     }
 
-    /// @dev See {VaultModule-getPastTotalSupply}.
+    /// @dev See {EulerEarnVaultModule-getPastTotalSupply}.
     function getPastTotalSupply(uint256 _timepoint)
         public
         view
@@ -532,7 +532,7 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
         return super.getPastTotalSupply(_timepoint);
     }
 
-    /// @dev See {VaultModule-delegates}.
+    /// @dev See {EulerEarnVaultModule-delegates}.
     function delegates(address _account) public view override (IEulerEarn, EulerEarnVaultModule) returns (address) {
         return super.delegates(_account);
     }

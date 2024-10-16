@@ -78,9 +78,9 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
         virtual
         nonReentrant
     {
-        address rewardStreams = IBalanceForwarder(_strategy).balanceTrackerAddress();
-
-        IRewardStreams(rewardStreams).claimReward(_strategy, _reward, _recipient, _forfeitRecentReward);
+        IRewardStreams(IBalanceForwarder(_strategy).balanceTrackerAddress()).claimReward(
+            _strategy, _reward, _recipient, _forfeitRecentReward
+        );
 
         emit Events.ClaimStrategyReward(_strategy, _reward, _recipient, _forfeitRecentReward);
     }

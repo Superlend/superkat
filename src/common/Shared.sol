@@ -66,7 +66,8 @@ abstract contract Shared is EVCUtil {
         uint256 totalAssetsDepositedCache = $.totalAssetsDeposited;
         uint256 totalNotDistributed = _totalAssetsAllocatable() - totalAssetsDepositedCache;
 
-        // set interestLeft to zero, will be updated to the right value during _gulp()
+        // set `interestLeft` to zero, will be updated to the right value during `_gulp()`
+        // as we substract the `_lossAmount` from `$.totalAllocated` after this function call and before `_gulp()`
         $.interestLeft = 0;
         if (_lossAmount > totalNotDistributed) {
             unchecked {
@@ -96,7 +97,7 @@ abstract contract Shared is EVCUtil {
         if (!success) RevertBytesLib.revertBytes(data);
     }
 
-    /// @dev gulp positive yield into interest left amd update accrued interest.
+    /// @dev gulp positive yield into interest left and update accrued interest.
     function _gulp() internal {
         _updateInterestAccrued();
 
