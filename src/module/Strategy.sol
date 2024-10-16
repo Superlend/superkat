@@ -66,6 +66,8 @@ abstract contract StrategyModule is Shared {
     ///      This is needed, in case the EulerEarn Vault can no longer withdraw from a certain strategy.
     ///      In the case of switching a strategy from Emergency to Active again, the max withdrawable amount from the strategy
     ///      will be set as the allocated amount, and will be immediately available to gulp.
+    ///      When toggling a strategy from `Active` to `Emergency`, the strategy allocated amount will be instantly deducted as loss,
+    ///      and this will drop the vault's share price. Therefore, Euler Earn shares should never be used as collateral in any other protocol.
     /// @param _strategy Strategy address.
     function toggleStrategyEmergencyStatus(address _strategy) public virtual nonReentrant {
         require(_strategy != Constants.CASH_RESERVE, Errors.CanNotToggleStrategyEmergencyStatus());
