@@ -588,7 +588,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
     /// @dev    Loop through strategies, harvest, aggregate positive and negative yield and account for net amount.
     ///         Loss socialization will be taken out from interest left + amount available to gulp first, if not enough, socialize on deposits.
     ///         The performance fee will only be applied on net positive yield across all strategies.
-    ///         In case of harvesting net negative yield amount, loss deduction will be executed, and share price will drop instantly.
+    ///         In case of harvesting net negative yield amount, and the execution of loss socialization, and share price will drop instantly.
     /// @param _isHarvestCoolDownCheckOn a boolean to indicate whether to check for cooldown period or not.
     function _harvest(bool _isHarvestCoolDownCheckOn, bool _isOnlyCashReserveWithdraw) private returns (bool) {
         EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
