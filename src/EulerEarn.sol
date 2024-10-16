@@ -586,4 +586,9 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
     function _msgSender() internal view override (Dispatch, ContextUpgradeable) returns (address) {
         return Dispatch._msgSender();
     }
+
+    /// @dev See {ERC20VotesUpgradeable-_getVotingUnits}.
+    function _getVotingUnits(address _account) internal view override returns (uint256) {
+        return _balanceOf(_account);
+    }
 }
