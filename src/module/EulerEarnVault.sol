@@ -515,6 +515,10 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
                 // Do actual withdraw from strategy
                 strategy.withdraw(withdrawAmount, address(this), address(this));
 
+                // set type(uint120).max as a cap for `withdrawAmount`.
+                // we do set the max after withdrawing, to still be able to withdraw any excess.
+                withdrawAmount = (withdrawAmount >= type(uint120).max) ? type(uint120).max : withdrawAmount;
+
                 // Update allocated assets
                 $.strategies[address(strategy)].allocated -= uint120(withdrawAmount);
                 $.totalAllocated -= withdrawAmount;
