@@ -41,8 +41,8 @@ import {IEVault} from "evk/src/EVault/IEVault.sol";
 import {IRMTestDefault} from "evk/test/mocks/IRMTestDefault.sol";
 
 // Test Contracts
-import {TestERC20} from "test/invariants/utils/mocks/TestERC20.sol";
-import {BaseTest} from "test/invariants/base/BaseTest.t.sol";
+import {TestERC20} from "test/enigma-dark-invariants/utils/mocks/TestERC20.sol";
+import {BaseTest} from "test/enigma-dark-invariants/base/BaseTest.t.sol";
 import {MockPriceOracle} from "./utils/mocks/MockPriceOracle.sol";
 import {Actor} from "./utils/Actor.sol";
 

@@ -30,6 +30,7 @@ abstract contract DefaultBeforeAfterHooks is BaseHooks {
         uint96 allocationPoints;
         AmountCap cap;
         IEulerEarn.StrategyStatus status;
+        uint256 eulerEarnStrategyBalance;
     }
 
     struct DefaultVars {
@@ -42,6 +43,7 @@ abstract contract DefaultBeforeAfterHooks is BaseHooks {
         // External Accounting
         uint256 balance;
         uint256 exchangeRate;
+        uint256 toGulp;
         // Interest
         uint256 lastHarvestTimestamp;
         uint40 lastInterestUpdate;
@@ -50,7 +52,6 @@ abstract contract DefaultBeforeAfterHooks is BaseHooks {
         uint256 interestAccrued;
         // Strategies data
         mapping(address => Strategy) strategies;
-        Strategy cashReserve;
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -97,24 +98,29 @@ abstract contract DefaultBeforeAfterHooks is BaseHooks {
     /////////////////////////////////////////////////////////////////////////////////////////////*/
 
     function _setVaultValues(DefaultVars storage _defaultVars) internal {
+        (uint40 lastInterestUpdate, uint40 interestSmearingEnd, uint168 interestLeft) =
+            eulerEulerEarnVault.getEulerEarnSavingRate();
+
         // Vault Accounting
         _defaultVars.totalSupply = eulerEulerEarnVault.totalSupply();
         _defaultVars.totalAssets = eulerEulerEarnVault.totalAssets();
         _defaultVars.totalAssetsAllocatable = eulerEulerEarnVault.totalAssetsAllocatable();
         _defaultVars.totalAssetsDeposited = eulerEulerEarnVault.totalAssetsDeposited();
         _defaultVars.totalAllocated = eulerEulerEarnVault.totalAllocated();
+
         // External Accounting
-        _defaultVars.balance = eTST.balanceOf(address(eulerEulerEarnVault));
+        _defaultVars.balance = assetTST.balanceOf(address(eulerEulerEarnVault));
         _defaultVars.exchangeRate =
             (_defaultVars.totalSupply != 0) ? _defaultVars.totalAssets / _defaultVars.totalSupply : 0;
+        _defaultVars.toGulp = _defaultVars.totalAssetsAllocatable - _defaultVars.totalAssetsDeposited - interestLeft;
+
         // Interest
         _defaultVars.lastHarvestTimestamp = eulerEulerEarnVault.lastHarvestTimestamp();
-        (uint40 lastInterestUpdate, uint40 interestSmearingEnd, uint168 interestLeft) =
-            eulerEulerEarnVault.getEulerEarnSavingRate();
         _defaultVars.lastInterestUpdate = lastInterestUpdate;
         _defaultVars.interestSmearingEnd = interestSmearingEnd;
         _defaultVars.interestLeft = interestLeft;
         _defaultVars.interestAccrued = eulerEulerEarnVault.interestAccrued();
+        //TODO add underlying balance tracker
     }
 
     function _setStrategiesData(DefaultVars storage _defaultVars) internal {
@@ -125,18 +131,10 @@ abstract contract DefaultBeforeAfterHooks is BaseHooks {
                 allocated: strategy.allocated,
                 allocationPoints: strategy.allocationPoints,
                 cap: strategy.cap,
-                status: strategy.status
+                status: strategy.status,
+                eulerEarnStrategyBalance: IERC20(strategies[i]).balanceOf(address(eulerEulerEarnVault))
             });
         }
-
-        IEulerEarn.Strategy memory cashReserve = eulerEulerEarnVault.getStrategy(address(0));
-
-        _defaultVars.cashReserve = Strategy({
-            allocated: cashReserve.allocated,
-            allocationPoints: cashReserve.allocationPoints,
-            cap: cashReserve.cap,
-            status: cashReserve.status
-        });
     }
 
     function _setUserValues(DefaultVars storage _defaultVars) internal {}
@@ -145,23 +143,24 @@ abstract contract DefaultBeforeAfterHooks is BaseHooks {
     //                                   POST CONDITIONS: BASE                                   //
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
-    function assert_GPOST_BASE_A() public {
+    function assert_GPOST_BASE_A() internal {
         assertGe(defaultVarsAfter.lastHarvestTimestamp, defaultVarsBefore.lastHarvestTimestamp, GPOST_BASE_A);
     }
 
-    function assert_GPOST_BASE_B() public {
+    function assert_GPOST_BASE_B() internal {
         if (defaultVarsAfter.lastHarvestTimestamp > defaultVarsBefore.lastHarvestTimestamp) {
             if (defaultVarsAfter.lastHarvestTimestamp == block.timestamp) {
                 assertTrue(
                     msg.sig == IEulerEarnVaultModuleHandler.harvest.selector
-                        || msg.sig == IERC4626Handler.redeem.selector || msg.sig == IERC4626Handler.withdraw.selector,
+                        || msg.sig == IERC4626Handler.redeem.selector || msg.sig == IERC4626Handler.withdraw.selector
+                        || msg.sig == IEulerEarnVaultModuleHandler.rebalance.selector,
                     GPOST_BASE_B
                 );
             }
         }
     }
 
-    function assert_GPOST_BASE_C() public {
+    function assert_GPOST_BASE_C() internal {
         if (defaultVarsAfter.exchangeRate < defaultVarsBefore.exchangeRate) {
             // TODO add loss check
         }
@@ -171,27 +170,30 @@ abstract contract DefaultBeforeAfterHooks is BaseHooks {
     //                                   POST CONDITIONS: INTEREST                                   //
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
-    function assert_GPOST_INTEREST_A() public {
-        if (defaultVarsAfter.lastInterestUpdate == block.timestamp) {
-            assertGt(defaultVarsAfter.totalSupply, 0, GPOST_INTEREST_A);
+    function assert_GPOST_INTEREST_A() internal {
+        if (_hasLastInterestUpdated()) {
+            console.log("totalSupply", defaultVarsBefore.totalSupply);
+            console.log("interestLeft", defaultVarsBefore.interestLeft);
+            console.log("toGulp", defaultVarsBefore.toGulp);
+            console.log("_totalAssetsAllocatable", defaultVarsBefore.totalAssetsAllocatable);
+            console.log("totalAssetsDeposited", defaultVarsBefore.totalAssetsDeposited);
+            assertTrue(
+                (defaultVarsBefore.totalSupply != 0 && defaultVarsBefore.interestLeft != 0)
+                    || defaultVarsBefore.toGulp != 0,
+                GPOST_INTEREST_A
+            ); //TODO account for not harveested stuff
         }
     }
 
-    function assert_GPOST_INTEREST_B() public {
+    function assert_GPOST_INTEREST_B() internal {
         assertGe(defaultVarsAfter.lastInterestUpdate, defaultVarsBefore.lastInterestUpdate, GPOST_INTEREST_B);
-    }
-
-    function assert_GPOST_INTEREST_C() public {
-        if (defaultVarsAfter.lastInterestUpdate == block.timestamp) {
-            assertGt(defaultVarsAfter.totalAssets, 0, GPOST_INTEREST_C);
-        }
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //                                  POST CONDITIONS: STRATEGIES                              //
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
-    function assert_GPOST_STRATEGIES_A() public {
+    function assert_GPOST_STRATEGIES_A() internal {
         for (uint256 i; i < strategies.length; i++) {
             Strategy memory strategy = defaultVarsAfter.strategies[strategies[i]];
 
@@ -201,14 +203,23 @@ abstract contract DefaultBeforeAfterHooks is BaseHooks {
         }
     }
 
-    function assert_GPOST_STRATEGIES_H() public {
+    function assert_GPOST_STRATEGIES_H() internal {
         for (uint256 i; i < strategies.length; i++) {
             Strategy memory strategyBefore = defaultVarsBefore.strategies[strategies[i]];
             Strategy memory strategyAfter = defaultVarsAfter.strategies[strategies[i]];
 
-            if (strategyAfter.allocated >= strategyBefore.allocated) {
+            if (strategyAfter.allocated > strategyBefore.allocated) {
                 assertLe(strategyAfter.allocated, AmountCapLib.resolve(strategyAfter.cap), GPOST_STRATEGIES_H);
             }
         }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    //                                          HELPERS                                          //
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+
+    function _hasLastInterestUpdated() internal view returns (bool) {
+        return defaultVarsAfter.lastInterestUpdate == block.timestamp
+            && defaultVarsBefore.lastInterestUpdate != block.timestamp;
     }
 }

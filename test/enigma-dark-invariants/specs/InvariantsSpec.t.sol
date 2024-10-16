@@ -27,15 +27,15 @@ abstract contract InvariantsSpec {
     //                                        ASSETS                                             //
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
-    string constant INV_ASSETS_A = "INV_ASSETS_A: totalAssetsDeposited >= totalAllocated";
+    string constant INV_ASSETS_A = "INV_ASSETS_A: totalAssetsDeposited + interestLeft >= totalAllocated";
 
     string constant INV_ASSETS_B = "INV_ASSETS_B: totalAllocated == sum[active_strategies](allocated)";
 
-    string constant INV_ASSETS_C = "INV_ASSETS_C: balanceOf(vault) >= cashReserve";
+    string constant INV_ASSETS_C = "INV_ASSETS_C: balanceOf(vault) >= cashReserve"; // TODO change
 
     string constant INV_ASSETS_D = "INV_ASSETS_D: totalAssetsAllocatable >= totalAssets";
 
-    string constant INV_ASSETS_E = "INV_ASSETS_E: totalAssets >= sum[active_strategies](allocated) + cashReserve";
+    string constant INV_ASSETS_E = "INV_ASSETS_E: totalAssets >= sum[active_strategies](allocated)";
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //                                       STRATEGIES                                          //

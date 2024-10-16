@@ -13,9 +13,7 @@ import {BaseHandler} from "../../base/BaseHandler.t.sol";
 
 /// @title ERC20Handler
 /// @notice Handler test contract for a set of actions
-contract ERC20Handler is
-    BaseHandler //TODO setup votes handler
-{
+contract ERC20Handler is BaseHandler {
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //                                      STATE VARIABLES                                      //
     ///////////////////////////////////////////////////////////////////////////////////////////////

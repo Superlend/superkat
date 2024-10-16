@@ -10,7 +10,7 @@ import "forge-std/console.sol";
 
 // Test Contracts
 import {Actor} from "../../utils/Actor.sol";
-import {TestERC20} from "test/invariants/utils/mocks/TestERC20.sol";
+import {TestERC20} from "../../utils/mocks/TestERC20.sol";
 import {BaseHandler} from "../../base/BaseHandler.t.sol";
 
 /// @title DonationAttackHandler

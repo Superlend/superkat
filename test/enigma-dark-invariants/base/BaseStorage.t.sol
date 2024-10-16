@@ -24,7 +24,7 @@ import {ProtocolConfig} from "evk/src/ProtocolConfig/ProtocolConfig.sol";
 import {IEVault} from "evk/src/EVault/IEVault.sol";
 
 // Mock Contracts
-import {TestERC20} from "test/invariants/utils/mocks/TestERC20.sol";
+import {TestERC20} from "test/enigma-dark-invariants/utils/mocks/TestERC20.sol";
 import {MockPriceOracle} from "../utils/mocks/MockPriceOracle.sol";
 
 // Utils

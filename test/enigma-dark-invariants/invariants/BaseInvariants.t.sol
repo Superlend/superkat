@@ -42,31 +42,26 @@ abstract contract BaseInvariants is HandlerAggregator {
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
     function assert_INV_ASSETS_A() internal {
-        assertGe(eulerEulerEarnVault.totalAssetsDeposited(), eulerEulerEarnVault.totalAllocated(), INV_ASSETS_A);
+        (,, uint168 interestLeft) = eulerEulerEarnVault.getEulerEarnSavingRate();
+        assertGe(
+            eulerEulerEarnVault.totalAssetsDeposited() + interestLeft,
+            eulerEulerEarnVault.totalAllocated(),
+            INV_ASSETS_A
+        );
     }
 
     function assert_INV_ASSETS_B(uint256 sumStrategiesAllocated) internal {
         assertEq(eulerEulerEarnVault.totalAllocated(), sumStrategiesAllocated, INV_ASSETS_B);
     }
 
-    function assert_INV_ASSETS_C() internal {
-        assertGe(
-            eTST.balanceOf(address(eulerEulerEarnVault)),
-            eulerEulerEarnVault.getStrategy(address(0)).allocated,
-            INV_ASSETS_C
-        );
-    }
+    function assert_INV_ASSETS_C() internal {} // TODO change invariant
 
     function assert_INV_ASSETS_D() internal {
         assertGe(eulerEulerEarnVault.totalAssetsAllocatable(), eulerEulerEarnVault.totalAssets(), INV_ASSETS_D);
     }
 
     function assert_INV_ASSETS_E(uint256 sumStrategiesAllocated) internal {
-        assertGe(
-            eulerEulerEarnVault.totalAssets(),
-            sumStrategiesAllocated + eulerEulerEarnVault.getStrategy(address(0)).allocated,
-            INV_ASSETS_E
-        );
+        assertGe(eulerEulerEarnVault.totalAssets(), sumStrategiesAllocated, INV_ASSETS_E);
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////

@@ -38,7 +38,7 @@ contract CryticToFoundry is Invariants, Setup {
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
-    //                                 BROKEN INVARIANTS REPLAY                                  //
+    //                               BROKEN POSTCONDITIONS REPLAY                                //
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
     /// @dev Needed in order for foundry to recognise the contract as a test, faster debugging
@@ -124,6 +124,114 @@ contract CryticToFoundry is Invariants, Setup {
         this.addStrategy(1, 0);
         console.log("totalAssets: ", eulerEulerEarnVault.totalAssets());
         this.rebalance(0, 0, 0);
+    }
+
+    function test_updateInterestAccrued() public {
+        this.donateUnderlying(1, 0);
+        this.assert_ERC4626_WITHDRAW_INVARIANT_C();
+        this.updateInterestAccrued();
+    }
+
+    function test_mintPostCondition() public {
+        this.mint(1, 0);
+    }
+
+    function test_claimStrategyReward() public {
+        this.rebalance(0, 0, 0);
+    }
+
+    function test_setStrategyCap() public {
+        this.addStrategy(1, 0);
+        this.toggleStrategyEmergencyStatus(0);
+        this.simulateYieldAccrual(1, 0);
+        this.toggleStrategyEmergencyStatus(0);
+        this.setStrategyCap(1, 0);
+    }
+
+    function test_mintHSPOST_USER_D() public {
+        this.donateUnderlying(39378, 0);
+        this.assert_ERC4626_roundtrip_invariantE(0);
+        _delay(31);
+        this.mint(1, 0);
+    }
+
+    function test_assert_ERC4626_WITHDRAW_INVARIANT_C() public {
+        this.donateUnderlying(1213962, 0);
+        this.mint(1e22, 0);
+        this.simulateYieldAccrual(1, 0);
+        this.addStrategy(1, 0);
+        this.toggleStrategyEmergencyStatus(0);
+        this.toggleStrategyEmergencyStatus(0);
+        this.setPerformanceFee(4);
+        _delay(1);
+        this.simulateYieldAccrual(250244936486004518, 0);
+        this.assert_ERC4626_WITHDRAW_INVARIANT_C();
+    }
+
+    function test_assert_ERC4626_roundtrip_invariantF() public {
+        //@audit-issue . I - 2
+        this.donateUnderlying(2457159, 0);
+        this.assert_ERC4626_WITHDRAW_INVARIANT_C();
+        _delay(1);
+        this.assert_ERC4626_roundtrip_invariantF(1);
+    }
+
+    function test_assert_ERC4626_roundtrip_invariantA() public {
+        //@audit-issue . I - 2
+        this.donateUnderlying(68, 0);
+        this.assert_ERC4626_roundtrip_invariantA(0);
+        _delay(35693);
+        this.assert_ERC4626_roundtrip_invariantA(1);
+    }
+
+    function test_rebalance3() public {
+        this.donateUnderlying(1, 0);
+        console.log("defaultVarsBefore.lastInterestUpdate: ", defaultVarsBefore.lastInterestUpdate);
+        this.rebalance(0, 0, 0);
+        console.log("defaultVarsBefore.lastInterestUpdate: ", defaultVarsBefore.lastInterestUpdate);
+
+        console.log("defaultVarsAfter.lastInterestUpdate: ", defaultVarsAfter.lastInterestUpdate);
+    }
+
+    function test_redeemHSPOST_USER_E() public {
+        this.addStrategy(50242812395433680164, 0);
+        this.deposit(21, 0);
+        this.rebalance(0, 0, 0);
+        _delay(88402);
+        this.setPerformanceFee(1012725796);
+        this.simulateYieldAccrual(987897736, 0);
+        console.log("assetTST.balanceOf: ", assetTST.balanceOf(address(eulerEulerEarnVault)));
+        this.redeem(0, 0);
+    }
+
+    function test_depositEchidna() public {
+        this.donateUnderlying(1460294, 0);
+        this.assert_ERC4626_roundtrip_invariantG(0);
+        _delay(1);
+        this.deposit(1, 0);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    //                                 BROKEN INVARIANTS REPLAY                                  //
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+
+    function test_echidna_INV_ASSETS_INVARIANTS_INV_ASSETS_A() public {
+        this.simulateYieldAccrual(1, 0);
+        assert_INV_ASSETS_A();
+        this.addStrategy(1, 0);
+        assert_INV_ASSETS_A();
+        this.toggleStrategyEmergencyStatus(0);
+        assert_INV_ASSETS_A();
+        this.toggleStrategyEmergencyStatus(0);
+        assert_INV_ASSETS_A();
+    }
+
+    function test_echidna_INV_ASSETS_INVARIANTS_INV_ASSETS_E() public {
+        this.simulateYieldAccrual(1, 0);
+        this.addStrategy(1, 0);
+        this.toggleStrategyEmergencyStatus(0);
+        this.toggleStrategyEmergencyStatus(0);
+        echidna_INV_ASSETS_INVARIANTS();
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////

@@ -19,6 +19,7 @@ abstract contract PostconditionsSpec {
     ///     - HANDLER-SPECIFIC POSTCONDITIONS (HSPOST): 
     ///       - Properties that should hold true after a specific action is executed in a specific context.
     ///       - Implemented within each handler function, under the HANDLER-SPECIFIC POSTCONDITIONS section.
+    
     /////////////////////////////////////////////////////////////////////////////////////////////*/
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -28,7 +29,7 @@ abstract contract PostconditionsSpec {
     string constant GPOST_BASE_A = "GPOST_BASE_A: lastHarvestTimestamp increases monotonically";
 
     string constant GPOST_BASE_B =
-        "GPOST_BASE_B: if lastHarvestTimestamp is updated either `harvest`, `withdraw` or `redeem` have been called";
+        "GPOST_BASE_B: if lastHarvestTimestamp is updated either `harvest`, `rebalance`, `withdraw` or `redeem` have been called";
 
     string constant GPOST_BASE_C =
         "GPOST_BASE_C: Exchange rate should never decrease unless a loss is reported by harvest";
@@ -40,11 +41,10 @@ abstract contract PostconditionsSpec {
     //                                        INTEREST                                           //
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
-    string constant GPOST_INTEREST_A = "GPOST_INTEREST_A: interestUpdated => totalSupply != 0";
+    string constant GPOST_INTEREST_A =
+        "GPOST_INTEREST_A: lastInterestUpdate should only be updated if (totalSupplyBefore != 0 && interestLeftBefore != 0) || toGulpBefore != 0)";
 
     string constant GPOST_INTEREST_B = "GPOST_INTEREST_B: lastInterestUpdate increases monotonically";
-
-    string constant GPOST_INTEREST_C = "GPOST_INTEREST_C: interestUpdated => totalAssets != 0";
 
     string constant GPOST_INTEREST_D =
         "GPOST_INTEREST_D: if vault is smearing => the amount added to the vault's assets each block should correspond to this distribution"; // TODO
@@ -69,7 +69,10 @@ abstract contract PostconditionsSpec {
         "HSPOST_USER_E: After a withdraw or redeem, the totalAssets should decrease by the amount withdrawn";
 
     string constant HSPOST_USER_F =
-        "HSPOST_USER_D: After a deposit or mint, the balance of the protocol should increase by the amount deposited";
+        "HSPOST_USER_F: After a deposit or mint, the balance of the protocol should increase by the amount deposited";
+
+    string constant HSPOST_USER_G =
+        "HSPOST_USER_G: After a deposit or mint, the totalAssetsDeposited of the protocol should increase by the amount deposited";
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //                                          STRATEGIES                                       //
@@ -95,5 +98,5 @@ abstract contract PostconditionsSpec {
     string constant HSPOST_STRATEGIES_G =
         "HSPOST_STRATEGIES_G: After claiming underlying rewards, they are correctly distributed";
 
-    string constant GPOST_STRATEGIES_H = "GPOST_STRATEGIES_H: allocated =< allocated' => allocated < strategy.cap";
+    string constant GPOST_STRATEGIES_H = "GPOST_STRATEGIES_H: allocated < allocated' => allocated < strategy.cap";
 }
