@@ -92,7 +92,7 @@ contract StrategyCapE2ETest is EulerEarnBase {
             uint256 expectedStrategyCash = eulerEulerEarnVault.totalAssetsAllocatable()
                 * strategyBefore.allocationPoints / eulerEulerEarnVault.totalAllocationPoints();
 
-            vm.prank(user1);
+            vm.prank(manager);
             strategiesToRebalance[0] = address(eTST);
             eulerEulerEarnVault.rebalance(strategiesToRebalance);
 
@@ -110,12 +110,13 @@ contract StrategyCapE2ETest is EulerEarnBase {
 
         assetTST.approve(address(eulerEulerEarnVault), amountToDeposit);
         eulerEulerEarnVault.deposit(amountToDeposit, user1);
+        vm.stopPrank();
 
         uint256 strategyAllocatedBefore = (eulerEulerEarnVault.getStrategy(address(eTST))).allocated;
 
         strategiesToRebalance[0] = address(eTST);
+        vm.prank(manager);
         eulerEulerEarnVault.rebalance(strategiesToRebalance);
-        vm.stopPrank();
 
         assertEq(strategyAllocatedBefore, (eulerEulerEarnVault.getStrategy(address(eTST))).allocated);
     }
@@ -153,7 +154,7 @@ contract StrategyCapE2ETest is EulerEarnBase {
             vm.prank(manager);
             eulerEulerEarnVault.setStrategyCap(address(eTST), cap);
 
-            vm.prank(user1);
+            vm.prank(manager);
             address[] memory strategiesToRebalance = new address[](1);
             strategiesToRebalance[0] = address(eTST);
             eulerEulerEarnVault.rebalance(strategiesToRebalance);
