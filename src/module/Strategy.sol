@@ -68,6 +68,7 @@ abstract contract StrategyModule is Shared {
     ///      will be set as the allocated amount, and will be immediately available to gulp.
     ///      When toggling a strategy from `Active` to `Emergency`, the strategy allocated amount will be instantly deducted as loss.
     ///      In the case of loss socialization across deposits, the vault's share price will drop instantly. Therefore, Euler Earn shares should never be used as collateral in any other protocol.
+    ///      The address with `EULER_EARN_MANAGER` role need to manually opt-out from/disable the rewards of the strategy that was set in `Emergency` status.
     /// @param _strategy Strategy address.
     function toggleStrategyEmergencyStatus(address _strategy) public virtual nonReentrant {
         require(_strategy != Constants.CASH_RESERVE, Errors.CanNotToggleStrategyEmergencyStatus());
@@ -135,6 +136,7 @@ abstract contract StrategyModule is Shared {
     /// @notice Remove strategy and set its allocation points to zero.
     /// @dev A faulty strategy that has an allocated amount can not be removed, instead the strategy status
     ///      should be set as `EMERGENCY` using `toggleStrategyEmergencyStatus()`.
+    ///      The address with `EULER_EARN_MANAGER` role need to manually opt-out from/disable the removed strategy rewards.
     /// @param _strategy Address of the strategy to remove.
     function removeStrategy(address _strategy) public virtual nonReentrant {
         require(_strategy != Constants.CASH_RESERVE, Errors.CanNotRemoveCashReserve());
