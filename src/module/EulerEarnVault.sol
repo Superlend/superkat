@@ -40,7 +40,8 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
     using SafePermit2Lib for IERC20;
 
     /// @notice Rebalance strategies allocation.
-    /// @dev The strategies to rebalance will be harvested.
+    /// @dev The order of the strategies array impact the rebalance. Ideally the staretgies that will be withdrawn from are at the beginning of the array.
+    ///      All strategies in withdrawal queue will be harvested.
     /// @param _strategies Strategies addresses.
     function rebalance(address[] calldata _strategies) public virtual nonReentrant {
         _updateInterestAccrued();
