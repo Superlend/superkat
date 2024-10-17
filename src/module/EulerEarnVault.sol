@@ -372,7 +372,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
     }
 
     /// @notice Returns the maximum amount of the underlying asset that can be deposited into the euler earn.
-    /// @dev Not protected with `nonReentrantView()`
+    /// @dev Not protected with `nonReentrantView()` because it does call `previewMint()` which has the `nonReentrantView()` modifier.
     function maxDeposit(address) public view virtual override returns (uint256) {
         uint256 maxAssets = type(uint256).max;
 
@@ -385,8 +385,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
     }
 
     /// @notice Returns the maximum amount of the Vault shares that can be minted for the receiver.
-    /// @dev Not protected with `nonReentrantView()`
-    function maxMint(address) public view virtual override returns (uint256) {
+    function maxMint(address) public view virtual override nonReentrantView returns (uint256) {
         return _maxMint();
     }
 
