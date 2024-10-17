@@ -56,6 +56,11 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
         __ERC20Votes_init_unchained();
         __EIP712_init_unchained(_initParams.name, "1");
         __AccessControlEnumerable_init_unchained();
+        __AccessControl_init_unchained();
+        __Votes_init_unchained();
+        __Nonces_init_unchained();
+        __Context_init_unchained();
+        __ERC165_init_unchained();
 
         // Make sure the asset is a contract. Token transfers using a library will not revert if address has no code.
         require(_initParams.asset.code.length != 0, Errors.InvalidAssetAddress());
