@@ -274,18 +274,9 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
     ///      This function return an under-estimated amount when `_owner` is the current fee recipient address and performance fee > 0.
     /// @return Amount of asset to be withdrawn.
     function maxWithdraw(address _owner) public view virtual override nonReentrantView returns (uint256) {
-        uint256 ownerShares = _balanceOf(_owner);
-        uint256 assetsBeforeHarvest = _convertToAssets(ownerShares, Math.Rounding.Floor);
-        bool isOnlyCashReserveWithdraw = IERC20(_asset()).balanceOf(address(this)) >= assetsBeforeHarvest;
+        (,, uint256 maxAssets) = _maxWithdraw(_owner);
 
-        (uint256 totalAssetsExpected, uint256 totalSupplyExpected) =
-            _previewHarvestBeforeWithdraw(isOnlyCashReserveWithdraw);
-
-        uint256 maxAssets = ownerShares.mulDiv(
-            totalAssetsExpected + 1, totalSupplyExpected + 10 ** _decimalsOffset(), Math.Rounding.Floor
-        );
-
-        return _simulateStrategiesWithdraw(maxAssets);
+        return maxAssets;
     }
 
     /// @notice Returns the maximum amount of Vault shares that can be redeemed from the owner balance in the Vault.
@@ -294,18 +285,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
     ///      This function return an under-estimated amount when `_owner` is the current fee recipient address and performance fee > 0.
     /// @return Amount of shares.
     function maxRedeem(address _owner) public view virtual override nonReentrantView returns (uint256) {
-        uint256 ownerShares = _balanceOf(_owner);
-        uint256 assetsBeforeHarvest = _convertToAssets(ownerShares, Math.Rounding.Floor);
-        bool isOnlyCashReserveWithdraw = IERC20(_asset()).balanceOf(address(this)) >= assetsBeforeHarvest;
-
-        (uint256 totalAssetsExpected, uint256 totalSupplyExpected) =
-            _previewHarvestBeforeWithdraw(isOnlyCashReserveWithdraw);
-
-        uint256 maxAssets = ownerShares.mulDiv(
-            totalAssetsExpected + 1, totalSupplyExpected + 10 ** _decimalsOffset(), Math.Rounding.Floor
-        );
-
-        maxAssets = _simulateStrategiesWithdraw(maxAssets);
+        (uint256 totalAssetsExpected, uint256 totalSupplyExpected, uint256 maxAssets) = _maxWithdraw(_owner);
 
         return maxAssets.mulDiv(
             totalSupplyExpected + 10 ** _decimalsOffset(), totalAssetsExpected + 1, Math.Rounding.Floor
@@ -880,15 +860,20 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
 
                 (uint256 feeAssets, uint256 feeShares) = _applyPerformanceFee(yield, cachedPerformanceFee);
 
-                // cached `totalAssetsDeposited` & `totalSupply` are accurate in this case.
-                totalAssetsDepositedExpected += feeAssets;
-                totalSupplyExpected += feeShares;
+                if (feeShares != 0) {
+                    // cached `totalAssetsDeposited` & `totalSupply` are accurate in this case.
+                    totalAssetsDepositedExpected += feeAssets;
+                    totalSupplyExpected += feeShares;
+                }
             }
         }
 
         return (totalAssetsDepositedExpected, totalSupplyExpected);
     }
 
+    /// @dev Simulate withdrawing an amount of assets from the underlying strategies by looping through the withdrawal queue array.
+    /// @param _requestedAssets Amount of assets to withdraw. 
+    /// @return Amount of assets filled by withdrawing from the underlying strategies.
     function _simulateStrategiesWithdraw(uint256 _requestedAssets) private view returns (uint256) {
         EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
         uint256 assetsRetrieved = IERC20(_asset()).balanceOf(address(this));
@@ -938,6 +923,25 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
     /// @dev Returns the maximum amount of the Vault shares that can be minted
     function _maxMint() private view returns (uint256) {
         return type(uint208).max - _totalSupply();
+    }
+
+    /// @dev Calculate the maximum amount of the underlying asset that can be withdrawn from the owner balance,
+    ///      while simulating a harvest call before withdraw, returning the amounts of totalAssets and totalSupply to be expected.
+    function _maxWithdraw(address _owner) private view returns (uint256, uint256, uint256) {
+        uint256 ownerShares = _balanceOf(_owner);
+        uint256 assetsBeforeHarvest = _convertToAssets(ownerShares, Math.Rounding.Floor);
+        bool isOnlyCashReserveWithdraw = IERC20(_asset()).balanceOf(address(this)) >= assetsBeforeHarvest;
+
+        (uint256 totalAssetsExpected, uint256 totalSupplyExpected) =
+            _previewHarvestBeforeWithdraw(isOnlyCashReserveWithdraw);
+
+        uint256 maxAssets = ownerShares.mulDiv(
+            totalAssetsExpected + 1, totalSupplyExpected + 10 ** _decimalsOffset(), Math.Rounding.Floor
+        );
+
+        maxAssets = _simulateStrategiesWithdraw(maxAssets);
+
+        return (totalAssetsExpected, totalSupplyExpected, maxAssets);
     }
 }
 
