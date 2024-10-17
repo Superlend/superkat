@@ -35,10 +35,10 @@ abstract contract Shared is EVCUtil {
     /// @dev Address of balance tracker contract for reward streams integration.
     address internal immutable balanceTracker;
     /// @dev Permit2 contract address.
-    address public immutable permit2;
+    address internal immutable permit2;
     /// @dev A boolean to whether execute the harvest cooldown period check or not.
     ///      This is meant to be set to `false` when deploying on L2 to explicitly harvest on every withdraw/redeem.
-    bool public immutable isHarvestCoolDownCheckOn;
+    bool internal immutable isHarvestCoolDownCheckOn;
 
     /// @dev Integrations
     struct IntegrationsParams {

@@ -148,8 +148,8 @@ contract EulerEarnBase is EVaultTestBase {
         assertEq(eulerEulerEarnVault.feeModule(), deploymentParams.feeModule);
         assertEq(eulerEulerEarnVault.strategyModule(), deploymentParams.strategyModule);
         assertEq(eulerEulerEarnVault.withdrawalQueueModule(), deploymentParams.withdrawalQueueModule);
-        assertEq(eulerEulerEarnVault.isHarvestCoolDownCheckOn(), true);
-        assertEq(eulerEulerEarnVault.permit2(), permit2);
+        assertEq(eulerEulerEarnVault.isCheckingHarvestCoolDown(), true);
+        assertEq(eulerEulerEarnVault.permit2Address(), permit2);
     }
 
     function testDeployEulerEarnWithInvalidInitialCashAllocationPoints() public {

@@ -479,6 +479,20 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
         return super.delegates(_account);
     }
 
+    /// @notice Return if harvest cooldown check is on.
+    /// @dev Not protected with `nonReentrantView()`.
+    /// @return True if harvest checks for cooldown period, else false.
+    function isCheckingHarvestCoolDown() public view virtual returns (bool) {
+        return isHarvestCoolDownCheckOn;
+    }
+
+    /// @notice Return the address of Permit2 contract.
+    /// @dev Not protected with `nonReentrantView()`.
+    /// @return Permit2 address.
+    function permit2Address() public view virtual returns (address) {
+        return permit2;
+    }
+
     /// @dev Increase the total assets deposited.
     function _deposit(address _caller, address _receiver, uint256 _assets, uint256 _shares) internal override {
         IERC20(_asset()).safePermitTransferFrom(_caller, address(this), _assets, permit2);

@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IEulerEarn} from "./interface/IEulerEarn.sol";
 // contracts
+import {EVCUtil} from "ethereum-vault-connector/utils/EVCUtil.sol";
 import {
     Dispatch,
     StrategyModule,
@@ -458,7 +459,7 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
     }
 
     /// @dev See {EulerEarnVaultModule-asset}.
-    function asset() public view override returns (address) {
+    function asset() public view override (IEulerEarn, EulerEarnVaultModule) returns (address) {
         return super.asset();
     }
 
@@ -585,6 +586,21 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
     /// @dev See {WithdrawalQueueModule-withdrawalQueue}.
     function withdrawalQueue() public view override (IEulerEarn, WithdrawalQueueModule) returns (address[] memory) {
         return super.withdrawalQueue();
+    }
+
+    /// @dev See {EulerEarnVaultModule-isCheckingHarvestCoolDown}.
+    function isCheckingHarvestCoolDown() public view override (IEulerEarn, EulerEarnVaultModule) returns (bool) {
+        return super.isCheckingHarvestCoolDown();
+    }
+
+    /// @dev See {EulerEarnVaultModule-permit2Address}.
+    function permit2Address() public view override (IEulerEarn, EulerEarnVaultModule) returns (address) {
+        return super.permit2Address();
+    }
+
+    /// @dev See {EVCUtil-EVC}.
+    function EVC() public view override (IEulerEarn, EVCUtil) returns (address) {
+        return address(evc);
     }
 
     /// @dev Overriding _msgSender().
