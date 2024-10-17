@@ -270,7 +270,8 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
 
     /// @notice Returns the maximum amount of the underlying asset that can be withdrawn from the owner balance.
     /// @dev See {IERC4626-maxWithdraw}.
-    /// @dev This function does not simulate the hook behavior called in the actual `withdraw()` function.
+    ///      This function does not simulate the hook behavior called in the actual `withdraw()` function.
+    ///      This function return an under-estimated amount when `_owner` is the current fee recipient address and performance fee > 0.
     /// @return Amount of asset to be withdrawn.
     function maxWithdraw(address _owner) public view virtual override nonReentrantView returns (uint256) {
         uint256 ownerShares = _balanceOf(_owner);
@@ -289,7 +290,8 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
 
     /// @notice Returns the maximum amount of Vault shares that can be redeemed from the owner balance in the Vault.
     /// @dev See {IERC4626-maxRedeem}.
-    /// @dev This function does not simulate the hook behavior called in the actual `redeem()` function.
+    ///      This function does not simulate the hook behavior called in the actual `redeem()` function.
+    ///      This function return an under-estimated amount when `_owner` is the current fee recipient address and performance fee > 0.
     /// @return Amount of shares.
     function maxRedeem(address _owner) public view virtual override nonReentrantView returns (uint256) {
         uint256 ownerShares = _balanceOf(_owner);
