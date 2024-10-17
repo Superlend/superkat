@@ -872,7 +872,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
     }
 
     /// @dev Simulate withdrawing an amount of assets from the underlying strategies by looping through the withdrawal queue array.
-    /// @param _requestedAssets Amount of assets to withdraw. 
+    /// @param _requestedAssets Amount of assets to withdraw.
     /// @return Amount of assets filled by withdrawing from the underlying strategies.
     function _simulateStrategiesWithdraw(uint256 _requestedAssets) private view returns (uint256) {
         EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
