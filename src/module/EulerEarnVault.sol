@@ -40,7 +40,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
     using SafePermit2Lib for IERC20;
 
     /// @notice Rebalance strategies allocation.
-    /// @dev The order of the strategies array impact the rebalance. Ideally the staretgies that will be withdrawn from are at the beginning of the array.
+    /// @dev The order of the strategies array impact the rebalance. Ideally the strategies that will be withdrawn from are at the beginning of the array.
     ///      All strategies in withdrawal queue will be harvested.
     /// @param _strategies Strategies addresses.
     function rebalance(address[] calldata _strategies) public virtual nonReentrant {
@@ -253,7 +253,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
     }
 
     /// @notice Convert to an approximation of the amount of shares that the Vault would exchange for the amount of assets provided.
-    /// @dev This function will just return an approximation and not an exact amount as it does not simulate a harvest, and it should be used as a share price oracle.
+    /// @dev This function will just return an approximation and not an exact amount as it does not simulate a harvest, and it should not be used as a share price oracle.
     /// @param _assets Amount of assets.
     /// @return Amount of shares.
     function convertToShares(uint256 _assets) public view virtual override nonReentrantView returns (uint256) {
@@ -261,7 +261,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
     }
 
     /// @notice Convert to an apprximation of the amount of assets that the Vault would exchange for the amount of shares provided.
-    /// @dev This function will just return an approximation and not an exact amount as it does not simulate a harvest, and it should be used as a share price oracle.
+    /// @dev This function will just return an approximation and not an exact amount as it does not simulate a harvest, and it should not be used as a share price oracle.
     /// @param _shares Amount of shares.
     /// @return Amount of assets.
     function convertToAssets(uint256 _shares) public view virtual override nonReentrantView returns (uint256) {
