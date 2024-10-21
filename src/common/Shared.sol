@@ -75,7 +75,7 @@ abstract contract Shared is EVCUtil {
             }
 
             // socialize the loss
-            // this is safe substraction as `_lossAmount` is capped by sum of strategies `.allocated` amounts <= `totalAssetsDeposited`
+            // this does not underflow because initialLossAmount - totalNotDistributed <= totalAssetsDeposited by definition of totalNotDistributed and because initialLossAmount <= totalAllocated
             $.totalAssetsDeposited = totalAssetsDepositedCache - _lossAmount;
 
             emit Events.DeductLoss(_lossAmount);

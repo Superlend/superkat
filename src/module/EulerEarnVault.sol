@@ -271,7 +271,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
     /// @notice Returns the maximum amount of the underlying asset that can be withdrawn from the owner balance.
     /// @dev See {IERC4626-maxWithdraw}.
     ///      This function does not simulate the hook behavior called in the actual `withdraw()` function.
-    ///      This function return an under-estimated amount when `_owner` is the current fee recipient address and performance fee > 0.
+    ///      This function return an underestimated amount when `_owner` is the current fee recipient address and performance fee > 0.
     /// @return Amount of asset to be withdrawn.
     function maxWithdraw(address _owner) public view virtual override nonReentrantView returns (uint256) {
         (,, uint256 maxAssets) = _maxWithdraw(_owner);
@@ -282,7 +282,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
     /// @notice Returns the maximum amount of Vault shares that can be redeemed from the owner balance in the Vault.
     /// @dev See {IERC4626-maxRedeem}.
     ///      This function does not simulate the hook behavior called in the actual `redeem()` function.
-    ///      This function return an under-estimated amount when `_owner` is the current fee recipient address and performance fee > 0.
+    ///      This function return an underestimated amount when `_owner` is the current fee recipient address and performance fee > 0.
     /// @return Amount of shares.
     function maxRedeem(address _owner) public view virtual override nonReentrantView returns (uint256) {
         (uint256 totalAssetsExpected, uint256 totalSupplyExpected, uint256 maxAssets) = _maxWithdraw(_owner);
@@ -845,7 +845,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
                 if (lossAmount > totalNotDistributed) {
                     lossAmount -= totalNotDistributed;
 
-                    // this is safe substraction as `_lossAmount` is capped by sum of strategies `.allocated` amounts <= `totalAssetsDeposited`
+                    // this does not underflow because initialLossAmount - totalNotDistributed <= totalAssetsDeposited by definition of totalNotDistributed and because initialLossAmount <= totalAllocated
                     totalAssetsDepositedExpected -= lossAmount;
                 }
             }
@@ -858,10 +858,10 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
                     yield = totalPositiveYield - totalNegativeYield;
                 }
 
+                // `_totalAssets()` & `_totalSupply()` used for performance fee calc are equal to the cached-recomputed expected ones in the case of positive net yield.
                 (uint256 feeAssets, uint256 feeShares) = _applyPerformanceFee(yield, cachedPerformanceFee);
 
                 if (feeShares != 0) {
-                    // cached `totalAssetsDeposited` & `totalSupply` are accurate in this case.
                     totalAssetsDepositedExpected += feeAssets;
                     totalSupplyExpected += feeShares;
                 }
