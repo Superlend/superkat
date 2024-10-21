@@ -252,7 +252,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
     }
 
     /// @notice Convert to an approximation of the amount of shares that the Vault would exchange for the amount of assets provided.
-    /// @dev This function will just return an approximation and not an exact amount as it does not simulate a harvest, and it should be used as a share price oracle.
+    /// @dev This function will just return an approximation and not an exact amount as it does not simulate a harvest, and it should not be used as a share price oracle.
     /// @param _assets Amount of assets.
     /// @return Amount of shares.
     function convertToShares(uint256 _assets) public view virtual override nonReentrantView returns (uint256) {
@@ -260,7 +260,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
     }
 
     /// @notice Convert to an apprximation of the amount of assets that the Vault would exchange for the amount of shares provided.
-    /// @dev This function will just return an approximation and not an exact amount as it does not simulate a harvest, and it should be used as a share price oracle.
+    /// @dev This function will just return an approximation and not an exact amount as it does not simulate a harvest, and it should not be used as a share price oracle.
     /// @param _shares Amount of shares.
     /// @return Amount of assets.
     function convertToAssets(uint256 _shares) public view virtual override nonReentrantView returns (uint256) {
