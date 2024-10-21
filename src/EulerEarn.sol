@@ -80,6 +80,7 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
         _setRoleAdmin(Constants.STRATEGY_OPERATOR, Constants.STRATEGY_OPERATOR_ADMIN);
         _setRoleAdmin(Constants.EULER_EARN_MANAGER, Constants.EULER_EARN_MANAGER_ADMIN);
         _setRoleAdmin(Constants.WITHDRAWAL_QUEUE_MANAGER, Constants.WITHDRAWAL_QUEUE_MANAGER_ADMIN);
+        _setRoleAdmin(Constants.REBALANCER, Constants.REBALANCER_ADMIN);
     }
 
     /// @dev Overriding grantRole().
@@ -226,12 +227,6 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
         use(strategyModule)
     {}
 
-    /// @dev See {RewardsModule-enableBalanceForwarder}.
-    function enableBalanceForwarder() public override (IEulerEarn, RewardsModule) use(rewardsModule) {}
-
-    /// @dev See {RewardsModule-disableBalanceForwarder}.
-    function disableBalanceForwarder() public override (IEulerEarn, RewardsModule) use(rewardsModule) {}
-
     /// @dev See {WithdrawalQueue-reorderWithdrawalQueue}.
     function reorderWithdrawalQueue(uint8 _index1, uint8 _index2)
         public
@@ -245,8 +240,16 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
     function rebalance(address[] calldata _strategies)
         public
         override (IEulerEarn, EulerEarnVaultModule)
+        onlyEVCAccountOwner
+        onlyRole(Constants.REBALANCER)
         use(eulerEarnVaultModule)
     {}
+
+    /// @dev See {RewardsModule-enableBalanceForwarder}.
+    function enableBalanceForwarder() public override (IEulerEarn, RewardsModule) use(rewardsModule) {}
+
+    /// @dev See {RewardsModule-disableBalanceForwarder}.
+    function disableBalanceForwarder() public override (IEulerEarn, RewardsModule) use(rewardsModule) {}
 
     /// @dev See {VaultModule-harvest}.
     function harvest() public override (IEulerEarn, EulerEarnVaultModule) use(eulerEarnVaultModule) {}

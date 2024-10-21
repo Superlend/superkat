@@ -45,7 +45,7 @@ contract RebalanceTest is EulerEarnBase {
         uint256 expectedStrategyCash = eulerEulerEarnVault.totalAssetsAllocatable() * strategyBefore.allocationPoints
             / eulerEulerEarnVault.totalAllocationPoints();
 
-        vm.prank(user1);
+        vm.prank(manager);
         address[] memory strategiesToRebalance = new address[](1);
         strategiesToRebalance[0] = address(eTST);
         eulerEulerEarnVault.rebalance(strategiesToRebalance);
@@ -93,7 +93,7 @@ contract RebalanceTest is EulerEarnBase {
             address(eTST), abi.encodeCall(eTST.maxDeposit, (address(eulerEulerEarnVault))), abi.encode(eTSTMaxDeposit)
         );
 
-        vm.prank(user1);
+        vm.prank(manager);
         address[] memory strategiesToRebalance = new address[](1);
         strategiesToRebalance[0] = address(eTST);
         eulerEulerEarnVault.rebalance(strategiesToRebalance);
@@ -127,7 +127,7 @@ contract RebalanceTest is EulerEarnBase {
 
         // rebalance into first strategy
         vm.warp(block.timestamp + 86400);
-        vm.prank(user1);
+        vm.prank(manager);
         strategiesToRebalance[0] = address(eTST);
         eulerEulerEarnVault.rebalance(strategiesToRebalance);
 
@@ -163,7 +163,7 @@ contract RebalanceTest is EulerEarnBase {
             uint256 currentCash = eulerEulerEarnVault.totalAssetsAllocatable() - eulerEulerEarnVault.totalAllocated();
             uint256 expectedStrategyCash = currentCash - targetCash;
 
-            vm.prank(user1);
+            vm.prank(manager);
             strategiesToRebalance[0] = address(eTSTsecondary);
             eulerEulerEarnVault.rebalance(strategiesToRebalance);
 
@@ -212,7 +212,7 @@ contract RebalanceTest is EulerEarnBase {
             address(eTST), abi.encodeCall(eTST.maxDeposit, (address(eulerEulerEarnVault))), abi.encode(eTSTMaxDeposit)
         );
 
-        vm.prank(user1);
+        vm.prank(manager);
         address[] memory strategiesToRebalance = new address[](1);
         strategiesToRebalance[0] = address(eTST);
         eulerEulerEarnVault.rebalance(strategiesToRebalance);
@@ -245,7 +245,7 @@ contract RebalanceTest is EulerEarnBase {
 
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
-        vm.prank(user1);
+        vm.prank(manager);
         address[] memory strategiesToRebalance = new address[](1);
         strategiesToRebalance[0] = address(eTST);
         eulerEulerEarnVault.rebalance(strategiesToRebalance);
@@ -264,7 +264,7 @@ contract RebalanceTest is EulerEarnBase {
         uint256 expectedStrategyCash = eulerEulerEarnVault.totalAssetsAllocatable() * strategyBefore.allocationPoints
             / eulerEulerEarnVault.totalAllocationPoints();
 
-        vm.prank(user1);
+        vm.prank(manager);
         strategiesToRebalance[0] = address(eTST);
         eulerEulerEarnVault.rebalance(strategiesToRebalance);
 
@@ -299,7 +299,7 @@ contract RebalanceTest is EulerEarnBase {
 
         // rebalance into strategy
         vm.warp(block.timestamp + 86400);
-        vm.prank(user1);
+        vm.prank(manager);
         address[] memory strategiesToRebalance = new address[](1);
         strategiesToRebalance[0] = address(eTST);
         eulerEulerEarnVault.rebalance(strategiesToRebalance);
@@ -324,7 +324,7 @@ contract RebalanceTest is EulerEarnBase {
             address(eTST), abi.encodeCall(eTST.maxWithdraw, (address(eulerEulerEarnVault))), abi.encode(eTSTMaxWithdraw)
         );
 
-        vm.prank(user1);
+        vm.prank(manager);
         strategiesToRebalance[0] = address(eTST);
         eulerEulerEarnVault.rebalance(strategiesToRebalance);
 
