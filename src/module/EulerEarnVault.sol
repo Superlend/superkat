@@ -270,6 +270,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
 
     /// @notice Returns the maximum amount of the underlying asset that can be withdrawn from the owner balance.
     /// @dev See {IERC4626-maxWithdraw}.
+    /// @dev This function does not simulate the hook behavior called in the actual `withdraw()` function.
     /// @return Amount of asset to be withdrawn.
     function maxWithdraw(address _owner) public view virtual override nonReentrantView returns (uint256) {
         uint256 ownerShares = _balanceOf(_owner);
@@ -288,6 +289,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
 
     /// @notice Returns the maximum amount of Vault shares that can be redeemed from the owner balance in the Vault.
     /// @dev See {IERC4626-maxRedeem}.
+    /// @dev This function does not simulate the hook behavior called in the actual `redeem()` function.
     /// @return Amount of shares.
     function maxRedeem(address _owner) public view virtual override nonReentrantView returns (uint256) {
         uint256 ownerShares = _balanceOf(_owner);
@@ -374,6 +376,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
 
     /// @notice Returns the maximum amount of the underlying asset that can be deposited into the euler earn.
     /// @dev Not protected with `nonReentrantView()` because it does call `previewMint()` which has the `nonReentrantView()` modifier.
+    /// @dev This function does not simulate the hook behavior called in the actual `deposit()` function.
     function maxDeposit(address) public view virtual override returns (uint256) {
         uint256 maxAssets = type(uint256).max;
 
@@ -386,6 +389,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
     }
 
     /// @notice Returns the maximum amount of the Vault shares that can be minted for the receiver.
+    /// @dev This function does not simulate the hook behavior called in the actual `mint()` function.
     function maxMint(address) public view virtual override nonReentrantView returns (uint256) {
         return _maxMint();
     }
