@@ -66,6 +66,7 @@ abstract contract StrategyModule is Shared {
     ///      This is needed, in case the EulerEarn Vault can no longer withdraw from a certain strategy.
     ///      In the case of switching a strategy from Emergency to Active again, the max withdrawable amount from the strategy
     ///      will be set as the allocated amount, and will be immediately available to gulp.
+    /// @param _strategy Strategy address.
     function toggleStrategyEmergencyStatus(address _strategy) public virtual nonReentrant {
         require(_strategy != Constants.CASH_RESERVE, Errors.CanNotToggleStrategyEmergencyStatus());
 
@@ -74,18 +75,16 @@ abstract contract StrategyModule is Shared {
 
         require(strategyCached.status != IEulerEarn.StrategyStatus.Inactive, Errors.InactiveStrategy());
 
+        _updateInterestAccrued();
+
         if (strategyCached.status == IEulerEarn.StrategyStatus.Active) {
             $.strategies[_strategy].status = IEulerEarn.StrategyStatus.Emergency;
 
-            _updateInterestAccrued();
-
-            // we should deduct loss before decrease totalAllocated to not underflow
+            // we should deduct loss before decrease `totalAllocated` to not underflow
             _deductLoss(strategyCached.allocated);
 
             $.totalAllocationPoints -= strategyCached.allocationPoints;
             $.totalAllocated -= strategyCached.allocated;
-
-            _gulp();
 
             emit Events.ToggleStrategyEmergencyStatus(_strategy, true);
         } else {
@@ -101,6 +100,8 @@ abstract contract StrategyModule is Shared {
 
             emit Events.ToggleStrategyEmergencyStatus(_strategy, false);
         }
+
+        _gulp();
     }
 
     /// @notice Add new strategy with its allocation points.
