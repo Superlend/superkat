@@ -80,6 +80,7 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
         _setRoleAdmin(Constants.STRATEGY_OPERATOR, Constants.STRATEGY_OPERATOR_ADMIN);
         _setRoleAdmin(Constants.EULER_EARN_MANAGER, Constants.EULER_EARN_MANAGER_ADMIN);
         _setRoleAdmin(Constants.WITHDRAWAL_QUEUE_MANAGER, Constants.WITHDRAWAL_QUEUE_MANAGER_ADMIN);
+        _setRoleAdmin(Constants.REBALANCER, Constants.REBALANCER_ADMIN);
     }
 
     /// @dev Overriding grantRole().
