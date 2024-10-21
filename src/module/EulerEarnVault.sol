@@ -53,9 +53,9 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
     }
 
     /// @notice Harvest all the strategies.
-    /// @dev This function will loop through the strategies following the withdrawal queue order and harvest all.
-    ///      Harvested positive and negative yields will be aggregated and only net amount will be accounted.
-    /// @dev This function does not check for the cooldown period.
+    /// @dev    When harvesting a net negative yield amount, the loss amount will be instantly deducted,
+    ///         and this will drop the vault's share price. Therefore, Euler Earn shares should never be used as collateral in any other protocol.
+    /// @dev    This function does not check for the cooldown period.
     function harvest() public virtual nonReentrant {
         _updateInterestAccrued();
 
@@ -585,9 +585,10 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
         return _shares.mulDiv(_totalAssets() + 1, _totalSupply() + 10 ** _decimalsOffset(), _rounding);
     }
 
-    /// @dev Loop through strategies, harvest, aggregate positive and negative yield and account for net amount.
-    /// @dev Loss socialization will be taken out from interest left + amount available to gulp first, if not enough, socialize on deposits.
-    /// @dev Performance fee will only be applied on net positive yield across all strategies.
+    /// @dev    Loop through strategies, harvest, aggregate positive and negative yield and account for net amount.
+    ///         Loss socialization will be taken out from interest left + amount available to gulp first, if not enough, socialize on deposits.
+    ///         The performance fee will only be applied on net positive yield across all strategies.
+    ///         In case of harvesting net negative yield amount, and the execution of loss socialization, and share price will drop instantly.
     /// @param _isHarvestCoolDownCheckOn a boolean to indicate whether to check for cooldown period or not.
     function _harvest(bool _isHarvestCoolDownCheckOn, bool _isOnlyCashReserveWithdraw) private returns (bool) {
         EulerEarnStorage storage $ = Storage._getEulerEarnStorage();

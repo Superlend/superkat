@@ -56,8 +56,9 @@ abstract contract Shared is EVCUtil {
         isHarvestCoolDownCheckOn = _integrationsParams.isHarvestCoolDownCheckOn;
     }
 
-    /// @dev Deduct _lossAmount from the not-distributed amount, if not enough, socialize loss.
-    /// @dev The not distributed amount is amount available to gulp + interest left.
+    /// @dev    Deduct `_lossAmount` from the not-distributed amount, if not enough, socialize loss across deposits.
+    ///         The not-distributed amount is amount available to gulp + interest left.
+    ///         Loss socializing will drop the vault's share price instantly.
     /// @param _lossAmount Amount lost.
     function _deductLoss(uint256 _lossAmount) internal {
         EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
