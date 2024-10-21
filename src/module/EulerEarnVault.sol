@@ -625,7 +625,8 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
 
         uint256 totalPositiveYield;
         uint256 totalNegativeYield;
-        for (uint256 i; i < $.withdrawalQueue.length; ++i) {
+        uint256 strategiesCounter = $.withdrawalQueue.length;
+        for (uint256 i; i < strategiesCounter; ++i) {
             (uint256 positiveYield, uint256 loss) = _harvestStrategy($.withdrawalQueue[i]);
 
             totalPositiveYield += positiveYield;
@@ -831,7 +832,8 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
 
         uint256 totalPositiveYield;
         uint256 totalNegativeYield;
-        for (uint256 i; i < $.withdrawalQueue.length; ++i) {
+        uint256 strategiesCounter = $.withdrawalQueue.length;
+        for (uint256 i; i < strategiesCounter; ++i) {
             address strategy = $.withdrawalQueue[i];
             uint120 strategyAllocatedAmount = $.strategies[strategy].allocated;
 
