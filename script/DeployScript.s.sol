@@ -12,7 +12,6 @@ import {EulerEarnFactory} from "../../src/EulerEarnFactory.sol";
 import {Strategy} from "../../src/module/Strategy.sol";
 
 contract DeployScript is Script {
-
     /// @dev core modules.
     EulerEarnVault eulerEarnVaultModule;
     Rewards rewardsModule;
