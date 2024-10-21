@@ -116,6 +116,7 @@ contract EulerEarnBase is EVaultTestBase {
         assertEq(cashReserve.allocationPoints, CASH_RESERVE_ALLOCATION_POINTS);
         assertEq(cashReserve.status == IEulerEarn.StrategyStatus.Active, true);
 
+        assertEq(eulerEulerEarnVault.getRoleAdmin(ConstantsLib.GUARDIAN), ConstantsLib.GUARDIAN_ADMIN);
         assertEq(eulerEulerEarnVault.getRoleAdmin(ConstantsLib.STRATEGY_OPERATOR), ConstantsLib.STRATEGY_OPERATOR_ADMIN);
         assertEq(
             eulerEulerEarnVault.getRoleAdmin(ConstantsLib.EULER_EARN_MANAGER), ConstantsLib.EULER_EARN_MANAGER_ADMIN
@@ -124,12 +125,15 @@ contract EulerEarnBase is EVaultTestBase {
             eulerEulerEarnVault.getRoleAdmin(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER),
             ConstantsLib.WITHDRAWAL_QUEUE_MANAGER_ADMIN
         );
+        assertEq(eulerEulerEarnVault.getRoleAdmin(ConstantsLib.REBALANCER), ConstantsLib.REBALANCER_ADMIN);
 
+        assertTrue(eulerEulerEarnVault.hasRole(ConstantsLib.GUARDIAN_ADMIN, deployer));
         assertTrue(eulerEulerEarnVault.hasRole(ConstantsLib.STRATEGY_OPERATOR_ADMIN, deployer));
         assertTrue(eulerEulerEarnVault.hasRole(ConstantsLib.EULER_EARN_MANAGER_ADMIN, deployer));
         assertTrue(eulerEulerEarnVault.hasRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER_ADMIN, deployer));
         assertTrue(eulerEulerEarnVault.hasRole(ConstantsLib.REBALANCER_ADMIN, deployer));
 
+        assertTrue(eulerEulerEarnVault.hasRole(ConstantsLib.GUARDIAN, manager));
         assertTrue(eulerEulerEarnVault.hasRole(ConstantsLib.STRATEGY_OPERATOR, manager));
         assertTrue(eulerEulerEarnVault.hasRole(ConstantsLib.EULER_EARN_MANAGER, manager));
         assertTrue(eulerEulerEarnVault.hasRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER, manager));
