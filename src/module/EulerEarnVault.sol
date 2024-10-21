@@ -658,6 +658,9 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
         // Use `previewRedeem()` to get the actual assets amount, bypassing any limits or revert.
         uint256 eulerEarnShares = IERC4626(_strategy).balanceOf(address(this));
         uint256 eulerEarnAssets = IERC4626(_strategy).previewRedeem(eulerEarnShares);
+        eulerEarnAssets = (eulerEarnAssets >= type(uint120).max) ? type(uint120).max : eulerEarnAssets;
+
+        // update only the strategy allocated amount, we do update the `totalAllocated` amount after netting the harvested yield.
         $.strategies[_strategy].allocated = uint120(eulerEarnAssets);
 
         uint256 positiveYield;
