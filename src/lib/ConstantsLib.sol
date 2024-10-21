@@ -47,4 +47,7 @@ library ConstantsLib {
     /// @dev WITHDRAWAL_QUEUE_MANAGER: can re-order withdrawal queue array.
     bytes32 public constant WITHDRAWAL_QUEUE_MANAGER = keccak256("WITHDRAWAL_QUEUE_MANAGER");
     bytes32 public constant WITHDRAWAL_QUEUE_MANAGER_ADMIN = keccak256("WITHDRAWAL_QUEUE_MANAGER_ADMIN");
+    /// @dev REBALANCER = can rebalance the strategies
+    bytes32 public constant REBALANCER = keccak256("REBALANCER");
+    bytes32 public constant REBALANCER_ADMIN = keccak256("REBALANCER_ADMIN");
 }

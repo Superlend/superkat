@@ -40,7 +40,8 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
     using SafePermit2Lib for IERC20;
 
     /// @notice Rebalance strategies allocation.
-    /// @dev The strategies to rebalance will be harvested.
+    /// @dev The order of the strategies array impact the rebalance. Ideally the strategies that will be withdrawn from are at the beginning of the array.
+    ///      All strategies in withdrawal queue will be harvested.
     /// @param _strategies Strategies addresses.
     function rebalance(address[] calldata _strategies) public virtual nonReentrant {
         _updateInterestAccrued();
@@ -53,9 +54,9 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
     }
 
     /// @notice Harvest all the strategies.
-    /// @dev This function will loop through the strategies following the withdrawal queue order and harvest all.
-    ///      Harvested positive and negative yields will be aggregated and only net amount will be accounted.
-    /// @dev This function does not check for the cooldown period.
+    /// @dev    When harvesting a net negative yield amount, the loss amount will be instantly deducted,
+    ///         and this will drop the vault's share price. Therefore, Euler Earn shares should never be used as collateral in any other protocol.
+    /// @dev    This function does not check for the cooldown period.
     function harvest() public virtual nonReentrant {
         _updateInterestAccrued();
 
@@ -251,15 +252,17 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
         return _totalAssets();
     }
 
-    /// @notice Convert to the amount of shares that the Vault would exchange for the amount of assets provided.
-    /// @dev See {IERC4626-convertToShares}.
+    /// @notice Convert to an approximation of the amount of shares that the Vault would exchange for the amount of assets provided.
+    /// @dev This function will just return an approximation and not an exact amount as it does not simulate a harvest, and it should not be used as a share price oracle.
+    /// @param _assets Amount of assets.
     /// @return Amount of shares.
     function convertToShares(uint256 _assets) public view virtual override nonReentrantView returns (uint256) {
         return _convertToShares(_assets, Math.Rounding.Floor);
     }
 
-    /// @notice Convert to the amount of assets that the Vault would exchange for the amount of shares provided.
-    /// @dev See {IERC4626-convertToAssets}.
+    /// @notice Convert to an apprximation of the amount of assets that the Vault would exchange for the amount of shares provided.
+    /// @dev This function will just return an approximation and not an exact amount as it does not simulate a harvest, and it should not be used as a share price oracle.
+    /// @param _shares Amount of shares.
     /// @return Amount of assets.
     function convertToAssets(uint256 _shares) public view virtual override nonReentrantView returns (uint256) {
         return _convertToAssets(_shares, Math.Rounding.Floor);
@@ -267,38 +270,22 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
 
     /// @notice Returns the maximum amount of the underlying asset that can be withdrawn from the owner balance.
     /// @dev See {IERC4626-maxWithdraw}.
+    ///      This function does not simulate the hook behavior called in the actual `withdraw()` function.
+    ///      This function return an underestimated amount when `_owner` is the current fee recipient address and performance fee > 0.
     /// @return Amount of asset to be withdrawn.
     function maxWithdraw(address _owner) public view virtual override nonReentrantView returns (uint256) {
-        uint256 ownerShares = _balanceOf(_owner);
-        uint256 assetsBeforeHarvest = _convertToAssets(ownerShares, Math.Rounding.Floor);
-        bool isOnlyCashReserveWithdraw = IERC20(_asset()).balanceOf(address(this)) >= assetsBeforeHarvest;
+        (,, uint256 maxAssets) = _maxWithdraw(_owner);
 
-        (uint256 totalAssetsExpected, uint256 totalSupplyExpected) =
-            _previewHarvestBeforeWithdraw(isOnlyCashReserveWithdraw);
-
-        uint256 maxAssets = ownerShares.mulDiv(
-            totalAssetsExpected + 1, totalSupplyExpected + 10 ** _decimalsOffset(), Math.Rounding.Floor
-        );
-
-        return _simulateStrategiesWithdraw(maxAssets);
+        return maxAssets;
     }
 
     /// @notice Returns the maximum amount of Vault shares that can be redeemed from the owner balance in the Vault.
     /// @dev See {IERC4626-maxRedeem}.
+    ///      This function does not simulate the hook behavior called in the actual `redeem()` function.
+    ///      This function return an underestimated amount when `_owner` is the current fee recipient address and performance fee > 0.
     /// @return Amount of shares.
     function maxRedeem(address _owner) public view virtual override nonReentrantView returns (uint256) {
-        uint256 ownerShares = _balanceOf(_owner);
-        uint256 assetsBeforeHarvest = _convertToAssets(ownerShares, Math.Rounding.Floor);
-        bool isOnlyCashReserveWithdraw = IERC20(_asset()).balanceOf(address(this)) >= assetsBeforeHarvest;
-
-        (uint256 totalAssetsExpected, uint256 totalSupplyExpected) =
-            _previewHarvestBeforeWithdraw(isOnlyCashReserveWithdraw);
-
-        uint256 maxAssets = ownerShares.mulDiv(
-            totalAssetsExpected + 1, totalSupplyExpected + 10 ** _decimalsOffset(), Math.Rounding.Floor
-        );
-
-        maxAssets = _simulateStrategiesWithdraw(maxAssets);
+        (uint256 totalAssetsExpected, uint256 totalSupplyExpected, uint256 maxAssets) = _maxWithdraw(_owner);
 
         return maxAssets.mulDiv(
             totalSupplyExpected + 10 ** _decimalsOffset(), totalAssetsExpected + 1, Math.Rounding.Floor
@@ -370,7 +357,8 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
     }
 
     /// @notice Returns the maximum amount of the underlying asset that can be deposited into the euler earn.
-    /// @dev Not protected with `nonReentrantView()`
+    /// @dev Not protected with `nonReentrantView()` because it does call `previewMint()` which has the `nonReentrantView()` modifier.
+    /// @dev This function does not simulate the hook behavior called in the actual `deposit()` function.
     function maxDeposit(address) public view virtual override returns (uint256) {
         uint256 maxAssets = type(uint256).max;
 
@@ -383,8 +371,8 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
     }
 
     /// @notice Returns the maximum amount of the Vault shares that can be minted for the receiver.
-    /// @dev Not protected with `nonReentrantView()`
-    function maxMint(address) public view virtual override returns (uint256) {
+    /// @dev This function does not simulate the hook behavior called in the actual `mint()` function.
+    function maxMint(address) public view virtual override nonReentrantView returns (uint256) {
         return _maxMint();
     }
 
@@ -477,6 +465,20 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
         return super.delegates(_account);
     }
 
+    /// @notice Return if harvest cooldown check is on.
+    /// @dev Not protected with `nonReentrantView()`.
+    /// @return True if harvest checks for cooldown period, else false.
+    function isCheckingHarvestCoolDown() public view virtual returns (bool) {
+        return isHarvestCoolDownCheckOn;
+    }
+
+    /// @notice Return the address of Permit2 contract.
+    /// @dev Not protected with `nonReentrantView()`.
+    /// @return Permit2 address.
+    function permit2Address() public view virtual returns (address) {
+        return permit2;
+    }
+
     /// @dev Increase the total assets deposited.
     function _deposit(address _caller, address _receiver, uint256 _assets, uint256 _shares) internal override {
         IERC20(_asset()).safePermitTransferFrom(_caller, address(this), _assets, permit2);
@@ -512,6 +514,10 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
 
                 // Do actual withdraw from strategy
                 strategy.withdraw(withdrawAmount, address(this), address(this));
+
+                // set type(uint120).max as a cap for `withdrawAmount`.
+                // we do set the max after withdrawing, to still be able to withdraw any excess.
+                withdrawAmount = (withdrawAmount >= type(uint120).max) ? type(uint120).max : withdrawAmount;
 
                 // Update allocated assets
                 $.strategies[address(strategy)].allocated -= uint120(withdrawAmount);
@@ -585,10 +591,12 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
         return _shares.mulDiv(_totalAssets() + 1, _totalSupply() + 10 ** _decimalsOffset(), _rounding);
     }
 
-    /// @dev Loop through strategies, harvest, aggregate positive and negative yield and account for net amount.
-    /// @dev Loss socialization will be taken out from interest left + amount available to gulp first, if not enough, socialize on deposits.
-    /// @dev Performance fee will only be applied on net positive yield across all strategies.
+    /// @dev    Loop through strategies, harvest, aggregate positive and negative yield and account for net amount.
+    ///         Loss socialization will be taken out from interest left + amount available to gulp first, if not enough, socialize on deposits.
+    ///         The performance fee will only be applied on net positive yield across all strategies.
+    ///         In case of harvesting net negative yield amount, and the execution of loss socialization, and share price will drop instantly.
     /// @param _isHarvestCoolDownCheckOn a boolean to indicate whether to check for cooldown period or not.
+    /// @param _isOnlyCashReserveWithdraw a boolean to indicate, in the case of `_harvest()` during a withdraw/redeem, wether the cash reserve is enough to fill the withdrawn amount or not.
     function _harvest(bool _isHarvestCoolDownCheckOn, bool _isOnlyCashReserveWithdraw) private returns (bool) {
         EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
 
@@ -603,14 +611,15 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
 
         uint256 totalPositiveYield;
         uint256 totalNegativeYield;
-        for (uint256 i; i < $.withdrawalQueue.length; ++i) {
+        uint256 strategiesCounter = $.withdrawalQueue.length;
+        for (uint256 i; i < strategiesCounter; ++i) {
             (uint256 positiveYield, uint256 loss) = _harvestStrategy($.withdrawalQueue[i]);
 
             totalPositiveYield += positiveYield;
             totalNegativeYield += loss;
         }
 
-        // we should deduct loss before updating totalAllocated to not underflow
+        // we should deduct loss before updating `totalAllocated` to not underflow
         if (totalNegativeYield > totalPositiveYield) {
             unchecked {
                 _deductLoss(totalNegativeYield - totalPositiveYield);
@@ -621,6 +630,10 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
             }
         }
 
+        // this is safe because:
+        // a strategy loss is capped by `startegy.allocated`
+        // => `$.totalAllocated` is the sum of all strategies `.allocated` amounts, the loss can never spill over into the cash reserve
+        // => this subtraction cannot underflow.
         $.totalAllocated = $.totalAllocated + totalPositiveYield - totalNegativeYield;
 
         _gulp();
@@ -646,6 +659,9 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
         // Use `previewRedeem()` to get the actual assets amount, bypassing any limits or revert.
         uint256 eulerEarnShares = IERC4626(_strategy).balanceOf(address(this));
         uint256 eulerEarnAssets = IERC4626(_strategy).previewRedeem(eulerEarnShares);
+        eulerEarnAssets = (eulerEarnAssets >= type(uint120).max) ? type(uint120).max : eulerEarnAssets;
+
+        // update only the strategy allocated amount, we do update the `totalAllocated` amount after netting the harvested yield.
         $.strategies[_strategy].allocated = uint120(eulerEarnAssets);
 
         uint256 positiveYield;
@@ -667,7 +683,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
         return (positiveYield, loss);
     }
 
-    /// @dev Accrue performace fee on aggregated harvested positive yield.
+    /// @dev Accrue performance fee on harvested positive yield.
     /// @dev Fees will be minted as shares to fee recipient.
     /// @param _yield Net positive yield.
     function _accruePerformanceFee(uint256 _yield) private {
@@ -712,8 +728,9 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
         uint256 targetAllocation =
             totalAssetsAllocatableCache * strategyData.allocationPoints / totalAllocationPointsCache;
 
+        // downcasting to uint120 is safe as MAX_CAP_AMOUNT == type(uint120).max
         uint120 capAmount = uint120(strategyData.cap.resolve());
-        // capAmount will be max uint256 if no cap is set
+        // if no cap is set, `cap.resolve()` will be `type(uint256).max` and therefore `capAmount` will be `type(uint120).max`
         if (targetAllocation > capAmount) targetAllocation = capAmount;
 
         uint256 amountToRebalance;
@@ -793,15 +810,16 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
         uint256 totalSupplyExpected = _totalSupply();
 
         if (
-            _isOnlyCashReserveWithdraw
-                && (isHarvestCoolDownCheckOn && $.lastHarvestTimestamp + Constants.HARVEST_COOLDOWN >= block.timestamp)
+            (isHarvestCoolDownCheckOn && $.lastHarvestTimestamp + Constants.HARVEST_COOLDOWN >= block.timestamp)
+                && _isOnlyCashReserveWithdraw
         ) {
             return (totalAssetsDepositedExpected, totalSupplyExpected);
         }
 
         uint256 totalPositiveYield;
         uint256 totalNegativeYield;
-        for (uint256 i; i < $.withdrawalQueue.length; ++i) {
+        uint256 strategiesCounter = $.withdrawalQueue.length;
+        for (uint256 i; i < strategiesCounter; ++i) {
             address strategy = $.withdrawalQueue[i];
             uint120 strategyAllocatedAmount = $.strategies[strategy].allocated;
 
@@ -827,6 +845,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
                 if (lossAmount > totalNotDistributed) {
                     lossAmount -= totalNotDistributed;
 
+                    // this does not underflow because initialLossAmount - totalNotDistributed <= totalAssetsDeposited by definition of totalNotDistributed and because initialLossAmount <= totalAllocated
                     totalAssetsDepositedExpected -= lossAmount;
                 }
             }
@@ -839,16 +858,22 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
                     yield = totalPositiveYield - totalNegativeYield;
                 }
 
+                // `_totalAssets()` & `_totalSupply()` used for performance fee calc are equal to the cached-recomputed expected ones in the case of positive net yield.
                 (uint256 feeAssets, uint256 feeShares) = _applyPerformanceFee(yield, cachedPerformanceFee);
 
-                totalAssetsDepositedExpected += feeAssets;
-                totalSupplyExpected += feeShares;
+                if (feeShares != 0) {
+                    totalAssetsDepositedExpected += feeAssets;
+                    totalSupplyExpected += feeShares;
+                }
             }
         }
 
         return (totalAssetsDepositedExpected, totalSupplyExpected);
     }
 
+    /// @dev Simulate withdrawing an amount of assets from the underlying strategies by looping through the withdrawal queue array.
+    /// @param _requestedAssets Amount of assets to withdraw.
+    /// @return Amount of assets filled by withdrawing from the underlying strategies.
     function _simulateStrategiesWithdraw(uint256 _requestedAssets) private view returns (uint256) {
         EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
         uint256 assetsRetrieved = IERC20(_asset()).balanceOf(address(this));
@@ -898,6 +923,29 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
     /// @dev Returns the maximum amount of the Vault shares that can be minted
     function _maxMint() private view returns (uint256) {
         return type(uint208).max - _totalSupply();
+    }
+
+    /// @dev Calculate the maximum amount of the underlying asset that can be withdrawn from the owner balance,
+    ///      while simulating a harvest call before withdraw, returning the amounts of totalAssets and totalSupply to be expected.
+    /// @param _owner Owner address.
+    /// @return Expected totalAssets() after a harvest simulation.
+    /// @return Expected totalSupply() after a harvest simulation.
+    /// @return Max assets to withdraw.
+    function _maxWithdraw(address _owner) private view returns (uint256, uint256, uint256) {
+        uint256 ownerShares = _balanceOf(_owner);
+        uint256 assetsBeforeHarvest = _convertToAssets(ownerShares, Math.Rounding.Floor);
+        bool isOnlyCashReserveWithdraw = IERC20(_asset()).balanceOf(address(this)) >= assetsBeforeHarvest;
+
+        (uint256 totalAssetsExpected, uint256 totalSupplyExpected) =
+            _previewHarvestBeforeWithdraw(isOnlyCashReserveWithdraw);
+
+        uint256 maxAssets = ownerShares.mulDiv(
+            totalAssetsExpected + 1, totalSupplyExpected + 10 ** _decimalsOffset(), Math.Rounding.Floor
+        );
+
+        maxAssets = _simulateStrategiesWithdraw(maxAssets);
+
+        return (totalAssetsExpected, totalSupplyExpected, maxAssets);
     }
 }
 
