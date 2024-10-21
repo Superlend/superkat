@@ -927,6 +927,10 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
 
     /// @dev Calculate the maximum amount of the underlying asset that can be withdrawn from the owner balance,
     ///      while simulating a harvest call before withdraw, returning the amounts of totalAssets and totalSupply to be expected.
+    /// @param _owner Owner address.
+    /// @return Expected totalAssets() after a harvest simulation.
+    /// @return Expected totalSupply() after a harvest simulation.
+    /// @return Max assets to withdraw.
     function _maxWithdraw(address _owner) private view returns (uint256, uint256, uint256) {
         uint256 ownerShares = _balanceOf(_owner);
         uint256 assetsBeforeHarvest = _convertToAssets(ownerShares, Math.Rounding.Floor);
