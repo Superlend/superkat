@@ -10,7 +10,7 @@ library EventsLib {
     /// @dev EulerEarnVault.sol events
     event AccruePerformanceFee(address indexed feeRecipient, uint256 yield, uint256 feeShares);
     event ExecuteHarvest(address indexed strategy, uint256 eulerEarnAssetsAmount, uint256 strategyAllocatedAmount);
-    event Harvest(uint256 totalAllocated, uint256 totlaYield, uint256 totalLoss);
+    event Harvest(uint256 totalAllocated, uint256 totalYield, uint256 totalLoss);
     event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
     event Rebalance(address indexed strategy, uint256 amountToRebalance, bool isDeposit);
 
