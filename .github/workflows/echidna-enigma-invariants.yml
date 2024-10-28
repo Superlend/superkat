@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  echidna_property_mode:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -31,15 +31,6 @@ jobs:
         run: |
           forge build --build-info
 
-  echidna_property_mode:
-    runs-on: ubuntu-latest
-    needs: test # Ensure contracts are compiled before this job
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          submodules: recursive
-
       - name: Run Echidna Property Mode
         uses: crytic/echidna-action@v2
         with:
@@ -49,12 +40,20 @@ jobs:
 
   echidna_assertion_mode:
     runs-on: ubuntu-latest
-    needs: test # Ensure contracts are compiled before this job
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
           submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Compile contracts
+        run: |
+          forge build --build-info
 
       - name: Run Echidna Assertion Mode
         uses: crytic/echidna-action@v2
