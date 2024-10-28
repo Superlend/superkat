@@ -115,7 +115,7 @@ contract ToggleStrategyEmergencyStatusE2ETest is EulerEarnBase {
             address[] memory strategiesToRebalance = new address[](2);
             strategiesToRebalance[0] = address(eTST);
             strategiesToRebalance[1] = address(eTSTsecondary);
-            vm.prank(user1);
+            vm.prank(manager);
             eulerEulerEarnVault.rebalance(strategiesToRebalance);
 
             assertEq(eulerEulerEarnVault.totalAllocated(), expectedeTSTStrategyCash + expectedeTSTsecondaryStrategyCash);
@@ -215,7 +215,7 @@ contract ToggleStrategyEmergencyStatusE2ETest is EulerEarnBase {
             address[] memory strategiesToRebalance = new address[](2);
             strategiesToRebalance[0] = address(eTST);
             strategiesToRebalance[1] = address(eTSTsecondary);
-            vm.prank(user1);
+            vm.prank(manager);
             eulerEulerEarnVault.rebalance(strategiesToRebalance);
 
             assertEq(eulerEulerEarnVault.totalAllocated(), expectedeTSTStrategyCash + expectedeTSTsecondaryStrategyCash);

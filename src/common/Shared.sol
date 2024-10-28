@@ -35,10 +35,10 @@ abstract contract Shared is EVCUtil {
     /// @dev Address of balance tracker contract for reward streams integration.
     address internal immutable balanceTracker;
     /// @dev Permit2 contract address.
-    address public immutable permit2;
+    address internal immutable permit2;
     /// @dev A boolean to whether execute the harvest cooldown period check or not.
-    ///      This is meant to be set to `False` when deploying on L2 to explicitly harvest on every withdraw/redeem.
-    bool public immutable isHarvestCoolDownCheckOn;
+    ///      This is meant to be set to `false` when deploying on L2 to explicitly harvest on every withdraw/redeem.
+    bool internal immutable isHarvestCoolDownCheckOn;
 
     /// @dev Integrations
     struct IntegrationsParams {
@@ -56,8 +56,9 @@ abstract contract Shared is EVCUtil {
         isHarvestCoolDownCheckOn = _integrationsParams.isHarvestCoolDownCheckOn;
     }
 
-    /// @dev Deduct _lossAmount from the not-distributed amount, if not enough, socialize loss.
-    /// @dev The not distributed amount is amount available to gulp + interest left.
+    /// @dev    Deduct `_lossAmount` from the not-distributed amount, if not enough, socialize loss across deposits.
+    ///         The not-distributed amount is amount available to gulp + interest left.
+    ///         Loss socializing will drop the vault's share price instantly.
     /// @param _lossAmount Amount lost.
     function _deductLoss(uint256 _lossAmount) internal {
         EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
@@ -65,7 +66,8 @@ abstract contract Shared is EVCUtil {
         uint256 totalAssetsDepositedCache = $.totalAssetsDeposited;
         uint256 totalNotDistributed = _totalAssetsAllocatable() - totalAssetsDepositedCache;
 
-        // set interestLeft to zero, will be updated to the right value during _gulp()
+        // set `interestLeft` to zero, will be updated to the right value during `_gulp()`
+        // as we substract the `_lossAmount` from `$.totalAllocated` after this function call and before `_gulp()`
         $.interestLeft = 0;
         if (_lossAmount > totalNotDistributed) {
             unchecked {
@@ -73,6 +75,7 @@ abstract contract Shared is EVCUtil {
             }
 
             // socialize the loss
+            // this does not underflow because initialLossAmount - totalNotDistributed <= totalAssetsDeposited by definition of totalNotDistributed and because initialLossAmount <= totalAllocated
             $.totalAssetsDeposited = totalAssetsDepositedCache - _lossAmount;
 
             emit Events.DeductLoss(_lossAmount);
@@ -94,7 +97,7 @@ abstract contract Shared is EVCUtil {
         if (!success) RevertBytesLib.revertBytes(data);
     }
 
-    /// @dev gulp positive yield into interest left amd update accrued interest.
+    /// @dev gulp positive yield into interest left and update accrued interest.
     function _gulp() internal {
         _updateInterestAccrued();
 
@@ -231,8 +234,8 @@ abstract contract Shared is EVCUtil {
         }
     }
 
-    /// @dev Return ERC20StorageLocation pointer.
-    ///      This is copied from ERC20Upgradeable OZ implementation to be able to access ERC20 storage and override functions.
+    /// @dev Return ERC4626StorageLocation pointer.
+    ///      This is copied from ERC4626Upgradeable OZ implementation to be able to access ERC4626 storage and override functions.
     ///      keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.ERC4626")) - 1)) & ~bytes32(uint256(0xff))
     function _getInheritedERC4626Storage() private pure returns (ERC4626Upgradeable.ERC4626Storage storage $) {
         assembly {

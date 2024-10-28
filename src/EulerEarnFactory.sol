@@ -25,10 +25,10 @@ contract EulerEarnFactory {
         eulerEarnImpl = _eulerEarnImpl;
     }
 
-    /// @notice Deploy a new euler earn vault.
-    /// @param _asset Aggreation vault' asset address.
-    /// @param _name Vaut name.
-    /// @param _symbol Vault symbol.
+    /// @notice Deploy a new Euler Earn vault.
+    /// @param _asset Euler Earn vault's asset address.
+    /// @param _name Earn vault name.
+    /// @param _symbol Earn vault symbol.
     /// @param _initialCashAllocationPoints The amount of points to initally allocate for cash reserve.
     /// @return The address of the new deployed euler earn.
     function deployEulerEarn(

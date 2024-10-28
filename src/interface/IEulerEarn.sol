@@ -123,4 +123,8 @@ interface IEulerEarn {
     function getPastVotes(address _account, uint256 _timepoint) external view returns (uint256);
     function getPastTotalSupply(uint256 _timepoint) external view returns (uint256);
     function delegates(address _account) external view returns (address);
+    function asset() external view returns (address);
+    function permit2Address() external view returns (address);
+    function EVC() external view returns (address);
+    function isCheckingHarvestCoolDown() external view returns (bool);
 }
