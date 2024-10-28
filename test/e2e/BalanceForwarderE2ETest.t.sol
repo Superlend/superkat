@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "../common/EulerEarnBase.t.sol";
-import {TrackingRewardStreams} from "reward-streams/src/TrackingRewardStreams.sol";
+import {TrackingRewardStreams} from "reward-streams/TrackingRewardStreams.sol";
 
 contract BalanceForwarderE2ETest is EulerEarnBase {
     uint256 user1InitialBalance = 100000e18;
