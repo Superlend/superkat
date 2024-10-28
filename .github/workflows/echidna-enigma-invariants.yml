@@ -37,6 +37,7 @@ jobs:
           files: .
           contract: Tester
           config: test/enigma-dark-invariants/_config/echidna_config_ci.yaml
+          crytic-args: --ignore-compile
 
   echidna_assertion_mode:
     runs-on: ubuntu-latest
@@ -62,3 +63,4 @@ jobs:
           contract: Tester
           config: test/enigma-dark-invariants/_config/echidna_config_ci.yaml
           test-mode: assertion
+          crytic-args: --ignore-compile
