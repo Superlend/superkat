@@ -14,6 +14,8 @@ import {Setup} from "./Setup.t.sol";
  * The objective is to go from random values to hardcoded values that can be analyzed more easily
  */
 contract CryticToFoundry is Invariants, Setup {
+    CryticToFoundry Tester = this;
+
     modifier setup() override {
         _;
     }
@@ -211,6 +213,17 @@ contract CryticToFoundry is Invariants, Setup {
         this.deposit(1, 0);
     }
 
+    function test_INV_ASSETS_INVARIANTS_1() public {
+        Tester.donateUnderlying(1 ether, 0);
+        Tester.simulateYieldAccrual(1 ether, 0);
+        Tester.addStrategy(1, 0);
+        Tester.toggleStrategyEmergencyStatus(0);
+        Tester.toggleStrategyEmergencyStatus(0);
+        _delay(2 weeks);
+        console.log(block.timestamp);
+        echidna_INV_ASSETS_INVARIANTS();
+    }
+
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //                                 BROKEN INVARIANTS REPLAY                                  //
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -227,11 +240,24 @@ contract CryticToFoundry is Invariants, Setup {
     }
 
     function test_echidna_INV_ASSETS_INVARIANTS_INV_ASSETS_E() public {
-        this.simulateYieldAccrual(1, 0);
+        this.simulateYieldAccrual(300, 0);
         this.addStrategy(1, 0);
         this.toggleStrategyEmergencyStatus(0);
         this.toggleStrategyEmergencyStatus(0);
         echidna_INV_ASSETS_INVARIANTS();
+    }
+
+    function test_echidna_INV_ASSETS_INVARIANTS2() public {
+        Tester.addStrategy(50098849964587092381, 0);
+        Tester.deposit(21, 0);
+        Tester.rebalance(0, 0, 0);
+        Tester.donateUnderlying(1, 0);
+        Tester.mint(5, 0);
+        assert_INV_ASSETS_A();
+        console.log("redeem");
+        Tester.gulp();
+        Tester.redeem(26, 0);
+        assert_INV_ASSETS_A();
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////

@@ -33,7 +33,7 @@ abstract contract Invariants is BaseInvariants, ERC4626Invariants {
     }
 
     function echidna_INV_ASSETS_INVARIANTS() public returns (bool) {
-        //assert_INV_ASSETS_A(); -> @audit-issue test_echidna_INV_ASSETS_INVARIANTS_INV_ASSETS_A, wait for pr merge
+        //assert_INV_ASSETS_A(); //-> @audit-issue test_echidna_INV_ASSETS_INVARIANTS2, wait for pr merge
         //assert_INV_ASSETS_C(); // TODO change invariant
         assert_INV_ASSETS_D();
 
@@ -46,7 +46,7 @@ abstract contract Invariants is BaseInvariants, ERC4626Invariants {
         }
 
         assert_INV_ASSETS_B(sumStrategiesAllocated);
-        //assert_INV_ASSETS_E(sumStrategiesAllocated); -> @audit-issue test_echidna_INV_ASSETS_INVARIANTS_INV_ASSETS_E, wait for pr merge
+        //assert_INV_ASSETS_E(sumStrategiesAllocated); // -> @audit-issue test_echidna_INV_ASSETS_INVARIANTS_INV_ASSETS_E, wait for pr merge
 
         return true;
     }

@@ -178,7 +178,7 @@ contract ERC4626Handler is BaseHandler {
             _decreaseGhostShares(shares, address(actor));
 
             /// @dev ERC4626_REDEEM_INVARIANT_B
-            assertLe(previewedAssets, assets, ERC4626_REDEEM_INVARIANT_B); //@audit-issue  I - 5
+            assertLe(previewedAssets, assets, ERC4626_REDEEM_INVARIANT_B); //@audit-ok  I - 5
 
             /// @dev HSPOST_USER_B
             if (assets <= defaultVarsBefore.balance) {
@@ -241,7 +241,7 @@ contract ERC4626Handler is BaseHandler {
         vm.prank(_account);
         try eulerEulerEarnVault.withdraw(maxWithdraw, _account, _account) {}
         catch {
-            // assertTrue(false, ERC4626_WITHDRAW_INVARIANT_C); @audit-issue  I - 6 linked to feeShare check on I - 5
+            assertTrue(false, ERC4626_WITHDRAW_INVARIANT_C); // @audit-ok  I - 6 linked to feeShare check on I - 5
         }
     }
 

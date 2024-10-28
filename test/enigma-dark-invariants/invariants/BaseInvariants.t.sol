@@ -43,6 +43,10 @@ abstract contract BaseInvariants is HandlerAggregator {
 
     function assert_INV_ASSETS_A() internal {
         (,, uint168 interestLeft) = eulerEulerEarnVault.getEulerEarnSavingRate();
+
+        console.log("totalAssetsDeposited: %d", eulerEulerEarnVault.totalAssetsDeposited());
+        console.log("interestLeft: %d", interestLeft);
+        console.log("totalAllocated: %d", eulerEulerEarnVault.totalAllocated());
         assertGe(
             eulerEulerEarnVault.totalAssetsDeposited() + interestLeft,
             eulerEulerEarnVault.totalAllocated(),

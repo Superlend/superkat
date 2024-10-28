@@ -119,12 +119,14 @@ contract Setup is BaseTest {
         eulerEulerEarnVault.grantRole(ConstantsLib.STRATEGY_OPERATOR_ADMIN, deployer);
         eulerEulerEarnVault.grantRole(ConstantsLib.EULER_EARN_MANAGER_ADMIN, deployer);
         eulerEulerEarnVault.grantRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER_ADMIN, deployer);
+        eulerEulerEarnVault.grantRole(ConstantsLib.REBALANCER_ADMIN, deployer);
 
         // grant roles to manager
         eulerEulerEarnVault.grantRole(ConstantsLib.GUARDIAN, manager);
         eulerEulerEarnVault.grantRole(ConstantsLib.STRATEGY_OPERATOR, manager);
         eulerEulerEarnVault.grantRole(ConstantsLib.EULER_EARN_MANAGER, manager);
         eulerEulerEarnVault.grantRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER, manager);
+        eulerEulerEarnVault.grantRole(ConstantsLib.REBALANCER, manager);
 
         // Set performance fee recipient
         eulerEulerEarnVault.setFeeRecipient(feeRecipient);

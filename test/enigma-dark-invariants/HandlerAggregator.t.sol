@@ -9,8 +9,7 @@ import {FeeModuleHandler} from "./handlers/modules/FeeModuleHandler.t.sol";
 import {RewardsModuleHandler} from "./handlers/modules/RewardsModuleHandler.t.sol";
 import {StrategyModuleModuleHandler} from "./handlers/modules/StrategyModuleModuleHandler.t.sol";
 import {WithdrawalQueueModuleHandler} from "./handlers/modules/WithdrawalQueueModuleHandler.t.sol";
-
-// Permissioned Actions Handler contracts,
+import {NegativeYieldHandler} from "./handlers/simulators/NegativeYieldHandler.t.sol";
 
 // Simulator Handler contracts,
 import {DonationAttackHandler} from "./handlers/simulators/DonationAttackHandler.t.sol";
@@ -24,7 +23,8 @@ abstract contract HandlerAggregator is
     RewardsModuleHandler,
     StrategyModuleModuleHandler,
     WithdrawalQueueModuleHandler,
-    DonationAttackHandler // Simulator handlers
+    DonationAttackHandler, // Simulator handlers
+    NegativeYieldHandler
 {
     /// @notice Helper function in case any handler requires additional setup
     function _setUpHandlers() internal {}
