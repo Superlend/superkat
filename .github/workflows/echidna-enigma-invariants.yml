@@ -34,7 +34,7 @@ jobs:
       - name: Run Echidna Property Mode
         uses: crytic/echidna-action@v2
         with:
-          files: test/enigma-dark-invariants/Tester.t.sol
+          files: .
           contract: Tester
           config: test/enigma-dark-invariants/_config/echidna_config_ci.yaml
 
@@ -58,7 +58,7 @@ jobs:
       - name: Run Echidna Assertion Mode
         uses: crytic/echidna-action@v2
         with:
-          files: test/enigma-dark-invariants/Tester.t.sol
+          files: .
           contract: Tester
           config: test/enigma-dark-invariants/_config/echidna_config_ci.yaml
           test-mode: assertion
