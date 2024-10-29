@@ -58,6 +58,17 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+
+      - name: Clone the private repo into corpus folder
+        run: |
+          git clone git@github.com:Enigma-Dark/euler-earn-corpus.git corpus
+
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
