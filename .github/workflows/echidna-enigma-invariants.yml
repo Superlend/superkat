@@ -47,7 +47,7 @@ jobs:
         run: |
           forge build --build-info
 
-      - name: Run Echidna ${{ matrix.mode | title }} Mode
+      - name: Run Echidna ${{ matrix.mode == 'property' && 'Property' || 'Assertion' }} Mode
         uses: crytic/echidna-action@v2
         with:
           files: .
