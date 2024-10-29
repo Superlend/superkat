@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "../common/EulerEarnBase.t.sol";
-import {TrackingRewardStreams} from "reward-streams/src/TrackingRewardStreams.sol";
+import {TrackingRewardStreams} from "reward-streams/TrackingRewardStreams.sol";
 
 contract StrategyRewardsE2ETest is EulerEarnBase {
     uint256 user1InitialBalance = 100000e18;
@@ -105,12 +105,14 @@ contract StrategyRewardsE2ETest is EulerEarnBase {
         eulerEulerEarnVault.grantRole(ConstantsLib.STRATEGY_OPERATOR_ADMIN, deployer);
         eulerEulerEarnVault.grantRole(ConstantsLib.EULER_EARN_MANAGER_ADMIN, deployer);
         eulerEulerEarnVault.grantRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER_ADMIN, deployer);
+        eulerEulerEarnVault.grantRole(ConstantsLib.REBALANCER_ADMIN, deployer);
 
         // grant roles to manager
         eulerEulerEarnVault.grantRole(ConstantsLib.GUARDIAN, manager);
         eulerEulerEarnVault.grantRole(ConstantsLib.STRATEGY_OPERATOR, manager);
         eulerEulerEarnVault.grantRole(ConstantsLib.EULER_EARN_MANAGER, manager);
         eulerEulerEarnVault.grantRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER, manager);
+        eulerEulerEarnVault.grantRole(ConstantsLib.REBALANCER, manager);
 
         vm.stopPrank();
 

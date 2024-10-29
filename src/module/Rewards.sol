@@ -4,8 +4,8 @@ pragma solidity ^0.8.0;
 // interfaces
 import {IBalanceForwarder} from "../interface/IBalanceForwarder.sol";
 import {IEulerEarn} from "../interface/IEulerEarn.sol";
-import {IBalanceTracker} from "reward-streams/src/interfaces/IBalanceTracker.sol";
-import {IRewardStreams} from "reward-streams/src/interfaces/IRewardStreams.sol";
+import {IBalanceTracker} from "reward-streams/interfaces/IBalanceTracker.sol";
+import {IRewardStreams} from "reward-streams/interfaces/IRewardStreams.sol";
 // contracts
 import {Shared} from "../common/Shared.sol";
 // libs
@@ -78,9 +78,9 @@ abstract contract RewardsModule is IBalanceForwarder, Shared {
         virtual
         nonReentrant
     {
-        address rewardStreams = IBalanceForwarder(_strategy).balanceTrackerAddress();
-
-        IRewardStreams(rewardStreams).claimReward(_strategy, _reward, _recipient, _forfeitRecentReward);
+        IRewardStreams(IBalanceForwarder(_strategy).balanceTrackerAddress()).claimReward(
+            _strategy, _reward, _recipient, _forfeitRecentReward
+        );
 
         emit Events.ClaimStrategyReward(_strategy, _reward, _recipient, _forfeitRecentReward);
     }

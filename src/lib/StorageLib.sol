@@ -29,7 +29,7 @@ struct EulerEarnStorage {
     uint40 interestSmearEnd;
     /// interestLeft: amount of interest left to smear.
     uint168 interestLeft;
-    /// locked: if locked or not for update.
+    /// locked: lock for re-entrancy guard.
     uint8 locked;
     
     

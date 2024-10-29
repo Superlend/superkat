@@ -2,9 +2,9 @@
 pragma solidity ^0.8.0;
 
 // interfaces
-import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
+import {IHookTarget} from "evk/interfaces/IHookTarget.sol";
 // contracts
-import "evk/test/unit/evault/EVaultTestBase.t.sol";
+import "evk-test/unit/evault/EVaultTestBase.t.sol";
 import {EulerEarn, IEulerEarn, Shared} from "../../src/EulerEarn.sol";
 import {EulerEarnVault} from "../../src/module/EulerEarnVault.sol";
 import {Hooks, HooksModule} from "../../src/module/Hooks.sol";
@@ -89,12 +89,14 @@ contract EulerEarnBase is EVaultTestBase {
         eulerEulerEarnVault.grantRole(ConstantsLib.STRATEGY_OPERATOR_ADMIN, deployer);
         eulerEulerEarnVault.grantRole(ConstantsLib.EULER_EARN_MANAGER_ADMIN, deployer);
         eulerEulerEarnVault.grantRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER_ADMIN, deployer);
+        eulerEulerEarnVault.grantRole(ConstantsLib.REBALANCER_ADMIN, deployer);
 
         // grant roles to manager
         eulerEulerEarnVault.grantRole(ConstantsLib.GUARDIAN, manager);
         eulerEulerEarnVault.grantRole(ConstantsLib.STRATEGY_OPERATOR, manager);
         eulerEulerEarnVault.grantRole(ConstantsLib.EULER_EARN_MANAGER, manager);
         eulerEulerEarnVault.grantRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER, manager);
+        eulerEulerEarnVault.grantRole(ConstantsLib.REBALANCER, manager);
 
         vm.stopPrank();
 
@@ -114,6 +116,7 @@ contract EulerEarnBase is EVaultTestBase {
         assertEq(cashReserve.allocationPoints, CASH_RESERVE_ALLOCATION_POINTS);
         assertEq(cashReserve.status == IEulerEarn.StrategyStatus.Active, true);
 
+        assertEq(eulerEulerEarnVault.getRoleAdmin(ConstantsLib.GUARDIAN), ConstantsLib.GUARDIAN_ADMIN);
         assertEq(eulerEulerEarnVault.getRoleAdmin(ConstantsLib.STRATEGY_OPERATOR), ConstantsLib.STRATEGY_OPERATOR_ADMIN);
         assertEq(
             eulerEulerEarnVault.getRoleAdmin(ConstantsLib.EULER_EARN_MANAGER), ConstantsLib.EULER_EARN_MANAGER_ADMIN
@@ -122,14 +125,19 @@ contract EulerEarnBase is EVaultTestBase {
             eulerEulerEarnVault.getRoleAdmin(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER),
             ConstantsLib.WITHDRAWAL_QUEUE_MANAGER_ADMIN
         );
+        assertEq(eulerEulerEarnVault.getRoleAdmin(ConstantsLib.REBALANCER), ConstantsLib.REBALANCER_ADMIN);
 
+        assertTrue(eulerEulerEarnVault.hasRole(ConstantsLib.GUARDIAN_ADMIN, deployer));
         assertTrue(eulerEulerEarnVault.hasRole(ConstantsLib.STRATEGY_OPERATOR_ADMIN, deployer));
         assertTrue(eulerEulerEarnVault.hasRole(ConstantsLib.EULER_EARN_MANAGER_ADMIN, deployer));
         assertTrue(eulerEulerEarnVault.hasRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER_ADMIN, deployer));
+        assertTrue(eulerEulerEarnVault.hasRole(ConstantsLib.REBALANCER_ADMIN, deployer));
 
+        assertTrue(eulerEulerEarnVault.hasRole(ConstantsLib.GUARDIAN, manager));
         assertTrue(eulerEulerEarnVault.hasRole(ConstantsLib.STRATEGY_OPERATOR, manager));
         assertTrue(eulerEulerEarnVault.hasRole(ConstantsLib.EULER_EARN_MANAGER, manager));
         assertTrue(eulerEulerEarnVault.hasRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER, manager));
+        assertTrue(eulerEulerEarnVault.hasRole(ConstantsLib.REBALANCER, manager));
 
         assertEq(eulerEulerEarnVaultFactory.getEulerEarnVaultsListLength(), 1);
         address[] memory eulerEarnVaultsList = eulerEulerEarnVaultFactory.getEulerEarnVaultsListSlice(0, 1);
@@ -144,8 +152,8 @@ contract EulerEarnBase is EVaultTestBase {
         assertEq(eulerEulerEarnVault.feeModule(), deploymentParams.feeModule);
         assertEq(eulerEulerEarnVault.strategyModule(), deploymentParams.strategyModule);
         assertEq(eulerEulerEarnVault.withdrawalQueueModule(), deploymentParams.withdrawalQueueModule);
-        assertEq(eulerEulerEarnVault.isHarvestCoolDownCheckOn(), true);
-        assertEq(eulerEulerEarnVault.permit2(), permit2);
+        assertEq(eulerEulerEarnVault.isCheckingHarvestCoolDown(), true);
+        assertEq(eulerEulerEarnVault.permit2Address(), permit2);
     }
 
     function testDeployEulerEarnWithInvalidInitialCashAllocationPoints() public {

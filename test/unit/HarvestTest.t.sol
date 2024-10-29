@@ -43,7 +43,7 @@ contract HarvestTest is EulerEarnBase {
             uint256 expectedStrategyCash = eulerEulerEarnVault.totalAssetsAllocatable()
                 * strategyBefore.allocationPoints / eulerEulerEarnVault.totalAllocationPoints();
 
-            vm.prank(user1);
+            vm.prank(manager);
             address[] memory strategiesToRebalance = new address[](1);
             strategiesToRebalance[0] = address(eTST);
             eulerEulerEarnVault.rebalance(strategiesToRebalance);

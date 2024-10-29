@@ -62,10 +62,14 @@ abstract contract StrategyModule is Shared {
 
     /// @notice Toggle a strategy status between `Active` and `Emergency`.
     /// @dev This should be used as a circuit-breaker to exclude a faulty strategy from being harvest or rebalanced.
-    ///      It also deduct all the deposited amounts into the strategy as loss, and uses a loss socialization mechanism.
+    ///      It also deducts all the deposited amounts into the strategy as loss, and uses a loss socialization mechanism.
     ///      This is needed, in case the EulerEarn Vault can no longer withdraw from a certain strategy.
     ///      In the case of switching a strategy from Emergency to Active again, the max withdrawable amount from the strategy
     ///      will be set as the allocated amount, and will be immediately available to gulp.
+    ///      When toggling a strategy from `Active` to `Emergency`, the strategy allocated amount will be instantly deducted as loss.
+    ///      In the case of loss socialization across deposits, the vault's share price will drop instantly. Therefore, Euler Earn shares should never be used as collateral in any other protocol.
+    ///      The address with `EULER_EARN_MANAGER` role need to manually opt-out from/disable the rewards of the strategy that was set in `Emergency` status.
+    /// @param _strategy Strategy address.
     function toggleStrategyEmergencyStatus(address _strategy) public virtual nonReentrant {
         require(_strategy != Constants.CASH_RESERVE, Errors.CanNotToggleStrategyEmergencyStatus());
 
@@ -74,18 +78,16 @@ abstract contract StrategyModule is Shared {
 
         require(strategyCached.status != IEulerEarn.StrategyStatus.Inactive, Errors.InactiveStrategy());
 
+        _updateInterestAccrued();
+
         if (strategyCached.status == IEulerEarn.StrategyStatus.Active) {
             $.strategies[_strategy].status = IEulerEarn.StrategyStatus.Emergency;
 
-            _updateInterestAccrued();
-
-            // we should deduct loss before decrease totalAllocated to not underflow
+            // we should deduct loss before decrease `totalAllocated` to not underflow
             _deductLoss(strategyCached.allocated);
 
             $.totalAllocationPoints -= strategyCached.allocationPoints;
             $.totalAllocated -= strategyCached.allocated;
-
-            _gulp();
 
             emit Events.ToggleStrategyEmergencyStatus(_strategy, true);
         } else {
@@ -101,6 +103,8 @@ abstract contract StrategyModule is Shared {
 
             emit Events.ToggleStrategyEmergencyStatus(_strategy, false);
         }
+
+        _gulp();
     }
 
     /// @notice Add new strategy with its allocation points.
@@ -132,6 +136,7 @@ abstract contract StrategyModule is Shared {
     /// @notice Remove strategy and set its allocation points to zero.
     /// @dev A faulty strategy that has an allocated amount can not be removed, instead the strategy status
     ///      should be set as `EMERGENCY` using `toggleStrategyEmergencyStatus()`.
+    ///      The address with `EULER_EARN_MANAGER` role need to manually opt-out from/disable the removed strategy rewards.
     /// @param _strategy Address of the strategy to remove.
     function removeStrategy(address _strategy) public virtual nonReentrant {
         require(_strategy != Constants.CASH_RESERVE, Errors.CanNotRemoveCashReserve());
