@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import "evk/src/EVault/IEVault.sol";
+import "evk/EVault/IEVault.sol";
 
 contract MockPriceOracle {
     error PO_BaseUnsupported();

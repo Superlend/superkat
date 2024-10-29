@@ -17,11 +17,11 @@ import {WithdrawalQueue} from "src/module/WithdrawalQueue.sol";
 import {EulerEarnFactory} from "src/EulerEarnFactory.sol";
 import {Strategy} from "src/module/Strategy.sol";
 import {EthereumVaultConnector} from "ethereum-vault-connector/EthereumVaultConnector.sol";
-import {GenericFactory} from "evk/src/GenericFactory/GenericFactory.sol";
-import {ProtocolConfig} from "evk/src/ProtocolConfig/ProtocolConfig.sol";
+import {GenericFactory} from "evk/GenericFactory/GenericFactory.sol";
+import {ProtocolConfig} from "evk/ProtocolConfig/ProtocolConfig.sol";
 
 // Interfaces
-import {IEVault} from "evk/src/EVault/IEVault.sol";
+import {IEVault} from "evk/EVault/IEVault.sol";
 
 // Mock Contracts
 import {TestERC20} from "test/enigma-dark-invariants/utils/mocks/TestERC20.sol";
