@@ -2,14 +2,14 @@
 pragma solidity ^0.8.0;
 
 import "forge-std/Script.sol";
-import {EulerEarn, IEulerEarn, Shared} from "../../src/EulerEarn.sol";
-import {EulerEarnVault} from "../../src/module/EulerEarnVault.sol";
-import {Hooks, HooksModule} from "../../src/module/Hooks.sol";
-import {Rewards} from "../../src/module/Rewards.sol";
-import {Fee} from "../../src/module/Fee.sol";
-import {WithdrawalQueue} from "../../src/module/WithdrawalQueue.sol";
-import {EulerEarnFactory} from "../../src/EulerEarnFactory.sol";
-import {Strategy} from "../../src/module/Strategy.sol";
+import {EulerEarn, IEulerEarn, Shared} from "../src/EulerEarn.sol";
+import {EulerEarnVault} from "../src/module/EulerEarnVault.sol";
+import {Hooks, HooksModule} from "../src/module/Hooks.sol";
+import {Rewards} from "../src/module/Rewards.sol";
+import {Fee} from "../src/module/Fee.sol";
+import {WithdrawalQueue} from "../src/module/WithdrawalQueue.sol";
+import {EulerEarnFactory} from "../src/EulerEarnFactory.sol";
+import {Strategy} from "../src/module/Strategy.sol";
 
 contract DeployScript is Script {
     /// @dev core modules.
