@@ -1,8 +1,9 @@
 erc4626-tests/=lib/erc4626-tests/
 ethereum-vault-connector/=lib/ethereum-vault-connector/src/
 forge-std/=lib/forge-std/src/
-evk/=lib/euler-vault-kit/
-reward-streams=lib/reward-streams/
+evk/=lib/euler-vault-kit/src/
+evk-test/=lib/euler-vault-kit/test/
+reward-streams/=lib/reward-streams/src/
 openzeppelin-contracts/=lib/reward-streams/lib/openzeppelin-contracts/contracts
 @openzeppelin/=lib/openzeppelin-contracts/
 @openzeppelin-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/

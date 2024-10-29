@@ -18,27 +18,27 @@ import {WithdrawalQueue} from "../../src/module/WithdrawalQueue.sol";
 import {EulerEarnFactory} from "../../src/EulerEarnFactory.sol";
 import {Strategy} from "../../src/module/Strategy.sol";
 import {EthereumVaultConnector} from "ethereum-vault-connector/EthereumVaultConnector.sol";
-import {GenericFactory} from "evk/src/GenericFactory/GenericFactory.sol";
-import {ProtocolConfig} from "evk/src/ProtocolConfig/ProtocolConfig.sol";
-import {SequenceRegistry} from "evk/src/SequenceRegistry/SequenceRegistry.sol";
-import {Base} from "evk/src/EVault/shared/Base.sol";
-import {Dispatch} from "evk/src/EVault/Dispatch.sol";
-import {EVault} from "evk/src/EVault/EVault.sol";
+import {GenericFactory} from "evk/GenericFactory/GenericFactory.sol";
+import {ProtocolConfig} from "evk/ProtocolConfig/ProtocolConfig.sol";
+import {SequenceRegistry} from "evk/SequenceRegistry/SequenceRegistry.sol";
+import {Base} from "evk/EVault/shared/Base.sol";
+import {Dispatch} from "evk/EVault/Dispatch.sol";
+import {EVault} from "evk/EVault/EVault.sol";
 
 // Modules
-import {Initialize} from "evk/src/EVault/modules/Initialize.sol";
-import {Token} from "evk/src/EVault/modules/Token.sol";
-import {Vault} from "evk/src/EVault/modules/Vault.sol";
-import {Borrowing} from "evk/src/EVault/modules/Borrowing.sol";
-import {Liquidation} from "evk/src/EVault/modules/Liquidation.sol";
-import {BalanceForwarder} from "evk/src/EVault/modules/BalanceForwarder.sol";
-import {Governance} from "evk/src/EVault/modules/Governance.sol";
-import {RiskManager} from "evk/src/EVault/modules/RiskManager.sol";
-import {TrackingRewardStreams} from "reward-streams/src/TrackingRewardStreams.sol";
+import {Initialize} from "evk/EVault/modules/Initialize.sol";
+import {Token} from "evk/EVault/modules/Token.sol";
+import {Vault} from "evk/EVault/modules/Vault.sol";
+import {Borrowing} from "evk/EVault/modules/Borrowing.sol";
+import {Liquidation} from "evk/EVault/modules/Liquidation.sol";
+import {BalanceForwarder} from "evk/EVault/modules/BalanceForwarder.sol";
+import {Governance} from "evk/EVault/modules/Governance.sol";
+import {RiskManager} from "evk/EVault/modules/RiskManager.sol";
+import {TrackingRewardStreams} from "reward-streams/TrackingRewardStreams.sol";
 
 // Interfaces
-import {IEVault} from "evk/src/EVault/IEVault.sol";
-import {IRMTestDefault} from "evk/test/mocks/IRMTestDefault.sol";
+import {IEVault} from "evk/EVault/IEVault.sol";
+import {IRMTestDefault} from "evk-test/mocks/IRMTestDefault.sol";
 
 // Test Contracts
 import {TestERC20} from "test/enigma-dark-invariants/utils/mocks/TestERC20.sol";

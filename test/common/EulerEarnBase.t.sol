@@ -2,9 +2,9 @@
 pragma solidity ^0.8.0;
 
 // interfaces
-import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
+import {IHookTarget} from "evk/interfaces/IHookTarget.sol";
 // contracts
-import "evk/test/unit/evault/EVaultTestBase.t.sol";
+import "evk-test/unit/evault/EVaultTestBase.t.sol";
 import {EulerEarn, IEulerEarn, Shared} from "../../src/EulerEarn.sol";
 import {EulerEarnVault} from "../../src/module/EulerEarnVault.sol";
 import {Hooks, HooksModule} from "../../src/module/Hooks.sol";

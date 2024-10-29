@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 // interfaces
-import {IHookTarget} from "evk/src/interfaces/IHookTarget.sol";
+import {IHookTarget} from "evk/interfaces/IHookTarget.sol";
 // contracts
 import {Shared} from "../common/Shared.sol";
 // libs
