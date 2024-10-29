@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
+// interfaces
+import {IEulerEarnFactory} from "./interface/IEulerEarnFactory.sol";
 // contracts
 import {EulerEarn, IEulerEarn} from "./EulerEarn.sol";
 // libs
@@ -9,13 +11,16 @@ import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 /// @title EulerEarnFactory contract
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
-contract EulerEarnFactory {
+contract EulerEarnFactory is IEulerEarnFactory {
     error InvalidQuery();
 
-    /// @dev euler earn implementation address
+    /// @dev Euler earn implementation address
     address public immutable eulerEarnImpl;
     /// @dev Array for deployed Euler Earn addresses.
     address[] public eulerEarnVaults;
+
+    /// @dev Mapping to set a deployed vault as verified.
+    mapping(address => bool) internal deployedVault;
 
     /// @dev Emits when deploying new Earn vault.
     event DeployEulerEarn(address indexed _owner, address _eulerEarnVault, address indexed _asset);
@@ -49,6 +54,7 @@ contract EulerEarnFactory {
         IEulerEarn(eulerEulerEarnVault).init(eulerEarnVaultInitParams);
 
         eulerEarnVaults.push(address(eulerEulerEarnVault));
+        deployedVault[address(eulerEulerEarnVault)] = true;
 
         emit DeployEulerEarn(msg.sender, address(eulerEulerEarnVault), _asset);
 
@@ -76,5 +82,12 @@ contract EulerEarnFactory {
         }
 
         return eulerEarnVaultsList;
+    }
+
+    /// @notice Check if an Euler Earn vault address has been deployed by this factory.
+    /// @param _earnVaultAddress Euler Earn address.
+    /// @return A boolean, true if vault is deployed by this factory, else false.
+    function isValidDeployment(address _earnVaultAddress) external view returns (bool) {
+        return deployedVault[_earnVaultAddress];
     }
 }
