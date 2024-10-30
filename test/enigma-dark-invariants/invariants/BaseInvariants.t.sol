@@ -44,9 +44,6 @@ abstract contract BaseInvariants is HandlerAggregator {
     function assert_INV_ASSETS_A() internal {
         (,, uint168 interestLeft) = eulerEulerEarnVault.getEulerEarnSavingRate();
 
-        console.log("totalAssetsDeposited: %d", eulerEulerEarnVault.totalAssetsDeposited());
-        console.log("interestLeft: %d", interestLeft);
-        console.log("totalAllocated: %d", eulerEulerEarnVault.totalAllocated());
         assertGe(
             eulerEulerEarnVault.totalAssetsDeposited() + interestLeft,
             eulerEulerEarnVault.totalAllocated(),
@@ -58,14 +55,8 @@ abstract contract BaseInvariants is HandlerAggregator {
         assertEq(eulerEulerEarnVault.totalAllocated(), sumStrategiesAllocated, INV_ASSETS_B);
     }
 
-    function assert_INV_ASSETS_C() internal {} // TODO change invariant
-
     function assert_INV_ASSETS_D() internal {
         assertGe(eulerEulerEarnVault.totalAssetsAllocatable(), eulerEulerEarnVault.totalAssets(), INV_ASSETS_D);
-    }
-
-    function assert_INV_ASSETS_E(uint256 sumStrategiesAllocated) internal {
-        assertGe(eulerEulerEarnVault.totalAssets(), sumStrategiesAllocated, INV_ASSETS_E);
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////

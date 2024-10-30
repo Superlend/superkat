@@ -83,7 +83,7 @@ contract Setup is BaseTest {
         });
 
         // Deploy base assets
-        assetTST = new TestERC20("Test Token", "TST", 18); //TODO configure different decimals base assets
+        assetTST = new TestERC20("Test Token", "TST", 18);
         baseAssets.push(address(assetTST));
 
         // Deploy modules

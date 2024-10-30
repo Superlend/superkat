@@ -63,6 +63,11 @@ contract ERC4626Handler is BaseHandler {
             assertEq(
                 defaultVarsBefore.totalAssetsDeposited + assets, defaultVarsAfter.totalAssetsDeposited, HSPOST_USER_F
             );
+
+            /// @dev GPOST_BASE_D
+            if (defaultVarsAfter.totalSupply > defaultVarsBefore.totalSupply) {
+                assertGe(defaultVarsAfter.totalAssetsDeposited, defaultVarsBefore.totalAssetsDeposited, GPOST_BASE_D);
+            }
         }
     }
 
@@ -76,8 +81,6 @@ contract ERC4626Handler is BaseHandler {
         address target = address(eulerEulerEarnVault);
 
         uint256 previewedAssets = eulerEulerEarnVault.previewMint(shares);
-
-        console.log("OLA", eulerEulerEarnVault.interestAccrued());
 
         _before();
         (success, returnData) = actor.proxy(target, abi.encodeWithSelector(IERC4626.mint.selector, shares, receiver));
@@ -109,6 +112,11 @@ contract ERC4626Handler is BaseHandler {
             assertEq(
                 defaultVarsBefore.totalAssetsDeposited + assets, defaultVarsAfter.totalAssetsDeposited, HSPOST_USER_F
             );
+
+            /// @dev GPOST_BASE_D
+            if (defaultVarsAfter.totalSupply > defaultVarsBefore.totalSupply) {
+                assertGe(defaultVarsAfter.totalAssetsDeposited, defaultVarsBefore.totalAssetsDeposited, GPOST_BASE_D);
+            }
         }
     }
 
@@ -122,6 +130,8 @@ contract ERC4626Handler is BaseHandler {
         address receiver = _getRandomActor(i);
 
         uint256 previewedShares = eulerEulerEarnVault.previewWithdraw(assets);
+
+        (uint256 accumulatedPerformanceFee,) = _simulateHarvest(0);
 
         _before();
         (success, returnData) =
@@ -165,6 +175,8 @@ contract ERC4626Handler is BaseHandler {
 
         uint256 previewedAssets = eulerEulerEarnVault.previewRedeem(shares);
 
+        (uint256 accumulatedPerformanceFee,) = _simulateHarvest(0);
+
         _before();
         (success, returnData) =
             actor.proxy(target, abi.encodeWithSelector(IERC4626.redeem.selector, shares, receiver, address(actor)));
@@ -178,7 +190,7 @@ contract ERC4626Handler is BaseHandler {
             _decreaseGhostShares(shares, address(actor));
 
             /// @dev ERC4626_REDEEM_INVARIANT_B
-            assertLe(previewedAssets, assets, ERC4626_REDEEM_INVARIANT_B); //@audit-ok  I - 5
+            assertLe(previewedAssets, assets, ERC4626_REDEEM_INVARIANT_B);
 
             /// @dev HSPOST_USER_B
             if (assets <= defaultVarsBefore.balance) {
@@ -192,29 +204,17 @@ contract ERC4626Handler is BaseHandler {
             }
 
             /// @dev HSPOST_USER_E
-            assertEq(defaultVarsBefore.totalAssets - assets, defaultVarsAfter.totalAssets, HSPOST_USER_E);
+            assertEq(
+                defaultVarsBefore.totalAssets - assets,
+                defaultVarsAfter.totalAssets - accumulatedPerformanceFee,
+                HSPOST_USER_E
+            );
         }
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //                                  NON-REVERT PROPERTIES                                    //
     ///////////////////////////////////////////////////////////////////////////////////////////////
-
-    function assert_ERC4626_DEPOSIT_INVARIANT_C() public setup {
-        address _account = address(actor);
-        uint256 maxDeposit = eulerEulerEarnVault.maxDeposit(_account);
-        uint256 accountBalance = assetTST.balanceOf(_account);
-
-        if (accountBalance < maxDeposit) {
-            assetTST.mint(_account, maxDeposit - accountBalance);
-        }
-
-        vm.prank(_account);
-        try eulerEulerEarnVault.deposit(maxDeposit, _account) {}
-        catch {
-            //assertTrue(false, ERC4626_DEPOSIT_INVARIANT_C); @audit-issue . I - 3
-        }
-    }
 
     function assert_ERC4626_MINT_INVARIANT_C() public setup {
         address _account = address(actor);
@@ -241,7 +241,7 @@ contract ERC4626Handler is BaseHandler {
         vm.prank(_account);
         try eulerEulerEarnVault.withdraw(maxWithdraw, _account, _account) {}
         catch {
-            assertTrue(false, ERC4626_WITHDRAW_INVARIANT_C); // @audit-ok  I - 6 linked to feeShare check on I - 5
+            assertTrue(false, ERC4626_WITHDRAW_INVARIANT_C);
         }
     }
 
@@ -267,7 +267,7 @@ contract ERC4626Handler is BaseHandler {
 
         uint256 redeemedAssets = eulerEulerEarnVault.redeem(shares, address(this), address(this));
 
-        //assertLe(redeemedAssets, _assets, ERC4626_ROUNDTRIP_INVARIANT_A); @audit-issue . I -1
+        //assertLe(redeemedAssets, _assets, ERC4626_ROUNDTRIP_INVARIANT_A); TODO
     }
 
     function assert_ERC4626_roundtrip_invariantB(uint256 _assets) external {
@@ -280,7 +280,7 @@ contract ERC4626Handler is BaseHandler {
         /// @dev restore original state to not break invariants
         eulerEulerEarnVault.redeem(eulerEulerEarnVault.balanceOf(address(this)), address(this), address(this));
 
-        //assertGe(withdrawnShares, shares, ERC4626_ROUNDTRIP_INVARIANT_B); @audit-issue . I -1
+        //assertGe(withdrawnShares, shares, ERC4626_ROUNDTRIP_INVARIANT_B); TODO
     }
 
     function assert_ERC4626_roundtrip_invariantC(uint256 _shares) external {
@@ -324,7 +324,7 @@ contract ERC4626Handler is BaseHandler {
         /// @dev restore original state to not break invariants
         eulerEulerEarnVault.redeem(eulerEulerEarnVault.balanceOf(address(this)), address(this), address(this));
 
-        //assertGe(withdrawnShares, _shares, ERC4626_ROUNDTRIP_INVARIANT_E); //@audit-issue . I - 2
+        //assertGe(withdrawnShares, _shares, ERC4626_ROUNDTRIP_INVARIANT_E); // TODO
     }
 
     function assert_ERC4626_roundtrip_invariantF(uint256 _shares) external {
@@ -339,7 +339,7 @@ contract ERC4626Handler is BaseHandler {
 
         uint256 redeemedAssets = eulerEulerEarnVault.redeem(_shares, address(this), address(this));
 
-        //assertLe(redeemedAssets, depositedAssets, ERC4626_ROUNDTRIP_INVARIANT_F); //@audit-issue . I - 2
+        //assertLe(redeemedAssets, depositedAssets, ERC4626_ROUNDTRIP_INVARIANT_F); TODO
     }
 
     function assert_ERC4626_roundtrip_invariantG(uint256 _assets) external {

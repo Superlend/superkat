@@ -30,6 +30,7 @@ abstract contract HookAggregator is DefaultBeforeAfterHooks {
         // BASE
         assert_GPOST_BASE_A();
         assert_GPOST_BASE_B();
+        assert_GPOST_BASE_C();
         // INTEREST
         assert_GPOST_INTEREST_A();
         assert_GPOST_INTEREST_B();

@@ -111,7 +111,7 @@ abstract contract DefaultBeforeAfterHooks is BaseHooks {
         // External Accounting
         _defaultVars.balance = assetTST.balanceOf(address(eulerEulerEarnVault));
         _defaultVars.exchangeRate =
-            (_defaultVars.totalSupply != 0) ? _defaultVars.totalAssets / _defaultVars.totalSupply : 0;
+            (_defaultVars.totalSupply != 0) ? _defaultVars.totalAssets * 1e18 / _defaultVars.totalSupply : 0;
         _defaultVars.toGulp = _defaultVars.totalAssetsAllocatable - _defaultVars.totalAssetsDeposited - interestLeft;
 
         // Interest
@@ -120,7 +120,6 @@ abstract contract DefaultBeforeAfterHooks is BaseHooks {
         _defaultVars.interestSmearingEnd = interestSmearingEnd;
         _defaultVars.interestLeft = interestLeft;
         _defaultVars.interestAccrued = eulerEulerEarnVault.interestAccrued();
-        //TODO add underlying balance tracker
     }
 
     function _setStrategiesData(DefaultVars storage _defaultVars) internal {
@@ -162,7 +161,7 @@ abstract contract DefaultBeforeAfterHooks is BaseHooks {
 
     function assert_GPOST_BASE_C() internal {
         if (defaultVarsAfter.exchangeRate < defaultVarsBefore.exchangeRate) {
-            // TODO add loss check
+            assertEq(defaultVarsAfter.interestLeft, 0, GPOST_BASE_C);
         }
     }
 
@@ -179,9 +178,9 @@ abstract contract DefaultBeforeAfterHooks is BaseHooks {
             console.log("totalAssetsDeposited", defaultVarsBefore.totalAssetsDeposited);
             assertTrue(
                 (defaultVarsBefore.totalSupply != 0 && defaultVarsBefore.interestLeft != 0)
-                    || defaultVarsBefore.toGulp != 0,
+                    || defaultVarsBefore.toGulp != 0 || _amountToGulpAfterToggleOn() != 0,
                 GPOST_INTEREST_A
-            ); //TODO account for not harveested stuff
+            ); //TODO account for not harveested assets
         }
     }
 
@@ -219,7 +218,17 @@ abstract contract DefaultBeforeAfterHooks is BaseHooks {
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
     function _hasLastInterestUpdated() internal view returns (bool) {
+        console.log("#################");
+        console.log("lastInterestUpdate", defaultVarsBefore.lastInterestUpdate);
+        console.log("lastInterestUpdate", defaultVarsAfter.lastInterestUpdate);
         return defaultVarsAfter.lastInterestUpdate == block.timestamp
             && defaultVarsBefore.lastInterestUpdate != block.timestamp;
+    }
+
+    function _amountToGulpAfterToggleOn() internal view returns (uint256) {
+        uint256 vaultBalance = defaultVarsAfter.totalAssetsAllocatable - defaultVarsBefore.interestLeft;
+        return vaultBalance > defaultVarsAfter.totalAssetsDeposited
+            ? vaultBalance - defaultVarsAfter.totalAssetsDeposited
+            : 0;
     }
 }

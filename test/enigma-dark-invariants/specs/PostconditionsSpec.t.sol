@@ -35,7 +35,7 @@ abstract contract PostconditionsSpec {
         "GPOST_BASE_C: Exchange rate should never decrease unless a loss is reported by harvest";
 
     string constant GPOST_BASE_D =
-        "GPOST_BASE_D: new shares should only be minted when there is a corresponding increase in assets"; // TODO
+        "GPOST_BASE_D: new shares should only be minted when there is a corresponding increase in assets";
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //                                        INTEREST                                           //
@@ -45,9 +45,6 @@ abstract contract PostconditionsSpec {
         "GPOST_INTEREST_A: lastInterestUpdate should only be updated if (totalSupplyBefore != 0 && interestLeftBefore != 0) || toGulpBefore != 0)";
 
     string constant GPOST_INTEREST_B = "GPOST_INTEREST_B: lastInterestUpdate increases monotonically";
-
-    string constant GPOST_INTEREST_D =
-        "GPOST_INTEREST_D: if vault is smearing => the amount added to the vault's assets each block should correspond to this distribution"; // TODO
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //                                          USER                                             //
@@ -66,7 +63,7 @@ abstract contract PostconditionsSpec {
         "HSPOST_USER_D: After a deposit or mint, the totalAssets should increase by the amount deposited";
 
     string constant HSPOST_USER_E =
-        "HSPOST_USER_E: After a withdraw or redeem, the totalAssets should decrease by the amount withdrawn";
+        "HSPOST_USER_E: After a withdraw or redeem, the totalAssetsDeposited should decrease by the amount withdrawn";
 
     string constant HSPOST_USER_F =
         "HSPOST_USER_F: After a deposit or mint, the balance of the protocol should increase by the amount deposited";

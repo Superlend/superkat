@@ -3,10 +3,12 @@ pragma solidity ^0.8.19;
 
 // Interfaces
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC4626} from "@openzeppelin-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 
 // Libraries
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {TestERC20} from "../utils/mocks/TestERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Contracts
 import {Actor} from "../utils/Actor.sol";
@@ -60,6 +62,56 @@ contract BaseHandler is HookAggregator {
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //                                             HELPERS                                       //
     ///////////////////////////////////////////////////////////////////////////////////////////////
+
+    function _simulateHarvest(uint256 _totalAssetsDeposited) internal view returns (uint256, uint256) {
+        // track total yield and total loss to simulate loss socialization
+        uint256 totalYield;
+        uint256 totalLoss;
+
+        // check if performance fee is on; store received fee per recipient if call is succesfull
+        (address feeRecipient_, uint256 performanceFee) = eulerEulerEarnVault.performanceFeeConfig();
+        uint256 accumulatedPerformanceFee;
+
+        address[] memory withdrawalQueueArray = eulerEulerEarnVault.withdrawalQueue();
+        for (uint256 i; i < withdrawalQueueArray.length; i++) {
+            uint256 allocated = (eulerEulerEarnVault.getStrategy(withdrawalQueueArray[i])).allocated;
+            uint256 underlying = IERC4626(withdrawalQueueArray[i]).maxWithdraw(address(eulerEulerEarnVault));
+            if (underlying >= allocated) {
+                totalYield += underlying - allocated;
+            } else {
+                totalLoss += allocated - underlying;
+            }
+        }
+
+        if (totalYield > totalLoss) {
+            if (feeRecipient_ != address(0) && performanceFee > 0) {
+                uint256 performancefeeAssets =
+                    Math.mulDiv(totalYield - totalLoss, performanceFee, 1e18, Math.Rounding.Floor);
+                accumulatedPerformanceFee = eulerEulerEarnVault.previewDeposit(performancefeeAssets);
+
+                _totalAssetsDeposited += performancefeeAssets;
+            }
+        } else if (totalYield < totalLoss) {
+            _totalAssetsDeposited = _simulateLossDeduction(_totalAssetsDeposited, totalLoss - totalYield);
+        }
+
+        return (accumulatedPerformanceFee, _totalAssetsDeposited);
+    }
+
+    function _simulateLossDeduction(uint256 cachedGhostTotalAssetsDeposited, uint256 _loss)
+        private
+        view
+        returns (uint256)
+    {
+        // (,, uint168 interestLeft) = eulerEarn.getEulerEarnSavingRate();
+        uint256 totalNotDistributed = eulerEulerEarnVault.totalAssetsAllocatable() - cachedGhostTotalAssetsDeposited;
+
+        if (_loss > totalNotDistributed) {
+            cachedGhostTotalAssetsDeposited -= (_loss - totalNotDistributed);
+        }
+
+        return cachedGhostTotalAssetsDeposited;
+    }
 
     /// @notice Helper function to randomize a uint256 seed with a string salt
     function _randomize(uint256 seed, string memory salt) internal pure returns (uint256) {

@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 // Interfaces
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IEVault} from "evk/src/EVault/IEVault.sol";
+import {IEVault} from "evk/EVault/IEVault.sol";
 
 // Libraries
 import "forge-std/console.sol";

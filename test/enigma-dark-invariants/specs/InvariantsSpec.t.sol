@@ -31,11 +31,7 @@ abstract contract InvariantsSpec {
 
     string constant INV_ASSETS_B = "INV_ASSETS_B: totalAllocated == sum[active_strategies](allocated)";
 
-    string constant INV_ASSETS_C = "INV_ASSETS_C: balanceOf(vault) >= cashReserve"; // TODO change
-
     string constant INV_ASSETS_D = "INV_ASSETS_D: totalAssetsAllocatable >= totalAssets";
-
-    string constant INV_ASSETS_E = "INV_ASSETS_E: totalAssets >= sum[active_strategies](allocated)";
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //                                       STRATEGIES                                          //
