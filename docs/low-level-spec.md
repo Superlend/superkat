@@ -46,7 +46,7 @@ Although the allocation points define the amount of funds to allocate in a strat
 
 It is not possible to set a cap on the amount reserved for the `cash reserve` strategy. 
 
-### Emergency Status as Circuit-Breaker
+### Circuit-Breaker
 
 In the scenario where the euler earn vault can not interact with a strategy that has some allocated amount, the `GUARDIAN` can set the strategy status as `Emergency`. This will basically allow the `rebalance` and `harvest` functionalities to execute as expected without actually removing that strategy from the [withdrawal queue array](#withdrawal-queue). 
 
@@ -73,9 +73,9 @@ The withdraw operation does trigger a [`harvest operation`](#harvest) if the `HA
 
 ## Rebalance
 
-A `rebalance` operation can be initiated by any address by calling the `rebalance()` function, giving an array of strategies addresses to rebalance.
+A `rebalance` operation can be initiated by any address that has the `Rebalancer` role, by calling the `rebalance()` function, giving an array of strategies addresses to rebalance.
 
-During rebalance, we calculate the startegy target allocation amount `total assets allocatable * startegy allocation points / total allocation points` and compare that with the strategy current allocated amount. If that target allocation is greater, the euler earn will try to hit that target amount by depositing more into the strategy, if it's less, a withdrawal from that strategy will occur to reach that target amount.
+During rebalance, the vault calculate the startegy target allocation amount `total assets allocatable * startegy allocation points / total allocation points` and compare that with the strategy current allocated amount. If that target allocation is greater, the euler earn will try to hit that target amount by depositing more into the strategy, if it's less, a withdrawal from that strategy will occur to reach that target amount.
 
 For both cases, the amount to rebalance is restricted by a few factors...For the deposit, it includes: 
 - The amount of cash available, which is any surpluss in the cash reserve compared to its target allocation.
@@ -88,7 +88,7 @@ For the withdraw case:
 
 Once funds are allocated, the euler earn vault has no awarness for the yield generated from those strategies, that's why a harvesting operation is needed.
 
-The `harvest()` function can be initiated as well by any address, and it does follow the withdrawal queue array order in its loop. The harvest operation aggregates all the positive and negative yield accrued from the strategies, and account only for the net amount. The yield is calculated by comparing the current allocated amount in the strategy and the euler earn assets in that strategy if the redemption of all the shares were to occur, using the `strategy.previewRedeem()` call.
+The `harvest()` function can be initiated by any address, and it does follow the withdrawal queue array order in its loop. The harvest operation aggregates all the positive and negative yield accrued from the strategies, and account only for the net amount. The yield is calculated by comparing the current allocated amount in the strategy and the euler earn assets in that strategy if the redemption of all the shares were to occur, using the `strategy.previewRedeem()` call.
 
 In the case of having a positive net yield amount, the [`performance fee`](#performance-fee), if applicable, will be taken. The positive yield amount will not be instantly added to `totalAssetsDeposited` but will be only added to the `totalAllocated` amount, and this will make the yield available for [`gulping`](#gulping--smearing-period).
 
