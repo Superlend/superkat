@@ -40,7 +40,8 @@ contract EulerEarnFactory is IEulerEarnFactory {
         address _asset,
         string memory _name,
         string memory _symbol,
-        uint256 _initialCashAllocationPoints
+        uint256 _initialCashAllocationPoints,
+        uint256 _smearingPeriod
     ) external returns (address) {
         address eulerEulerEarnVault = Clones.clone(eulerEarnImpl);
 
@@ -49,7 +50,8 @@ contract EulerEarnFactory is IEulerEarnFactory {
             asset: _asset,
             name: _name,
             symbol: _symbol,
-            initialCashAllocationPoints: _initialCashAllocationPoints
+            initialCashAllocationPoints: _initialCashAllocationPoints,
+            smearingPeriod: _smearingPeriod
         });
         IEulerEarn(eulerEulerEarnVault).init(eulerEarnVaultInitParams);
 

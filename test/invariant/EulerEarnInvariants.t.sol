@@ -59,7 +59,7 @@ contract EulerEarnInvariants is EulerEarnBase {
     // totalAssetsDeposited should be equal to the totalAssetsAllocatable after SMEAR has passed.
     function invariant_totalAssets() public {
         eulerEulerEarnVault.gulp();
-        skip(ConstantsLib.INTEREST_SMEAR); // make sure smear has passed
+        skip(eulerEulerEarnVault.interestSmearingPeriod()); // make sure smear has passed
         eulerEulerEarnVault.updateInterestAccrued();
 
         if (eulerEulerEarnVault.totalSupply() > 0) {

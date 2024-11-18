@@ -24,6 +24,7 @@ interface IEulerEarn {
         string name;
         string symbol;
         uint256 initialCashAllocationPoints;
+        uint256 smearingPeriod;
     }
 
     /// @dev A struct that hold a strategy allocation's config
@@ -127,4 +128,5 @@ interface IEulerEarn {
     function permit2Address() external view returns (address);
     function EVC() external view returns (address);
     function isCheckingHarvestCoolDown() external view returns (bool);
+    function interestSmearingPeriod() external view returns (uint256);
 }

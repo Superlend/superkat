@@ -16,7 +16,7 @@ library ConstantsLib {
     uint8 internal constant REENTRANCYLOCK__LOCKED = 2;
 
     /// @dev Interest rate smearing period
-    uint256 public constant INTEREST_SMEAR = 2 weeks;
+    // uint256 public constant INTEREST_SMEAR = 2 weeks;
 
     /// @dev Cool down period for harvest call during withdraw operation.
     uint256 public constant HARVEST_COOLDOWN = 1 days;

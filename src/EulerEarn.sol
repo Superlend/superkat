@@ -78,6 +78,8 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
         });
         $.totalAllocationPoints = _initParams.initialCashAllocationPoints;
 
+        $.smearingPeriod = _initParams.smearingPeriod;
+
         // Setup DEFAULT_ADMIN
         _grantRole(DEFAULT_ADMIN_ROLE, _initParams.eulerEarnVaultOwner);
 
@@ -592,6 +594,10 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
     /// @dev See {EulerEarnVaultModule-isCheckingHarvestCoolDown}.
     function isCheckingHarvestCoolDown() public view override (IEulerEarn, EulerEarnVaultModule) returns (bool) {
         return super.isCheckingHarvestCoolDown();
+    }
+
+    function interestSmearingPeriod() public view override (IEulerEarn, EulerEarnVaultModule) returns (uint256) {
+        return super.interestSmearingPeriod();
     }
 
     /// @dev See {EulerEarnVaultModule-permit2Address}.

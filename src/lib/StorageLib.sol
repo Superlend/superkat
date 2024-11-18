@@ -32,7 +32,9 @@ struct EulerEarnStorage {
     /// locked: lock for re-entrancy guard.
     uint8 locked;
     
-    
+    /// @dev The period where the harvested positive yield is distributed as interest.
+    uint256 smearingPeriod;
+
     /// A mapping to check if a user address enabled balance forwarding for reward streams integration.
     mapping(address => bool) isBalanceForwarderEnabled;
     

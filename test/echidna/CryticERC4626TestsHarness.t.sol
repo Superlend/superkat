@@ -79,7 +79,7 @@ contract CryticERC4626TestsHarness is
 
         TestERC20Token _asset = new TestERC20Token("Test Token", "TT", 18);
         address _vault = eulerEulerEarnVaultFactory.deployEulerEarn(
-            address(_asset), "TT_Agg", "TT_Agg", CASH_RESERVE_ALLOCATION_POINTS
+            address(_asset), "TT_Agg", "TT_Agg", CASH_RESERVE_ALLOCATION_POINTS, 2 weeks
         );
 
         initialize(address(_vault), address(_asset), false);

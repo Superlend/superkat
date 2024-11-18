@@ -80,7 +80,7 @@ contract EulerEarnBase is EVaultTestBase {
         eulerEulerEarnVaultFactory = new EulerEarnFactory(eulerEarnImpl);
         eulerEulerEarnVault = EulerEarn(
             eulerEulerEarnVaultFactory.deployEulerEarn(
-                address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS
+                address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS, 2 weeks
             )
         );
 
@@ -161,7 +161,7 @@ contract EulerEarnBase is EVaultTestBase {
 
     function testDeployEulerEarnWithInvalidInitialCashAllocationPoints() public {
         vm.expectRevert(ErrorsLib.InitialAllocationPointsZero.selector);
-        eulerEulerEarnVaultFactory.deployEulerEarn(address(assetTST), "assetTST_Agg", "assetTST_Agg", 0);
+        eulerEulerEarnVaultFactory.deployEulerEarn(address(assetTST), "assetTST_Agg", "assetTST_Agg", 0, 2 weeks);
     }
 
     function _addStrategy(address from, address strategy, uint256 allocationPoints) internal {
