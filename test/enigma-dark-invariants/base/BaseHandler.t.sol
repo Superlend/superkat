@@ -178,6 +178,11 @@ contract BaseHandler is HookAggregator {
         eulerEulerEarnVault.mint(amount, owner);
     }
 
+    function _getToGulp() internal view returns (uint256) {
+        (,, uint168 interestLeft) = eulerEulerEarnVault.getEulerEarnSavingRate();
+        return eulerEulerEarnVault.totalAssetsAllocatable() - eulerEulerEarnVault.totalAssetsDeposited() - interestLeft;
+    }
+
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //                              HELPERS: GHOST VARIABLE UPDATES                              //
     ///////////////////////////////////////////////////////////////////////////////////////////////

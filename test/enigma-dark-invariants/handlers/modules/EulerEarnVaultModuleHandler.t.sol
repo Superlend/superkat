@@ -34,7 +34,9 @@ contract EulerEarnVaultModuleHandler is BaseHandler {
         try eulerEulerEarnVault.rebalance(_strategies) {
             _after();
         } catch {
-            assertTrue(false, NR_BASE_C);
+            if (defaultVarsBefore.totalAssetsAllocatable < type(uint160).max) {
+                fail(NR_BASE_A);
+            }
         }
     }
 

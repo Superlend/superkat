@@ -249,10 +249,11 @@ contract ERC4626Handler is BaseHandler {
         address _account = address(actor);
         uint256 maxRedeem = eulerEulerEarnVault.maxRedeem(_account);
 
+        console.log("maxRedeem", maxRedeem);
         vm.prank(_account);
         try eulerEulerEarnVault.redeem(maxRedeem, _account, _account) {}
         catch {
-            //assertTrue(false, ERC4626_REDEEM_INVARIANT_C); @audit-issue  I - 4
+            assertTrue(false, ERC4626_REDEEM_INVARIANT_C); //@audit-issue  I - 4
         }
     }
 
@@ -267,7 +268,7 @@ contract ERC4626Handler is BaseHandler {
 
         uint256 redeemedAssets = eulerEulerEarnVault.redeem(shares, address(this), address(this));
 
-        //assertLe(redeemedAssets, _assets, ERC4626_ROUNDTRIP_INVARIANT_A); TODO
+        assertLe(redeemedAssets, _assets, ERC4626_ROUNDTRIP_INVARIANT_A);
     }
 
     function assert_ERC4626_roundtrip_invariantB(uint256 _assets) external {
@@ -280,7 +281,7 @@ contract ERC4626Handler is BaseHandler {
         /// @dev restore original state to not break invariants
         eulerEulerEarnVault.redeem(eulerEulerEarnVault.balanceOf(address(this)), address(this), address(this));
 
-        //assertGe(withdrawnShares, shares, ERC4626_ROUNDTRIP_INVARIANT_B); TODO
+        assertGe(withdrawnShares, shares, ERC4626_ROUNDTRIP_INVARIANT_B); //TODO
     }
 
     function assert_ERC4626_roundtrip_invariantC(uint256 _shares) external {
@@ -324,7 +325,7 @@ contract ERC4626Handler is BaseHandler {
         /// @dev restore original state to not break invariants
         eulerEulerEarnVault.redeem(eulerEulerEarnVault.balanceOf(address(this)), address(this), address(this));
 
-        //assertGe(withdrawnShares, _shares, ERC4626_ROUNDTRIP_INVARIANT_E); // TODO
+        assertGe(withdrawnShares, _shares, ERC4626_ROUNDTRIP_INVARIANT_E); // TODO
     }
 
     function assert_ERC4626_roundtrip_invariantF(uint256 _shares) external {
@@ -339,7 +340,7 @@ contract ERC4626Handler is BaseHandler {
 
         uint256 redeemedAssets = eulerEulerEarnVault.redeem(_shares, address(this), address(this));
 
-        //assertLe(redeemedAssets, depositedAssets, ERC4626_ROUNDTRIP_INVARIANT_F); TODO
+        assertLe(redeemedAssets, depositedAssets, ERC4626_ROUNDTRIP_INVARIANT_F); //TODO
     }
 
     function assert_ERC4626_roundtrip_invariantG(uint256 _assets) external {
