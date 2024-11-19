@@ -22,6 +22,31 @@ contract EulerEarnInvariants is EulerEarnBase {
     function setUp() public override {
         super.setUp();
 
+        vm.startPrank(deployer);
+
+        eulerEulerEarnVault = EulerEarn(
+            eulerEulerEarnVaultFactory.deployEulerEarn(
+                address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS, 1 days
+            )
+        );
+
+        // grant admin roles to deployer
+        eulerEulerEarnVault.grantRole(ConstantsLib.GUARDIAN_ADMIN, deployer);
+        eulerEulerEarnVault.grantRole(ConstantsLib.STRATEGY_OPERATOR_ADMIN, deployer);
+        eulerEulerEarnVault.grantRole(ConstantsLib.EULER_EARN_MANAGER_ADMIN, deployer);
+        eulerEulerEarnVault.grantRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER_ADMIN, deployer);
+        eulerEulerEarnVault.grantRole(ConstantsLib.REBALANCER_ADMIN, deployer);
+
+        // grant roles to manager
+        eulerEulerEarnVault.grantRole(ConstantsLib.GUARDIAN, manager);
+        eulerEulerEarnVault.grantRole(ConstantsLib.STRATEGY_OPERATOR, manager);
+        eulerEulerEarnVault.grantRole(ConstantsLib.EULER_EARN_MANAGER, manager);
+        eulerEulerEarnVault.grantRole(ConstantsLib.WITHDRAWAL_QUEUE_MANAGER, manager);
+        eulerEulerEarnVault.grantRole(ConstantsLib.REBALANCER, manager);
+
+        vm.stopPrank();
+        vm.label(address(eulerEulerEarnVault), "eulerEulerEarnVault");
+
         actorUtil = new ActorUtil(address(eulerEulerEarnVault));
         actorUtil.includeActor(manager);
         actorUtil.includeActor(deployer);

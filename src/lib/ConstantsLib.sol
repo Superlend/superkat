@@ -15,14 +15,14 @@ library ConstantsLib {
     uint8 internal constant REENTRANCYLOCK__UNLOCKED = 1;
     uint8 internal constant REENTRANCYLOCK__LOCKED = 2;
 
+    /// @dev The maximum performance fee the vault can have is 50%
+    uint96 internal constant MAX_PERFORMANCE_FEE = 0.5e18;
+
     /// @dev Interest rate smearing period
-    // uint256 public constant INTEREST_SMEAR = 2 weeks;
+    uint256 public constant MIN_INTEREST_SMEAR_PERIOD = 1 days;
 
     /// @dev Cool down period for harvest call during withdraw operation.
     uint256 public constant HARVEST_COOLDOWN = 1 days;
-
-    /// @dev The maximum performance fee the vault can have is 50%
-    uint96 internal constant MAX_PERFORMANCE_FEE = 0.5e18;
 
     /// @dev address(0) set for cash reserve strategy.
     address public constant CASH_RESERVE = address(0);

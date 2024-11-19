@@ -65,8 +65,8 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
 
         // Make sure the asset is a contract. Token transfers using a library will not revert if address has no code.
         require(_initParams.asset.code.length != 0, Errors.InvalidAssetAddress());
-
         require(_initParams.initialCashAllocationPoints != 0, Errors.InitialAllocationPointsZero());
+        require(_initParams.smearingPeriod >= Constants.MIN_INTEREST_SMEAR_PERIOD, Errors.InvalidSmearingPeriod());
 
         EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
         $.locked = Constants.REENTRANCYLOCK__UNLOCKED;

@@ -44,8 +44,7 @@ struct EulerEarnStorage {
     uint32 hookedFns;
 
     /// Last harvest timestamp, this is only updated when a harvest is explicitly called,
-    /// Or when a harvest is executed while withdrawing or redeeming. An executed harvest during `rebalance()`
-    /// does not update this timestamp as rebalance do not guarantee a harvest of all the withdrawal queue strategies.
+    /// Or when a harvest is executed while rebalancing, withdrawing or redeeming.
     uint40 lastHarvestTimestamp;
 }
 
