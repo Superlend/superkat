@@ -164,10 +164,10 @@ contract EulerEarnBase is EVaultTestBase {
         eulerEulerEarnVaultFactory.deployEulerEarn(address(assetTST), "assetTST_Agg", "assetTST_Agg", 0, 2 weeks);
     }
 
-    // function testDeployEulerEarnWithInvalidSmearingPeriod() public {
-    //     vm.expectRevert(ErrorsLib.InvalidSmearingPeriod.selector);
-    //     eulerEulerEarnVaultFactory.deployEulerEarn(address(assetTST), "assetTST_Agg", "assetTST_Agg", 100, 2);
-    // }
+    function testDeployEulerEarnWithInvalidSmearingPeriod() public {
+        vm.expectRevert(ErrorsLib.InvalidSmearingPeriod.selector);
+        eulerEulerEarnVaultFactory.deployEulerEarn(address(assetTST), "assetTST_Agg", "assetTST_Agg", 100, 2);
+    }
 
     function _addStrategy(address from, address strategy, uint256 allocationPoints) internal {
         vm.prank(from);
