@@ -110,12 +110,14 @@ abstract contract Shared is EVCUtil {
         uint256 maxGulp = type(uint168).max - interestLeftCached;
         if (toGulp > maxGulp) toGulp = maxGulp; // cap interest, allowing the vault to function
 
+        uint256 smearingPeriodCached = $.smearingPeriod;
+
         interestLeftCached += uint168(toGulp); // toGulp <= maxGulp <= max uint168
         $.lastInterestUpdate = uint40(block.timestamp);
-        $.interestSmearEnd = uint40(block.timestamp + $.smearingPeriod);
+        $.interestSmearEnd = uint40(block.timestamp + smearingPeriodCached);
         $.interestLeft = interestLeftCached;
 
-        emit Events.Gulp(interestLeftCached, block.timestamp + $.smearingPeriod);
+        emit Events.Gulp(interestLeftCached, block.timestamp + smearingPeriodCached);
     }
 
     /// @dev update accrued interest.
