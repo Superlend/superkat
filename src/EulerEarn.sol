@@ -596,6 +596,7 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
         return super.isCheckingHarvestCoolDown();
     }
 
+    /// @dev See {EulerEarnVaultModule-interestSmearingPeriod}.
     function interestSmearingPeriod() public view override (IEulerEarn, EulerEarnVaultModule) returns (uint256) {
         return super.interestSmearingPeriod();
     }
