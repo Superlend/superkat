@@ -18,7 +18,7 @@ library ConstantsLib {
     /// @dev The maximum performance fee the vault can have is 50%
     uint96 internal constant MAX_PERFORMANCE_FEE = 0.5e18;
 
-    /// @dev Interest rate smearing period
+    /// @dev Interest smearing period
     uint256 public constant MIN_INTEREST_SMEAR_PERIOD = 1 days;
 
     /// @dev Cool down period for harvest call during withdraw operation.

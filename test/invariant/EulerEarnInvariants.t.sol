@@ -25,7 +25,7 @@ contract EulerEarnInvariants is EulerEarnBase {
         vm.startPrank(deployer);
         eulerEulerEarnVault = EulerEarn(
             eulerEulerEarnVaultFactory.deployEulerEarn(
-                address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS, 1 days
+                address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS, 3 days
             )
         );
 
