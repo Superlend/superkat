@@ -597,4 +597,110 @@ contract DepositRebalanceHarvestWithdrawE2ETest is EulerEarnBase {
 
         vm.clearMockedCalls();
     }
+
+    function testDonateStrategySharesBeforeAllocatingIntoIt() public {
+        // vault config, two strategies, eTST in index0 & eTSTsecondary in index1 of withdrawal queue
+        IEVault eTSTsecondary;
+        {
+            eTSTsecondary = IEVault(
+                factory.createProxy(
+                    address(0), true, abi.encodePacked(address(assetTST), address(oracle), unitOfAccount)
+                )
+            );
+            eTSTsecondary.setHookConfig(address(0), 0);
+            eTSTsecondary.setInterestRateModel(address(new IRMTestDefault()));
+            eTSTsecondary.setMaxLiquidationDiscount(0.2e4);
+            eTSTsecondary.setFeeReceiver(feeReceiver);
+
+            uint256 initialStrategyAllocationPoints = 1000e18;
+            _addStrategy(manager, address(eTSTsecondary), initialStrategyAllocationPoints);
+        }
+
+        // user deposit into Earn
+        uint256 amountToDeposit = 10000e18;
+        {
+            uint256 balanceBefore = eulerEulerEarnVault.balanceOf(user1);
+            uint256 totalSupplyBefore = eulerEulerEarnVault.totalSupply();
+            uint256 totalAssetsDepositedBefore = eulerEulerEarnVault.totalAssetsDeposited();
+            uint256 userAssetBalanceBefore = assetTST.balanceOf(user1);
+
+            vm.startPrank(user1);
+            assetTST.approve(address(eulerEulerEarnVault), amountToDeposit);
+            eulerEulerEarnVault.deposit(amountToDeposit, user1);
+            vm.stopPrank();
+
+            assertEq(eulerEulerEarnVault.balanceOf(user1), balanceBefore + amountToDeposit);
+            assertEq(eulerEulerEarnVault.totalSupply(), totalSupplyBefore + amountToDeposit);
+            assertEq(eulerEulerEarnVault.totalAssetsDeposited(), totalAssetsDepositedBefore + amountToDeposit);
+            assertEq(assetTST.balanceOf(user1), userAssetBalanceBefore - amountToDeposit);
+        }
+
+        // rebalance into the second strategy only
+        // 2500 total points; 1000 for reserve(40%), 500(20%) for eTST, 1000(40%) for eTSTsecondary
+        // 10k deposited; 6000 for reserve, 4000 for eTSTsecondary as we are not rebalancing into eTST
+        vm.warp(block.timestamp + 86400);
+        {
+            IEulerEarn.Strategy memory eTSTstrategyBefore = eulerEulerEarnVault.getStrategy(address(eTST));
+            IEulerEarn.Strategy memory eTSTsecondarystrategyBefore =
+                eulerEulerEarnVault.getStrategy(address(eTSTsecondary));
+
+            assertEq(0, eTSTstrategyBefore.allocated);
+            assertEq(0, eTSTsecondarystrategyBefore.allocated);
+
+            uint256 expectedeTSTsecondaryStrategyCash = eulerEulerEarnVault.totalAssetsAllocatable()
+                * eTSTsecondarystrategyBefore.allocationPoints / eulerEulerEarnVault.totalAllocationPoints();
+
+            assertTrue(expectedeTSTsecondaryStrategyCash != 0);
+
+            address[] memory strategiesToRebalance = new address[](1);
+            strategiesToRebalance[0] = address(eTSTsecondary);
+            vm.prank(manager);
+            eulerEulerEarnVault.rebalance(strategiesToRebalance);
+
+            assertEq(eulerEulerEarnVault.totalAllocated(), expectedeTSTsecondaryStrategyCash);
+            assertEq(eTST.convertToAssets(eTST.balanceOf(address(eulerEulerEarnVault))), 0);
+            assertEq(
+                eTSTsecondary.convertToAssets(eTSTsecondary.balanceOf(address(eulerEulerEarnVault))),
+                expectedeTSTsecondaryStrategyCash
+            );
+            assertEq((eulerEulerEarnVault.getStrategy(address(eTST))).allocated, 0);
+            assertEq(
+                (eulerEulerEarnVault.getStrategy(address(eTSTsecondary))).allocated, expectedeTSTsecondaryStrategyCash
+            );
+            assertEq(
+                assetTST.balanceOf(address(eulerEulerEarnVault)), amountToDeposit - expectedeTSTsecondaryStrategyCash
+            );
+        }
+
+        // someone donate shares of eTST to Earn vault
+        assetTST.mint(address(eTST), 1);
+        eTST.skim(type(uint256).max, address(eulerEulerEarnVault));
+
+        // before implementing the fix to allow harvesting strategy even before it has an allocated amount:
+        // at this point, Earn vault have no idea of the 1 shares of eTST, as we did not rebalance into it
+        // When harvest will be called during redeem, that 1 shares will not be accounted as we ignore a strategy with 0 allocated amount
+        // but we do not ignore such a strategy when withdrawing in _withdraw(), so:
+        // $.strategies[address(strategy)].allocated -= uint120(withdrawAmount); reverting as 0 - 1
+
+        // after the fix, the following `.redeem()` call should not revert
+        {
+            uint256 amountToRedeem = eulerEulerEarnVault.maxRedeem(user1);
+            uint256 totalAssetsDepositedBefore = eulerEulerEarnVault.totalAssetsDeposited();
+            uint256 eulerEarnTotalSupplyBefore = eulerEulerEarnVault.totalSupply();
+            uint256 user1AssetTSTBalanceBefore = assetTST.balanceOf(user1);
+
+            uint256 previewedAssets = eulerEulerEarnVault.previewRedeem(amountToRedeem);
+            vm.prank(user1);
+            uint256 withdrawnAssets = eulerEulerEarnVault.redeem(amountToRedeem, user1, user1);
+
+            assertEq(eulerEulerEarnVault.totalAssetsDeposited(), totalAssetsDepositedBefore - amountToRedeem);
+            assertEq(eulerEulerEarnVault.totalSupply(), eulerEarnTotalSupplyBefore - amountToRedeem);
+            assertEq(
+                assetTST.balanceOf(user1),
+                user1AssetTSTBalanceBefore + eulerEulerEarnVault.convertToAssets(amountToRedeem)
+            );
+
+            assertEq(previewedAssets, withdrawnAssets);
+        }
+    }
 }
