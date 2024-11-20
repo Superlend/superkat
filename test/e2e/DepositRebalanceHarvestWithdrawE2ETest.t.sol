@@ -676,14 +676,31 @@ contract DepositRebalanceHarvestWithdrawE2ETest is EulerEarnBase {
         assetTST.mint(address(eTST), 1);
         eTST.skim(type(uint256).max, address(eulerEulerEarnVault));
 
+        // before implementing the fix to allow harvesting strategy even before it has an allocated amount:
         // at this point, Earn vault have no idea of the 1 shares of eTST, as we did not rebalance into it
         // When harvest will be called during redeem, that 1 shares will not be accounted as we ignore a strategy with 0 allocated amount
         // but we do not ignore such a strategy when withdrawing in _withdraw(), so:
         // $.strategies[address(strategy)].allocated -= uint120(withdrawAmount); reverting as 0 - 1
 
-        uint256 maxRedeem = eulerEulerEarnVault.maxRedeem(user1);
+        // after the fix, the following `.redeem()` call should not revert
+        {
+            uint256 amountToRedeem = eulerEulerEarnVault.maxRedeem(user1);
+            uint256 totalAssetsDepositedBefore = eulerEulerEarnVault.totalAssetsDeposited();
+            uint256 eulerEarnTotalSupplyBefore = eulerEulerEarnVault.totalSupply();
+            uint256 user1AssetTSTBalanceBefore = assetTST.balanceOf(user1);
 
-        vm.prank(user1);
-        eulerEulerEarnVault.redeem(maxRedeem, user1, user1);
+            uint256 previewedAssets = eulerEulerEarnVault.previewRedeem(amountToRedeem);
+            vm.prank(user1);
+            uint256 withdrawnAssets = eulerEulerEarnVault.redeem(amountToRedeem, user1, user1);
+
+            assertEq(eulerEulerEarnVault.totalAssetsDeposited(), totalAssetsDepositedBefore - amountToRedeem);
+            assertEq(eulerEulerEarnVault.totalSupply(), eulerEarnTotalSupplyBefore - amountToRedeem);
+            assertEq(
+                assetTST.balanceOf(user1),
+                user1AssetTSTBalanceBefore + eulerEulerEarnVault.convertToAssets(amountToRedeem)
+            );
+
+            assertEq(previewedAssets, withdrawnAssets);
+        }
     }
 }
