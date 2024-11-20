@@ -823,7 +823,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
             address strategy = $.withdrawalQueue[i];
             uint120 strategyAllocatedAmount = $.strategies[strategy].allocated;
 
-            if (strategyAllocatedAmount == 0 || $.strategies[strategy].status != IEulerEarn.StrategyStatus.Active) {
+            if ($.strategies[strategy].status != IEulerEarn.StrategyStatus.Active) {
                 continue;
             }
 
