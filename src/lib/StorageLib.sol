@@ -32,7 +32,7 @@ struct EulerEarnStorage {
     /// locked: lock for re-entrancy guard.
     uint8 locked;
     
-    /// @dev The period on which the harvested positive yield is smeared to depositors as interest.
+    /// @dev The period during which the harvested positive yield is smeared to depositors as interest.
     uint256 smearingPeriod;
 
     /// A mapping to check if a user address enabled balance forwarding for reward streams integration.
