@@ -96,7 +96,7 @@ contract StrategyRewardsE2ETest is EulerEarnBase {
         eulerEulerEarnVaultFactory = new EulerEarnFactory(eulerEarnImpl);
         eulerEulerEarnVault = EulerEarn(
             eulerEulerEarnVaultFactory.deployEulerEarn(
-                address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS
+                address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS, 2 weeks
             )
         );
 

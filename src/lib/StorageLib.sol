@@ -32,7 +32,9 @@ struct EulerEarnStorage {
     /// locked: lock for re-entrancy guard.
     uint8 locked;
     
-    
+    /// @dev The period during which the harvested positive yield is smeared to depositors as interest.
+    uint256 smearingPeriod;
+
     /// A mapping to check if a user address enabled balance forwarding for reward streams integration.
     mapping(address => bool) isBalanceForwarderEnabled;
     
@@ -41,9 +43,8 @@ struct EulerEarnStorage {
     address hooksTarget;
     uint32 hookedFns;
 
-    /// Last harvest timestamp, this is only updated when a harvest is explicitly called,
-    /// Or when a harvest is executed while withdrawing or redeeming. An executed harvest during `rebalance()`
-    /// does not update this timestamp as rebalance do not guarantee a harvest of all the withdrawal queue strategies.
+    /// Last harvest timestamp, this is updated when a harvest is explicitly called,
+    /// or when a harvest is executed while rebalancing, withdrawing or redeeming.
     uint40 lastHarvestTimestamp;
 }
 

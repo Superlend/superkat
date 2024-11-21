@@ -472,6 +472,15 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
         return isHarvestCoolDownCheckOn;
     }
 
+    /// @notice Return the smearing period.
+    /// @dev Not protected with `nonReentrantView()`.
+    /// @return Smearing period.
+    function interestSmearingPeriod() public view virtual returns (uint256) {
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
+
+        return $.smearingPeriod;
+    }
+
     /// @notice Return the address of Permit2 contract.
     /// @dev Not protected with `nonReentrantView()`.
     /// @return Permit2 address.

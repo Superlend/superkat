@@ -70,7 +70,7 @@ contract A16zPropertyTests is ERC4626Test {
 
         _underlying_ = address(new ERC20Mock());
         _vault_ = eulerEulerEarnVaultFactory.deployEulerEarn(
-            _underlying_, "E20M_Agg", "E20M_Agg", CASH_RESERVE_ALLOCATION_POINTS
+            _underlying_, "E20M_Agg", "E20M_Agg", CASH_RESERVE_ALLOCATION_POINTS, 2 weeks
         );
         _delta_ = 0;
         _vaultMayBeEmpty = false;
