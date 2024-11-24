@@ -65,8 +65,8 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
 
         // Make sure the asset is a contract. Token transfers using a library will not revert if address has no code.
         require(_initParams.asset.code.length != 0, Errors.InvalidAssetAddress());
-
         require(_initParams.initialCashAllocationPoints != 0, Errors.InitialAllocationPointsZero());
+        require(_initParams.smearingPeriod >= Constants.MIN_INTEREST_SMEAR_PERIOD, Errors.InvalidSmearingPeriod());
 
         EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
         $.locked = Constants.REENTRANCYLOCK__UNLOCKED;
@@ -77,6 +77,8 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
             cap: AmountCap.wrap(0)
         });
         $.totalAllocationPoints = _initParams.initialCashAllocationPoints;
+
+        $.smearingPeriod = _initParams.smearingPeriod;
 
         // Setup DEFAULT_ADMIN
         _grantRole(DEFAULT_ADMIN_ROLE, _initParams.eulerEarnVaultOwner);
@@ -592,6 +594,11 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
     /// @dev See {EulerEarnVaultModule-isCheckingHarvestCoolDown}.
     function isCheckingHarvestCoolDown() public view override (IEulerEarn, EulerEarnVaultModule) returns (bool) {
         return super.isCheckingHarvestCoolDown();
+    }
+
+    /// @dev See {EulerEarnVaultModule-interestSmearingPeriod}.
+    function interestSmearingPeriod() public view override (IEulerEarn, EulerEarnVaultModule) returns (uint256) {
+        return super.interestSmearingPeriod();
     }
 
     /// @dev See {EulerEarnVaultModule-permit2Address}.

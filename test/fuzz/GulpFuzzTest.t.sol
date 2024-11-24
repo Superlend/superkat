@@ -73,7 +73,7 @@ contract GulpFuzzTest is EulerEarnBase {
         // Mint interest directly into the contract
         assetTST.mint(address(eulerEulerEarnVault), interestAmount);
         eulerEulerEarnVault.gulp();
-        skip(ConstantsLib.INTEREST_SMEAR);
+        skip(eulerEulerEarnVault.interestSmearingPeriod());
 
         (,, uint168 interestLeft) = eulerEulerEarnVault.getEulerEarnSavingRate();
         assertEq(eulerEulerEarnVault.totalAssets(), depositAmount + interestAmount);

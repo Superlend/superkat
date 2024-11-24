@@ -35,12 +35,14 @@ contract EulerEarnFactory is IEulerEarnFactory {
     /// @param _name Earn vault name.
     /// @param _symbol Earn vault symbol.
     /// @param _initialCashAllocationPoints The amount of points to initally allocate for cash reserve.
+    /// @param _smearingPeriod The period during which the harvested positive yield is smeared to depositors as interest.
     /// @return The address of the new deployed euler earn.
     function deployEulerEarn(
         address _asset,
         string memory _name,
         string memory _symbol,
-        uint256 _initialCashAllocationPoints
+        uint256 _initialCashAllocationPoints,
+        uint256 _smearingPeriod
     ) external returns (address) {
         address eulerEulerEarnVault = Clones.clone(eulerEarnImpl);
 
@@ -49,7 +51,8 @@ contract EulerEarnFactory is IEulerEarnFactory {
             asset: _asset,
             name: _name,
             symbol: _symbol,
-            initialCashAllocationPoints: _initialCashAllocationPoints
+            initialCashAllocationPoints: _initialCashAllocationPoints,
+            smearingPeriod: _smearingPeriod
         });
         IEulerEarn(eulerEulerEarnVault).init(eulerEarnVaultInitParams);
 

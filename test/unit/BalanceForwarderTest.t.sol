@@ -13,7 +13,7 @@ contract BalanceForwarderTest is EulerEarnBase {
 
         eulerEulerEarnVaultNoTracker = EulerEarn(
             eulerEulerEarnVaultFactory.deployEulerEarn(
-                address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS
+                address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS, 2 weeks
             )
         );
 
@@ -47,7 +47,7 @@ contract BalanceForwarderTest is EulerEarnBase {
 
         eulerEulerEarnVault = EulerEarn(
             eulerEulerEarnVaultFactory.deployEulerEarn(
-                address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS
+                address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS, 2 weeks
             )
         );
 
