@@ -190,6 +190,15 @@ contract EulerEarn is Dispatch, AccessControlEnumerableUpgradeable, IEulerEarn {
         use(hooksModule)
     {}
 
+    /// @dev See {EulerEarnVaultModule-skim}.
+    function skim(address _token, address _recipient)
+        public
+        override (IEulerEarn, EulerEarnVaultModule)
+        onlyEVCAccountOwner
+        onlyRole(Constants.EULER_EARN_MANAGER)
+        use(eulerEarnVaultModule)
+    {}
+
     /// @dev See {StrategyModule-addStrategy}.
     function addStrategy(address _strategy, uint256 _allocationPoints)
         public

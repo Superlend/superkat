@@ -53,6 +53,20 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
         }
     }
 
+    /// @notice Skim any asset from Earn vault, other than the vault's underlying asset.
+    /// @dev Can only be called by address with the role `EULER_EARN_MANAGER`.
+    /// @param _token Token address to skim.
+    /// @param _recipient Recipient address.
+    function skim(address _token, address _recipient) external {
+        require(_token != _asset(), Errors.CanNotSkim());
+
+        uint256 amount = IERC20(_token).balanceOf(address(this));
+
+        IERC20(_token).safeTransfer(_recipient, amount);
+
+        emit Events.Skim(_token, _recipient, amount);
+    }
+
     /// @notice Harvest all the strategies.
     /// @dev    When harvesting a net negative yield amount, the loss amount will be instantly deducted,
     ///         and this will drop the vault's share price. Therefore, Euler Earn shares should never be used as collateral in any other protocol.
