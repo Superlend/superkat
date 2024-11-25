@@ -57,7 +57,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
     /// @dev Can only be called by address with the role `EULER_EARN_MANAGER`.
     /// @param _token Token address to skim.
     /// @param _recipient Recipient address.
-    function skim(address _token, address _recipient) external {
+    function skim(address _token, address _recipient) external virtual nonReentrant {
         require(_token != _asset(), Errors.CanNotSkim());
 
         uint256 amount = IERC20(_token).balanceOf(address(this));
