@@ -77,7 +77,7 @@ abstract contract BaseInvariants is HandlerAggregator {
 
     function assert_INV_INTEREST_A() internal {
         (, uint40 interestSmearEnd,) = eulerEulerEarnVault.getEulerEarnSavingRate();
-        assertLe(interestSmearEnd, block.timestamp + Constants.INTEREST_SMEAR, INV_INTEREST_A);
+        assertLe(interestSmearEnd, block.timestamp + INTEREST_SMEAR, INV_INTEREST_A);
     }
 
     function assert_INV_INTEREST_B() internal {

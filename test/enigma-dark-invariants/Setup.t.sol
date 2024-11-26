@@ -110,7 +110,7 @@ contract Setup is BaseTest {
         // Deploy the EulerEarn contract using the factory
         eulerEulerEarnVault = EulerEarn(
             eulerEulerEarnVaultFactory.deployEulerEarn(
-                address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS
+                address(assetTST), "assetTST_Agg", "assetTST_Agg", CASH_RESERVE_ALLOCATION_POINTS, 1 days
             )
         );
 

@@ -220,6 +220,88 @@ contract CryticToFoundry is Invariants, Setup {
     //                                 BROKEN INVARIANTS REPLAY                                  //
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
+    function test_replaytoggleStrategyEmergencyStatus() public {
+        // @audit GPOST_INTEREST_A: lastInterestUpdate should only be updated if (totalSupplyBefore != 0 && interestLeftBefore != 0) || toGulpBefore != 0)
+        Tester.addStrategy(1, 0);
+        Tester.donateUnderlying(1, 0);
+        Tester.assert_ERC4626_roundtrip_invariantF(0);
+        _delay(1);
+        Tester.toggleStrategyEmergencyStatus(0);
+    }
+
+    function test_replayERC4626_REDEEM_INVARIANT_C() public {
+        Tester.addStrategy(1, 0);
+        Tester.setPerformanceFee(1079921606);
+        Tester.simulateYieldAccrual(937956623, 0);
+        Tester.assert_ERC4626_MINT_INVARIANT_C();
+        Tester.assert_ERC4626_REDEEM_INVARIANT_C();
+    }
+
+    function test_replayHarvest() public {
+        // @audit GPOST_STRATEGIES_H: allocated < allocated' => allocated < strategy.cap
+        Tester.addStrategy(1, 0);
+        Tester.simulateYieldAccrual(1, 0);
+        Tester.setStrategyCap(1, 0);
+        Tester.harvest();
+    }
+
+    function test_replayDeposit() public {
+        // @audit GPOST_BASE_C: Exchange rate should never decrease unless a loss is reported by harvest
+        Tester.addStrategy(1, 0);
+        Tester.mint(1, 0);
+        Tester.donateUnderlying(177, 0);
+        Tester.toggleStrategyEmergencyStatus(0);
+        _delay(489);
+        Tester.deposit(3, 0);
+    }
+
+    function test_replayWithdraw() public {
+        // @audit GPOST_BASE_C: Exchange rate should never decrease unless a loss is reported by harvest
+        Tester.mint(1, 0);
+        Tester.donateUnderlying(1, 0);
+        Tester.withdraw(1, 0);
+    }
+
+    function test_replayRedeem() public {
+        // @audit GPOST_BASE_C: Exchange rate should never decrease unless a loss is reported by harvest
+        Tester.mint(4370000, 0);
+        Tester.donateUnderlying(1, 0);
+        Tester.redeem(4370000, 0);
+    }
+
+    function test_replayRebalance() public {
+        // @audit GPOST_STRATEGIES_H: allocated < allocated' => allocated < strategy.cap
+        Tester.addStrategy(1, 2);
+        Tester.setStrategyCap(1, 2);
+        Tester.simulateYieldAccrual(1, 2);
+        Tester.rebalance(0, 0, 0);
+    }
+
+    function test_replayERC4626_WITHDRAW_INVARIANT_C() public {
+        // @audit maxWithdraw MUST return the maximum amount of assets that could be transferred from owner through withdraw and not cause a revert
+        Tester.mint(3799, 1);
+        Tester.addStrategy(351598059376465801949, 2);
+        Tester.deposit(11044, 0);
+        Tester.rebalance(2, 0, 0);
+        Tester.addStrategy(1, 0);
+        Tester.assert_ERC4626_WITHDRAW_INVARIANT_C();
+        Tester.toggleStrategyEmergencyStatus(2);
+        _delay(88736);
+        Tester.assert_ERC4626_MINT_INVARIANT_C();
+        Tester.setPerformanceFee(722739109);
+        Tester.simulateYieldAccrual(1421166391, 3);
+        Tester.assert_ERC4626_WITHDRAW_INVARIANT_C();
+    }
+
+    function test_replayMint() public {
+        // @audit GPOST_BASE_C: Exchange rate should never decrease unless a loss is reported by harvest
+        Tester.deposit(1, 0);
+        Tester.donateUnderlying(410, 0);
+        Tester.harvest();
+        _delay(211);
+        Tester.mint(2, 0);
+    }
+
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //                                           HELPERS                                         //
     ///////////////////////////////////////////////////////////////////////////////////////////////

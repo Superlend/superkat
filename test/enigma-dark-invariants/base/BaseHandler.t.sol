@@ -54,9 +54,9 @@ contract BaseHandler is HookAggregator {
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
     /// @notice Helper function to get a random base asset
-    function _getRandomBaseAsset(uint256 i) internal view returns (address) {
-        uint256 randomValue = _randomize(i, "randomBaseAsset");
-        return baseAssets[randomValue % baseAssets.length];
+    function _getRandomBaseAsset(uint256 _i) internal view returns (address) {
+        uint256 _baseAssetIndex = _i % baseAssets.length;
+        return baseAssets[_baseAssetIndex];
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
