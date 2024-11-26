@@ -84,6 +84,7 @@ interface IEulerEarn {
     function delegate(address _delegatee) external;
     function delegateBySig(address _delegatee, uint256 _nonce, uint256 _expiry, uint8 _v, bytes32 _r, bytes32 _s)
         external;
+    function skim(address _token, address _recipient) external;
 
     /// view functions
     function interestAccrued() external view returns (uint256);
