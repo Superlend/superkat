@@ -311,6 +311,7 @@ contract ERC4626Handler is BaseHandler {
     }
 
     function assert_ERC4626_roundtrip_invariantE(uint256 _shares) external {
+        // TODO remove assert from function names
         _mintAndApprove(
             address(eulerEulerEarnVault.asset()),
             address(this),

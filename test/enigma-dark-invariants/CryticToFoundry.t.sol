@@ -228,7 +228,7 @@ contract CryticToFoundry is Invariants, Setup {
         Tester.donateUnderlying(1, 0);
         Tester.assert_ERC4626_roundtrip_invariantF(0);
         _delay(1);
-        Tester.toggleStrategyEmergencyStatus(0);
+        Tester.toggleStrategyEmergencyStatus(0); // TODO implement _interestAccruedFromCache() getter so the interestLet is the expected one
     }
 
     // Strategy cap allocation
@@ -238,15 +238,15 @@ contract CryticToFoundry is Invariants, Setup {
         Tester.addStrategy(1, 0);
         Tester.simulateYieldAccrual(1, 0);
         Tester.setStrategyCap(1, 0);
-        Tester.harvest();
+        Tester.harvest(); // TODO fix invariant this should only be checked after rebalance
     }
 
     function test_replayRebalance() public {
-        // @audit GPOST_STRATEGIES_H: allocated < allocated' => allocated < strategy.cap
+        // @audit GPOST_STRATEGIES_H: allocated < allocated' => allocated < strategy.cap //TODO allocated should be less or equal than the cap
         Tester.addStrategy(1, 2);
         Tester.setStrategyCap(1, 2);
         Tester.simulateYieldAccrual(1, 2);
-        Tester.rebalance(0, 0, 0);
+        Tester.rebalance(0, 0, 0); // TODO fix invariant this should only be checked after rebalance and if totalDeposited != 0
     }
 
     // Max withdraw / redem
@@ -264,7 +264,7 @@ contract CryticToFoundry is Invariants, Setup {
         Tester.assert_ERC4626_MINT_INVARIANT_C();
         Tester.setPerformanceFee(722739109);
         Tester.simulateYieldAccrual(1421166391, 3);
-        Tester.assert_ERC4626_WITHDRAW_INVARIANT_C();
+        Tester.assert_ERC4626_WITHDRAW_INVARIANT_C(); // TODO limit the totalSupply shares minted on the suite
     }
 
     function test_replayERC4626_REDEEM_INVARIANT_C2() public {
@@ -282,7 +282,7 @@ contract CryticToFoundry is Invariants, Setup {
         Tester.addStrategy(1, 0);
         Tester.mint(1, 0);
         Tester.donateUnderlying(177, 0);
-        Tester.toggleStrategyEmergencyStatus(0);
+        Tester.toggleStrategyEmergencyStatus(0); //TODO add exception for toggling strategy from active with allocated funds into emergency status
         _delay(489);
         Tester.deposit(3, 0);
     }
@@ -291,14 +291,14 @@ contract CryticToFoundry is Invariants, Setup {
         // @audit GPOST_BASE_C: Exchange rate should never decrease unless a loss is reported by harvest
         Tester.mint(4370000, 0);
         Tester.donateUnderlying(1, 0);
-        Tester.redeem(4370000, 0);
+        Tester.redeem(4370000, 0); // TODO  add exception if totalSupplyAfter == 0
     }
 
     function test_replayWithdraw() public {
         // @audit GPOST_BASE_C: Exchange rate should never decrease unless a loss is reported by harvest
         Tester.mint(1, 0);
         Tester.donateUnderlying(1, 0);
-        Tester.withdraw(1, 0);
+        Tester.withdraw(1, 0); // TODO  add exception if totalSupplyAfter == 0
     }
 
     function test_replayMint() public {
@@ -308,6 +308,7 @@ contract CryticToFoundry is Invariants, Setup {
         Tester.harvest();
         _delay(211);
         Tester.mint(2, 0);
+        _delay(2110);
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////

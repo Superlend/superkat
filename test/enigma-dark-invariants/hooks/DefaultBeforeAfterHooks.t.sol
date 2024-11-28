@@ -113,7 +113,9 @@ abstract contract DefaultBeforeAfterHooks is BaseHooks {
         _defaultVars.exchangeRate =
             (_defaultVars.totalSupply != 0) ? _defaultVars.totalAssets * 1e18 / _defaultVars.totalSupply : 0;
         _defaultVars.toGulp = _defaultVars.totalAssetsAllocatable - _defaultVars.totalAssetsDeposited - interestLeft;
-
+        console.log("incheck_totalAssetsAllocatable: ", _defaultVars.totalAssetsAllocatable);
+        console.log("incheck_totalAssetsDeposited: ", _defaultVars.totalAssetsDeposited);
+        console.log("incheck_interestLeft: ", interestLeft);
         // Interest
         _defaultVars.lastHarvestTimestamp = eulerEulerEarnVault.lastHarvestTimestamp();
         _defaultVars.lastInterestUpdate = lastInterestUpdate;
@@ -163,6 +165,11 @@ abstract contract DefaultBeforeAfterHooks is BaseHooks {
         if (defaultVarsAfter.exchangeRate < defaultVarsBefore.exchangeRate) {
             console.log("exchangeRate", defaultVarsBefore.exchangeRate);
             console.log("exchangeRate", defaultVarsAfter.exchangeRate);
+
+            console.log("Poc_defaultVarsBefore: ", defaultVarsBefore.totalAssets);
+            console.log("Poc_totalSupplyBefore: ", defaultVarsBefore.totalSupply);
+            console.log("Poc_defaultVarsAfter: ", defaultVarsAfter.totalAssets);
+            console.log("Poc_totalSupplyAfter: ", defaultVarsAfter.totalSupply);
             assertEq(defaultVarsAfter.interestLeft, 0, GPOST_BASE_C);
         }
     }
