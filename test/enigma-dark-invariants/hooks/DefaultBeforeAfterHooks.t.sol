@@ -161,6 +161,8 @@ abstract contract DefaultBeforeAfterHooks is BaseHooks {
 
     function assert_GPOST_BASE_C() internal {
         if (defaultVarsAfter.exchangeRate < defaultVarsBefore.exchangeRate) {
+            console.log("exchangeRate", defaultVarsBefore.exchangeRate);
+            console.log("exchangeRate", defaultVarsAfter.exchangeRate);
             assertEq(defaultVarsAfter.interestLeft, 0, GPOST_BASE_C);
         }
     }
