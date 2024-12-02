@@ -274,7 +274,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
         return _convertToShares(_assets, Math.Rounding.Floor);
     }
 
-    /// @notice Convert to an apprximation of the amount of assets that the Vault would exchange for the amount of shares provided.
+    /// @notice Convert to an approximation of the amount of assets that the Vault would exchange for the amount of shares provided.
     /// @dev This function will just return an approximation and not an exact amount as it does not simulate a harvest, and it should not be used as a share price oracle.
     /// @param _shares Amount of shares.
     /// @return Amount of assets.
@@ -654,7 +654,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
         }
 
         // this is safe because:
-        // a strategy loss is capped by `startegy.allocated`
+        // a strategy loss is capped by `strategy.allocated`
         // => `$.totalAllocated` is the sum of all strategies `.allocated` amounts, the loss can never spill over into the cash reserve
         // => this subtraction cannot underflow.
         $.totalAllocated = $.totalAllocated + totalPositiveYield - totalNegativeYield;
