@@ -53,12 +53,12 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
         }
     }
 
-    /// @notice Skim any asset from Earn vault, other than the vault's underlying asset.
+    /// @notice Skim any asset from Earn vault, other than the vault's underlying asset and strategies.
     /// @dev Can only be called by address with the role `EULER_EARN_MANAGER`.
     /// @param _token Token address to skim.
     /// @param _recipient Recipient address.
     function skim(address _token, address _recipient) external virtual nonReentrant {
-        require(_token != _asset(), Errors.CanNotSkim());
+        require((_token != _asset()) && !_isStrategy(_token), Errors.CanNotSkim());
 
         uint256 amount = IERC20(_token).balanceOf(address(this));
 
@@ -969,6 +969,20 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
         maxAssets = _simulateStrategiesWithdraw(maxAssets);
 
         return (totalAssetsExpected, totalSupplyExpected, maxAssets);
+    }
+
+    /// @dev Check if a _token is an included strategy address in the withdrawal queue.
+    /// @param _token Token address.
+    /// @return True if it is a strategy address, else false.
+    function _isStrategy(address _token) private view returns (bool) {
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
+
+        uint256 strategiesCounter = $.withdrawalQueue.length;
+        for (uint256 i; i < strategiesCounter; ++i) {
+            if (_token == $.withdrawalQueue[i]) return true;
+        }
+
+        return false;
     }
 }
 
