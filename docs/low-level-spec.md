@@ -52,9 +52,9 @@ In the scenario where the euler earn vault can not interact with a strategy that
 
 Once the strategy is set as `Emergency`, the `totalAllocationPoints` and the `totalAllocated` are decreased by the `strategy allocation points` and the `strategy allocated amount`, which leads to counting that allocated amount as a loss, and deducting it following the [`loss deduction mechanism`](#loss-deduction--socialisation).
 
-The `GUARDIAN` can revert back the strategy to active anytime, once that's done, the acutal Euler Earn assets amount in that strategy will be calculated using `strategy.previewRedeem()`, and assigned back along with the strategy allocation points, respectively, to the `totalAllocated` and `totalAllocationPoints`.
+The `GUARDIAN` can revert back the strategy to active anytime, once that's done, the actual Euler Earn assets amount in that strategy will be calculated using `strategy.previewRedeem()`, and assigned back along with the strategy allocation points, respectively, to the `totalAllocated` and `totalAllocationPoints`.
 
-The strategy allocated amount will be immediatly available for [`gulping`](#gulping--smearing-period).
+The strategy allocated amount will be immediately available for [`gulping`](#gulping--smearing-period).
 
 ### Withdrawal Queue
 
@@ -65,7 +65,7 @@ An address that has the `WITHDRAWAL_QUEUE_MANAGER` role can re-order the withdra
 
 ## Deposits & Withdraws
 
-When the assets get deposited into the euler earn by the user, those funds do not get allocated immediatly to the strategies, instead we just increase the `totalAssetsDeposited`. The funds in the euler earn get allocated into the strategies through the operation called [`Rebalancing`](#rebalance).
+When the assets get deposited into the euler earn by the user, those funds do not get allocated immediately to the strategies, instead we just increase the `totalAssetsDeposited`. The funds in the euler earn get allocated into the strategies through the operation called [`Rebalancing`](#rebalance).
 
 For withdraws, if the amount of asset to withdraw can not be covered by the funds in the `cash reserve`, the euler earn will loop through the `withdrawal queue array`, and withdraw from the strategies one by one till the requested amount to withdraw is filled. If for some reason the funds can not be taken from the strategies, the withdraw operation will fail with `NotEnoughAssets` error.
 
@@ -75,7 +75,7 @@ The withdraw operation does trigger a [`harvest operation`](#harvest) if the `HA
 
 A `rebalance` operation can be initiated by any address that has the `Rebalancer` role, by calling the `rebalance()` function, giving an array of strategies addresses to rebalance.
 
-During rebalance, the vault calculate the startegy target allocation amount `total assets allocatable * startegy allocation points / total allocation points` and compare that with the strategy current allocated amount. If that target allocation is greater, the euler earn will try to hit that target amount by depositing more into the strategy, if it's less, a withdrawal from that strategy will occur to reach that target amount.
+During rebalance, the vault calculate the strategy target allocation amount `total assets allocatable * strategy allocation points / total allocation points` and compare that with the strategy current allocated amount. If that target allocation is greater, the euler earn will try to hit that target amount by depositing more into the strategy, if it's less, a withdrawal from that strategy will occur to reach that target amount.
 
 For both cases, the amount to rebalance is restricted by a few factors...For the deposit, it includes: 
 - The amount of cash available, which is any surpluss in the cash reserve compared to its target allocation.
@@ -86,7 +86,7 @@ For the withdraw case:
 
 ## Harvest
 
-Once funds are allocated, the euler earn vault has no awarness for the yield generated from those strategies, that's why a harvesting operation is needed.
+Once funds are allocated, the euler earn vault has no awareness for the yield generated from those strategies, that's why a harvesting operation is needed.
 
 The `harvest()` function can be initiated by any address, and it does follow the withdrawal queue array order in its loop. The harvest operation aggregates all the positive and negative yield accrued from the strategies, and account only for the net amount. The yield is calculated by comparing the current allocated amount in the strategy and the euler earn assets in that strategy if the redemption of all the shares were to occur, using the `strategy.previewRedeem()` call.
 
@@ -112,8 +112,8 @@ For those scenarios, the loss deduction mechanism is implemented. The euler earn
 
 ## Gulping & Smearing Period
 
-As mentionned in the harvest section, the harvested positive yield is not immediately distributed to depositors, but it does get added to the `totalAllocated` amount, therefore it becomes available to `gulp()`. Gulping is the mechanism which distributes it to share holders in the vault over a "smeared" two week period. Accrued interest is added to the `totalAssetsDeposited` of the Euler Earn vault, adjusting the exchange rate accordingly. On deposit and redeem accrued interest is added to the totalDeposited variable which tracks all deposits in the vault in a donation attack resistent manner.
+As mentioned in the harvest section, the harvested positive yield is not immediately distributed to depositors, but it does get added to the `totalAllocated` amount, therefore it becomes available to `gulp()`. Gulping is the mechanism which distributes it to share holders in the vault over the smearing period. This period is set by the Earn vault deployer, at deployment time. Accrued interest is added to the `totalAssetsDeposited` of the Euler Earn vault, adjusting the exchange rate accordingly. On deposit and redeem accrued interest is added to the totalDeposited variable which tracks all deposits in the vault in a donation attack resistant manner.
 
-On gulp, any interest which has not been distributed, is smeared for an additional two weeks. In theory this means that interest could be smeared indefinitely by continiously calling gulp, in practice it is expected that the interest will keep accruing, negating any negative side effects which may come from the smearing mechanism.
+On gulp, any interest which has not been distributed, is smeared for an additional two weeks. In theory this means that interest could be smeared indefinitely by continuously calling gulp, in practice it is expected that the interest will keep accruing, negating any negative side effects which may come from the smearing mechanism.
 
 The gulping mechanism implemented here is the same one that was implemented in the [`EulerSavingsRate` contract](https://docs.euler.finance/euler-vault-kit-white-paper/#eulersavingsrate).

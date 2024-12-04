@@ -67,7 +67,7 @@ abstract contract Shared is EVCUtil {
         uint256 totalNotDistributed = _totalAssetsAllocatable() - totalAssetsDepositedCache;
 
         // set `interestLeft` to zero, will be updated to the right value during `_gulp()`
-        // as we substract the `_lossAmount` from `$.totalAllocated` after this function call and before `_gulp()`
+        // as we subtract the `_lossAmount` from `$.totalAllocated` after this function call and before `_gulp()`
         $.interestLeft = 0;
         if (_lossAmount > totalNotDistributed) {
             unchecked {
