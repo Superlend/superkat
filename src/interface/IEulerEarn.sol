@@ -24,7 +24,7 @@ interface IEulerEarn {
         string name;
         string symbol;
         uint256 initialCashAllocationPoints;
-        uint256 smearingPeriod;
+        uint24 smearingPeriod;
     }
 
     /// @dev A struct that hold a strategy allocation's config
