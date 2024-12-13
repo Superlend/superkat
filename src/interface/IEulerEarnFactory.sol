@@ -7,7 +7,7 @@ interface IEulerEarnFactory {
         string memory _name,
         string memory _symbol,
         uint256 _initialCashAllocationPoints,
-        uint256 _smearingPeriod
+        uint24 _smearingPeriod
     ) external returns (address);
 
     function eulerEarnImpl() external view returns (address);
