@@ -23,6 +23,8 @@ abstract contract HookAggregator is DefaultBeforeAfterHooks {
 
         // POST-CONDITIONS
         _checkPostConditions();
+
+        targetStrategy = address(0);
     }
 
     /// @notice Postconditions for the handlers

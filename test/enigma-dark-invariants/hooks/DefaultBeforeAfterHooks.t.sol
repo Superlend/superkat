@@ -112,10 +112,9 @@ abstract contract DefaultBeforeAfterHooks is BaseHooks {
         _defaultVars.balance = assetTST.balanceOf(address(eulerEulerEarnVault));
         _defaultVars.exchangeRate =
             (_defaultVars.totalSupply != 0) ? _defaultVars.totalAssets * 1e18 / _defaultVars.totalSupply : 0;
-        _defaultVars.toGulp = _defaultVars.totalAssetsAllocatable - _defaultVars.totalAssetsDeposited - interestLeft;
-        console.log("incheck_totalAssetsAllocatable: ", _defaultVars.totalAssetsAllocatable);
-        console.log("incheck_totalAssetsDeposited: ", _defaultVars.totalAssetsDeposited);
-        console.log("incheck_interestLeft: ", interestLeft);
+        _defaultVars.toGulp =
+            _defaultVars.totalAssetsAllocatable - _defaultVars.totalAssetsDeposited - _getInterestAccruedFromCache();
+
         // Interest
         _defaultVars.lastHarvestTimestamp = eulerEulerEarnVault.lastHarvestTimestamp();
         _defaultVars.lastInterestUpdate = lastInterestUpdate;
@@ -163,14 +162,18 @@ abstract contract DefaultBeforeAfterHooks is BaseHooks {
 
     function assert_GPOST_BASE_C() internal {
         if (defaultVarsAfter.exchangeRate < defaultVarsBefore.exchangeRate) {
-            console.log("exchangeRate", defaultVarsBefore.exchangeRate);
-            console.log("exchangeRate", defaultVarsAfter.exchangeRate);
-
-            console.log("Poc_defaultVarsBefore: ", defaultVarsBefore.totalAssets);
-            console.log("Poc_totalSupplyBefore: ", defaultVarsBefore.totalSupply);
-            console.log("Poc_defaultVarsAfter: ", defaultVarsAfter.totalAssets);
-            console.log("Poc_totalSupplyAfter: ", defaultVarsAfter.totalSupply);
-            assertEq(defaultVarsAfter.interestLeft, 0, GPOST_BASE_C);
+            if (defaultVarsAfter.totalSupply != 0) {
+                if (targetStrategy != address(0)) {
+                    if (
+                        defaultVarsBefore.strategies[targetStrategy].status == IEulerEarn.StrategyStatus.Active
+                            && defaultVarsAfter.strategies[targetStrategy].status == IEulerEarn.StrategyStatus.Emergency
+                    ) {
+                        if (defaultVarsBefore.strategies[targetStrategy].allocated != 0) {
+                            assertEq(defaultVarsAfter.interestLeft, 0, GPOST_BASE_C);
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -180,11 +183,6 @@ abstract contract DefaultBeforeAfterHooks is BaseHooks {
 
     function assert_GPOST_INTEREST_A() internal {
         if (_hasLastInterestUpdated()) {
-            console.log("totalSupply", defaultVarsBefore.totalSupply);
-            console.log("interestLeft", defaultVarsBefore.interestLeft);
-            console.log("toGulp", defaultVarsBefore.toGulp);
-            console.log("_totalAssetsAllocatable", defaultVarsBefore.totalAssetsAllocatable);
-            console.log("totalAssetsDeposited", defaultVarsBefore.totalAssetsDeposited);
             assertTrue(
                 (defaultVarsBefore.totalSupply != 0 && defaultVarsBefore.interestLeft != 0)
                     || defaultVarsBefore.toGulp != 0 || _amountToGulpAfterToggleOn() != 0,

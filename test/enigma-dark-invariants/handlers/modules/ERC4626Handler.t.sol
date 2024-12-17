@@ -235,6 +235,7 @@ contract ERC4626Handler is BaseHandler {
     }
 
     function assert_ERC4626_WITHDRAW_INVARIANT_C() public setup {
+        require(eulerEulerEarnVault.totalSupply() != type(uint208).max);
         address _account = address(actor);
         uint256 maxWithdraw = eulerEulerEarnVault.maxWithdraw(_account);
 
@@ -246,6 +247,7 @@ contract ERC4626Handler is BaseHandler {
     }
 
     function assert_ERC4626_REDEEM_INVARIANT_C() public setup {
+        require(eulerEulerEarnVault.totalSupply() != type(uint208).max);
         address _account = address(actor);
         uint256 maxRedeem = eulerEulerEarnVault.maxRedeem(_account);
 

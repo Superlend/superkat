@@ -77,6 +77,30 @@ abstract contract BaseTest is BaseStorage, PropertiesConstants, StdAsserts, StdU
         }
     }
 
+    function _getInterestAccruedFromCache() internal view returns (uint256) {
+        (uint40 lastInterestUpdate, uint40 interestSmearingEnd, uint168 interestLeft) =
+            eulerEulerEarnVault.getEulerEarnSavingRate();
+
+        if (eulerEulerEarnVault.totalSupply() == 0) return 0;
+
+        // If distribution ended, full amount is accrued
+        if (block.timestamp >= interestLeft) {
+            return interestLeft;
+        }
+
+        if (lastInterestUpdate == block.timestamp) {
+            // If just updated return 0
+
+            return 0;
+        }
+
+        // Else return what has accrued
+        uint256 totalDuration = interestSmearingEnd - lastInterestUpdate;
+        uint256 timePassed = block.timestamp - lastInterestUpdate;
+
+        return interestLeft * timePassed / totalDuration;
+    }
+
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //                                  HELPERS: RANDOM GETTERS                                  //
     ///////////////////////////////////////////////////////////////////////////////////////////////

@@ -25,6 +25,7 @@ contract StrategyModuleModuleHandler is BaseHandler {
 
     function adjustAllocationPoints(uint256 _newPoints, uint8 i) external {
         address strategy = _getRandomStrategy(i);
+        targetStrategy = strategy;
 
         _before();
         eulerEulerEarnVault.adjustAllocationPoints(strategy, _newPoints);
@@ -35,6 +36,7 @@ contract StrategyModuleModuleHandler is BaseHandler {
 
     function setStrategyCap(uint16 _cap, uint8 i) external {
         address strategy = _getRandomStrategy(i);
+        targetStrategy = strategy;
 
         _before();
         eulerEulerEarnVault.setStrategyCap(strategy, _cap);
@@ -45,6 +47,7 @@ contract StrategyModuleModuleHandler is BaseHandler {
 
     function toggleStrategyEmergencyStatus(uint8 i) external {
         address strategy = _getRandomStrategy(i);
+        targetStrategy = strategy;
 
         IEulerEarn.StrategyStatus status = eulerEulerEarnVault.getStrategy(strategy).status;
 
@@ -63,6 +66,7 @@ contract StrategyModuleModuleHandler is BaseHandler {
 
     function addStrategy(uint256 _allocationPoints, uint8 i) external {
         address strategy = _getRandomStrategy(i);
+        targetStrategy = strategy;
 
         _before();
         eulerEulerEarnVault.addStrategy(strategy, _allocationPoints);
@@ -73,6 +77,7 @@ contract StrategyModuleModuleHandler is BaseHandler {
 
     function removeStrategy(uint8 i) external {
         address strategy = _getRandomStrategy(i);
+        targetStrategy = strategy;
 
         _before();
         eulerEulerEarnVault.removeStrategy(strategy);
