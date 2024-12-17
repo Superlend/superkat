@@ -45,7 +45,7 @@ Euler V2 is a lending and borrowing protocol built on top of the [EVC](https://g
 
 ## Permissionless Yield Aggregation & Risk Management
 
-Any risk curator can use the factory to create a Euler Earn vault, including DAOs, protocols, risk experts, funds or curious devlopers. Anyone can leverage the permissionless infrastructure to provide users with a simple passive yield earning experience.
+Any risk curator can use the factory to create a Euler Earn vault, including DAOs, protocols, risk experts, funds or curious developers. Anyone can leverage the permissionless infrastructure to provide users with a simple passive yield earning experience.
 
 ## Core concepts
 

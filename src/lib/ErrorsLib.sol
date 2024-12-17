@@ -28,6 +28,7 @@ library ErrorsLib {
     error MaxStrategiesExceeded();
     error InvalidAssetAddress();
     error InvalidSmearingPeriod();
+    error CanNotSkim();
 
     /// ERC4626Upgradeable.sol errors
     /// @dev Attempted to withdraw more assets than the max amount for `owner`.

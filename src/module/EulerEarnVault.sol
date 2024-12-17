@@ -53,6 +53,20 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
         }
     }
 
+    /// @notice Skim any asset from Earn vault, other than the vault's underlying asset and strategies.
+    /// @dev Can only be called by address with the role `EULER_EARN_MANAGER`.
+    /// @param _token Token address to skim.
+    /// @param _recipient Recipient address.
+    function skim(address _token, address _recipient) external virtual nonReentrant {
+        require((_token != _asset()) && !_isStrategy(_token), Errors.CanNotSkim());
+
+        uint256 amount = IERC20(_token).balanceOf(address(this));
+
+        IERC20(_token).safeTransfer(_recipient, amount);
+
+        emit Events.Skim(_token, _recipient, amount);
+    }
+
     /// @notice Harvest all the strategies.
     /// @dev    When harvesting a net negative yield amount, the loss amount will be instantly deducted,
     ///         and this will drop the vault's share price. Therefore, Euler Earn shares should never be used as collateral in any other protocol.
@@ -260,7 +274,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
         return _convertToShares(_assets, Math.Rounding.Floor);
     }
 
-    /// @notice Convert to an apprximation of the amount of assets that the Vault would exchange for the amount of shares provided.
+    /// @notice Convert to an approximation of the amount of assets that the Vault would exchange for the amount of shares provided.
     /// @dev This function will just return an approximation and not an exact amount as it does not simulate a harvest, and it should not be used as a share price oracle.
     /// @param _shares Amount of shares.
     /// @return Amount of assets.
@@ -640,7 +654,7 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
         }
 
         // this is safe because:
-        // a strategy loss is capped by `startegy.allocated`
+        // a strategy loss is capped by `strategy.allocated`
         // => `$.totalAllocated` is the sum of all strategies `.allocated` amounts, the loss can never spill over into the cash reserve
         // => this subtraction cannot underflow.
         $.totalAllocated = $.totalAllocated + totalPositiveYield - totalNegativeYield;
@@ -955,6 +969,20 @@ abstract contract EulerEarnVaultModule is ERC4626Upgradeable, ERC20VotesUpgradea
         maxAssets = _simulateStrategiesWithdraw(maxAssets);
 
         return (totalAssetsExpected, totalSupplyExpected, maxAssets);
+    }
+
+    /// @dev Check if a _token is an included strategy address in the withdrawal queue.
+    /// @param _token Token address.
+    /// @return True if it is a strategy address, else false.
+    function _isStrategy(address _token) private view returns (bool) {
+        EulerEarnStorage storage $ = Storage._getEulerEarnStorage();
+
+        uint256 strategiesCounter = $.withdrawalQueue.length;
+        for (uint256 i; i < strategiesCounter; ++i) {
+            if (_token == $.withdrawalQueue[i]) return true;
+        }
+
+        return false;
     }
 }
 

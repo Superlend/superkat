@@ -157,6 +157,9 @@ contract EulerEarnBase is EVaultTestBase {
 
         assertTrue(eulerEulerEarnVaultFactory.isValidDeployment(address(eulerEulerEarnVault)));
         assertFalse(eulerEulerEarnVaultFactory.isValidDeployment(address(assetTST)));
+
+        assertEq(eulerEulerEarnVault.name(), "assetTST_Agg");
+        assertEq(eulerEulerEarnVault.symbol(), "assetTST_Agg");
     }
 
     function testDeployEulerEarnWithInvalidInitialCashAllocationPoints() public {

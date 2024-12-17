@@ -13,6 +13,7 @@ library EventsLib {
     event Harvest(uint256 totalAllocated, uint256 totalYield, uint256 totalLoss);
     event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
     event Rebalance(address indexed strategy, uint256 amountToRebalance, bool isDeposit);
+    event Skim(address indexed token, address indexed recipient, uint256 amount);
 
     /// @dev Strategy.sol events
     event AdjustAllocationPoints(address indexed strategy, uint256 oldPoints, uint256 newPoints);
