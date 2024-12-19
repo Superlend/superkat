@@ -31,8 +31,6 @@ contract NegativeYieldHandler is BaseHandler {
 
         vm.prank(address(eulerEulerEarnVault));
         IERC20(strategy).transfer(address(0), amount);
-
-        console.log("Strategy %s lost %d assets", strategy, amount);
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////

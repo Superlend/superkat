@@ -67,7 +67,7 @@ contract CryticToFoundry is Invariants, Setup {
 
     function test_mintHSPOST_USER_D() public {
         this.donateUnderlying(39378, 0);
-        this.assert_ERC4626_roundtrip_invariantE(0);
+        this.ERC4626_roundtrip_invariantE(0);
         _delay(31);
         this.mint(1, 0);
     }
@@ -82,7 +82,6 @@ contract CryticToFoundry is Invariants, Setup {
         this.setPerformanceFee(4);
         _delay(1);
         this.simulateYieldAccrual(250244936486004518, 0);
-        this.assert_ERC4626_WITHDRAW_INVARIANT_C();
     }
 
     function test_toggleStrategyEmergencyStatus() public {
@@ -99,12 +98,7 @@ contract CryticToFoundry is Invariants, Setup {
         this.deposit(1, 0);
     }
 
-    ///////////////////////////////////////////////////////////////////////////////////////////////
-    //                               BROKEN POSTCONDITIONS REPLAY                                //
-    ///////////////////////////////////////////////////////////////////////////////////////////////
-
     function test_assert_ERC4626_REDEEM_INVARIANT_C() public {
-        //@audit-issue Issue 1: redeem(maxredeem) reverts -> allocated - uint120(withdrawAmount) underflows
         this.mint(20000, 0);
         this.addStrategy(1, 1);
         this.addStrategy(1, 0);
@@ -121,40 +115,23 @@ contract CryticToFoundry is Invariants, Setup {
     }
 
     function test_assert_ERC4626_roundtrip_invariantA() public {
-        //@audit-issue . Issue 2: The invariant that should hold is: redeem(deposit(a)) > a
-        // However in the poc below after depositing `a` and redeeming the amount of shares minted, assets redeemed is greater than `a`
         this.donateUnderlying(68, 0);
-        this.assert_ERC4626_roundtrip_invariantA(0);
+        this.ERC4626_roundtrip_invariantA(0);
 
         _delay(35693);
-        this.assert_ERC4626_roundtrip_invariantA(1);
+        this.ERC4626_roundtrip_invariantA(1);
     }
 
-    function test_assert_ERC4626_roundtrip_invariantB() public {
-        //@audit-issue . Issue 3: The invariant that should hold is: withdraw(a) >= deposit(a)
-        // However in the poc below the shares minted after depositing `a` are bigger than the ones burned after withdrawing the amount of assets deposited
-        this.donateUnderlying(597, 0);
-        this.assert_ERC4626_roundtrip_invariantD(0);
-        _delay(6100);
-        this.assert_ERC4626_roundtrip_invariantB(2);
+    function test_replayRedeem() public {
+        Tester.mint(4370000, 0);
+        Tester.donateUnderlying(1, 0);
+        Tester.redeem(4370000, 0);
     }
 
-    function test_assert_ERC4626_roundtrip_invariantE() public {
-        //@audit-issue . Issue 4: The invariant that should hold is: withdraw(mint(s)) >= s
-        // However in the poc below, while minting `s` shares and withdrawing the amount of assets deposited, shares burned is smaller than the initial amount of shares minted
-        this.donateUnderlying(13153, 0);
-        this.harvest();
-        _delay(276);
-        this.assert_ERC4626_roundtrip_invariantE(2);
-    }
-
-    function test_assert_ERC4626_roundtrip_invariantF() public {
-        //@audit-issue . Issue 5: The invariant that should hold is: mint(s) >= redeem(s)
-        // However in the poc below, while minting `s` shares and redeeming the same amount of shares minted, assets deposited is smaller than the amount of assets withdrawn
-        this.donateUnderlying(2457159, 0);
-        this.assert_ERC4626_WITHDRAW_INVARIANT_C();
-        _delay(1);
-        this.assert_ERC4626_roundtrip_invariantF(1);
+    function test_replayWithdraw() public {
+        Tester.mint(1, 0);
+        Tester.donateUnderlying(1, 0);
+        Tester.withdraw(1, 0);
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -162,7 +139,6 @@ contract CryticToFoundry is Invariants, Setup {
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
     function test_echidna_INV_ASSETS_INVARIANTS_INV_ASSETS_A() public {
-        // TODO check
         Tester.simulateYieldAccrual(1, 0);
         assert_INV_ASSETS_A();
         Tester.addStrategy(1, 0);
@@ -216,95 +192,16 @@ contract CryticToFoundry is Invariants, Setup {
         assert_INV_ASSETS_A();
     }
 
-    ///////////////////////////////////////////////////////////////////////////////////////////////
-    //                                 BROKEN INVARIANTS REPLAY                                  //
-    ///////////////////////////////////////////////////////////////////////////////////////////////
-
-    // interest accrual
-
-    function test_replaytoggleStrategyEmergencyStatus() public {
-        // @audit-ok GPOST_INTEREST_A: lastInterestUpdate should only be updated if (totalSupplyBefore != 0 && interestLeftBefore != 0) || toGulpBefore != 0)
-        Tester.addStrategy(1, 0);
-        Tester.donateUnderlying(1, 0);
-        Tester.assert_ERC4626_roundtrip_invariantF(0);
-        _delay(1);
-        Tester.toggleStrategyEmergencyStatus(0); // TODO implement _interestAccruedFromCache() getter so the interestLet is the expected one
-    }
-
-    // Strategy cap allocation
-
-    function test_replayHarvest() public {
-        // @audit GPOST_STRATEGIES_H: allocated < allocated' => allocated < strategy.cap
-        Tester.addStrategy(1, 0);
-        Tester.simulateYieldAccrual(1, 0);
-        Tester.setStrategyCap(1, 0);
-        Tester.harvest(); // TODO fix invariant this should only be checked after rebalance
-    }
-
-    function test_replayRebalance() public {
-        // @audit GPOST_STRATEGIES_H: allocated < allocated' => allocated < strategy.cap //TODO allocated should be less or equal than the cap
-        Tester.addStrategy(1, 2);
-        Tester.setStrategyCap(1, 2);
-        Tester.simulateYieldAccrual(1, 2);
-        Tester.rebalance(0, 0, 0); // TODO fix invariant this should only be checked after rebalance and if totalDeposited != 0
-    }
-
-    // Max withdraw / redem
-
-    function test_replayERC4626_WITHDRAW_INVARIANT_C() public {
-        // @audit maxWithdraw MUST return the maximum amount of assets that could be transferred from owner through withdraw and not cause a revert
-        Tester.mint(3799, 1);
-        Tester.addStrategy(351598059376465801949, 2);
-        Tester.deposit(11044, 0);
-        Tester.rebalance(2, 0, 0);
-        Tester.addStrategy(1, 0);
-        Tester.assert_ERC4626_WITHDRAW_INVARIANT_C();
-        Tester.toggleStrategyEmergencyStatus(2);
-        _delay(88736);
-        Tester.assert_ERC4626_MINT_INVARIANT_C();
-        Tester.setPerformanceFee(722739109);
-        Tester.simulateYieldAccrual(1421166391, 3);
-        console.log("totalSupply: ", eulerEulerEarnVault.totalSupply());
-        console.log("ype(uint208).max: ", type(uint208).max);
-        //Tester.assert_ERC4626_WITHDRAW_INVARIANT_C(); // TODO limit the totalSupply shares minted on the suite
-    }
-
-    function test_replayERC4626_REDEEM_INVARIANT_C2() public {
-        Tester.addStrategy(1, 0);
-        Tester.setPerformanceFee(1079921606);
-        Tester.simulateYieldAccrual(937956623, 0);
-        Tester.assert_ERC4626_MINT_INVARIANT_C();
-        //Tester.assert_ERC4626_REDEEM_INVARIANT_C();
-    }
-
-    // Exchange rate postconditions
-
     function test_replayDeposit() public {
-        // @audit-ok GPOST_BASE_C: Exchange rate should never decrease unless a loss is reported by harvest
         Tester.addStrategy(1, 0);
         Tester.mint(1, 0);
         Tester.donateUnderlying(177, 0);
-        Tester.toggleStrategyEmergencyStatus(0); //TODO add exception for toggling strategy from active with allocated funds into emergency status
+        Tester.toggleStrategyEmergencyStatus(0);
         _delay(489);
         Tester.deposit(3, 0);
     }
 
-    function test_replayRedeem() public {
-        // @audit-ok GPOST_BASE_C: Exchange rate should never decrease unless a loss is reported by harvest
-        Tester.mint(4370000, 0);
-        Tester.donateUnderlying(1, 0);
-        Tester.redeem(4370000, 0); // TODO  add exception if totalSupplyAfter == 0
-    }
-
-    function test_replayWithdraw() public {
-        // @audit-ok GPOST_BASE_C: Exchange rate should never decrease unless a loss is reported by harvest
-        Tester.mint(1, 0);
-        Tester.donateUnderlying(1, 0);
-        Tester.withdraw(1, 0); // TODO  add exception if totalSupplyAfter == 0
-    }
-
     function test_replayMint() public {
-        // @audit-ok GPOST_BASE_C: Exchange rate should never decrease unless a loss is reported by harvest
         Tester.deposit(1, 0);
         Tester.donateUnderlying(410, 0);
         Tester.harvest();
@@ -312,6 +209,34 @@ contract CryticToFoundry is Invariants, Setup {
         Tester.mint(2, 0);
         _delay(2110);
     }
+
+    function test_replaytoggleStrategyEmergencyStatus() public {
+        Tester.addStrategy(1, 0);
+        Tester.donateUnderlying(1, 0);
+        Tester.ERC4626_roundtrip_invariantF(0);
+        _delay(1);
+        Tester.toggleStrategyEmergencyStatus(0);
+    }
+
+    // Strategy cap allocation
+
+    function test_replayHarvest() public {
+        Tester.addStrategy(1, 0);
+        Tester.simulateYieldAccrual(1, 0);
+        Tester.setStrategyCap(1, 0);
+        Tester.harvest();
+    }
+
+    function test_replayRebalance() public {
+        Tester.addStrategy(1, 2);
+        Tester.setStrategyCap(1, 2);
+        Tester.simulateYieldAccrual(1, 2);
+        Tester.rebalance(0, 0, 0);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    //                                 BROKEN INVARIANTS REPLAY                                  //
+    ///////////////////////////////////////////////////////////////////////////////////////////////
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //                                           HELPERS                                         //

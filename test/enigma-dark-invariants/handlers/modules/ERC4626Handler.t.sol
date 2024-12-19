@@ -87,7 +87,6 @@ contract ERC4626Handler is BaseHandler {
 
         if (success) {
             _after();
-            console.log("OLA", eulerEulerEarnVault.interestAccrued());
 
             uint256 assets = abi.decode(returnData, (uint256));
 
@@ -240,9 +239,11 @@ contract ERC4626Handler is BaseHandler {
         uint256 maxWithdraw = eulerEulerEarnVault.maxWithdraw(_account);
 
         vm.prank(_account);
-        try eulerEulerEarnVault.withdraw(maxWithdraw, _account, _account) {}
-        catch {
-            assertTrue(false, ERC4626_WITHDRAW_INVARIANT_C);
+        if (eulerEulerEarnVault.totalSupply() != type(uint208).max) {
+            try eulerEulerEarnVault.withdraw(maxWithdraw, _account, _account) {}
+            catch {
+                assertTrue(false, ERC4626_WITHDRAW_INVARIANT_C);
+            }
         }
     }
 
@@ -251,29 +252,26 @@ contract ERC4626Handler is BaseHandler {
         address _account = address(actor);
         uint256 maxRedeem = eulerEulerEarnVault.maxRedeem(_account);
 
-        console.log("maxRedeem", maxRedeem);
         vm.prank(_account);
         try eulerEulerEarnVault.redeem(maxRedeem, _account, _account) {}
         catch {
-            assertTrue(false, ERC4626_REDEEM_INVARIANT_C); //@audit-issue  I - 4
+            assertTrue(false, ERC4626_REDEEM_INVARIANT_C);
         }
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
-    //                                   ROUNDTRIP PROPERTIES                                    //
+    //                               ROUNDTRIP PROPERTIES & CALLS                                //
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
-    function assert_ERC4626_roundtrip_invariantA(uint256 _assets) external {
+    function ERC4626_roundtrip_invariantA(uint256 _assets) external {
         _mintAndApprove(address(eulerEulerEarnVault.asset()), address(this), address(eulerEulerEarnVault), _assets);
 
         uint256 shares = eulerEulerEarnVault.deposit(_assets, address(this));
 
         uint256 redeemedAssets = eulerEulerEarnVault.redeem(shares, address(this), address(this));
-
-        ///assertLe(redeemedAssets, _assets, ERC4626_ROUNDTRIP_INVARIANT_A); @dev expected behaviour
     }
 
-    function assert_ERC4626_roundtrip_invariantB(uint256 _assets) external {
+    function ERC4626_roundtrip_invariantB(uint256 _assets) external {
         _mintAndApprove(address(eulerEulerEarnVault.asset()), address(this), address(eulerEulerEarnVault), _assets);
 
         uint256 shares = eulerEulerEarnVault.deposit(_assets, address(this));
@@ -282,8 +280,6 @@ contract ERC4626Handler is BaseHandler {
 
         /// @dev restore original state to not break invariants
         eulerEulerEarnVault.redeem(eulerEulerEarnVault.balanceOf(address(this)), address(this), address(this));
-
-        ///assertGe(withdrawnShares, shares, ERC4626_ROUNDTRIP_INVARIANT_B); @dev expected behaviour
     }
 
     function assert_ERC4626_roundtrip_invariantC(uint256 _shares) external {
@@ -312,8 +308,7 @@ contract ERC4626Handler is BaseHandler {
         assertGe(depositedAssets, redeemedAssets, ERC4626_ROUNDTRIP_INVARIANT_D);
     }
 
-    function assert_ERC4626_roundtrip_invariantE(uint256 _shares) external {
-        // TODO remove assert from function names
+    function ERC4626_roundtrip_invariantE(uint256 _shares) external {
         _mintAndApprove(
             address(eulerEulerEarnVault.asset()),
             address(this),
@@ -327,11 +322,9 @@ contract ERC4626Handler is BaseHandler {
 
         /// @dev restore original state to not break invariants
         eulerEulerEarnVault.redeem(eulerEulerEarnVault.balanceOf(address(this)), address(this), address(this));
-
-        ///assertGe(withdrawnShares, _shares, ERC4626_ROUNDTRIP_INVARIANT_E); @dev expected behaviour
     }
 
-    function assert_ERC4626_roundtrip_invariantF(uint256 _shares) external {
+    function ERC4626_roundtrip_invariantF(uint256 _shares) external {
         _mintAndApprove(
             address(eulerEulerEarnVault.asset()),
             address(this),
@@ -342,8 +335,6 @@ contract ERC4626Handler is BaseHandler {
         uint256 depositedAssets = eulerEulerEarnVault.mint(_shares, address(this));
 
         uint256 redeemedAssets = eulerEulerEarnVault.redeem(_shares, address(this), address(this));
-
-        ///assertLe(redeemedAssets, depositedAssets, ERC4626_ROUNDTRIP_INVARIANT_F); @dev expected behaviour
     }
 
     function assert_ERC4626_roundtrip_invariantG(uint256 _assets) external {

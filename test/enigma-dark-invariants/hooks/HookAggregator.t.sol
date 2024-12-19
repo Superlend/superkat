@@ -24,6 +24,7 @@ abstract contract HookAggregator is DefaultBeforeAfterHooks {
         // POST-CONDITIONS
         _checkPostConditions();
 
+        // RESET
         targetStrategy = address(0);
     }
 

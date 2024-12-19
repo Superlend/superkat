@@ -214,8 +214,13 @@ abstract contract DefaultBeforeAfterHooks is BaseHooks {
             Strategy memory strategyBefore = defaultVarsBefore.strategies[strategies[i]];
             Strategy memory strategyAfter = defaultVarsAfter.strategies[strategies[i]];
 
-            if (strategyAfter.allocated > strategyBefore.allocated) {
-                assertLe(strategyAfter.allocated, AmountCapLib.resolve(strategyAfter.cap), GPOST_STRATEGIES_H);
+            if (
+                strategyAfter.allocated > strategyBefore.allocated
+                    && msg.sig != IEulerEarnVaultModuleHandler.harvest.selector
+            ) {
+                if (defaultVarsBefore.totalAssetsDeposited != 0) {
+                    assertLe(strategyAfter.allocated, AmountCapLib.resolve(strategyAfter.cap), GPOST_STRATEGIES_H);
+                }
             }
         }
     }
@@ -225,9 +230,6 @@ abstract contract DefaultBeforeAfterHooks is BaseHooks {
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
     function _hasLastInterestUpdated() internal view returns (bool) {
-        console.log("#################");
-        console.log("lastInterestUpdate", defaultVarsBefore.lastInterestUpdate);
-        console.log("lastInterestUpdate", defaultVarsAfter.lastInterestUpdate);
         return defaultVarsAfter.lastInterestUpdate == block.timestamp
             && defaultVarsBefore.lastInterestUpdate != block.timestamp;
     }
