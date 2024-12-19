@@ -1,6 +1,6 @@
 # Actor Based Invariant Testing Suite
 
-<img src="./invariant-suite-overview.png" alt="Enigma Dark suite" width="90%" height="75%">
+<img src="./docs/invariant-suite-overview.png" alt="Enigma Dark suite" width="90%" height="75%">
 
 <br/>
 
