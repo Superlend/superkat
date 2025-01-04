@@ -102,14 +102,10 @@ contract CryticToFoundry is Invariants, Setup {
         this.mint(20000, 0);
         this.addStrategy(1, 1);
         this.addStrategy(1, 0);
-        _logStrategiesAllocation();
         this.adjustAllocationPoints(1007741998640599459404, 0);
-        _logStrategiesAllocation();
         this.rebalance(0, 0, 0);
-        _logStrategiesAllocation();
         this.simulateYieldAccrual(1, 1);
         this.rebalance(1, 0, 0);
-        _logStrategiesAllocation();
 
         this.assert_ERC4626_REDEEM_INVARIANT_C();
     }
@@ -325,11 +321,5 @@ contract CryticToFoundry is Invariants, Setup {
     function _setUpTimestampAndActor(uint256 _timestamp, address _user) internal {
         vm.warp(_timestamp);
         actor = actors[_user];
-    }
-
-    function _logStrategiesAllocation() internal {
-        console.log("Strategy 0: ", eulerEulerEarnVault.getStrategy(strategies[0]).allocated);
-        console.log("Strategy 1: ", eulerEulerEarnVault.getStrategy(strategies[1]).allocated);
-        console.log("Strategy 2: ", eulerEulerEarnVault.getStrategy(strategies[2]).allocated);
     }
 }
