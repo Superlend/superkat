@@ -6,6 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC4626} from "@openzeppelin-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 
 // Libraries
+import {ErrorsLib as Errors} from "src/lib/ErrorsLib.sol";
 import "forge-std/console.sol";
 
 // Test Contracts
@@ -130,7 +131,7 @@ contract ERC4626Handler is BaseHandler {
 
         uint256 previewedShares = eulerEulerEarnVault.previewWithdraw(assets);
 
-        (uint256 accumulatedPerformanceFee,) = _simulateHarvest(0);
+        (uint256 accumulatedPerformanceFee,, uint256 totalYield, uint256 totalLoss) = _simulateHarvest(0);
 
         _before();
         (success, returnData) =
@@ -140,6 +141,8 @@ contract ERC4626Handler is BaseHandler {
             _after();
 
             uint256 shares = abi.decode(returnData, (uint256));
+
+            bool harvested = _hasHarvested();
 
             _decreaseGhostAssets(assets, address(actor));
             _decreaseGhostShares(shares, address(actor));
@@ -153,13 +156,23 @@ contract ERC4626Handler is BaseHandler {
             } else {
                 assertEq(0, defaultVarsAfter.balance, HSPOST_USER_B);
 
-                /// @dev HSPOST_USER_C
                 uint256 delta = assets - defaultVarsBefore.balance;
-                assertEq(defaultVarsBefore.totalAllocated - delta, defaultVarsAfter.totalAllocated, HSPOST_USER_C);
+
+                uint256 totalAllocated = defaultVarsBefore.totalAllocated;
+                totalAllocated = totalAllocated + totalYield - totalLoss;
+
+                /// @dev HSPOST_USER_C
+                assertEq(totalAllocated - delta, defaultVarsAfter.totalAllocated, HSPOST_USER_C);
             }
 
+            bool harvestedWithProfit = totalYield > totalLoss && _hasHarvested();
+
             /// @dev HSPOST_USER_E
-            assertEq(defaultVarsBefore.totalAssets - assets, defaultVarsAfter.totalAssets, HSPOST_USER_E);
+            assertEq(
+                defaultVarsBefore.totalAssets - assets,
+                defaultVarsAfter.totalAssets - (harvested && totalYield > totalLoss ? accumulatedPerformanceFee : 0),
+                HSPOST_USER_E
+            );
         }
     }
 
@@ -174,7 +187,7 @@ contract ERC4626Handler is BaseHandler {
 
         uint256 previewedAssets = eulerEulerEarnVault.previewRedeem(shares);
 
-        (uint256 accumulatedPerformanceFee,) = _simulateHarvest(0);
+        (uint256 accumulatedPerformanceFee,, uint256 totalYield, uint256 totalLoss) = _simulateHarvest(0);
 
         _before();
         (success, returnData) =
@@ -184,6 +197,8 @@ contract ERC4626Handler is BaseHandler {
             _after();
 
             uint256 assets = abi.decode(returnData, (uint256));
+
+            bool harvested = _hasHarvested();
 
             _decreaseGhostAssets(assets, address(actor));
             _decreaseGhostShares(shares, address(actor));
@@ -199,13 +214,17 @@ contract ERC4626Handler is BaseHandler {
 
                 /// @dev HSPOST_USER_C
                 uint256 delta = assets - defaultVarsBefore.balance;
-                assertEq(defaultVarsBefore.totalAllocated - delta, defaultVarsAfter.totalAllocated, HSPOST_USER_C);
+
+                uint256 totalAllocated = defaultVarsBefore.totalAllocated;
+                totalAllocated = totalAllocated + totalYield - totalLoss;
+
+                assertEq(totalAllocated - delta, defaultVarsAfter.totalAllocated, HSPOST_USER_C);
             }
 
             /// @dev HSPOST_USER_E
             assertEq(
                 defaultVarsBefore.totalAssets - assets,
-                defaultVarsAfter.totalAssets - accumulatedPerformanceFee,
+                defaultVarsAfter.totalAssets - (harvested && totalYield > totalLoss ? accumulatedPerformanceFee : 0),
                 HSPOST_USER_E
             );
         }
@@ -238,11 +257,11 @@ contract ERC4626Handler is BaseHandler {
         address _account = address(actor);
         uint256 maxWithdraw = eulerEulerEarnVault.maxWithdraw(_account);
 
-        vm.prank(_account);
         if (eulerEulerEarnVault.totalSupply() != type(uint208).max) {
+            vm.prank(_account);
             try eulerEulerEarnVault.withdraw(maxWithdraw, _account, _account) {}
-            catch {
-                assertTrue(false, ERC4626_WITHDRAW_INVARIANT_C);
+            catch (bytes memory data) {
+                assertCustomError(data, Errors.ERC20ExceededSafeSupply.selector, ERC4626_WITHDRAW_INVARIANT_C);
             }
         }
     }
@@ -254,8 +273,8 @@ contract ERC4626Handler is BaseHandler {
 
         vm.prank(_account);
         try eulerEulerEarnVault.redeem(maxRedeem, _account, _account) {}
-        catch {
-            assertTrue(false, ERC4626_REDEEM_INVARIANT_C);
+        catch (bytes memory data) {
+            assertCustomError(data, Errors.ERC20ExceededSafeSupply.selector, ERC4626_REDEEM_INVARIANT_C);
         }
     }
 

@@ -78,22 +78,8 @@ abstract contract PostconditionsSpec {
     string constant GPOST_STRATEGIES_A =
         "HSPOST_STRATEGIES_A: A strategy under Emergency mode must not receive any new allocations";
 
-    string constant HSPOST_STRATEGIES_B =
-        "HSPOST_STRATEGIES_B: After a rebalance assets are distributed across strategies according to their assigned allocation points"; // TODO
-
-    string constant HSPOST_STRATEGIES_C =
-        "HSPOST_STRATEGIES_C: After a harvest, if loss < interestLeft => totalAssets does not decrease"; // TODO
-
-    string constant HSPOST_STRATEGIES_D =
-        "HSPOST_STRATEGIES_D: After a harvest, if loss > interestLeft => totalAssets decreases by the loss - interestLeft"; // TODO
-
-    string constant HSPOST_STRATEGIES_E = "HSPOST_STRATEGIES_E: Performance fee only applied on positive Yield"; // TODO
-
-    string constant HSPOST_STRATEGIES_F =
-        "HSPOST_STRATEGIES_F: Performance fee should be transferred to the feeRecipient"; // TODO
-
     string constant HSPOST_STRATEGIES_G =
         "HSPOST_STRATEGIES_G: After claiming underlying rewards, they are correctly distributed";
 
-    string constant GPOST_STRATEGIES_H = "GPOST_STRATEGIES_H: allocated < allocated' => allocated < strategy.cap";
+    string constant GPOST_STRATEGIES_H = "GPOST_STRATEGIES_H: allocated < allocated' => allocated' < strategy.cap";
 }

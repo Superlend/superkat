@@ -134,6 +134,17 @@ contract CryticToFoundry is Invariants, Setup {
         Tester.withdraw(1, 0);
     }
 
+    function test_replay_redeem_HSPOST_USER_C() public {
+        Tester.addStrategy(100125516452411342908, 1);
+        Tester.deposit(11, 0);
+        Tester.simulateYieldAccrual(1, 0);
+        Tester.rebalance(0, 1, 0);
+        Tester.addStrategy(1, 0);
+        Tester.toggleStrategyEmergencyStatus(0);
+        console.log("Before redeem");
+        Tester.redeem(11, 0);
+    }
+
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //                                     INVARIANTS REPLAY                                     //
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -227,12 +238,56 @@ contract CryticToFoundry is Invariants, Setup {
         Tester.harvest();
     }
 
-    function test_replayRebalance() public {
-        Tester.addStrategy(1, 2);
-        Tester.setStrategyCap(1, 2);
-        Tester.simulateYieldAccrual(1, 2);
+    function test_replay_assert_ERC4626_REDEEM_INVARIANT_C() public {
+        Tester.mint(316527, 0);
+        Tester.addStrategy(11573764108885193863, 0);
+        Tester.deposit(3631, 1);
+        Tester.rebalance(0, 0, 0);
+        Tester.assert_ERC4626_REDEEM_INVARIANT_C();
+        Tester.toggleStrategyEmergencyStatus(0);
+        Tester.assert_ERC4626_MINT_INVARIANT_C();
+        Tester.redeem(1, 0);
+        Tester.setPerformanceFee(680628919);
+        Tester.addStrategy(1, 1);
+        Tester.simulateYieldAccrual(1521254144, 1);
+        _delay(93712);
+        Tester.assert_ERC4626_WITHDRAW_INVARIANT_C();
+    }
+
+    function test_replay_rebalance() public {
+        Tester.addStrategy(1, 1);
+        Tester.simulateYieldAccrual(153, 1);
+        Tester.setStrategyCap(68, 1);
+        Tester.deposit(1, 0);
         Tester.rebalance(0, 0, 0);
     }
+
+    function test_replay_withdraw() public {
+        vm.label(0x3cb0b7B82686A4cbc432f553004F13d0629Ae610, "Strategy target");
+        Tester.addStrategy(1, 0);
+        Tester.deposit(1, 0);
+        Tester.rebalance(0, 0, 0);
+        Tester.setPerformanceFee(663633258);
+        Tester.simulateYieldAccrual(1515861937, 0);
+        console.log("Before withdraw");
+        Tester.withdraw(0, 0);
+    }
+
+    function test_replay_redeem_misc() public {
+        Tester.addStrategy(100322405994660315567, 1);
+        Tester.deposit(11, 0);
+        Tester.simulateYieldAccrual(1, 0);
+        Tester.rebalance(0, 1, 0);
+        Tester.addStrategy(1, 0);
+        Tester.toggleStrategyEmergencyStatus(0);
+        Tester.redeem(11, 0);
+    }
+
+    // Misc
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    //                               BROKEN POSTCONDITIONS REPLAY                                //
+    ///////////////////////////////////////////////////////////////////////////////////////////////
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //                                 BROKEN INVARIANTS REPLAY                                  //

@@ -16,6 +16,22 @@ abstract contract PropertiesAsserts {
     event AssertLeFail(string);
     event AssertLtFail(string);
 
+    function assertCustomError(bytes memory data, bytes4 selector, string memory reason) internal {
+        bytes4 actualSelector;
+        if (data.length >= 4) {
+            // Extract the first 4 bytes (selector) from the reason
+            assembly {
+                actualSelector := mload(add(data, 0x20))
+            }
+        }
+
+        // Check if the selector matches, and emit an event if it doesn't
+        if (actualSelector != selector) {
+            emit AssertFail(reason);
+            assert(false); // Fails the test
+        }
+    }
+
     function assertWithMsg(bool b, string memory reason) internal {
         if (!b) {
             emit AssertFail(reason);

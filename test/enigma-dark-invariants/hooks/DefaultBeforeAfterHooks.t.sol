@@ -187,7 +187,7 @@ abstract contract DefaultBeforeAfterHooks is BaseHooks {
                 (defaultVarsBefore.totalSupply != 0 && defaultVarsBefore.interestLeft != 0)
                     || defaultVarsBefore.toGulp != 0 || _amountToGulpAfterToggleOn() != 0,
                 GPOST_INTEREST_A
-            ); //TODO account for not harveested assets
+            );
         }
     }
 
@@ -215,11 +215,12 @@ abstract contract DefaultBeforeAfterHooks is BaseHooks {
             Strategy memory strategyAfter = defaultVarsAfter.strategies[strategies[i]];
 
             if (
-                strategyAfter.allocated > strategyBefore.allocated
-                    && msg.sig != IEulerEarnVaultModuleHandler.harvest.selector
+                strategyBefore.status == IEulerEarn.StrategyStatus.Active
+                    && strategyAfter.allocated > strategyBefore.allocated && !_hasHarvested()
             ) {
                 if (defaultVarsBefore.totalAssetsDeposited != 0) {
-                    assertLe(strategyAfter.allocated, AmountCapLib.resolve(strategyAfter.cap), GPOST_STRATEGIES_H);
+                    uint256 cap = AmountCapLib.resolve(strategyAfter.cap);
+                    assertLe(strategyAfter.allocated, cap != 0 ? cap : type(uint120).max, GPOST_STRATEGIES_H);
                 }
             }
         }
@@ -239,5 +240,10 @@ abstract contract DefaultBeforeAfterHooks is BaseHooks {
         return vaultBalance > defaultVarsAfter.totalAssetsDeposited
             ? vaultBalance - defaultVarsAfter.totalAssetsDeposited
             : 0;
+    }
+
+    function _hasHarvested() internal view returns (bool) {
+        return defaultVarsBefore.lastHarvestTimestamp != defaultVarsAfter.lastHarvestTimestamp
+            && defaultVarsAfter.lastHarvestTimestamp == block.timestamp;
     }
 }

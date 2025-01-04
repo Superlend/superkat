@@ -4,11 +4,13 @@ pragma solidity ^0.8.19;
 // Interfaces
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC4626} from "@openzeppelin-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
+import {IEulerEarn} from "src/interface/IEulerEarn.sol";
 
 // Libraries
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {TestERC20} from "../utils/mocks/TestERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import "forge-std/console.sol";
 
 // Contracts
 import {Actor} from "../utils/Actor.sol";
@@ -63,7 +65,11 @@ contract BaseHandler is HookAggregator {
     //                                             HELPERS                                       //
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
-    function _simulateHarvest(uint256 _totalAssetsDeposited) internal view returns (uint256, uint256) {
+    function _simulateHarvest(uint256 _totalAssetsDeposited)
+        internal
+        view
+        returns (uint256, uint256, uint256, uint256)
+    {
         // track total yield and total loss to simulate loss socialization
         uint256 totalYield;
         uint256 totalLoss;
@@ -74,8 +80,14 @@ contract BaseHandler is HookAggregator {
 
         address[] memory withdrawalQueueArray = eulerEulerEarnVault.withdrawalQueue();
         for (uint256 i; i < withdrawalQueueArray.length; i++) {
+            if ((eulerEulerEarnVault.getStrategy(withdrawalQueueArray[i])).status != IEulerEarn.StrategyStatus.Active) {
+                continue;
+            }
+
             uint256 allocated = (eulerEulerEarnVault.getStrategy(withdrawalQueueArray[i])).allocated;
-            uint256 underlying = IERC4626(withdrawalQueueArray[i]).maxWithdraw(address(eulerEulerEarnVault));
+
+            uint256 eulerEarnShares = IERC4626(withdrawalQueueArray[i]).balanceOf(address(eulerEulerEarnVault));
+            uint256 underlying = IERC4626(withdrawalQueueArray[i]).previewRedeem(eulerEarnShares);
             if (underlying >= allocated) {
                 totalYield += underlying - allocated;
             } else {
@@ -95,7 +107,7 @@ contract BaseHandler is HookAggregator {
             _totalAssetsDeposited = _simulateLossDeduction(_totalAssetsDeposited, totalLoss - totalYield);
         }
 
-        return (accumulatedPerformanceFee, _totalAssetsDeposited);
+        return (accumulatedPerformanceFee, _totalAssetsDeposited, totalYield, totalLoss);
     }
 
     function _simulateLossDeduction(uint256 cachedGhostTotalAssetsDeposited, uint256 _loss)
