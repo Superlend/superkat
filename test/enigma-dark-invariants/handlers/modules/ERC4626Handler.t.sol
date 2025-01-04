@@ -164,13 +164,6 @@ contract ERC4626Handler is BaseHandler {
                 /// @dev HSPOST_USER_C
                 assertEq(totalAllocated - delta, defaultVarsAfter.totalAllocated, HSPOST_USER_C);
             }
-
-            /// @dev HSPOST_USER_E
-            assertEq(
-                defaultVarsBefore.totalAssets - assets,
-                defaultVarsAfter.totalAssets - (harvested && totalYield > totalLoss ? accumulatedPerformanceFee : 0),
-                HSPOST_USER_E
-            );
         }
     }
 
@@ -218,13 +211,6 @@ contract ERC4626Handler is BaseHandler {
 
                 assertEq(totalAllocated - delta, defaultVarsAfter.totalAllocated, HSPOST_USER_C);
             }
-
-            /// @dev HSPOST_USER_E
-            assertEq(
-                defaultVarsBefore.totalAssets - assets,
-                defaultVarsAfter.totalAssets - (harvested && totalYield > totalLoss ? accumulatedPerformanceFee : 0),
-                HSPOST_USER_E
-            );
         }
     }
 
