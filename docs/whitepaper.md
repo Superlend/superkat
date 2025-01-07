@@ -124,6 +124,7 @@ Each role has their own specific `Admin role`, the holder of the Admin role can 
     - Set performance fee and recipient.
     - Opt in & out from the underlying strategy rewards stream, including enable/disable and claiming rewards.
     - Set hooks config.
+    - Skim any ERC20 token other than the vault's asset and the strategies shares, to a specific recipient.
 - Withdrawal Queue Manager:
     - Re-order withdrawal queue array.
 - Guardian:
@@ -132,6 +133,8 @@ Each role has their own specific `Admin role`, the holder of the Admin role can 
     - Set strategy as `Emergency` or revert it back to `Active` status.
 - Rebalancer:
     - Execute rebalance operation.
+
+![euler-earn-roles](./euler-earn-roles.png)
 
 ### Strategy Emergency Status as Circuit-Breaker
 

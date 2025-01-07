@@ -65,25 +65,51 @@ To run symbolic tests using [`Halmos`](https://github.com/a16z/halmos):
 halmos --match-contract EulerEarnSymbolicTest --storage-layout=generic --test-parallel --solver-parallel --solver-timeout-assertion 0
 ```
 
+### Enigma Dark Invariants
+
+![invariant-suite-overview.png](./test/enigma-dark-invariants/docs/invariant-suite-overview.png)
+
+To know more about the invariants suite overview and architecture, please read the Enigma [overview](./test/enigma-dark-invariants/docs/overview.md) and [internal](./test/enigma-dark-invariants/docs/internal-docs.md) docs. 
+
+To run echidna property mode:
+```sh
+make echidna
+```
+
+To run echidna assertion mode:
+```sh
+make echidna-assert
+```
+
+To run medusa:
+```sh
+make medusa
+```
+
 ### Format
 
 ```sh
 forge fmt
 ```
 
-### Gas Snapshots
-
-```sh
-forge snapshot
-```
 ## Smart Contracts Documentation
 
 ```sh
 forge doc --serve --port 4000
 ```
 
-## Deployment
-
 ## Security
 
+This software is **experimental** and is provided "as is" and "as available".
+
+**No warranties are provided** and **no liability will be accepted for any loss** incurred through the use of this codebase.
+
+Always include thorough tests when using Euler Earn protocol to ensure it interacts correctly with your code.
+
+## Known limitations
+
+Refer to the [add-link](/) for a list of known limitations and security considerations.
+
 ## License
+
+Licensed under the [Business Source License 1.1](./LICENSE).
