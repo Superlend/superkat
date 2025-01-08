@@ -11,7 +11,8 @@ import {WithdrawalQueue} from "../src/module/WithdrawalQueue.sol";
 import {EulerEarnFactory} from "../src/EulerEarnFactory.sol";
 import {Strategy} from "../src/module/Strategy.sol";
 
-contract DeployScript is ScriptUtil {
+/// @title Script to deploy Euler Earn protocol.
+contract DeployProtocol is ScriptUtil {
     /// @dev core modules.
     EulerEarnVault eulerEarnVaultModule;
     Rewards rewardsModule;
@@ -26,8 +27,8 @@ contract DeployScript is ScriptUtil {
     EulerEarnFactory eulerEulerEarnFactory;
 
     function run() public {
-        // load JSON files
-        string memory inputScriptFileName = "DeployScript_input.json";
+        // load JSON file
+        string memory inputScriptFileName = "DeployProtocol_input.json";
         string memory json = getScriptFile(inputScriptFileName);
 
         uint256 deployerKey = vm.parseJsonUint(json, "deployerKey");

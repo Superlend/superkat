@@ -1,0 +1,12 @@
+{
+    "userKey": "asjc",
+    "eulerEarn": "0xabcd",
+    "strategies": [
+        "0xasjc",
+        "0xabs"
+    ],
+    "allocationPoints": [
+        "100",
+        "200"
+    ]
+}
