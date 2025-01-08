@@ -6,6 +6,11 @@ import {EulerEarn, IEulerEarn} from "../src/EulerEarn.sol";
 import {ConstantsLib} from "../src/lib/ConstantsLib.sol";
 
 /// @title Script to add strategies to an existent Euler Earn vault.
+// to run:
+// fill .env
+// Run: source .env
+// fil relevant json file
+// Run: forge script ./script/AddStrategies.s.sol --rpc-url arbitrum --broadcast --slow -vvvvvv
 contract AddStrategies is ScriptUtil {
     error InputsMismatch();
 
@@ -15,14 +20,14 @@ contract AddStrategies is ScriptUtil {
     function run() public {
         // load JSON file
         string memory inputScriptFileName = "AddStrategies_input.json";
-        string memory json = getScriptFile(inputScriptFileName);
+        string memory json = _getJsonFile(inputScriptFileName);
 
-        uint256 userKey = vm.parseJsonUint(json, "userKey");
+        uint256 userKey = vm.parseJsonUint(json, ".userKey");
         address userAddress = vm.rememberKey(userKey);
 
-        eulerEarn = EulerEarn(vm.parseJsonAddress(json, "eulerEarn"));
-        address[] memory strategies = vm.parseJsonAddressArray(json, "strategies");
-        uint256[] memory allocationPoints = vm.parseJsonUintArray(json, "allocationPoints");
+        eulerEarn = EulerEarn(vm.parseJsonAddress(json, ".eulerEarn"));
+        address[] memory strategies = vm.parseJsonAddressArray(json, ".strategies");
+        uint256[] memory allocationPoints = vm.parseJsonUintArray(json, ".allocationPoints");
 
         require(strategies.length == allocationPoints.length, InputsMismatch());
 

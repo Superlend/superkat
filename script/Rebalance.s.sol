@@ -6,6 +6,11 @@ import {EulerEarn, IEulerEarn} from "../src/EulerEarn.sol";
 import {ConstantsLib} from "../src/lib/ConstantsLib.sol";
 
 /// @title Script to add strategies to an existent Euler Earn vault.
+// to run:
+// fill .env
+// Run: source .env
+// fil relevant json file
+// Run: forge script ./script/Rebalance.s.sol --rpc-url arbitrum --broadcast --slow -vvvvvv
 contract Rebalance is ScriptUtil {
     error InputsMismatch();
 
@@ -15,13 +20,13 @@ contract Rebalance is ScriptUtil {
     function run() public {
         // load JSON file
         string memory inputScriptFileName = "Rebalance_input.json";
-        string memory json = getScriptFile(inputScriptFileName);
+        string memory json = _getJsonFile(inputScriptFileName);
 
-        uint256 userKey = vm.parseJsonUint(json, "userKey");
+        uint256 userKey = vm.parseJsonUint(json, ".userKey");
         address userAddress = vm.rememberKey(userKey);
 
-        eulerEarn = EulerEarn(vm.parseJsonAddress(json, "eulerEarn"));
-        address[] memory strategies = vm.parseJsonAddressArray(json, "strategies");
+        eulerEarn = EulerEarn(vm.parseJsonAddress(json, ".eulerEarn"));
+        address[] memory strategies = vm.parseJsonAddressArray(json, ".strategies");
 
         vm.startBroadcast(userAddress);
 

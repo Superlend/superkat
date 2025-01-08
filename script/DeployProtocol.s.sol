@@ -29,7 +29,7 @@ contract DeployProtocol is ScriptUtil {
     function run() public {
         // load JSON file
         string memory inputScriptFileName = "DeployProtocol_input.json";
-        string memory json = getScriptFile(inputScriptFileName);
+        string memory json = _getJsonFile(inputScriptFileName);
 
         uint256 deployerKey = vm.parseJsonUint(json, "deployerKey");
         address deployerAddress = vm.rememberKey(deployerKey);

@@ -2,11 +2,16 @@
 pragma solidity ^0.8.0;
 
 import {ScriptUtil} from "./ScriptUtil.s.sol";
-import {EulerEarn, IEulerEarn} from "../src/EulerEarn.sol";
+import {EulerEarn} from "../src/EulerEarn.sol";
 import {EulerEarnFactory} from "../src/EulerEarnFactory.sol";
 import {ConstantsLib} from "../src/lib/ConstantsLib.sol";
 
 /// @title Script to deploy new Euler Earn vault by calling factory, granting all roles and their admin roles to deployer address.
+// to run:
+// fill .env
+// Run: source .env
+// fil relevant json file
+// Run: forge script ./script/DeployEulerEarn.s.sol --rpc-url arbitrum --broadcast --slow -vvvvvv
 contract DeployEulerEarn is ScriptUtil {
     /// @dev EulerEarnFactory contract.
     EulerEarnFactory eulerEulerEarnFactory;
@@ -14,17 +19,17 @@ contract DeployEulerEarn is ScriptUtil {
     function run() public returns (address) {
         // load JSON file
         string memory inputScriptFileName = "DeployEulerEarn_input.json";
-        string memory json = getScriptFile(inputScriptFileName);
+        string memory json = _getJsonFile(inputScriptFileName);
 
-        uint256 userKey = vm.parseJsonUint(json, "userKey");
+        uint256 userKey = vm.parseJsonUint(json, ".userKey");
         address userAddress = vm.rememberKey(userKey);
 
-        eulerEulerEarnFactory = EulerEarnFactory(vm.parseJsonAddress(json, "eulerEulerEarnFactory"));
-        address asset = vm.parseJsonAddress(json, "asset");
-        string memory name = vm.parseJsonString(json, "name");
-        string memory symbol = vm.parseJsonString(json, "symbol");
-        uint256 initialCashAllocationPoints = vm.parseJsonUint(json, "initialCashAllocationPoints");
-        uint24 smearingPeriod = uint24(vm.parseJsonUint(json, "smearingPeriod"));
+        eulerEulerEarnFactory = EulerEarnFactory(vm.parseJsonAddress(json, ".eulerEulerEarnFactory"));
+        address asset = vm.parseJsonAddress(json, ".asset");
+        string memory name = vm.parseJsonString(json, ".name");
+        string memory symbol = vm.parseJsonString(json, ".symbol");
+        uint256 initialCashAllocationPoints = vm.parseJsonUint(json, ".initialCashAllocationPoints");
+        uint24 smearingPeriod = uint24(vm.parseJsonUint(json, ".smearingPeriod"));
 
         vm.startBroadcast(userAddress);
 
