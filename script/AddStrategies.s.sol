@@ -2,8 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {ScriptUtil} from "./ScriptUtil.s.sol";
-import {EulerEarn, IEulerEarn} from "../src/EulerEarn.sol";
-import {ConstantsLib} from "../src/lib/ConstantsLib.sol";
+import {EulerEarn} from "../src/EulerEarn.sol";
 
 /// @title Script to add strategies to an existent Euler Earn vault.
 // to run:
