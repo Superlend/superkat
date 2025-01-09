@@ -9,8 +9,8 @@ import {EulerEarn} from "../src/EulerEarn.sol";
 // fill .env
 // Run: source .env
 // fil relevant json file
-// Run: forge script ./script/Rebalance.s.sol --rpc-url arbitrum --broadcast --slow -vvvvvv
-contract Rebalance is ScriptUtil {
+// Run: forge script ./script/RemoveStrategies.s.sol --rpc-url arbitrum --broadcast --slow -vvvvvv
+contract RemoveStrategies is ScriptUtil {
     error InputsMismatch();
 
     /// @dev EulerEarnFactory contract.
@@ -22,7 +22,7 @@ contract Rebalance is ScriptUtil {
         address userAddress = vm.rememberKey(userKey);
 
         // load JSON file
-        string memory inputScriptFileName = "Rebalance_input.json";
+        string memory inputScriptFileName = "RemoveStrategies_input.json";
         string memory json = _getJsonFile(inputScriptFileName);
 
         eulerEarn = EulerEarn(vm.parseJsonAddress(json, ".eulerEarn"));
@@ -30,7 +30,9 @@ contract Rebalance is ScriptUtil {
 
         vm.startBroadcast(userAddress);
 
-        eulerEarn.rebalance(strategies);
+        for (uint256 i; i < strategies.length; i++) {
+            eulerEarn.removeStrategy(strategies[i]);
+        }
 
         vm.stopBroadcast();
     }

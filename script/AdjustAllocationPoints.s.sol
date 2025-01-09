@@ -9,8 +9,8 @@ import {EulerEarn} from "../src/EulerEarn.sol";
 // fill .env
 // Run: source .env
 // fil relevant json file
-// Run: forge script ./script/Rebalance.s.sol --rpc-url arbitrum --broadcast --slow -vvvvvv
-contract Rebalance is ScriptUtil {
+// Run: forge script ./script/AdjustAllocationPoints.s.sol --rpc-url arbitrum --broadcast --slow -vvvvvv
+contract AdjustAllocationPoints is ScriptUtil {
     error InputsMismatch();
 
     /// @dev EulerEarnFactory contract.
@@ -22,15 +22,20 @@ contract Rebalance is ScriptUtil {
         address userAddress = vm.rememberKey(userKey);
 
         // load JSON file
-        string memory inputScriptFileName = "Rebalance_input.json";
+        string memory inputScriptFileName = "AdjustAllocationPoints_input.json";
         string memory json = _getJsonFile(inputScriptFileName);
 
         eulerEarn = EulerEarn(vm.parseJsonAddress(json, ".eulerEarn"));
         address[] memory strategies = vm.parseJsonAddressArray(json, ".strategies");
+        uint256[] memory allocationPoints = vm.parseJsonUintArray(json, ".newAllocationPoints");
+
+        require(strategies.length == allocationPoints.length, InputsMismatch());
 
         vm.startBroadcast(userAddress);
 
-        eulerEarn.rebalance(strategies);
+        for (uint256 i; i < strategies.length; i++) {
+            eulerEarn.adjustAllocationPoints(strategies[i], allocationPoints[i]);
+        }
 
         vm.stopBroadcast();
     }
