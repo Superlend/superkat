@@ -27,12 +27,13 @@ contract DeployProtocol is ScriptUtil {
     EulerEarnFactory eulerEulerEarnFactory;
 
     function run() public {
+        // load wallet
+        uint256 deployerKey = vm.envUint("WALLET_PRIVATE_KEY");
+        address deployerAddress = vm.rememberKey(deployerKey);
+
         // load JSON file
         string memory inputScriptFileName = "DeployProtocol_input.json";
         string memory json = _getJsonFile(inputScriptFileName);
-
-        uint256 deployerKey = vm.parseJsonUint(json, "deployerKey");
-        address deployerAddress = vm.rememberKey(deployerKey);
 
         address evc = vm.parseJsonAddress(json, "evc");
         address balanceTracker = vm.parseJsonAddress(json, "balanceTracker");

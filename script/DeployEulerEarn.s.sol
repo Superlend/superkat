@@ -17,12 +17,13 @@ contract DeployEulerEarn is ScriptUtil {
     EulerEarnFactory eulerEulerEarnFactory;
 
     function run() public returns (address) {
+        // load wallet
+        uint256 userKey = vm.envUint("WALLET_PRIVATE_KEY");
+        address userAddress = vm.rememberKey(userKey);
+
         // load JSON file
         string memory inputScriptFileName = "DeployEulerEarn_input.json";
         string memory json = _getJsonFile(inputScriptFileName);
-
-        uint256 userKey = vm.parseJsonUint(json, ".userKey");
-        address userAddress = vm.rememberKey(userKey);
 
         eulerEulerEarnFactory = EulerEarnFactory(vm.parseJsonAddress(json, ".eulerEulerEarnFactory"));
         address asset = vm.parseJsonAddress(json, ".asset");

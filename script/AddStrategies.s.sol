@@ -17,12 +17,13 @@ contract AddStrategies is ScriptUtil {
     EulerEarn eulerEarn;
 
     function run() public {
+        // load wallet
+        uint256 userKey = vm.envUint("WALLET_PRIVATE_KEY");
+        address userAddress = vm.rememberKey(userKey);
+
         // load JSON file
         string memory inputScriptFileName = "AddStrategies_input.json";
         string memory json = _getJsonFile(inputScriptFileName);
-
-        uint256 userKey = vm.parseJsonUint(json, ".userKey");
-        address userAddress = vm.rememberKey(userKey);
 
         eulerEarn = EulerEarn(vm.parseJsonAddress(json, ".eulerEarn"));
         address[] memory strategies = vm.parseJsonAddressArray(json, ".strategies");
