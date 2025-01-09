@@ -132,6 +132,8 @@ This software is **experimental** and is provided "as is" and "as available".
 
 Always include thorough tests when using Euler Earn protocol to ensure it interacts correctly with your code.
 
+All audits are stored in the [audits' directory](/audits/).
+
 ## Known limitations
 
 Refer to [this doc](/docs/known-limitations.md) for a list of known limitations and security considerations.
