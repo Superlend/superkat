@@ -7,11 +7,6 @@ import {EulerEarnFactory} from "../src/EulerEarnFactory.sol";
 import {ConstantsLib} from "../src/lib/ConstantsLib.sol";
 
 /// @title Script to deploy new Euler Earn vault by calling factory, granting all roles and their admin roles to deployer address.
-// to run:
-// fill .env
-// Run: source .env
-// fil relevant json file
-// Run: forge script ./script/DeployEulerEarn.s.sol --rpc-url arbitrum --broadcast --slow -vvvvvv
 contract DeployEulerEarn is ScriptUtil {
     /// @dev EulerEarnFactory contract.
     EulerEarnFactory eulerEulerEarnFactory;
