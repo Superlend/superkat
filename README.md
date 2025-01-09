@@ -28,6 +28,8 @@ For more details, please refer to the [whitepaper](/docs/whitepaper.md) and the 
 
 ## Local Development
 
+![InheritanceDiagram](/docs/InheritanceDiagram.png)
+
 Euler Earn comes with a comprehensive set of tests written in Solidity, which can be executed using Foundry.
 
 To install Foundry:
