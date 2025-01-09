@@ -3,7 +3,7 @@ title: Euler Earn
 description: An open source protocol for permissionless risk curation on top of ERC4626 vaults
 ---
 
-# Euler Earn Whitepaper
+# Euler Earn whitepaper
 
 Mick de Graaf & Haythem Sellami.
 
@@ -13,21 +13,22 @@ Mick de Graaf & Haythem Sellami.
 
 * [Introduction](#introduction)
 * [Motivation](#motivation)
-* [Permissionless Yield Aggregation & Risk Management](#permissionless-yield-aggregation--risk-management)
+* [Permissionless yield aggregation & risk management](#permissionless-yield-aggregation--risk-management)
 * [Core concepts](#core-concepts)
     * [Strategy](#strategy)
     * [Cash reserve](#cash-reserve)
-    * [Allocation Points](#allocation-points)
+    * [Allocation points](#allocation-points)
     * [Rebalance](#rebalance)
+    * [Strategy allocation cap](#strategy-allocation-cap)
     * [Harvest](#harvest)
-    * [Performance Fee](#performance-fee)
-    * [Loss Deduction](#loss-deduction)
-    * [Yield Gulping & Smearing ](#yield-gulping--smearing-)
-    * [Withdrawal Queue](#withdrawal-queue)
+    * [Performance fee](#performance-fee)
+    * [Loss deduction](#loss-deduction)
+    * [Yield gulping & interest accruing](#yield-gulping--interest-accruing)
+    * [Withdrawal queue](#withdrawal-queue)
     * [Roles](#roles)
-    * [Strategy Emergency Status](#strategy-emergency-status)
-    * [Native ERC20 Votes](#native-erc20-votes)
-* [Immutability, Management and Fees](#immutability-management-and-fees)
+    * [Strategy emergency status as circuit-breaker](#strategy-emergency-status-as-circuit-breaker)
+    * [Native ERC20 votes](#native-erc20-votes)
+* [Immutability, management and fees](#immutability-management-and-fees)
 
 <!-- END OF TOC -->
 
@@ -43,7 +44,7 @@ Euler Earn vaults are noncustodial, immutable, and offer users an easy way to pr
 
 Euler V2 is a lending and borrowing protocol built on top of the [EVC](https://github.com/euler-xyz/ethereum-vault-connector) primitive and using the [Euler Vault Kit](https://github.com/euler-xyz/euler-vault-kit), prioritising modularity, efficiency and flexibility. On Euler V2, lenders must consider many technical factors, including the types of collateral accepted, loan-to-value ratio, the oracles used, supply and borrow caps, the type of vault (borrowable, escrow), and so on. For that reason, interacting with lending vaults directly is more suited to sophisticated and knowledgeable lenders than to passive ones. Euler Earn helps solve this challenge by providing an easier way for lenders to gain access to passive yield, by externalising risk-management to trusted vault governors who manage their deposits on their behalf.
 
-## Permissionless Yield Aggregation & Risk Management
+## Permissionless yield aggregation & risk management
 
 Any risk curator can use the factory to create a Euler Earn vault, including DAOs, protocols, risk experts, funds or curious developers. Anyone can leverage the permissionless infrastructure to provide users with a simple passive yield earning experience.
 
@@ -65,7 +66,7 @@ The strategy with address zero is used as a cash reserve.
 
 An amount of the total deposited assets not allocated to any strategy, and used as the first source of liquidity during withdrawal. The amount to set as cash reserve is decided based on the allocation points set for the cash reserve strategy.
 
-### Allocation Points
+### Allocation points
 
 Each strategy gets assigned allocation points, including the cash reserve strategy. During strategy rebalance, the amount of asset to allocate is calculated based on its allocation points.
 
@@ -75,7 +76,7 @@ The user's deposited assets are allocated across the Euler Earn vault’s strate
 
 Only an address that has the `Rebalancer` [role](#roles) can execute a rebalance operation.
 
-### Strategy Allocation Cap
+### Strategy allocation cap
 
 An address with the `Guardian` [role](#roles) can set a cap on the amount of asset that can be allocated in a certain strategy.
 
@@ -89,19 +90,19 @@ During harvesting, Earn vault loop through all the strategies to execute the har
 
 In case of net positive yield, a [performance fee](#performance-fee) is accrued, if applicable. In case of negative net yield, a [loss deduction mechanism](#loss-deduction) is applied.
 
-### Performance Fee
+### Performance fee
 
 An Earn vault's manager can set a performance fee that will be accrued on every harvested net positive yield. The fee amount will be converted to vault shares and minted to the fee recipient address. By default, the performance fee is set to 0%, and is capped to 50%.
 
-### Loss Deduction
+### Loss deduction
 
 A loss deduction mechanism is applied in the case of harvesting a net negative yield amount. The net negative yield amount will be first deducted from the interest left to accrue, if that's not enough to cover the loss, the rest will be socialised across depositors.
 
-### Yield Gulping & Interest Accruing
+### Yield gulping & interest accruing
 
 Harvested positive yield is not instantly added to the Earn vault total deposits, instead, it gets gulped as an interest to be distributed (smeared) along the smearing period (2 weeks), and that prevents sudden jumps in the euler earn vault’s exchange rate.
 
-### Withdrawal Queue
+### Withdrawal queue
 
 A queue of the added strategy addresses, mainly used during yield harvesting and executing withdrawal requests from the Earn vault.
 Strategies are pushed into the withdrawal queue and removed from it when the add or removing strategy operation is called. 
@@ -136,7 +137,7 @@ Each role has their own specific `Admin role`, the holder of the Admin role can 
 
 ![euler-earn-roles](./euler-earn-roles.png)
 
-### Strategy Emergency Status as Circuit-Breaker
+### Strategy emergency status as circuit-breaker
 
 In case of a faulty strategy that has already been allocated funds, the Guardian can set that strategy status as `Emergency`, therefore the Earn vault will be functioning as expected, without taking into account that specific strategy when executing a harvest or rebalance.
 
@@ -144,11 +145,11 @@ When a strategy is set as `Emergency`, the strategy allocated amount is no longe
 
 The Guardian can toggle the strategy status back to active anytime. At the time of changing a strategy status from `Emergency` to `Active`, the Earn vault balance in that strategy will be stored as the `allocated` amount, and will added to the total allocated amount. Therefore, that amount will be instantly available to gulp and smeared as interest to depositors.
 
-### Native ERC20 Votes
+### Native ERC20 votes
 
 Euler Earn vault natively integrates with ERC20Votes contract to support Compound-like voting and delegation, therefore the shareholders of an Earn vault can use their shares as voting power in the vault governance.
 
-## Immutability, Management and Fees
+## Immutability, management and fees
 
 Euler Earn is a robust and flexible protocol, providing an immutable set of contracts and a set of parameters for vault creators to configure. 
 

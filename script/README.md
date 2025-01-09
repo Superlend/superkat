@@ -1,4 +1,4 @@
-# Scripts
+# Forge scripts to interact with Euler Earn
 
 In this directory, you can find helper `forge` scripts to interact with Euler Earn protocol.
 The scripts allows to:
