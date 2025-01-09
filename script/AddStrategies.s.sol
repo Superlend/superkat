@@ -5,11 +5,6 @@ import {ScriptUtil} from "./ScriptUtil.s.sol";
 import {EulerEarn} from "../src/EulerEarn.sol";
 
 /// @title Script to add strategies to an existent Euler Earn vault.
-// to run:
-// fill .env
-// Run: source .env
-// fil relevant json file
-// Run: forge script ./script/AddStrategies.s.sol --rpc-url arbitrum --broadcast --slow -vvvvvv
 contract AddStrategies is ScriptUtil {
     error InputsMismatch();
 

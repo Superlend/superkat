@@ -98,6 +98,10 @@ forge fmt
 forge doc --serve --port 4000
 ```
 
+## Scripts 
+
+You can find `forge scripts` inside the `/script` dir to interact with Euler Earn protocol. For more details, please check the scripts usage document.
+
 ## Security
 
 This software is **experimental** and is provided "as is" and "as available".
