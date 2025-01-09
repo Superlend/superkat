@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import "forge-std/Script.sol";
+import {ScriptUtil} from "./ScriptUtil.s.sol";
 import {EulerEarn, IEulerEarn, Shared} from "../src/EulerEarn.sol";
 import {EulerEarnVault} from "../src/module/EulerEarnVault.sol";
 import {Hooks, HooksModule} from "../src/module/Hooks.sol";
@@ -11,7 +11,8 @@ import {WithdrawalQueue} from "../src/module/WithdrawalQueue.sol";
 import {EulerEarnFactory} from "../src/EulerEarnFactory.sol";
 import {Strategy} from "../src/module/Strategy.sol";
 
-contract DeployScript is Script {
+/// @title Script to deploy Euler Earn protocol.
+contract DeployProtocol is ScriptUtil {
     /// @dev core modules.
     EulerEarnVault eulerEarnVaultModule;
     Rewards rewardsModule;
@@ -26,14 +27,18 @@ contract DeployScript is Script {
     EulerEarnFactory eulerEulerEarnFactory;
 
     function run() public {
-        // load ENV vars
-        uint256 deployerKey = vm.envUint("DEPLOYMENT_DEPLOYER_PK");
+        // load wallet
+        uint256 deployerKey = vm.envUint("WALLET_PRIVATE_KEY");
         address deployerAddress = vm.rememberKey(deployerKey);
 
-        address evc = vm.envAddress("DEPLOYMENT_EVC");
-        address balanceTracker = vm.envAddress("DEPLOYMENT_BALANCE_TRACKER");
-        address permit2 = vm.envAddress("DEPLOYMENT_PERMIT2");
-        bool isHarvestCoolDownCheckOn = vm.envBool("DEPLOYMENT_IS_HARVEST_COOLDOWN_CHECK_ON");
+        // load JSON file
+        string memory inputScriptFileName = "DeployProtocol_input.json";
+        string memory json = _getJsonFile(inputScriptFileName);
+
+        address evc = vm.parseJsonAddress(json, "evc");
+        address balanceTracker = vm.parseJsonAddress(json, "balanceTracker");
+        address permit2 = vm.parseJsonAddress(json, "permit2");
+        bool isHarvestCoolDownCheckOn = vm.parseJsonBool(json, "isHarvestCoolDownCheckOn");
 
         vm.startBroadcast(deployerAddress);
 

@@ -1,0 +1,6 @@
+{
+    "evc": "0xas",
+    "balanceTracker": "0xas",
+    "permit2": "0xas",
+    "isHarvestCoolDownCheckOn": "true"
+}
