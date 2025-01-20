@@ -140,4 +140,4 @@ Refer to [this doc](/docs/known-limitations.md) for a list of known limitations 
 
 ## License
 
-Licensed under the [Business Source License 1.1](./LICENSE).
+Licensed under the [GNU General Public License v2.0](./LICENSE).
