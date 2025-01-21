@@ -86,7 +86,7 @@ If a cap is set for a strategy, that cap will be the max amount that can be allo
 
 Harvesting the strategies is required to count for accrued yield, and this is executed everytime withdraw/redeem operation is called, during rebalance, and can be directly executed in a permissionless way by any user.
 
-During harvesting, Earn vault loop through all the strategies to execute the harvest of each individual strategy and calculate the net yield amount. Harvest flow happens according to the order of the strategies in the [withdrawal queue](#withdrawal-queue).
+During harvesting, the Earn vault loops through all the strategies to execute the harvest of each individual strategy and calculate the net yield amount. The harvest flow happens according to the order of the strategies in the [withdrawal queue](#withdrawal-queue).
 
 In case of net positive yield, a [performance fee](#performance-fee) is accrued, if applicable. In case of negative net yield, a [loss deduction mechanism](#loss-deduction) is applied.
 
@@ -100,7 +100,7 @@ A loss deduction mechanism is applied in the case of harvesting a net negative y
 
 ### Yield gulping & interest accruing
 
-Harvested positive yield is not instantly added to the Earn vault total deposits, instead, it gets gulped as an interest to be distributed (smeared) along the smearing period (2 weeks), and that prevents sudden jumps in the euler earn vault’s exchange rate.
+Harvested positive yield is not instantly added to the Earn vault total deposits, instead, it gets gulped as an interest to be distributed (smeared) along a smearing period (determined by the Earn vault creator), and that prevents sudden jumps in the euler earn vault’s exchange rate.
 
 ### Withdrawal queue
 
